@@ -78,6 +78,12 @@ dotnet build -c Release
 dotnet pack -c Release -o ./artifacts
 ```
 
+Releases are published by GitHub Actions through NuGet Trusted Publishing.
+The repository contains no NuGet API key. The NuGet.org trusted-publisher policy
+must match owner `0xfizzy`, repository `Fizzy.ImageViewer`, and workflow
+`.github/workflows/release.yml`; the repository variable `NUGET_USER` contains
+the NuGet.org username. Pushing a `v*` tag starts the release workflow.
+
 ## License
 
 MIT
