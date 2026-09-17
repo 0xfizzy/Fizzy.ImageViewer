@@ -1,0 +1,3 @@
+<Project>
+  <!-- Standalone library: do not inherit RobotController plugin build targets. -->
+</Project>

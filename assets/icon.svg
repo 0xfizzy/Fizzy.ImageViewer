@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Fizzy.ImageViewer icon</title>
+  <desc id="desc">A flat image frame with a mountain, sun, and fizzy bubbles.</desc>
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <rect x="82" y="116" width="348" height="280" rx="44" fill="#38bdf8"/>
+  <circle cx="340" cy="188" r="34" fill="#fde047"/>
+  <path d="M112 346 216 228l70 82 48-51 68 87Z" fill="#f8fafc"/>
+  <path d="M112 346 216 228l42 49-60 69Z" fill="#cbd5e1"/>
+  <circle cx="390" cy="82" r="26" fill="#a3e635"/>
+  <circle cx="438" cy="48" r="15" fill="#a3e635"/>
+</svg>

@@ -1,0 +1,73 @@
+using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Shapes;
+
+namespace Fizzy.ImageViewer.Editing;
+
+/// <summary>
+/// Editor for Line shapes.
+/// Control points: [0] = start point (X1, Y1), [1] = end point (X2, Y2)
+/// </summary>
+public class LineEditor : IShapeEditor
+{
+    public IReadOnlyList<Point> GetControlPoints(UIElement shape)
+    {
+        if (shape is not Line line)
+            return Array.Empty<Point>();
+
+        return new[] { new Point(line.X1, line.Y1), new Point(line.X2, line.Y2) };
+    }
+
+    public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
+    {
+        if (shape is not Line line) return;
+
+        switch (pointIndex)
+        {
+            case 0:
+                line.X1 = newPosition.X;
+                line.Y1 = newPosition.Y;
+                break;
+            case 1:
+                line.X2 = newPosition.X;
+                line.Y2 = newPosition.Y;
+                break;
+        }
+    }
+
+    public string GetMeasurementText(UIElement shape)
+    {
+        if (shape is not Line line)
+            return string.Empty;
+
+        double dist = Math.Sqrt(Math.Pow(line.X2 - line.X1, 2) + Math.Pow(line.Y2 - line.Y1, 2));
+        return $"{dist:F1} px";
+    }
+
+    public void UpdateLinkedShapes(UIElement shape)
+    {
+        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
+            return;
+
+        if (data.LinkedShapes == null) return;
+
+        var line = (Line)shape;
+        var endPoint = new Point(line.X2, line.Y2);
+
+        foreach (var linked in data.LinkedShapes)
+        {
+            if (linked is TextBlock label)
+            {
+                label.Text = GetMeasurementText(shape);
+
+                // Update label anchor to endpoint
+                if (label.Tag is OverlayTagData labelData)
+                {
+                    labelData.AnchorPoint = endPoint;
+                }
+            }
+        }
+    }
+}
