@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Versions live here so this directory can be built independently. -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>
