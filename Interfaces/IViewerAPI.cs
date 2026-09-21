@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Interfaces;
 /// <summary>
 /// 图像查看器的完整 API 接口。
 /// </summary>
-public interface IViewerAPI : IDisposable
+public interface IViewerAPI : IDisposable, IAsyncDisposable
 {
     // === 窗口管理 ===
 
@@ -59,30 +59,16 @@ public interface IViewerAPI : IDisposable
     /// </summary>
     bool Borderless { get; set; }
 
-    // === 渲染 ===
-
-    /// <summary>
-    /// 指示当前是否可以接受新的渲染请求。
-    /// </summary>
-    bool CanRefresh { get; }
-
-    /// <summary>
-    /// 渲染队列最大深度。
-    /// <para>1 = 纯跳帧（最低延迟），3 = 默认（平衡），更大 = 更流畅但延迟更高。</para>
-    /// </summary>
-    int MaxRenderQueue { get; set; }
-
-    /// <summary>
-    /// 刷新图像显示。0-GC 实现，接受跳帧。
-    /// <para>
-    /// 生命周期契约：调用者传入的 source 的所有权转移给 Viewer。
-    /// Viewer 保证在所有路径上调用 Release()（渲染完成、跳帧、冻结）。
-    /// 调用者在调用此方法后不应再访问 source。
-    /// </para>
-    /// </summary>
-    ValueTask RefreshAsync<TSource>(TSource source, CancellationToken ct = default)
-        where TSource : IImageSource;
-
+    ValueTask<Fizzy.ImageViewer.Frames.FrameSubmitResult> SubmitFrameAsync(
+        Fizzy.ImageViewer.Frames.ImageFrame frame,
+        Fizzy.ImageViewer.Frames.FrameSubmissionOptions? options = null,
+        CancellationToken ct = default);
+    Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame();
+    event Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted;
+    Fizzy.ImageViewer.Imaging.GrayDisplayRange? DisplayRange { get; set; }
+    ValueTask CloseAsync();
+    Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
+        Fizzy.ImageViewer.Snapshots.SnapshotKind kind, CancellationToken ct = default);
     // === 绘图 ===
 
     /// <summary>

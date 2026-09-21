@@ -6,31 +6,10 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <summary>
-    /// 指示当前是否可以接受新的渲染请求。
-    /// 当渲染队列未满时返回 true。
-    /// </summary>
-    public bool CanRefresh => Interlocked.CompareExchange(ref _renderingCount, 0, 0) < Interlocked.CompareExchange(ref _maxRenderQueue, 0, 0);
-
-    /// <summary>
-    /// 渲染队列最大深度。
-    /// <para>
-    /// 1 = 纯跳帧（最低延迟），3 = 默认（平衡），更大 = 更流畅但延迟更高。
-    /// </para>
-    /// </summary>
-    public int MaxRenderQueue
-    {
-        get => Interlocked.CompareExchange(ref _maxRenderQueue, 0, 0);
-        set => Interlocked.Exchange(ref _maxRenderQueue, Math.Max(RenderingConstants.MinRenderQueue, value));
-    }
-
-    /// <summary>
-    /// 是否允许用户通过点击关闭按钮关闭窗口。
-    /// </summary>
     public bool CanUserClose
     {
-        get => _window.CanUserClose;
-        set => _window.CanUserClose = value;
+        get => _window.Dispatcher.Invoke(() => _window.CanUserClose);
+        set => _window.Dispatcher.Invoke(() => _window.CanUserClose = value);
     }
 
     /// <summary>
@@ -95,4 +74,14 @@ public partial class Viewer
         get => _window.Dispatcher.Invoke(() => _window.Borderless);
         set => _window.Dispatcher.Invoke(() => _window.Borderless = value);
     }
+}
+
+public partial class Viewer
+{
+    public Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions
+    {
+        get => _measureManager!.Context.QueryOptions;
+        set => _window.Dispatcher.Invoke(() => _measureManager!.Context.QueryOptions = value);
+    }
+    public Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics => _measureManager!.Context.QueryMetrics;
 }

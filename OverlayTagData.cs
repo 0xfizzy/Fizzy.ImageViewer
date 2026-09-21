@@ -62,6 +62,9 @@ public sealed class OverlayTagData(OverlayScaleMode mode, ShapeType type)
     public OverlayTransformData Transform { get; } = new() { Mode = mode };
     public OverlaySelectionData Selection { get; } = new();
     public EditData Edit { get; } = new();
+    internal bool PreserveMeasurementText { get; set; }
+    internal long GeometryVersion { get; set; }
+    internal bool IsQueryRegion { get; set; }
     public ShapeType ShapeType { get; } = type;
     
     public OverlayScaleMode Mode => Transform.Mode;

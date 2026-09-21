@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Fizzy.ImageViewer.Controls
 {
@@ -111,9 +110,11 @@ namespace Fizzy.ImageViewer.Controls
             SetupInteraction();
         }
 
-        public void SetImage(WriteableBitmap bitmap)
+        public void SetImage(ImageSource source, int pixelWidth, int pixelHeight)
         {
-            ImageDisplay.Source = bitmap;
+            ImageDisplay.Source = source;
+            ImageDisplay.Width = pixelWidth;
+            ImageDisplay.Height = pixelHeight;
         }
 
         private void SetupInteraction()
@@ -279,8 +280,8 @@ namespace Fizzy.ImageViewer.Controls
             if (ImageDisplay.Source == null || Container.ActualWidth == 0 || Container.ActualHeight == 0)
                 return;
 
-            double imgW = ImageDisplay.Source.Width;
-            double imgH = ImageDisplay.Source.Height;
+            double imgW = ImageDisplay.Width;
+            double imgH = ImageDisplay.Height;
             double containerW = Container.ActualWidth;
             double containerH = Container.ActualHeight;
 

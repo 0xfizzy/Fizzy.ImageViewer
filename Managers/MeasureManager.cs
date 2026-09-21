@@ -3,11 +3,10 @@ using Fizzy.ImageViewer.Interfaces;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 
 namespace Fizzy.ImageViewer.Managers
 {
-    public class MeasureManager
+    public class MeasureManager : IDisposable
     {
         private readonly ImageLayer _inputLayer;
         private readonly OverlayLayer _outputLayer;
@@ -26,11 +25,11 @@ namespace Fizzy.ImageViewer.Managers
         /// </summary>
         public MeasureContext Context => _context;
 
-        public MeasureManager(ImageLayer inputLayer, OverlayLayer outputLayer)
+        public MeasureManager(ImageLayer inputLayer, OverlayLayer outputLayer, Func<Fizzy.ImageViewer.Frames.FrameLease?> acquire, Microsoft.Extensions.Logging.ILogger logger)
         {
             _inputLayer = inputLayer;
             _outputLayer = outputLayer;
-            _context = new MeasureContext(outputLayer);
+            _context = new MeasureContext(outputLayer, acquire, logger);
 
             _inputLayer.ImageMouseDown += OnMouseDown;
             _inputLayer.ImageMouseMove += OnMouseMove;
@@ -39,11 +38,13 @@ namespace Fizzy.ImageViewer.Managers
         /// <summary>
         /// 通知图像已更新。由 Viewer 调用。
         /// </summary>
-        internal void NotifyImageUpdated(WriteableBitmap bitmap)
+        internal void NotifyFrameCommitted(Fizzy.ImageViewer.Frames.FrameInfo info)
         {
-            _context.NotifyImageUpdated(bitmap);
+            _context.NotifyFrameCommitted(info);
         }
 
+        public Task Completion => _context.Completion;
+        public void Dispose() { _inputLayer.ImageMouseDown -= OnMouseDown; _inputLayer.ImageMouseMove -= OnMouseMove; CancelCurrent(); _context.Dispose(); }
         public void RegisterMethod(IMeasureMethod method)
         {
             _registeredMethods[method.Name] = method;

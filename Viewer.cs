@@ -16,11 +16,12 @@ namespace Fizzy.ImageViewer;
 /// 所有 UI 操作都会自动调度到 UI 线程执行。
 /// </para>
 /// </summary>
-public partial class Viewer : IViewerAPI
+public partial class Viewer : IViewerAPI, IAsyncDisposable
 {
     private readonly Thread _windowThread;
     protected ViewerWindow _window;
     private readonly ILogger _logger;
+    private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     // === Managers ===
     // 使用 volatile 保证跨线程可见性，因为这些字段在 UI 线程初始化，但可能在其他线程读取
@@ -28,20 +29,25 @@ public partial class Viewer : IViewerAPI
     private volatile MeasureManager? _measureManager;
     
     /// <summary>
-    /// 用于同步 Manager 初始化完成的信号。
-    /// </summary>
-    private readonly ManualResetEventSlim _managersInitialized = new(false);
-
-    /// <summary>
     /// 窗口关闭后触发的事件（包括用户点击关闭按钮）。
     /// </summary>
     public event EventHandler? Closed;
 
     public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
+        : this(logger, new Rendering.WriteableBitmapPresenter(), true, left, top, width, height) { }
+
+    internal Viewer(ILogger<Viewer> logger, Rendering.IImagePresenter presenter, bool showWindow,
+        double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
     {
-        InitializeWindow(out _windowThread, out _window, left, top, width, height);
         _logger = logger;
+        _presenter = presenter;
+        _showWindow = showWindow;
+        InitializeWindow(out _windowThread, out _window, left, top, width, height);
     }
+
+    private readonly bool _showWindow;
+    internal Dispatcher UiDispatcher => _window.Dispatcher;
+    internal MeasureContext MeasurementContext => _measureManager!.Context;
 
     private void InitializeWindow(out Thread thread, out ViewerWindow window, double left, double top, double width, double height)
     {
@@ -52,14 +58,20 @@ public partial class Viewer : IViewerAPI
             try
             {
                 var win = new ViewerWindow("Fizzy ImageViewer");
+                _window = win;
                 win.Closed += (s, e) =>
                 {
-                    Closed?.Invoke(this, EventArgs.Empty);
-                    Dispatcher.CurrentDispatcher.InvokeShutdown();
+                    try
+                    {
+                        StopRendering();
+                        foreach (EventHandler handler in Closed?.GetInvocationList() ?? [])
+                            try { handler(this, EventArgs.Empty); } catch (Exception ex) { _logger.LogWarning(ex, "Closed handler failed"); }
+                    }
+                    finally { Dispatcher.CurrentDispatcher.InvokeShutdown(); }
                 };
 
                 // 在 UI 线程创建 Managers
-                var measureMgr = new MeasureManager(win.Layer0, win.Layer1);
+                var measureMgr = new MeasureManager(win.Layer0, win.Layer1, AcquireCurrentFrame, _logger);
                 var editMgr = new EditManager(win.Layer0, win.Layer1);
                 var menuMgr = new MenuManager(win)
                 {
@@ -72,14 +84,12 @@ public partial class Viewer : IViewerAPI
                 win.Layer1.SetEditManager(editMgr);
 
                 // 注册内置功能（在赋值给字段之前，确保 Managers 完全初始化）
+                _measureManager = measureMgr;
                 RegisterBuiltInFeatures(win, measureMgr, editMgr, menuMgr);
 
                 // 使用 volatile 写入确保其他线程可见
                 _measureManager = measureMgr;
                 _menuManager = menuMgr;
-
-                // 发出初始化完成信号
-                _managersInitialized.Set();
 
                 // Set window position before showing (if provided)
                 if (!double.IsNaN(left)) win.Left = left;
@@ -87,15 +97,15 @@ public partial class Viewer : IViewerAPI
                 if (!double.IsNaN(width)) win.Width = width;
                 if (!double.IsNaN(height)) win.Height = height;
 
+                if (_showWindow) win.Show();
                 tcs.SetResult(win);
-                win.Show();
                 Dispatcher.Run();
             }
             catch (Exception ex)
             {
-                _managersInitialized.Set(); // 即使失败也要释放等待的线程
                 tcs.TrySetException(ex);
             }
+            finally { _windowStopped.TrySetResult(); }
         });
 
         thread.SetApartmentState(ApartmentState.STA);
@@ -136,14 +146,17 @@ public partial class Viewer : IViewerAPI
         menuMgr.Register(new MenuItem("Cancel Measurement", measureMgr.Cancel, Enums.MenuItemType.ContextAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
         menuMgr.Register(new MenuItem("Clear All Shapes", () => { measureMgr.Cancel(); win.Layer1.Clear(); }));
-        menuMgr.Register(new SaveImageMenuItem(win.Layer0));
+        menuMgr.Register(new SaveImageMenuItem(this, false));
+        menuMgr.Register(new SaveImageMenuItem(this, true));
+        menuMgr.Register(new SaveImageMenuItem(this, false, true));
+        menuMgr.Register(new SaveImageMenuItem(this, true, true));
         menuMgr.Register(SeparatorMenuItem.Instance);
 
         // 初始化像素信息叠加层
         InitializePixelInfoOverlay(win, menuMgr);
         
         // 连接菜单打开/关闭事件到帧冻结/解冻
-        menuMgr.OnMenuOpening = Freeze;
+        menuMgr.OnMenuOpening = FreezeMenuRegion;
         menuMgr.OnMenuClosing = Unfreeze;
     }
 
@@ -160,27 +173,22 @@ public partial class Viewer : IViewerAPI
 
     public void RegisterMenu(IMenuItem menuItem)
     {
-        // 等待 Managers 初始化完成，避免空引用
-        _managersInitialized.Wait();
         _window?.Dispatcher.Invoke(() => _menuManager?.Register(menuItem));
     }
 
     public void RegisterMeasureMethod(IMeasureMethod method)
     {
         // 等待 Managers 初始化完成，避免空引用
-        _managersInitialized.Wait();
         _window?.Dispatcher.Invoke(() => _measureManager?.RegisterMethod(method));
     }
 
     public void StartMeasure(string methodName)
     {
-        _managersInitialized.Wait();
         _window?.Dispatcher.Invoke(() => _measureManager?.Start(methodName));
     }
 
     public void CancelMeasure()
     {
-        _managersInitialized.Wait();
         _window?.Dispatcher.Invoke(() => _measureManager?.Cancel());
     }
 
@@ -191,19 +199,8 @@ public partial class Viewer : IViewerAPI
 
     public virtual void Dispose()
     {
-        try
-        {
-            _window?.Dispatcher.Invoke(() =>
-            {
-                _window.CanUserClose = true;
-                _window.Close();
-            });
-        }
-        catch (Exception)
-        {
-
-        }
-        _managersInitialized.Dispose();
+        if (_window.Dispatcher.CheckAccess()) { _window.CanUserClose = true; _window.Close(); }
+        else DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
 }

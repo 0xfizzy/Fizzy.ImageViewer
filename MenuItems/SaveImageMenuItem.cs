@@ -1,49 +1,34 @@
 using Microsoft.Win32;
-using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Interfaces;
-using System;
-using System.Diagnostics;
-using System.IO;
+using Fizzy.ImageViewer.Snapshots;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace Fizzy.ImageViewer.MenuItems;
 
-/// <summary>
-/// 保存图像菜单项。
-/// </summary>
-public sealed class SaveImageMenuItem(ImageLayer layer) : IMenuItem
+public sealed class SaveImageMenuItem(Viewer viewer, bool raw, bool region = false) : IMenuItem
 {
-    public string Header => "Save Image As...";
-    public MenuItemType Type => MenuItemType.General;
-
-    public void Execute(object sender, RoutedEventArgs e)
+    public bool IsVisible => !region || viewer.HasMenuRegion;
+    public string Header => region ? (raw ? "Export Region Raw TIFF..." : "Save Region Display Image As...") : raw ? "Export Raw TIFF..." : "Save Display Image As...";
+    public MenuItemType Type => region ? MenuItemType.SelectionAction : MenuItemType.General;
+    public async void Execute(object sender, RoutedEventArgs e)
     {
-        if (layer.ImageDisplay.Source is not BitmapSource source)
+        if (!viewer.TryBeginSave()) return;
+        try
         {
-            MessageBox.Show("No image to save.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var sfd = new SaveFileDialog
-        {
-            Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
-            FileName = $"Image_{DateTime.Now:yyyyMMdd_HHmmss}_{Stopwatch.GetTimestamp() % 10000:D4}"
-        };
-
-        if (sfd.ShowDialog() == true)
-        {
-            BitmapEncoder encoder = sfd.FilterIndex switch
+            using var target = (region ? viewer.AcquireMenuRegionSnapshot() : viewer.AcquireMenuSnapshot());
+            if (target == null) { MessageBox.Show("No image to save."); return; }
+            var dialog = new SaveFileDialog
             {
-                1 => new PngBitmapEncoder(),
-                2 => new JpegBitmapEncoder(),
-                _ => new BmpBitmapEncoder()
+                Filter = raw ? "TIFF Image|*.tif" : "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
+                FileName = region ? "Region" : "Image"
             };
-
-            encoder.Frames.Add(BitmapFrame.Create(source));
-            using var stream = new FileStream(sfd.FileName, FileMode.Create);
-            encoder.Save(stream);
+            if (dialog.ShowDialog() != true) return;
+            using var snapshot = await Viewer.CaptureSnapshotAsync(target.Acquire(), raw ? SnapshotKind.Raw : SnapshotKind.Display, default).ConfigureAwait(false);
+            await snapshot.SaveAsync(dialog.FileName, raw ? SnapshotEncoding.Tiff : dialog.FilterIndex switch
+            { 1 => SnapshotEncoding.Png, 2 => SnapshotEncoding.Jpeg, _ => SnapshotEncoding.Bmp }).ConfigureAwait(false);
         }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Image save failed"); }
+        finally { viewer.EndSave(); }
     }
 }

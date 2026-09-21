@@ -21,45 +21,22 @@ and set `<UseWPF>true</UseWPF>`.
 
 ```csharp
 using Fizzy.ImageViewer;
-using Fizzy.ImageViewer.Interfaces;
+using Fizzy.ImageViewer.Frames;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
-using var viewer = new Viewer(NullLogger<Viewer>.Instance);
-viewer.Title = "Inspection";
-
-await viewer.RefreshAsync(new MyImageSource());
-
-using var crosshair = viewer.DrawCrosshair(
-    new Point(320, 240), Brushes.LimeGreen);
+await using var viewer = new Viewer(NullLogger<Viewer>.Instance);
+var pixels = new byte[640 * 480];
+var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
+    FramePixelFormat.Gray8), pixels);
+var result = await viewer.SubmitFrameAsync(frame);
 ```
 
-Implement `IImageSource` to provide pixels without coupling the viewer to an imaging SDK:
+Submission transfers ownership immediately. Awaiting returns a commit/drop result,
+not a physical presentation timestamp. One frame is processed while only the newest
+waiting frame is retained. Measurements read original pixels independently of display.
 
-```csharp
-public sealed class MyImageSource : IImageSource
-{
-    public int Width => 640;
-    public int Height => 480;
-    public PixelFormat WpfFormat => PixelFormats.Bgr24;
-
-    public void WriteTo(WriteableBitmap destination)
-    {
-        // Copy pixels into destination. For hot paths, write through BackBuffer.
-    }
-
-    public void Dispose()
-    {
-        // Release or return the underlying frame buffer.
-    }
-}
-```
-
-Passing an `IImageSource` to `RefreshAsync` transfers ownership to the viewer.
-The viewer disposes it after rendering, dropping, freezing, or cancelling the frame.
-
+See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
+[validation commands](docs/validation.md).
 ## Features
 
 - Independent STA window with thread-safe API dispatch

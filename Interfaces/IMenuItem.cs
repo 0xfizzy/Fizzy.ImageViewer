@@ -6,6 +6,7 @@ namespace Fizzy.ImageViewer.Interfaces
     public interface IMenuItem
     {
         string Header { get; }
+        bool IsVisible => true;
         MenuItemType Type { get; }
         void Execute(object sender, RoutedEventArgs e);
     }

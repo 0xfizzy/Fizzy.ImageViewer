@@ -142,6 +142,7 @@ public class EditManager
 
         // Update shape geometry
         _currentEditor.UpdateControlPoint(_editingShape, _draggingPointIndex, imagePoint);
+        if (_editingShape is FrameworkElement { Tag: OverlayTagData geometry }) geometry.GeometryVersion++;
         _currentEditor.UpdateLinkedShapes(_editingShape);
 
         // Update ALL control point handle positions to match the new shape geometry

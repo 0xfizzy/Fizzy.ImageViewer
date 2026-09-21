@@ -72,7 +72,7 @@ namespace Fizzy.ImageViewer.Managers
                     continue;
                 }
 
-                if (!isVisible) continue;
+                if (!isVisible || !item.IsVisible) continue;
 
                 // 只在已有可见项后才添加分隔符
                 if (pendingSeparator && visibleCount > 0)

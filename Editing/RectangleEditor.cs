@@ -102,7 +102,7 @@ public class RectangleEditor : IShapeEditor
         {
             if (linked is TextBlock label)
             {
-                label.Text = GetMeasurementText(shape);
+                if (label.Tag is not OverlayTagData { PreserveMeasurementText: true }) label.Text = GetMeasurementText(shape);
             }
         }
     }

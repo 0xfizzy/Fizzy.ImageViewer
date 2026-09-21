@@ -25,6 +25,7 @@ namespace Fizzy.ImageViewer.MeasureMethods
 
             // 完成框选
             UpdateRect(_startPoint.Value, point, ctx);
+            _ = new RegionMeasurement(_rect!, ctx);
             _startPoint = null;
             _rect = null;
             return true;
