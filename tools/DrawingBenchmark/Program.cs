@@ -20,8 +20,7 @@ internal static class Program
     { root.Measure(new(1200, 1000)); root.Arrange(new(0, 0, 1200, 1000)); root.UpdateLayout(); }
     private static void Run(int count, bool print)
     {
-        var overlay = new OverlayLayer();
-        var layers = new ViewerLayers(overlay, Transform.Identity);
+        var layers = new ViewerLayers(Transform.Identity);
         var data = Enumerable.Range(0, count).Select(i => (DrawingElement)new CircleElement(new(i % 100 * 10, i / 100 * 10), 3, Brushes.Red, 2, Brushes.Red)).ToArray();
         DrawingBatchHandle? batch = null;
         var create = Time(() => { batch = layers.Markers.AddBatch(data); Layout(layers.Root); });
@@ -30,7 +29,8 @@ internal static class Program
         if (print) Console.WriteLine($"{count},batch,{create:F3},{replace:F3},{scale:F3},{layers.Markers.Host.Count}");
         layers.Close();
 
-        var legacy = new OverlayLayer();
+        var legacyLayers = new ViewerLayers(Transform.Identity);
+        var legacy = legacyLayers.MeasurementOverlay;
         void AddLegacy()
         {
             foreach (CircleElement circle in data)
@@ -44,6 +44,6 @@ internal static class Program
         replace = Time(() => { legacy.Clear(); AddLegacy(); Layout(legacy); });
         scale = Time(() => { legacy.UpdateScale(2); Layout(legacy); });
         if (print) Console.WriteLine($"{count},legacy,{create:F3},{replace:F3},{scale:F3},{legacy.Canvas.Children.Count}");
-        legacy.Clear();
+        legacyLayers.Close();
     }
 }

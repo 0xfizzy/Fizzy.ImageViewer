@@ -46,12 +46,12 @@ public sealed class DrawingLayer
     public bool IsVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _visible; });
-        set => Owner.Invoke(() => { EnsureAlive(); _visible = value; Root.Visibility = value ? Visibility.Visible : Visibility.Hidden; if (!value) _measurements?.ClearSelection(); });
+        set => Owner.Invoke(() => { EnsureAlive(); _visible = value; Root.Visibility = value ? Visibility.Visible : Visibility.Hidden; if (!value && _measurements != null) { Owner.CancelMeasurement?.Invoke(); _measurements.ClearSelection(); } });
     }
     public bool IsHitTestVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _hitTest; });
-        set => Owner.Invoke(() => { EnsureAlive(); _hitTest = value; ApplyHitTest(); });
+        set => Owner.Invoke(() => { EnsureAlive(); _hitTest = value; if (!value && _measurements != null) { Owner.CancelMeasurement?.Invoke(); _measurements.ClearSelection(); } ApplyHitTest(); });
     }
     public int ZIndex
     {
@@ -87,8 +87,8 @@ public sealed class DrawingLayer
     public void Clear() => Owner.Invoke(() =>
     {
         EnsureAlive();
-        if (_measurements != null) Owner.CancelMeasurement?.Invoke();
-        ClearCore();
+        try { if (_measurements != null) Owner.CancelMeasurement?.Invoke(); }
+        finally { ClearCore(); }
     });
     internal void ClearCore()
     {

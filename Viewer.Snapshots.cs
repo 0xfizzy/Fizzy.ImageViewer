@@ -29,27 +29,27 @@ public partial class Viewer
         if(_menuRegion is not { IsEmpty:false } region) {snapshot.Dispose();return null;}
         return snapshot with { Region=region };
     }
-    private void FreezeMenuRegion()
+    internal void FreezeMenuRegion()
     {
         Freeze(); _menuRegion=null;
-        if(_window.Layer1.SelectedShape is System.Windows.Shapes.Rectangle rect && rect.Tag is OverlayTagData { IsQueryRegion:true })
+        if (_interaction?.SelectedMeasurement is { IsComplete: true, Geometry.Kind: Enums.ShapeType.Rectangle } item)
         {
-            using var frame=AcquireCurrentFrame();
-            if(frame!=null)_menuRegion=PixelRegion.Clip(System.Windows.Controls.Canvas.GetLeft(rect),System.Windows.Controls.Canvas.GetTop(rect),rect.Width,rect.Height,frame.Descriptor);
+            using var snapshot = AcquireMenuSnapshot();
+            if (snapshot != null) _menuRegion = item.Geometry.ToRegion(snapshot.Frame.Descriptor);
         }
     }
     public Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotKind kind, CancellationToken ct = default)
     {
         SnapshotRequest request;
-        lock (_frameGate) request = _currentFrame == null ? throw new InvalidOperationException("No current frame.") :
-            new(_currentFrame.Acquire(), _committedGrayRange, _committedDisplayVersion, Gate: _exportGate);
+        lock (_frameGate) { _lifetime.ThrowIfStopping(); request = _currentFrame == null ? throw new InvalidOperationException("No current frame.") :
+            new(_currentFrame.Acquire(), _committedGrayRange, _committedDisplayVersion, Gate: _exportGate); }
         return CaptureSnapshotAsync(request, kind, ct);
     }
     public Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotKind kind, PixelRegion region, CancellationToken ct = default)
     {
         SnapshotRequest request;
-        lock (_frameGate) request = _currentFrame == null ? throw new InvalidOperationException("No current frame.") :
-            new(_currentFrame.Acquire(), _committedGrayRange, _committedDisplayVersion, region, _exportGate);
+        lock (_frameGate) { _lifetime.ThrowIfStopping(); request = _currentFrame == null ? throw new InvalidOperationException("No current frame.") :
+            new(_currentFrame.Acquire(), _committedGrayRange, _committedDisplayVersion, region, _exportGate); }
         return CaptureSnapshotAsync(request,kind,ct);
     }
     internal static Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotRequest request, SnapshotKind kind, CancellationToken ct)

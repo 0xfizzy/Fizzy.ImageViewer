@@ -1,111 +1,60 @@
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Interfaces;
-using System.Collections.Generic;
+using Fizzy.ImageViewer.Frames;
+using Microsoft.Extensions.Logging;
 using System.Windows;
-using System.Windows.Input;
 
-namespace Fizzy.ImageViewer.Managers
+namespace Fizzy.ImageViewer.Managers;
+
+/// <summary>Tool registry and measurement session execution, independent of input state.</summary>
+internal sealed class MeasureManager : IDisposable
 {
-    public class MeasureManager : IDisposable
+    internal sealed record Registration(string Id, string DisplayName, IMeasureMethod Method);
+    private readonly Dictionary<string, Registration> _methods = new(StringComparer.Ordinal);
+    private IMeasureMethod? _active;
+    private bool _disposed;
+    public Registration[] RegisteredMethods => _methods.Values.ToArray();
+    public string? ActiveId { get; private set; }
+    public bool HasSelection => _active != null;
+    public MeasureContext Context { get; }
+    public Task Completion => Context.Completion;
+    internal MeasureManager(OverlayLayer output, Func<FrameLease?> acquire, ILogger logger) => Context = new(output, acquire, logger);
+    public void RegisterMethod(IMeasureMethod method)
     {
-        private readonly ImageLayer _inputLayer;
-        private readonly OverlayLayer _outputLayer;
-        private readonly MeasureContext _context;
-        private readonly Dictionary<string, IMeasureMethod> _registeredMethods = [];
-
-        // 状态标识
-        private bool _hasSelection = false;
-        private IMeasureMethod? _activeMethod;
-
-        public IReadOnlyDictionary<string, IMeasureMethod> RegisteredMethods => _registeredMethods;
-        public bool HasSelection => _hasSelection;
-        internal event Action<bool>? InputSuppressionChanged;
-        private void SetInputSuppressed(bool suppressed)
-        {
-            if (InputSuppressionChanged != null) InputSuppressionChanged(suppressed);
-            else _outputLayer.SetHitTestEnabled(!suppressed);
-        }
-
-        /// <summary>
-        /// 获取 MeasureContext，供外部访问图像更新事件。
-        /// </summary>
-        public MeasureContext Context => _context;
-
-        public MeasureManager(ImageLayer inputLayer, OverlayLayer outputLayer, Func<Fizzy.ImageViewer.Frames.FrameLease?> acquire, Microsoft.Extensions.Logging.ILogger logger)
-        {
-            _inputLayer = inputLayer;
-            _outputLayer = outputLayer;
-            _context = new MeasureContext(outputLayer, acquire, logger);
-
-            _inputLayer.ImageMouseDown += OnMouseDown;
-            _inputLayer.ImageMouseMove += OnMouseMove;
-        }
-        
-        /// <summary>
-        /// 通知图像已更新。由 Viewer 调用。
-        /// </summary>
-        internal void NotifyFrameCommitted(Fizzy.ImageViewer.Frames.FrameInfo info)
-        {
-            _context.NotifyFrameCommitted(info);
-        }
-
-        public Task Completion => _context.Completion;
-        public void Dispose() { _inputLayer.ImageMouseDown -= OnMouseDown; _inputLayer.ImageMouseMove -= OnMouseMove; CancelCurrent(); _context.Dispose(); }
-        public void RegisterMethod(IMeasureMethod method)
-        {
-            _registeredMethods[method.Name] = method;
-        }
-
-        public void Start(string methodName)
-        {
-            CancelCurrent(); // 确保之前的状态被清理
-
-            if (_registeredMethods.TryGetValue(methodName, out var method))
-            {
-                _activeMethod = method;
-                _hasSelection = true;
-                SetInputSuppressed(true); // 测量时关闭选择
-                _inputLayer.Container.Cursor = Cursors.Pen;
-            }
-        }
-
-        // 公开给外部 (如 CancelMenuItem) 使用
-        public void Cancel()
-        {
-            CancelCurrent();
-        }
-
-        private void CancelCurrent()
-        {
-            if (_activeMethod != null)
-            {
-                _activeMethod.Cancel(_context);
-                _activeMethod = null;
-                _inputLayer.Container.Cursor = Cursors.Cross;
-                SetInputSuppressed(false); // 恢复选择
-            }
-            _hasSelection = false;
-        }
-
-        private void OnMouseDown(double imageX, double imageY)
-        {
-            if (_activeMethod == null) return;
-
-            var imagePoint = new Point(imageX, imageY);
-            bool finished = _activeMethod.OnClick(imagePoint, _context);
-            if (finished)
-            {
-                _activeMethod = null;
-                _inputLayer.Container.Cursor = Cursors.Cross;
-                _hasSelection = false;
-                SetInputSuppressed(false); // 测量完成，恢复选择
-            }
-        }
-
-        private void OnMouseMove(double imageX, double imageY)
-        {
-            if (_activeMethod == null) return;
-            _activeMethod.OnMouseMove(new Point(imageX, imageY), _context);
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(method);
+        var id = method.Id; var name = method.DisplayName;
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        if (!_methods.TryAdd(id, new(id, name, method))) throw new ArgumentException($"Measurement tool '{id}' is already registered.", nameof(method));
+    }
+    public bool UnregisterMethod(string id)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!_methods.Remove(id, out _)) return false;
+        if (ActiveId == id) Cancel();
+        return true;
+    }
+    internal bool HasMethod(string name) => _methods.ContainsKey(name);
+    internal bool Start(string name)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!_methods.TryGetValue(name, out var method)) return false;
+        Cancel(); _active = method.Method; ActiveId = name; return true;
+    }
+    internal bool Click(Point point)
+    {
+        if (_active == null) return true;
+        if (!_active.OnClick(point, Context)) return false;
+        _active = null; ActiveId = null; Context.CancelUncompletedScopes(); return true;
+    }
+    internal void Move(Point point) => _active?.OnMouseMove(point, Context);
+    internal void Cancel() { var method = _active; _active = null; ActiveId = null; try { method?.Cancel(Context); } finally { Context.CancelUncompletedScopes(); } }
+    internal void NotifyFrameCommitted(FrameInfo info) => Context.NotifyFrameCommitted(info);
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        try { Cancel(); } finally { Context.Dispose(); }
     }
 }

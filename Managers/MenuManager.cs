@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Managers
     public class MenuManager
     {
         private readonly ContextMenu _contextMenu;
-        private readonly List<IMenuItem> _registeredItems = [];
+        private readonly List<Func<IEnumerable<IMenuItem>>> _registeredItems = [];
         private UIElement? _menuTargetShape;
 
         public Func<bool> CheckHasSelection { get; set; } = () => false;
@@ -37,8 +37,12 @@ namespace Fizzy.ImageViewer.Managers
 
         public void Register(IMenuItem item)
         {
-            _registeredItems.Add(item);
+            ArgumentNullException.ThrowIfNull(item);
+            _registeredItems.Add(() => [item]);
         }
+
+        internal void RegisterMeasureTools(Func<IEnumerable<IMenuItem>> provider) => _registeredItems.Add(provider);
+        internal IMenuItem[] SnapshotItems() => _registeredItems.SelectMany(provider => provider()).ToArray();
 
         public UIElement? GetMenuTargetShape() => _menuTargetShape;
 
@@ -54,7 +58,7 @@ namespace Fizzy.ImageViewer.Managers
             bool pendingSeparator = false;
             int visibleCount = 0;
 
-            foreach (var item in _registeredItems)
+            foreach (var item in SnapshotItems())
             {
                 bool isVisible = item.Type switch
                 {

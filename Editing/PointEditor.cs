@@ -41,8 +41,4 @@ public class PointEditor : IShapeEditor
         return $"({data.AnchorPoint.X:F1}, {data.AnchorPoint.Y:F1})";
     }
 
-    public void UpdateLinkedShapes(UIElement shape)
-    {
-        // Points typically don't have linked shapes
-    }
 }

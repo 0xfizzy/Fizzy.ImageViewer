@@ -79,7 +79,7 @@ public class QuerySchedulingTests
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
         await viewer.UiDispatcher.InvokeAsync(()=>viewer.MeasurementContext.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-        var close=viewer.CloseAsync().AsTask();await Task.Delay(20);Assert.False(close.IsCompleted);Assert.Equal(0,released);
+        var close=viewer.DisposeAsync().AsTask();await Task.Delay(20);Assert.False(close.IsCompleted);Assert.Equal(0,released);
         source.Release.SetResult();await close.WaitAsync(TimeSpan.FromSeconds(3));Assert.Equal(1,released);Assert.Empty(item.Values);
     }
     [Fact]
@@ -101,7 +101,7 @@ public class QuerySchedulingTests
     private sealed class UnsupportedRegion : IFrameMeasurement
     {
         public bool Published;
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new(0,QueryKind.Region,null,new PixelRegion(0,0,1,1),(_,_)=>Published=true);
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new RegionStatisticsQueryRequest(new(Guid.Empty, 0), new PixelRegion(0,0,1,1), _=>Published=true);
         public void ClearResult() { }
         public void Dispose() { }
     }
@@ -120,7 +120,7 @@ public class QuerySchedulingTests
     private sealed class Client : IFrameMeasurement
     {
         public int Revision;public List<double> Values=[];public TaskCompletionSource Published=new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new(Revision,QueryKind.Pixel,[new(0,0)],null,(samples,_)=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new PixelQueryRequest(new(Guid.Empty, Revision), [new(0,0)], samples=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
         public void ClearResult() { }
         public void Dispose() { }
     }

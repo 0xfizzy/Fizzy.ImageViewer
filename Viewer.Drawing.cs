@@ -28,65 +28,50 @@ public partial class Viewer
 
     /// <summary>Clears all business layers, including measurements, without clearing the HUD.</summary>
     public void ClearShapes() => Layers.Clear();
-    /// <summary>
-    /// 在 HUD 层绘制或更新文本显示（屏幕坐标，不随图像缩放）。
-    /// </summary>
-    /// <param name="text">要显示的文本</param>
-    /// <param name="brush">文本颜色</param>
-    /// <param name="existing">已有的绘图句柄。为 null 时创建新元素，不为 null 时更新已有元素的文本和颜色。</param>
-    /// <param name="anchor">屏幕坐标锚点。为 null 时拼接到左上角 StackPanel；不为 null 时放置在指定屏幕位置。</param>
-    /// <param name="alignment">锚点在文本上的对齐位置（九宫格）。仅在 anchor 不为 null 时生效。</param>
-    /// <param name="fontSize">字体大小</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该 HUD 文本</returns>
-    public IDisposable DrawHudText(string text, Brush brush, IDisposable? existing = null,
-        Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft,
-        double fontSize = 14)
+    private readonly Dictionary<Interfaces.HudTextHandle, TextBlock> _hudTexts = [];
+
+    /// <summary>Creates HUD text with fixed layout. Update text and color through the returned handle.</summary>
+    public Interfaces.HudTextHandle DrawHudText(string text, Brush brush,
+        Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft, double fontSize = 14)
     {
-        if (_window == null)
-            return new DrawingHandle(() => { });
-
-        if (existing is DrawingHandle handle && handle.State is TextBlock existingTb)
+        ArgumentNullException.ThrowIfNull(text);
+        var frozen = Interfaces.HudTextHandle.SnapshotBrush(brush);
+        if (!double.IsFinite(fontSize) || fontSize <= 0) throw new ArgumentOutOfRangeException(nameof(fontSize));
+        if (anchor is { } point && (!double.IsFinite(point.X) || !double.IsFinite(point.Y))) throw new ArgumentOutOfRangeException(nameof(anchor));
+        if (!Enum.IsDefined(alignment)) throw new ArgumentOutOfRangeException(nameof(alignment));
+        return InvokeAlive(() =>
         {
-            // 更新已有元素
-            try
+            var tb = anchor.HasValue ? _window.Layer2.AddTextAt(text, frozen, fontSize, anchor.Value, alignment)
+                : _window.Layer2.AddText(text, frozen, fontSize);
+            Interfaces.HudTextHandle? handle = null;
+            handle = new Interfaces.HudTextHandle((nextText, nextBrush) => InvokeAlive(() =>
             {
-                _window.Dispatcher.Invoke(() => _window.Layer2.UpdateText(existingTb, text, brush));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[Viewer.DrawHudText] Failed to update HUD text");
-            }
-            return existing;
-        }
-
-        // 创建新元素
-        try
-        {
-            return _window.Dispatcher.Invoke(() =>
-            {
-                TextBlock tb;
-                if (anchor.HasValue)
-                {
-                    tb = _window.Layer2.AddTextAt(text, brush, fontSize, anchor.Value, alignment);
-                }
-                else
-                {
-                    tb = _window.Layer2.AddText(text, brush, fontSize);
-                }
-
-                var newHandle = new DrawingHandle(() =>
-                {
-                    _window.Dispatcher.InvokeAsync(() => _window.Layer2.RemoveText(tb));
-                });
-                newHandle.State = tb;
-                return newHandle;
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Viewer.DrawHudText] Failed to create HUD text");
-            return new DrawingHandle(() => { });
-        }
+                ObjectDisposedException.ThrowIf(handle!.IsDisposed, handle);
+                _window.Layer2.UpdateText(tb, nextText, nextBrush);
+            }), () => RemoveHud(handle!));
+            _hudTexts.Add(handle, tb);
+            return handle;
+        });
     }
 
+    private void RemoveHud(Interfaces.HudTextHandle handle)
+    {
+        if (_lifetime.IsStopping) return;
+        try { _window.Dispatcher.Invoke(() =>
+        {
+            if (_hudTexts.Remove(handle, out var text)) _window.Layer2.RemoveText(text);
+        }); }
+        catch (TaskCanceledException) when (_closed) { }
+        catch (InvalidOperationException) when (_closed) { }
+    }
+
+    private void CloseHud()
+    {
+        foreach (var (handle, text) in _hudTexts)
+        {
+            handle.Invalidate();
+            _window.Layer2.RemoveText(text);
+        }
+        _hudTexts.Clear();
+    }
 }

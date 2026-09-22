@@ -27,8 +27,4 @@ public interface IShapeEditor
     /// </summary>
     string GetMeasurementText(UIElement shape);
 
-    /// <summary>
-    /// Update linked shapes (e.g., labels) after geometry change.
-    /// </summary>
-    void UpdateLinkedShapes(UIElement shape);
 }

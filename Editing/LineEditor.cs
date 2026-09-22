@@ -46,28 +46,4 @@ public class LineEditor : IShapeEditor
         return $"{dist:F1} px";
     }
 
-    public void UpdateLinkedShapes(UIElement shape)
-    {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
-            return;
-
-        if (data.LinkedShapes == null) return;
-
-        var line = (Line)shape;
-        var endPoint = new Point(line.X2, line.Y2);
-
-        foreach (var linked in data.LinkedShapes)
-        {
-            if (linked is TextBlock label)
-            {
-                label.Text = GetMeasurementText(shape);
-
-                // Update label anchor to endpoint
-                if (label.Tag is OverlayTagData labelData)
-                {
-                    labelData.AnchorPoint = endPoint;
-                }
-            }
-        }
-    }
 }

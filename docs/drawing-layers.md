@@ -24,7 +24,7 @@ using var batch = markers.AddBatch(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-viewer.StartMeasure("Length"); // Also: Point, ROI, LineStrength (registered tool names).
+viewer.StartMeasure(MeasureToolIds.Length); // Also: Point, ROI, LineStrength IDs.
 // Measurement results and their editing controls belong to Measurements.
 // Marker visuals do not intercept input by default.
 
@@ -91,16 +91,39 @@ Layer handles belong to one viewer and cannot be passed to another viewer's mana
 `Layers.Items` returns a snapshot. Clear preserves layer settings and subscriptions;
 removal and closure release subscriptions and drawing resources.
 
-**Behavior change:** `DrawLine`, `DrawCircle`, `DrawRectangle`, `DrawCrosshair`, and
-`DrawText` now create single-element batches in `Markers`, without default selection
+`DrawLine`, `DrawCircle`, `DrawRectangle`, `DrawCrosshair`, and
+`DrawText` create single-element batches in `Markers`, without default selection
 or editing. Use `Layers.<layer>.AddBatch(...)` for bulk drawing and layer selection.
 For editable measurement shapes, continue using measurement tools and
-`MeasureContext.AddShape`. Measurement shapes remain individual WPF UI elements.
+`MeasureContext.CreateScope().AddShape(...)`. Keep the returned scope and call
+`Complete()` when creation finishes. Scopes own related visuals and registered
+resources until deletion, clear or viewer closure. Measurement shapes remain
+individual WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles
+or measurement scopes for public access. See [measurement contracts](measurements.md).
 
 `ClearShapes()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing
-`Measurements` also cancels an active measurement. `DrawHudText` is unchanged.
+`Measurements` also cancels active measurement and editing sessions.
 Snapshot export still exports image data, not overlay layers.
+
+## HUD text
+
+`DrawHudText(text, brush, anchor, alignment, fontSize)` returns a typed
+`HudTextHandle`. Keep this handle to update text and color; position, alignment and
+font size remain fixed for its lifetime. Create a new handle to change layout.
+
+```csharp
+using var status = viewer.DrawHudText("Ready", Brushes.White);
+status.Update("Running", Brushes.Lime);
+```
+
+Creation and updates snapshot brushes on the calling thread and dispatch visual
+changes to the viewer STA. Mutable brushes must be accessed from their owning
+thread. Null text/brushes, non-freezable brushes, invalid anchors or alignment,
+and nonpositive or non-finite font sizes are rejected. Dispose removes the text
+and is idempotent. Viewer closure invalidates all HUD handles; updating a disposed
+or invalidated handle throws `ObjectDisposedException`. Clearing business layers
+does not remove HUD text.
 
 ## Validation
 

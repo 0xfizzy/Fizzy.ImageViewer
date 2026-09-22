@@ -8,8 +8,8 @@ public partial class Viewer
 {
     public bool CanUserClose
     {
-        get => _window.Dispatcher.Invoke(() => _window.CanUserClose);
-        set => _window.Dispatcher.Invoke(() => _window.CanUserClose = value);
+        get => InvokeAlive(() => _window.CanUserClose);
+        set => InvokeAlive(() => _window.CanUserClose = value);
     }
 
     /// <summary>
@@ -17,8 +17,8 @@ public partial class Viewer
     /// </summary>
     public double Width
     {
-        get => _window.Dispatcher.Invoke(() => _window.Width);
-        set => _window.Dispatcher.Invoke(() => _window.Width = value);
+        get => InvokeAlive(() => _window.Width);
+        set => InvokeAlive(() => _window.Width = value);
     }
 
     /// <summary>
@@ -26,8 +26,8 @@ public partial class Viewer
     /// </summary>
     public double Height
     {
-        get => _window.Dispatcher.Invoke(() => _window.Height);
-        set => _window.Dispatcher.Invoke(() => _window.Height = value);
+        get => InvokeAlive(() => _window.Height);
+        set => InvokeAlive(() => _window.Height = value);
     }
 
     /// <summary>
@@ -35,8 +35,8 @@ public partial class Viewer
     /// </summary>
     public double Left
     {
-        get => _window.Dispatcher.Invoke(() => _window.Left);
-        set => _window.Dispatcher.Invoke(() => _window.Left = value);
+        get => InvokeAlive(() => _window.Left);
+        set => InvokeAlive(() => _window.Left = value);
     }
 
     /// <summary>
@@ -44,8 +44,8 @@ public partial class Viewer
     /// </summary>
     public double Top
     {
-        get => _window.Dispatcher.Invoke(() => _window.Top);
-        set => _window.Dispatcher.Invoke(() => _window.Top = value);
+        get => InvokeAlive(() => _window.Top);
+        set => InvokeAlive(() => _window.Top = value);
     }
 
     /// <summary>
@@ -53,8 +53,8 @@ public partial class Viewer
     /// </summary>
     public string Title
     {
-        get => _window.Dispatcher.Invoke(() => _window.Title);
-        set => _window.Dispatcher.Invoke(() => _window.Title = value);
+        get => InvokeAlive(() => _window.Title);
+        set => InvokeAlive(() => _window.Title = value);
     }
 
     /// <summary>
@@ -62,8 +62,8 @@ public partial class Viewer
     /// </summary>
     public string? Label
     {
-        get => _window.Dispatcher.Invoke(() => _window.Layer2.Label);
-        set => _window.Dispatcher.Invoke(() => _window.Layer2.Label = value);
+        get => InvokeAlive(() => _window.Layer2.Label);
+        set => InvokeAlive(() => _window.Layer2.Label = value);
     }
 
     /// <summary>
@@ -71,8 +71,8 @@ public partial class Viewer
     /// </summary>
     public bool Borderless
     {
-        get => _window.Dispatcher.Invoke(() => _window.Borderless);
-        set => _window.Dispatcher.Invoke(() => _window.Borderless = value);
+        get => InvokeAlive(() => _window.Borderless);
+        set => InvokeAlive(() => _window.Borderless = value);
     }
 }
 
@@ -80,8 +80,8 @@ public partial class Viewer
 {
     public Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions
     {
-        get => _measureManager!.Context.QueryOptions;
-        set => _window.Dispatcher.Invoke(() => _measureManager!.Context.QueryOptions = value);
+        get => InvokeAlive(() => _measureManager!.Context.QueryOptions);
+        set => InvokeAlive(() => _measureManager!.Context.QueryOptions = value);
     }
-    public Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics => _measureManager!.Context.QueryMetrics;
+    public Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics => InvokeAlive(() => _measureManager!.Context.QueryMetrics);
 }

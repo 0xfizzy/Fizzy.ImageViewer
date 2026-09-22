@@ -10,6 +10,7 @@ namespace Fizzy.ImageViewer.Drawing;
 public sealed class ViewerLayers
 {
     private readonly Dispatcher _dispatcher;
+    private readonly Internal.ViewerLifetime _lifetime;
     private readonly List<DrawingLayer> _layers = [];
     private volatile bool _closed;
     private bool _redrawPending;
@@ -20,9 +21,13 @@ public sealed class ViewerLayers
     internal Action? CancelMeasurement { get; set; }
     public DrawingLayer Markers { get; }
     public DrawingLayer Measurements { get; }
+    internal OverlayLayer MeasurementOverlay { get; }
     public IReadOnlyList<DrawingLayer> Items => Invoke(() => (IReadOnlyList<DrawingLayer>)_layers.ToArray());
-    internal ViewerLayers(OverlayLayer measurements, Transform transform)
+    internal ViewerLayers(Transform transform, Internal.ViewerLifetime? lifetime = null)
     {
+        _lifetime = lifetime ?? new Internal.ViewerLifetime();
+        var measurements = MeasurementOverlay = new OverlayLayer();
+        measurements.BindTransform(transform);
         _dispatcher = measurements.Dispatcher; Transform = transform;
         Markers = Add("Markers", 0, true);
         Measurements = Add("Measurements", 1000, true, measurements);
@@ -47,8 +52,8 @@ public sealed class ViewerLayers
     });
     public void Clear() => Invoke(() =>
     {
-        CancelMeasurement?.Invoke();
-        foreach (var layer in _layers) layer.ClearCore();
+        try { CancelMeasurement?.Invoke(); }
+        finally { foreach (var layer in _layers) layer.ClearCore(); }
     });
     internal void SuppressInput(bool suppressed)
     {
@@ -74,12 +79,12 @@ public sealed class ViewerLayers
     internal T Invoke<T>(Func<T> action)
     {
         ObjectDisposedException.ThrowIf(_closed, this);
-        return _dispatcher.Invoke(() => { ObjectDisposedException.ThrowIf(_closed, this); return action(); });
+        return _lifetime.Invoke(_dispatcher, () => { ObjectDisposedException.ThrowIf(_closed, this); return action(); });
     }
     internal void Invoke(Action action) => Invoke(() => { action(); return true; });
     internal void InvokeRemoval(Action action)
     {
-        if (_closed) return;
+        if (_closed || _lifetime.IsStopping) return;
         try { _dispatcher.Invoke(() => { if (!_closed) action(); }); }
         catch (TaskCanceledException) when (_closed) { }
         catch (InvalidOperationException) when (_closed) { }

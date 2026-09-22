@@ -6,7 +6,8 @@ namespace Fizzy.ImageViewer.Interfaces
 {
     public interface IMeasureMethod
     {
-        string Name { get; }
+        string Id { get; }
+        string DisplayName { get; }
         // 当用户点击画布时触发
         // point: 图片像素坐标
         // isFinished: 方法是否完成测量

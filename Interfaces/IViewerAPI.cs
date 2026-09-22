@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Interfaces;
 /// <summary>
 /// 图像查看器的完整 API 接口。
 /// </summary>
-public interface IViewerAPI : IDisposable, IAsyncDisposable
+public interface IViewerAPI : IAsyncDisposable
 {
     // === 窗口管理 ===
 
@@ -20,14 +20,11 @@ public interface IViewerAPI : IDisposable, IAsyncDisposable
     void Show();
 
     /// <summary>
-    /// 关闭窗口。
-    /// </summary>
-    void Close();
-
-    /// <summary>
     /// 是否允许用户通过点击关闭按钮关闭窗口。
     /// </summary>
     bool CanUserClose { get; set; }
+    event EventHandler? Closed;
+    void FitImageToContainer();
 
     /// <summary>
     /// 窗口标题。
@@ -66,9 +63,10 @@ public interface IViewerAPI : IDisposable, IAsyncDisposable
     Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame();
     event Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted;
     Fizzy.ImageViewer.Imaging.GrayDisplayRange? DisplayRange { get; set; }
-    ValueTask CloseAsync();
     Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
         Fizzy.ImageViewer.Snapshots.SnapshotKind kind, CancellationToken ct = default);
+    Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
+        Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Imaging.PixelRegion region, CancellationToken ct = default);
     // === 绘图 ===
     Fizzy.ImageViewer.Drawing.ViewerLayers Layers { get; }
 
@@ -103,9 +101,9 @@ public interface IViewerAPI : IDisposable, IAsyncDisposable
     void ClearShapes();
 
     /// <summary>
-    /// 在 HUD 层绘制或更新文本显示。
+    /// 在 HUD 层创建文本；通过返回句柄的 Update 更新文本和颜色。
     /// </summary>
-    IDisposable DrawHudText(string text, Brush brush, IDisposable? existing = null,
+    HudTextHandle DrawHudText(string text, Brush brush,
         Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft,
         double fontSize = 14);
 
@@ -129,7 +127,10 @@ public interface IViewerAPI : IDisposable, IAsyncDisposable
     void RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
-    /// 注册自定义测量方法。
+    /// 注册自定义测量方法。工具回调中通过 MeasureContext.CreateScope 登记视觉元素和资源，
+    /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
+    /// 调度器、内部测量模型及逐帧查询注册不是公共扩展接口。
     /// </summary>
     void RegisterMeasureMethod(IMeasureMethod method);
+    bool UnregisterMeasureMethod(string toolId);
 }

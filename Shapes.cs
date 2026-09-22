@@ -98,6 +98,7 @@ namespace Fizzy.ImageViewer
         // 5. 创建矩形框 (FixedStroke)
         public static Rectangle CreateRectangle() => new()
         {
+            Width = 0, Height = 0,
             Stroke = Brushes.Cyan,
             StrokeThickness = 1.0,
             StrokeDashArray = new DoubleCollection { 4, 2 },

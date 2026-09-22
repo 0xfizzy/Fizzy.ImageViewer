@@ -44,3 +44,24 @@ snapshots and query options. QuerySchedulingTests inject slow sources to verify 
 STA responsiveness, replacement, geometry invalidation, expiration and shutdown ownership.
 GPU-backed producers should validate their native surface and pixel-source implementation in
 the consumer repository. This library does not require a specific GPU runtime or device SDK.
+
+## Measurement ownership and interaction
+
+`MeasurementScopeTests` cover custom-tool cleanup, cancellation exceptions,
+visual ownership, reentrant registration/disposal, viewer closure, editor registry
+removal and the absence of standalone overlay interaction.
+
+`MeasurementSchedulerTests` use a manual clock and execution/publication queues for
+batching, independent rates, expiration, failed queries, stale geometry,
+re-registration and cancellation ownership. `MeasurementInteractionTests` cover
+corner crossing, model/query/export consistency, label updates, invalid editing,
+mode interruption, preview cancellation and reentrant removal. `LineStrengthTests`
+and `QuerySchedulingTests` cover plot-window ownership and slow in-flight queries
+on real STA dispatchers. See [measurement contracts](measurements.md).
+Mouse capture state transitions use an injected capture boundary. Actual pointer
+capture and dragging on an interactive desktop still require manual validation.
+
+`ViewerTests` also check that asynchronous disposal cannot be vetoed by window
+closing handlers, rejects subsequent API calls and consumes submissions with a
+`Closed` result. `DrawingTests` check layer and drawing-handle invalidation and
+that clearing business layers retains HUD text.

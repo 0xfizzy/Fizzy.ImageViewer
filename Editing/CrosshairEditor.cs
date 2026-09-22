@@ -41,8 +41,4 @@ public class CrosshairEditor : IShapeEditor
         return $"({data.AnchorPoint.X:F1}, {data.AnchorPoint.Y:F1})";
     }
 
-    public void UpdateLinkedShapes(UIElement shape)
-    {
-        // Crosshairs typically don't have linked shapes
-    }
 }

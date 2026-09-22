@@ -63,10 +63,12 @@ CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. St
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
 with null statistics when no finite values exist. Premultiplied channels stay premultiplied.
 
-One interaction coordinator per viewer captures geometry on STA and queries off STA, with at most
+One measurement scheduler per viewer captures geometry on STA and queries off STA, with at most
 one batch in flight. Mouse and line coordinates share one gather. Line clipping, rounded endpoints,
 Bresenham order and distances are unchanged. ROI geometry uses floor(left/top), ceil(right/bottom),
 then image intersection; empty regions are not queried. Shape editors preserve statistics labels.
+The separate interaction coordinator manages selection, editing and creation sessions.
+See [measurement ownership and interaction](measurements.md) for geometry and extension contracts.
 
 `Viewer.QueryOptions` accepts `PixelQueryOptions`: PixelRate=30, LineRate=30, RegionRate=10 Hz,
 MaxResultAge=100 ms, all positive. Due requests are served in due order; pending geometry is replaced
@@ -106,9 +108,21 @@ concurrently by application code. Captured snapshots remain usable after closing
 
 ## Shutdown and integrations
 
-Prefer `await viewer.DisposeAsync()` / `CloseAsync()`: these terminate queued/rendering and
-measurement work without blocking the STA. Synchronous Dispose on that STA initiates closure;
-off the STA it waits. Once closed the Viewer cannot be reopened.
+Use `await viewer.DisposeAsync()` or `await using` to terminate queued/rendering and
+measurement work without blocking the STA. `Viewer` and `IViewerAPI` implement
+`IAsyncDisposable`; synchronous `Close`, `Dispose` and `CloseAsync` are not exposed.
+Once closed the Viewer cannot be reopened.
+
+Disposal is idempotent and waits for rendering, in-flight measurement queries and
+the window thread to finish. Pixel sources that ignore cancellation can delay this
+completion until their operations release their leases. Programmatic closure is
+not blocked by `CanUserClose` or a cancelling window-closing handler.
+
+Once disposal begins, viewer properties, window commands, measurement registration,
+frame acquisition, snapshot capture and layer operations reject new work with
+`ObjectDisposedException`. Frame submission retains its ownership contract and
+returns `Closed`. Previously acquired leases and snapshots remain independently
+owned; drawing and HUD handles are invalidated during cleanup.
 
 Application integrations should adapt their own frame and image types to `ImageFrame`.
 Use `Copy` for borrowed storage, `TakeOwnership` to transfer immutable CPU storage, or

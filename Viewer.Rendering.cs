@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private readonly object _frameGate = new();
+    private object _frameGate => _lifetime.Gate;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly IImagePresenter _presenter;
     private D3DImagePresenter? _d3dPresenter;
@@ -40,7 +40,7 @@ public partial class Viewer
         {
             lease.Info = new(++_nextFrameId, lease.Descriptor, options?.SourceTimestamp);
             submission = new(lease, options, ct, _freezeEpoch);
-            rejected = _closed ? FrameSubmitStatus.Closed : ct.IsCancellationRequested ? FrameSubmitStatus.Cancelled :
+            rejected = _lifetime.IsStopping ? FrameSubmitStatus.Closed : ct.IsCancellationRequested ? FrameSubmitStatus.Cancelled :
                 _isFrozen ? FrameSubmitStatus.Frozen : null;
             replaced = rejected == null ? _pending : null;
             if (rejected == null)
@@ -56,18 +56,23 @@ public partial class Viewer
 
     public FrameLease? AcquireCurrentFrame()
     {
-        lock (_frameGate) return _currentFrame?.Acquire();
+        lock (_frameGate) { _lifetime.ThrowIfStopping(); return _currentFrame?.Acquire(); }
+    }
+
+    private FrameLease? AcquireCurrentFrameForMeasurement()
+    {
+        lock (_frameGate) return _lifetime.IsStopping ? null : _currentFrame?.Acquire();
     }
 
     public GrayDisplayRange? DisplayRange
     {
-        get { lock (_frameGate) return _grayRange; }
+        get { lock (_frameGate) { _lifetime.ThrowIfStopping(); return _grayRange; } }
         set
         {
             if (value is { } range) _ = new GrayDisplayRange(range.Minimum, range.Maximum);
             lock (_frameGate)
             {
-                if (_closed) throw new ObjectDisposedException(nameof(Viewer));
+                _lifetime.ThrowIfStopping();
                 _grayRange = value;
                 _displayVersion++;
                 _redraw = true;
@@ -132,7 +137,7 @@ public partial class Viewer
         bool resized;
         lock (_frameGate)
         {
-            if (_closed) return FrameSubmitStatus.Closed;
+            if (_lifetime.IsStopping) return FrameSubmitStatus.Closed;
             if (submission != null)
             {
                 if (submission.Token.IsCancellationRequested) return FrameSubmitStatus.Cancelled;
@@ -221,17 +226,21 @@ public partial class Viewer
         lock (_frameGate)
         {
             if (_closed) return;
+            _lifetime.BeginDisposal();
             _closed = true;
             pending = _pending; _pending = null;
             current = _currentFrame; _currentFrame = null;
         }
         _shutdown.Cancel();
         if (pending != null) Finish(pending, FrameSubmitStatus.Closed);
-        ReleaseFrame(current);
-        ReleaseFrame(_menuSnapshot?.Frame); _menuSnapshot = null;
+
+        Cleanup(() => _interaction?.Dispose());
         Cleanup(() => _pixelInfoOverlay?.Disable());
         Cleanup(() => _measureManager?.Dispose());
         Cleanup(() => _window.Layers.Close());
+        Cleanup(CloseHud);
+        ReleaseFrame(current);
+        ReleaseFrame(_menuSnapshot?.Frame); _menuSnapshot = null;
         Cleanup(_presenter.Dispose);
         Cleanup(() => { _d3dPresenter?.Dispose(); _d3dPresenter = null; });
         FrameCommitted = null;
@@ -242,21 +251,34 @@ public partial class Viewer
         try { action(); } catch (Exception ex) { _logger.LogWarning(ex, "Viewer cleanup failed"); }
     }
 
-    public async ValueTask CloseAsync()
+    private readonly TaskCompletionSource _disposeCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private int _disposeRequested;
+    private async Task CompleteDisposalAsync()
     {
-        if (!_window.Dispatcher.HasShutdownStarted)
+        try
+        {
+        if (!_closed && !_window.Dispatcher.HasShutdownStarted)
         {
             try
             {
-                await _window.Dispatcher.InvokeAsync(() => { _window.CanUserClose = true; _window.Close(); }).Task.ConfigureAwait(false);
+                await _window.Dispatcher.InvokeAsync(() => _window.CloseProgrammatically()).Task.ConfigureAwait(false);
             }
             catch (TaskCanceledException) { }
         }
         Task render;
         lock (_frameGate) render = _renderTask;
-        await render.ConfigureAwait(false);
-        if (_measureManager != null) await _measureManager.Completion.ConfigureAwait(false);
-        await _windowStopped.Task.ConfigureAwait(false);
+        await Task.WhenAll(render, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+        _lifetime.Complete();
+        if (_window.ClosingError is { } error) _disposeCompletion.TrySetException(error);
+        else _disposeCompletion.TrySetResult();
+        }
+        catch (Exception ex) { _disposeCompletion.TrySetException(ex); }
     }
-    public virtual async ValueTask DisposeAsync() { await CloseAsync().ConfigureAwait(false); GC.SuppressFinalize(this); }
+    public virtual ValueTask DisposeAsync()
+    {
+        _lifetime.BeginDisposal();
+        if (Interlocked.Exchange(ref _disposeRequested, 1) == 0) _ = CompleteDisposalAsync();
+        GC.SuppressFinalize(this);
+        return new ValueTask(_disposeCompletion.Task);
+    }
 }

@@ -18,6 +18,7 @@ namespace Fizzy.ImageViewer;
 /// </summary>
 public partial class Viewer : IViewerAPI, IAsyncDisposable
 {
+    private readonly Internal.ViewerLifetime _lifetime = new();
     private readonly Thread _windowThread;
     protected ViewerWindow _window;
     private readonly ILogger _logger;
@@ -27,7 +28,8 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     // 使用 volatile 保证跨线程可见性，因为这些字段在 UI 线程初始化，但可能在其他线程读取
     private volatile MenuManager? _menuManager;
     private volatile MeasureManager? _measureManager;
-    
+    private volatile InteractionCoordinator? _interaction;
+
     /// <summary>
     /// 窗口关闭后触发的事件（包括用户点击关闭按钮）。
     /// </summary>
@@ -49,6 +51,8 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     public Drawing.ViewerLayers Layers => _window.Layers;
 
     internal Dispatcher UiDispatcher => _window.Dispatcher;
+    internal ViewerWindow WindowForTests => _window;
+    internal InteractionCoordinator Interaction => _interaction!;
     internal MeasureContext MeasurementContext => _measureManager!.Context;
 
     private void InitializeWindow(out Thread thread, out ViewerWindow window, double left, double top, double width, double height)
@@ -59,13 +63,14 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
         {
             try
             {
-                var win = new ViewerWindow("Fizzy ImageViewer");
+                var win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
                 _window = win;
                 win.Closed += (s, e) =>
                 {
                     try
                     {
                         StopRendering();
+                        _ = DisposeAsync();
                         foreach (EventHandler handler in Closed?.GetInvocationList() ?? [])
                             try { handler(this, EventArgs.Empty); } catch (Exception ex) { _logger.LogWarning(ex, "Closed handler failed"); }
                     }
@@ -73,10 +78,11 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
                 };
 
                 // 在 UI 线程创建 Managers
-                var measureMgr = new MeasureManager(win.Layer0, win.Layer1, AcquireCurrentFrame, _logger);
-                measureMgr.InputSuppressionChanged += win.Layers.SuppressInput;
-                win.Layers.CancelMeasurement = measureMgr.Cancel;
-                var editMgr = new EditManager(win.Layer0, win.Layer1);
+                var measureMgr = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _logger);
+
+
+                var editMgr = new EditManager(win.Layer1, measureMgr.Context);
+                var interaction = new InteractionCoordinator(win.Layer0, win.Layer1, editMgr, measureMgr, win.Layers);
                 var menuMgr = new MenuManager(win)
                 {
                     CheckHasSelection = () => measureMgr.HasSelection,
@@ -84,12 +90,10 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
                     GetSelectedShape = () => win.Layer1.SelectedShape
                 };
 
-                // Connect EditManager to OverlayLayer
-                win.Layer1.SetEditManager(editMgr);
-
                 // 注册内置功能（在赋值给字段之前，确保 Managers 完全初始化）
                 _measureManager = measureMgr;
-                RegisterBuiltInFeatures(win, measureMgr, editMgr, menuMgr);
+                _interaction = interaction;
+                RegisterBuiltInFeatures(win, measureMgr, menuMgr);
 
                 // 使用 volatile 写入确保其他线程可见
                 _measureManager = measureMgr;
@@ -122,7 +126,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     /// <summary>
     /// 注册内置的测量方法和菜单项。
     /// </summary>
-    private void RegisterBuiltInFeatures(ViewerWindow win, MeasureManager measureMgr, EditManager editMgr, MenuManager menuMgr)
+    private void RegisterBuiltInFeatures(ViewerWindow win, MeasureManager measureMgr, MenuManager menuMgr)
     {
         // 注册测量方法
         measureMgr.RegisterMethod(new LineMeasure());
@@ -136,18 +140,20 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
         {
             var shape = menuMgr.GetMenuTargetShape();
             if (shape != null)
-                win.Layer1.EnterEditMode(shape);
+                _interaction?.StartEditing(shape);
         }));
         menuMgr.Register(new MenuItem("Delete", win.Layer1.DeleteSelected, Enums.MenuItemType.SelectionAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
-        
+
         // 测量工具菜单
-        foreach (var method in measureMgr.RegisteredMethods.Keys)
-        {
-            menuMgr.Register(new MenuItem(method, () => measureMgr.Start(method), Enums.MenuItemType.MeasureTool));
-        }
-        
-        menuMgr.Register(new MenuItem("Cancel Measurement", measureMgr.Cancel, Enums.MenuItemType.ContextAction));
+        menuMgr.RegisterMeasureTools(() => measureMgr.RegisteredMethods.Select(entry =>
+            (IMenuItem)new MenuItem(entry.DisplayName, () =>
+            {
+                if (measureMgr.HasMethod(entry.Id) && win.Layers.Measurements.IsVisible)
+                    _interaction?.StartMeasurement(entry.Id);
+            }, Enums.MenuItemType.MeasureTool)).ToArray());
+
+        menuMgr.Register(new MenuItem("Cancel Measurement", () => _interaction?.Cancel(), Enums.MenuItemType.ContextAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
         menuMgr.Register(new MenuItem("Clear All Shapes", () => { win.Layers.Clear(); }));
         menuMgr.Register(new SaveImageMenuItem(this, false));
@@ -158,7 +164,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
 
         // 初始化像素信息叠加层
         InitializePixelInfoOverlay(win, menuMgr);
-        
+
         // 连接菜单打开/关闭事件到帧冻结/解冻
         menuMgr.OnMenuOpening = FreezeMenuRegion;
         menuMgr.OnMenuClosing = Unfreeze;
@@ -166,45 +172,53 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
 
     // === API Implementation ===
 
-    public void Show() => _window?.Dispatcher.Invoke(() =>
+    public void Show() => InvokeAlive(() =>
     {
         if (_window!.WindowState == WindowState.Minimized)
             _window.WindowState = WindowState.Normal;
         _window.Show();
         _window.Activate();   // raise above any maximized/foreground window
     });
-    public void Close() => _window?.Dispatcher.Invoke(() => _window.Close());
 
     public void RegisterMenu(IMenuItem menuItem)
     {
-        _window?.Dispatcher.Invoke(() => _menuManager?.Register(menuItem));
+        InvokeAlive(() => _menuManager!.Register(menuItem));
     }
 
     public void RegisterMeasureMethod(IMeasureMethod method)
     {
         // 等待 Managers 初始化完成，避免空引用
-        _window?.Dispatcher.Invoke(() => _measureManager?.RegisterMethod(method));
+        InvokeAlive(() => _measureManager!.RegisterMethod(method));
     }
+
+    public bool UnregisterMeasureMethod(string toolId) => InvokeAlive(() =>
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
+        if (_measureManager!.ActiveId == toolId) _interaction!.Cancel();
+        return _measureManager.UnregisterMethod(toolId);
+    });
 
     public void StartMeasure(string methodName)
     {
-        _window?.Dispatcher.Invoke(() => _measureManager?.Start(methodName));
+        InvokeAlive(() =>
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(methodName);
+            if (!_measureManager!.HasMethod(methodName)) throw new KeyNotFoundException($"Unknown measurement tool '{methodName}'.");
+            if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
+            _interaction!.StartMeasurement(methodName);
+        });
     }
 
     public void CancelMeasure()
     {
-        _window?.Dispatcher.Invoke(() => _measureManager?.Cancel());
+        InvokeAlive(() => _interaction!.Cancel());
     }
 
     public void FitImageToContainer()
     {
-        _window?.Dispatcher.Invoke(() => _window.Layer0.FitImageToContainer());
+        InvokeAlive(() => _window.Layer0.FitImageToContainer());
     }
 
-    public virtual void Dispose()
-    {
-        if (_window.Dispatcher.CheckAccess()) { _window.CanUserClose = true; _window.Close(); }
-        else DisposeAsync().AsTask().GetAwaiter().GetResult();
-        GC.SuppressFinalize(this);
-    }
+    private T InvokeAlive<T>(Func<T> action) => _lifetime.Invoke(_window.Dispatcher, action);
+    private void InvokeAlive(Action action) => InvokeAlive(() => { action(); return true; });
 }

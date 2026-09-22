@@ -89,7 +89,7 @@ public class ViewerTests
             Assert.Equal(FrameSubmitStatus.Failed, failed.Status); Assert.NotNull(failed.Error);
             using (var current = viewer.AcquireCurrentFrame()) Assert.Equal(1, current!.CpuPixels.Span[0]);
             Assert.Equal(FrameSubmitStatus.Cancelled, (await viewer.SubmitFrameAsync(Frame(3, () => released++), ct: new CancellationToken(true))).Status);
-            await viewer.CloseAsync();
+            await viewer.DisposeAsync();
             Assert.Equal(FrameSubmitStatus.Closed, (await viewer.SubmitFrameAsync(Frame(4, () => released++))).Status);
             Assert.Equal(3, released);
         }
@@ -143,7 +143,7 @@ public class ViewerTests
         int released = 0;
         var jobs = Enumerable.Range(0, 100).Select(i => Task.Run(async () =>
             await viewer.SubmitFrameAsync(Frame((byte)i, () => Interlocked.Increment(ref released))))).ToArray();
-        await viewer.CloseAsync();
+        await viewer.DisposeAsync();
         var results = await Task.WhenAll(jobs).WaitAsync(TimeSpan.FromSeconds(10));
         await viewer.DisposeAsync();
         Assert.Equal(100, released);
@@ -182,7 +182,23 @@ public class ViewerTests
         Assert.Equal(71, measurement.Value);
 
         Assert.Equal(ApartmentState.STA, measurement.PublishApartment);
-        await viewer.CloseAsync(); Assert.True(measurement.Disposed);
+        await viewer.DisposeAsync(); Assert.False(measurement.Disposed); // Subscribers own their lifetime; the scheduler only revokes subscriptions.
+    }
+
+    [Fact]
+    public async Task DisposeIgnoresClosingCancellationAndStopsApis()
+    {
+        var viewer = Create();
+        try
+        {
+            await viewer.UiDispatcher.InvokeAsync(() => viewer.WindowForTests.Closing += (_, e) => e.Cancel = true);
+            await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Throws<ObjectDisposedException>(() => viewer.Show());
+            Assert.Throws<ObjectDisposedException>(() => viewer.Title = "closed");
+            Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateLayer("after-close"));
+            Assert.Equal(FrameSubmitStatus.Closed, (await viewer.SubmitFrameAsync(Frame(8))).Status);
+        }
+        finally { await viewer.DisposeAsync(); }
     }
 
     private sealed class TestMeasurement : IFrameMeasurement
@@ -191,7 +207,7 @@ public class ViewerTests
         public bool Disposed;
         public ApartmentState PublishApartment;
         public TaskCompletionSource<bool> Published { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new(0,QueryKind.Line,[new(0,0)],null,(samples,_)=> {
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new LineProfileQueryRequest(new(Guid.Empty, 0), [new(0,0)], samples=> {
             Value=samples![0].Gray;PublishApartment=Thread.CurrentThread.GetApartmentState();Published.TrySetResult(true);
         });
         public void ClearResult() { }        public void Dispose() => Disposed = true;

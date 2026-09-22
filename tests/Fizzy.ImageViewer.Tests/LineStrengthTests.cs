@@ -70,4 +70,22 @@ public class LineStrengthTests
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }
+
+    [Fact]
+    public async Task ViewerShutdownClosesWindowsAndReleasesEveryVisualOnce()
+    {
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        int closed = 0, removed = 0;
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
+            var method = new LineStrengthMeasure();
+            var first = Draw(viewer, method, overlay); var second = Draw(viewer, method, overlay);
+            first.Window.Closed += (_, _) => closed++;
+            second.Window.Closed += (_, _) => closed++;
+            overlay.ShapeRemoved += _ => removed++;
+        });
+        await viewer.DisposeAsync(); await viewer.DisposeAsync();
+        Assert.Equal(2, closed); Assert.Equal(4, removed);
+    }
 }

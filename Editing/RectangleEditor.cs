@@ -12,6 +12,18 @@ namespace Fizzy.ImageViewer.Editing;
 /// </summary>
 public class RectangleEditor : IShapeEditor
 {
+    internal static Action<Point> CreateDrag(UIElement shape, int index, IReadOnlyList<Point> points)
+    {
+        var rectangle = (Rectangle)shape;
+        var opposite = points[(index + 2) % 4];
+        return point =>
+        {
+            var geometry = MeasurementGeometry.Rectangle(opposite, point);
+            rectangle.Width = geometry.Width; rectangle.Height = geometry.Height;
+            Canvas.SetLeft(rectangle, geometry.X); Canvas.SetTop(rectangle, geometry.Y);
+            if (rectangle.Tag is OverlayTagData data) data.AnchorPoint = geometry.Start;
+        };
+    }
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {
         if (shape is not Rectangle rect)
@@ -42,39 +54,23 @@ public class RectangleEditor : IShapeEditor
 
         switch (pointIndex)
         {
-            case 0: // top-left
-                Canvas.SetLeft(rect, newPosition.X);
-                Canvas.SetTop(rect, newPosition.Y);
-                rect.Width = right - newPosition.X;
-                rect.Height = bottom - newPosition.Y;
-                break;
-            case 1: // top-right
-                Canvas.SetTop(rect, newPosition.Y);
-                rect.Width = newPosition.X - left;
-                rect.Height = bottom - newPosition.Y;
-                break;
-            case 2: // bottom-right
-                rect.Width = newPosition.X - left;
-                rect.Height = newPosition.Y - top;
-                break;
-            case 3: // bottom-left
-                Canvas.SetLeft(rect, newPosition.X);
-                rect.Width = right - newPosition.X;
-                rect.Height = newPosition.Y - top;
-                break;
+            case 0: left = newPosition.X; top = newPosition.Y; break;
+            case 1: right = newPosition.X; top = newPosition.Y; break;
+            case 2: right = newPosition.X; bottom = newPosition.Y; break;
+            case 3: left = newPosition.X; bottom = newPosition.Y; break;
+            default: return;
         }
 
-        // Ensure positive dimensions
-        if (rect.Width < 0)
-        {
-            Canvas.SetLeft(rect, Canvas.GetLeft(rect) + rect.Width);
-            rect.Width = -rect.Width;
-        }
-        if (rect.Height < 0)
-        {
-            Canvas.SetTop(rect, Canvas.GetTop(rect) + rect.Height);
-            rect.Height = -rect.Height;
-        }
+        // Normalize before writing any WPF property. This keeps the geometry
+        // valid even when a handle crosses its opposite corner.
+        var x = Math.Min(left, right);
+        var y = Math.Min(top, bottom);
+        var width = Math.Abs(right - left);
+        var height = Math.Abs(bottom - top);
+        Canvas.SetLeft(rect, x);
+        Canvas.SetTop(rect, y);
+        rect.Width = width;
+        rect.Height = height;
 
         // Update anchor point in tag data
         if (rect.Tag is OverlayTagData data)
@@ -91,19 +87,4 @@ public class RectangleEditor : IShapeEditor
         return $"{rect.Width:F1} x {rect.Height:F1} px";
     }
 
-    public void UpdateLinkedShapes(UIElement shape)
-    {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
-            return;
-
-        if (data.LinkedShapes == null) return;
-
-        foreach (var linked in data.LinkedShapes)
-        {
-            if (linked is TextBlock label)
-            {
-                if (label.Tag is not OverlayTagData { PreserveMeasurementText: true }) label.Text = GetMeasurementText(shape);
-            }
-        }
-    }
 }

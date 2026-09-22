@@ -68,7 +68,7 @@ public class DrawingTests
     public async Task HitTestingUsesDrawingContentAndLayerState()
     {
         await using var viewer = Create();
-        var layers = await viewer.UiDispatcher.InvokeAsync(() => new ViewerLayers(new OverlayLayer(), Transform.Identity));
+        var layers = await viewer.UiDispatcher.InvokeAsync(() => new ViewerLayers(Transform.Identity));
         var markers = layers.Markers;
         using var a = markers.AddBatch([Circle()]);
         using var b = markers.AddBatch([Circle()]);
@@ -186,13 +186,12 @@ public class DrawingTests
             var marker = viewer.Layers.Markers.AddBatch([Circle()]);
             var measure = viewer.Layers.Measurements.AddBatch([Circle()]);
             using var hud = viewer.DrawHudText("HUD", Brushes.White);
-            var hudText = Assert.IsType<TextBlock>(((Internal.DrawingHandle)hud).State);
             viewer.ClearShapes();
-            await viewer.UiDispatcher.InvokeAsync(() => Assert.NotNull(VisualTreeHelper.GetParent(hudText)));
+            hud.Update("HUD 2", Brushes.White);
             Assert.Throws<ObjectDisposedException>(() => marker.Replace([Circle()]));
             Assert.Throws<ObjectDisposedException>(() => measure.Replace([Circle()]));
             var last = viewer.Layers.Markers.AddBatch([Circle()]);
-            await viewer.CloseAsync();
+            await viewer.DisposeAsync();
             Assert.Throws<ObjectDisposedException>(() => last.Replace([Circle()]));
             last.Dispose();
             Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateLayer("closed"));
@@ -212,17 +211,18 @@ public class DrawingTests
                 viewer.MeasurementContext.AddShape(shape);
                 overlay.Select(shape); overlay.EnterEditMode();
                 var data = (OverlayTagData)((FrameworkElement)shape).Tag;
-                Assert.NotEmpty(data.Edit.ControlPointHandles);
-                var editor = data.Edit.Editor!;
-                editor.UpdateControlPoint(shape, 0, new(40, 40));
-                editor.UpdateLinkedShapes(shape);
+                Assert.NotEmpty(viewer.Interaction.Editor.Handles);
+                var editor = viewer.Interaction.Editor;
+                Assert.True(editor.BeginDrag(data.AnchorPoint, 1));
+                editor.UpdateDrag(new(40, 40)); editor.EndDrag();
+
                 overlay.DeleteSelected();
                 Assert.Null(overlay.SelectedShape);
-                Assert.Empty(data.Edit.ControlPointHandles);
+                Assert.Empty(viewer.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
             var line = Shapes.CreateLine(); var label = Shapes.CreateLabel(new(1, 1), "length");
-            ((OverlayTagData)line.Tag).Selection.LinkedShapes = [label];
+            new MeasurementItem(viewer.MeasurementContext, MeasurementGeometry.Line(new(0,0), new(1,1)), line, label).Complete();
             viewer.MeasurementContext.AddShape(line); viewer.MeasurementContext.AddShape(label);
             overlay.Select(line); overlay.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -260,9 +260,8 @@ public class DrawingTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var image = new ImageLayer(); var overlay = new OverlayLayer();
-            overlay.BindTransform(image.TransformGroup);
-            var layers = new ViewerLayers(overlay, image.TransformGroup);
+            var image = new ImageLayer();
+            var layers = new ViewerLayers(image.TransformGroup);
             image.ScaleChanged += layers.UpdateScale;
             var root = new Grid(); root.Children.Add(image); root.Children.Add(layers.Root);
             using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Input tests")

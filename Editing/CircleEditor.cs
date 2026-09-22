@@ -72,19 +72,4 @@ public class CircleEditor : IShapeEditor
         return $"R = {ellipse.RadiusX:F1} px";
     }
 
-    public void UpdateLinkedShapes(UIElement shape)
-    {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
-            return;
-
-        if (data.LinkedShapes == null) return;
-
-        foreach (var linked in data.LinkedShapes)
-        {
-            if (linked is TextBlock label)
-            {
-                label.Text = GetMeasurementText(shape);
-            }
-        }
-    }
 }

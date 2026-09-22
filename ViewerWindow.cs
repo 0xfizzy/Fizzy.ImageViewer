@@ -9,11 +9,13 @@ namespace Fizzy.ImageViewer
     {
         // 公开图层供 Manager 使用
         public ImageLayer Layer0 { get; }
-        public OverlayLayer Layer1 { get; }
+        internal OverlayLayer Layer1 { get; }
         public HudLayer Layer2 { get; }
         public Drawing.ViewerLayers Layers { get; }
 
-        public ViewerWindow(string title)
+        public ViewerWindow(string title) : this(title, new Internal.ViewerLifetime()) { }
+
+        internal ViewerWindow(string title, Internal.ViewerLifetime lifetime)
         {
             // === Window 属性 ===
             Title = title;
@@ -24,11 +26,11 @@ namespace Fizzy.ImageViewer
 
             // === 实例化图层 ===
             Layer0 = new ImageLayer();
-            Layer1 = new OverlayLayer();
+            Layers = new Drawing.ViewerLayers(Layer0.TransformGroup, lifetime);
+            Layer1 = Layers.MeasurementOverlay;
             Layer2 = new HudLayer();
 
             Layer1.BindTransform(Layer0.TransformGroup);
-            Layers = new Drawing.ViewerLayers(Layer1, Layer0.TransformGroup);
 
             Layer0.ScaleChanged += scale =>
             {
@@ -54,6 +56,14 @@ namespace Fizzy.ImageViewer
 
         // 允许外部强制关闭
         public bool CanUserClose { get; set; } = true;
+        private bool _programmaticClose;
+        internal Exception? ClosingError { get; private set; }
+        internal void CloseProgrammatically()
+        {
+            _programmaticClose = true;
+            try { Close(); }
+            finally { _programmaticClose = false; }
+        }
 
         // 无边框模式
         public bool Borderless
@@ -76,11 +86,18 @@ namespace Fizzy.ImageViewer
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            if (!CanUserClose)
+            if (!CanUserClose && !_programmaticClose)
             {
                 e.Cancel = true;
             }
-            base.OnClosing(e);
+            try { base.OnClosing(e); }
+            catch (Exception ex) when (_programmaticClose) { ClosingError = ex; }
+            finally
+            {
+                // Disposal owns the window lifetime; subscribers cannot veto it.
+                if (_programmaticClose) e.Cancel = false;
+                else if (!CanUserClose) e.Cancel = true;
+            }
         }
     }
 }
