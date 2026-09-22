@@ -60,8 +60,8 @@ created while measuring. A hidden measurement layer does not start new tools.
 region requests on the viewer STA, performs all pixel-source operations off STA,
 and publishes results on STA. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
-not discard successful pixel results. Existing rate defaults, result-age limits,
-query metrics and frame-lease ownership are preserved.
+not discard successful pixel results. Query options control rates and result-age limits;
+query metrics report execution, and each batch owns its frame lease until completion.
 
 Subscriptions have distinct lifetimes. Publication requires the same registration,
 stable measurement identity, geometry version and frame descriptor. Re-registering
@@ -96,7 +96,7 @@ case-sensitive; blank IDs or display names are rejected. `StartMeasure` throws
 measurement layer is hidden. `UnregisterMeasureMethod(id)` returns whether an entry
 was removed. Call `CancelMeasure()` to end the active interaction session.
 
-The public `IMeasureMethod` and `MeasureContext` capability facade remain available.
+The public extension boundary consists of `IMeasureMethod` and the `MeasureContext` capability facade.
 Custom tools should use `MeasureContext.CreateScope()` to obtain an
 `IMeasurementScope`. Register visuals with `AddShape`, disposable resources with
 `AddResource`, and cleanup callbacks with `OnDispose`. Call `Complete()` before
@@ -152,7 +152,7 @@ public sealed class CustomPoint : IMeasureMethod
 
 `OverlayLayer` and `ViewerWindow.Layer1` are internal. Public access uses
 `Viewer.Layers`, drawing handles, and measurement scopes.
-The overlay no longer offers standalone selection, deletion or editing; the
+The overlay does not offer standalone selection, deletion or editing; the
 coordinator owns all interaction. Internal editor factories are registered by shape
 key and create disposable editing sessions. Rectangle sessions retain the original
 opposite corner throughout a drag; built-in measurement sessions update model

@@ -110,7 +110,9 @@ concurrently by application code. Captured snapshots remain usable after closing
 
 Use `await viewer.DisposeAsync()` or `await using` to terminate queued/rendering and
 measurement work without blocking the STA. `Viewer` and `IViewerAPI` implement
-`IAsyncDisposable`; synchronous `Close`, `Dispose` and `CloseAsync` are not exposed.
+`IAsyncDisposable`. `Closed` reports window closure; it does not signal that background
+rendering, measurement queries or the window thread have finished. Await `DisposeAsync()`
+to wait for those operations to finish and release their frame leases.
 Once closed the Viewer cannot be reopened.
 
 Disposal is idempotent and waits for rendering, in-flight measurement queries and

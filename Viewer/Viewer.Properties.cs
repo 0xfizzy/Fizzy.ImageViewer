@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Constants;
-using System;
-using System.Threading;
+using System.Windows;
 
 namespace Fizzy.ImageViewer;
 
@@ -74,14 +72,17 @@ public partial class Viewer
         get => InvokeAlive(() => _window.Borderless);
         set => InvokeAlive(() => _window.Borderless = value);
     }
-}
 
-public partial class Viewer
-{
-    public Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions
+    public void Show() => InvokeAlive(() =>
     {
-        get => InvokeAlive(() => _measureManager!.Context.QueryOptions);
-        set => InvokeAlive(() => _measureManager!.Context.QueryOptions = value);
+        if (_window!.WindowState == WindowState.Minimized)
+            _window.WindowState = WindowState.Normal;
+        _window.Show();
+        _window.Activate();   // raise above any maximized/foreground window
+    });
+
+    public void FitImageToContainer()
+    {
+        InvokeAlive(() => _window.Layer0.FitImageToContainer());
     }
-    public Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics => InvokeAlive(() => _measureManager!.Context.QueryMetrics);
 }
