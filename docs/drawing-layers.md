@@ -6,6 +6,11 @@
 Higher ZIndex draws on top; equal values use creation order. Image and HUD remain
 below and above the business-layer container, respectively.
 
+Each completed `LineStrength` measurement links its line, length label, and pixel
+curve window. Closing the window removes its line and label; deleting the line
+closes its window. Clearing measurements or disposing the viewer cleans up all
+associated windows. Other measurements remain independent.
+
 ## Batch markers alongside measurements
 
 ```csharp

@@ -47,18 +47,14 @@ namespace Fizzy.ImageViewer.MeasureMethods
 
             UpdateShape(point, ctx);
 
-            var item = new LineStrengthItem(_startPoint.Value, point, _currentLine!, _currentLabel!, ctx);
+            var item = new LineStrengthItem(_currentLine!, ctx, item => _items.Remove(item));
             _items.Add(item);
 
             // 设置 Line 的 Tag
             if (_currentLine!.Tag is OverlayTagData tagData)
             {
                 tagData.LinkedShapes = [_currentLabel!];
-                tagData.OnRemoved = () =>
-                {
-                    item.Cleanup();
-                    _items.Remove(item);
-                };
+                tagData.OnRemoved = item.OnLineRemoved;
             }
 
             item.CreatePlotWindow();
@@ -114,17 +110,18 @@ namespace Fizzy.ImageViewer.MeasureMethods
             private QueryRequest? _cached;
             private object? _cachedGeometry;
             private readonly MeasureContext _context;
+            private readonly Action<LineStrengthItem> _onDisposed;
             private Imaging.LineProfile _profile = new();
             private double[] _xs = [], _rs = [], _gs = [], _bs = [];
             private ScottPlot.Plottables.Scatter? _red, _green, _blue;
             private volatile bool _disposed;
             public Window? PlotWindow { get; private set; }
-            public LineStrengthItem(Point start, Point end, Line line, TextBlock label, MeasureContext context)
-            { _line = line; _context = context; }
+            public LineStrengthItem(Line line, MeasureContext context, Action<LineStrengthItem> onDisposed)
+            { _line = line; _context = context; _onDisposed = onDisposed; }
             public void CreatePlotWindow()
             {
                 PlotWindow = new Window { Title = "Pixel Values", Width = 600, Height = 400, Topmost = true, Content = new ScottPlot.WPF.WpfPlot() };
-                PlotWindow.Closed += (_, _) => Dispose();
+                PlotWindow.Closed += OnWindowClosed;
                 PlotWindow.Show();
                 _context.Register(this);
             }
@@ -177,12 +174,21 @@ namespace Fizzy.ImageViewer.MeasureMethods
                 PlotWindow.Title = "Pixel Values";
                 plot.Refresh();
             }
-            public void Cleanup() => Dispose();
-            public void Dispose()
+            private void OnWindowClosed(object? sender, EventArgs e) => Cleanup(removeLine: true, closeWindow: false);
+            public void OnLineRemoved() => Cleanup(removeLine: false, closeWindow: true);
+            public void Dispose() => Cleanup(removeLine: true, closeWindow: true);
+            private void Cleanup(bool removeLine, bool closeWindow)
             {
                 if (_disposed) return;
                 _disposed = true; _context.Unregister(this);
-                var window = PlotWindow; PlotWindow = null; window?.Close();
+                var window = PlotWindow; PlotWindow = null;
+                if (window != null) window.Closed -= OnWindowClosed;
+                if (_line.Tag is OverlayTagData tag) tag.OnRemoved = null;
+                _onDisposed(this);
+                // OverlayLayer invokes OnRemoved before removing the line itself.
+                // Only the window/context entry points should initiate shape removal.
+                if (removeLine) _context.RemoveShape(_line);
+                if (closeWindow) window?.Close();
             }
         }
     }

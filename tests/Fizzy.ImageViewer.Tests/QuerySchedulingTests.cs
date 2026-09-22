@@ -11,6 +11,38 @@ public class QuerySchedulingTests
     private static Viewer Viewer()=>new(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
     private static ImageFrame Frame(ControlledSource source,Action release)=>new(new FrameStorage(new(2,1,2,FramePixelFormat.Gray8),new byte[]{7,8},release,0,source));
     [Fact]
+    public async Task ClosedLineStrengthDiscardsInFlightSamples()
+    {
+        await using var viewer=Viewer();
+        var source=new ControlledSource();
+        System.Windows.Window? window=null;
+        ScottPlot.WPF.WpfPlot? plot=null;
+        await viewer.UiDispatcher.InvokeAsync(()=>
+        {
+            var method=new MeasureMethods.LineStrengthMeasure();
+            method.OnClick(new(0,0),viewer.MeasurementContext);
+            method.OnClick(new(1,0),viewer.MeasurementContext);
+            window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
+                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is ScottPlot.WPF.WpfPlot);
+            plot=(ScottPlot.WPF.WpfPlot)window.Content;
+        });
+        await viewer.SubmitFrameAsync(Frame(source,()=>{}));
+        try
+        {
+            await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            await viewer.UiDispatcher.InvokeAsync(()=>window!.Close());
+        }
+        finally { source.Release.TrySetResult(); }
+        await viewer.MeasurementContext.Completion.WaitAsync(TimeSpan.FromSeconds(3));
+        await viewer.UiDispatcher.InvokeAsync(()=>
+        {
+            Assert.False(window!.IsVisible);
+            Assert.Empty(plot!.Plot.GetPlottables());
+            var overlay=viewer.Layers.Measurements.Root.Children.OfType<Controls.OverlayLayer>().Single();
+            Assert.Empty(overlay.Canvas.Children.Cast<System.Windows.UIElement>());
+        });
+    }
+    [Fact]
     public async Task SlowBatchDoesNotBlockUiAndGeometryChangesInvalidateResults()
     {
         await using var viewer=Viewer();viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromSeconds(5)};
