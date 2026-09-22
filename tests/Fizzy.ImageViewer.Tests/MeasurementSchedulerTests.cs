@@ -224,4 +224,108 @@ public class MeasurementSchedulerTests
         await runtime.Finish(scheduler); Assert.Equal(0, client.Published);
         runtime.Tick(); await runtime.Finish(scheduler); Assert.Equal(1, client.Published);
     }
+    [Theory]
+    [InlineData(30, 100)]
+    [InlineData(5, 200)]
+    public async Task PixelHudCoalescesMovementAndLimitsRateFromCompletion(double rate, int interval)
+    {
+        var runtime = new Runtime(); var source = new Source(runtime);
+        using var frame = Frame(source);
+        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelRate = rate } };
+        string? text = null;
+        var hud = new PixelInfo.PixelInfoState(value => text = value);
+        hud.Enable(); hud.Move(0, 0);
+        using var subscription = scheduler.Register(hud);
+        runtime.Tick!();
+        Assert.Contains("—", text);
+        // Move while sampling: publication must retain the sampled coordinate.
+        hud.Move(1, 0); runtime.Now = TimeSpan.FromMilliseconds(20); runtime.Tick();
+        await runtime.Finish(scheduler);
+        Assert.StartsWith("X: 0,", text); Assert.Contains("7", text);
+        var previous = text;
+        for (int t = 21; t < 20 + interval; t++)
+        {
+            runtime.Now = TimeSpan.FromMilliseconds(t);
+            hud.Move(t % 2, 0); runtime.Tick();
+            Assert.Empty(runtime.Work); Assert.Equal(previous, text);
+        }
+        hud.Move(1, 0); runtime.Now = TimeSpan.FromMilliseconds(20 + interval); runtime.Tick();
+        Assert.Single(runtime.Work);
+        await runtime.Finish(scheduler);
+        Assert.StartsWith("X: 1,", text);
+        runtime.Now += TimeSpan.FromSeconds(10); runtime.Tick();
+        Assert.Empty(runtime.Work); Assert.DoesNotContain("—", text); // static result never ages out
+        frame.Info = new(2, frame.Descriptor, null); runtime.Tick();
+        Assert.Single(runtime.Work); await runtime.Finish(scheduler); // stationary pointer, new video frame
+    }
+
+    [Fact]
+    public async Task PixelHudRetainsValueFor300MillisecondsThenRecoversFromFailure()
+    {
+        var runtime = new Runtime(); var source = new Source(runtime);
+        using var frame = Frame(source);
+        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelRate = 2 } };
+        string? text = null;
+        var hud = new PixelInfo.PixelInfoState(value => text = value);
+        hud.Enable(); hud.Move(0, 0);
+        using var subscription = scheduler.Register(hud);
+        runtime.Tick!(); await runtime.Finish(scheduler);
+        var previous = text;
+        hud.Move(1, 0);
+        runtime.Now = TimeSpan.FromMilliseconds(300); runtime.Tick(); Assert.Equal(previous, text);
+        runtime.Now = TimeSpan.FromMilliseconds(301); runtime.Tick();
+        Assert.Contains("—", text); Assert.StartsWith("X: 1,", text);
+        source.FailGather = true;
+        runtime.Now = TimeSpan.FromMilliseconds(500); runtime.Tick(); await runtime.Finish(scheduler);
+        Assert.Contains("—", text);
+        source.FailGather = false;
+        runtime.Now = TimeSpan.FromMilliseconds(999); runtime.Tick(); Assert.Empty(runtime.Work);
+        runtime.Now = TimeSpan.FromMilliseconds(1000); runtime.Tick(); await runtime.Finish(scheduler);
+        Assert.DoesNotContain("—", text);
+        hud.Move(0, 0);
+        runtime.Now = TimeSpan.FromMilliseconds(1500); runtime.Tick();
+        runtime.Now = TimeSpan.FromMilliseconds(1601); await runtime.Finish(scheduler);
+        Assert.Contains("—", text); Assert.Equal(1, scheduler.QueryMetrics.ExpiredResults);
+    }
+
+    [Theory]
+    [InlineData("leave")]
+    [InlineData("disable")]
+    [InlineData("outside")]
+    [InlineData("reenter")]
+    [InlineData("no-frame")]
+    [InlineData("resize")]
+    [InlineData("descriptor-roundtrip")]
+    public async Task PixelHudRejectsPreviousSessionResults(string transition)
+    {
+        var runtime = new Runtime();
+        using var frame = Frame(new(runtime));
+        using var resized = ImageFrame.Copy(new(3, 1, 3, FramePixelFormat.Gray8), new byte[] { 1, 2, 3 }).Transfer();
+        FrameLease? current = frame;
+        using var scheduler = new MeasurementScheduler(() => current?.Acquire(), NullLogger.Instance, runtime);
+        string? text = null;
+        var hud = new PixelInfo.PixelInfoState(value => text = value);
+        hud.Enable(); hud.Move(0, 0);
+        using var subscription = scheduler.Register(hud);
+        runtime.Tick!();
+        switch (transition)
+        {
+            case "leave": hud.Leave(); break;
+            case "disable": hud.Disable(); break;
+            case "outside": hud.Move(2, 0); break;
+            case "reenter": hud.Leave(); hud.Move(1, 0); break;
+            case "no-frame": current = null; runtime.Tick(); current = frame; break;
+            case "resize": current = resized; break;
+            case "descriptor-roundtrip":
+                current = resized; runtime.Tick(); current = frame; break;
+        }
+        await runtime.Finish(scheduler);
+        if (transition is "leave" or "disable" or "outside") Assert.Null(text);
+        else Assert.Contains("—", text);
+        // A rejected completion still observes the cooldown, including leave/re-enter.
+        runtime.Now = TimeSpan.FromMilliseconds(99); runtime.Tick(); Assert.Empty(runtime.Work);
+    }
+
 }

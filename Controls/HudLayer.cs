@@ -17,6 +17,7 @@ namespace Fizzy.ImageViewer.Controls
         private readonly StackPanel _topLeftPanel;
         private readonly Canvas _absoluteCanvas;
         private readonly TextBlock _pixelInfoText;
+        private readonly Border _pixelInfoBorder;
         private readonly TextBlock _labelText;
 
         // 缓存上一次的显示字符串，避免重复分配相同内容
@@ -67,26 +68,31 @@ namespace Fizzy.ImageViewer.Controls
             };
             grid.Children.Add(_labelText);
 
-            // 左下角像素信息
+            // Clip in an independently measured canvas so long RGBA text cannot
+            // increase the window's desired width or wrap in a narrow viewport.
             _pixelInfoText = new TextBlock
             {
                 FontSize = 13,
                 FontFamily = new FontFamily("Consolas"),
-                FontWeight = FontWeights.Bold,
+                FontWeight = FontWeights.Normal,
                 Foreground = Brushes.White,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(10),
-                Visibility = Visibility.Collapsed,
-                Effect = new DropShadowEffect
-                {
-                    Color = Colors.Black,
-                    BlurRadius = 3,
-                    ShadowDepth = 1,
-                    Opacity = 0.9
-                }
+                TextWrapping = TextWrapping.NoWrap,
+                UseLayoutRounding = true,
+                SnapsToDevicePixels = true
             };
-            grid.Children.Add(_pixelInfoText);
+            _pixelInfoBorder = new Border
+            {
+                Child = _pixelInfoText,
+                Visibility = Visibility.Collapsed,
+                IsHitTestVisible = false,
+                UseLayoutRounding = true,
+                SnapsToDevicePixels = true
+            };
+            var pixelInfoCanvas = new Canvas { ClipToBounds = true, IsHitTestVisible = false };
+            Canvas.SetLeft(_pixelInfoBorder, 10);
+            Canvas.SetBottom(_pixelInfoBorder, 10);
+            pixelInfoCanvas.Children.Add(_pixelInfoBorder);
+            grid.Children.Add(pixelInfoCanvas);
 
             Content = grid;
         }
@@ -194,7 +200,8 @@ namespace Fizzy.ImageViewer.Controls
         /// </summary>
         public void SetPixelInfoVisible(bool visible)
         {
-            _pixelInfoText.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            var visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            if (_pixelInfoBorder.Visibility != visibility) _pixelInfoBorder.Visibility = visibility;
         }
 
         /// <summary>

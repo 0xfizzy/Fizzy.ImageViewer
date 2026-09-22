@@ -61,6 +61,12 @@ on real STA dispatchers. See [measurement contracts](measurements.md).
 Mouse capture state transitions use an injected capture boundary. Actual pointer
 capture and dragging on an interactive desktop still require manual validation.
 
+Pixel HUD cases in `MeasurementSchedulerTests` cover the completion-based 10 Hz
+cap, lower configured rates, moving results, 300 ms retention, failures, expiration,
+session changes and stationary video updates without real-clock sleeps.
+`PixelInfoStateTests` cover coordinate/value pairing, immediate invalid-target
+hiding and stable invariant columns for gray, floating-point and premultiplied data.
+
 `ViewerTests` also check that asynchronous disposal cannot be vetoed by window
 closing handlers, rejects subsequent API calls and consumes submissions with a
 `Closed` result. `DrawingTests` check layer and drawing-handle invalidation and

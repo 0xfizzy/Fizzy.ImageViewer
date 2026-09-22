@@ -78,6 +78,20 @@ recent prior frame within the age limit; advancing video clears expired values, 
 paused frame keeps its valid result. FrameId stays in API results/logging and is never a HUD label.
 `QueryMetrics` reports completed batches, expired results and last completion duration.
 
+The bottom-left pixel HUD has its own cap of `min(10, PixelRate)` Hz, with a full
+interval after each completed query (including failures). Mouse moves coalesce to
+the latest target without resetting that interval. It may publish a recently sampled
+position from the same interaction session; the coordinates and value always update
+together. Other measurements still require the exact geometry version.
+While waiting, the HUD retains the complete previous result for up to 300 ms from
+its sampling start if the target or frame has changed, then shows `—`. An unchanged
+static result does not expire. Failures show `—` immediately; `MaxResultAge` still
+controls whether a newly completed query can publish. Leaving the image, disabling
+the HUD or losing the frame hides it and prevents old work from reappearing.
+The non-interactive HUD has no background and uses invariant numeric formatting
+with a minimum of seven characters per value. Longer values remain complete;
+narrow viewports clip the HUD rather than wrapping or resizing.
+
 ## Freeze, snapshot and save
 
 Opening the context menu freezes the current frame, clears pending input and invalidates

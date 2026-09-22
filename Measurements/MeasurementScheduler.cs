@@ -12,7 +12,9 @@ internal sealed class MeasurementSubscription(Action dispose) : IDisposable
     public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
 }
 
-internal readonly record struct QueryIdentity(Guid MeasurementId, long GeometryVersion);
+internal readonly record struct QueryIdentity(Guid MeasurementId, long GeometryVersion, long SessionVersion = 0);
+internal enum ResultInvalidation { CoordinatesChanged, DescriptorChanged, NoTarget, NoFrame, Expired, Failed }
+internal readonly record struct MeasurementPolicy(bool AllowMovingResult = false, double? MaximumRate = null, TimeSpan? DisplayAge = null);
 internal abstract record QueryRequest(QueryIdentity Identity);
 internal sealed record PixelQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
 internal sealed record LineProfileQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
@@ -24,8 +26,10 @@ internal sealed record FailedQueryResult : QueryResult;
 
 internal interface IFrameMeasurement
 {
+    MeasurementPolicy Policy => default;
     QueryRequest? Capture(FrameDescriptor descriptor);
     void ClearResult();
+    void InvalidateResult(ResultInvalidation reason) => ClearResult();
     void ResultPublished(long frameId) { }
 }
 
@@ -74,6 +78,8 @@ internal sealed class MeasurementScheduler : IDisposable
         public long Frame;
         public TimeSpan Started, Due;
         public bool Valid;
+        public bool HasResult;
+        public QueryIdentity? PublishedIdentity;
     }
     // A batch captures the frame identity and descriptor together with its owned lease.
     private sealed record Entry(IFrameMeasurement Item, QueryRequest Request, State State);
@@ -99,7 +105,6 @@ internal sealed class MeasurementScheduler : IDisposable
     {
         if (_disposed) return;
         using var current = _acquire();
-        if (current == null) return;
         var now = _runtime.Now;
         var due = new List<Entry>();
         foreach (var pair in _states.ToArray())
@@ -107,27 +112,43 @@ internal sealed class MeasurementScheduler : IDisposable
             var item = pair.Key; var state = pair.Value;
             try
             {
+                if (current == null)
+                {
+                    state.Valid = state.HasResult = false;
+                    item.InvalidateResult(ResultInvalidation.NoFrame);
+                    continue;
+                }
                 var request = item.Capture(current.Descriptor);
-                if (request == null) { state.Valid = false; item.ClearResult(); continue; }
+                if (request == null) { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.NoTarget); continue; }
                 if (state.Identity != request.Identity || !Equals(state.Descriptor, current.Descriptor))
                 {
+                    bool descriptorChanged = !Equals(state.Descriptor, current.Descriptor);
                     state.Valid = false; state.Identity = request.Identity; state.Descriptor = current.Descriptor;
-                    state.Due = TimeSpan.Zero; item.ClearResult();
+                    if (!item.Policy.AllowMovingResult) state.Due = TimeSpan.Zero;
+                    if (descriptorChanged) state.HasResult = false;
+                    item.InvalidateResult(descriptorChanged ? ResultInvalidation.DescriptorChanged : ResultInvalidation.CoordinatesChanged);
                 }
-                if (state.Valid && state.Frame != current.Info.FrameId && now - state.Started > _options.MaxResultAge)
-                { state.Valid = false; item.ClearResult(); }
-                if (now >= state.Due && (!state.Valid || state.Frame != current.Info.FrameId)) due.Add(new(item, request, state));
+                bool needsUpdate = !state.Valid || state.Frame != current.Info.FrameId || state.PublishedIdentity != request.Identity;
+                if (state.HasResult && needsUpdate && now - state.Started > (item.Policy.DisplayAge ?? _options.MaxResultAge))
+                { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.Expired); }
+                if (now >= state.Due && needsUpdate) due.Add(new(item, request, state));
             }
             catch (Exception ex) { state.Valid = false; _logger.LogWarning(ex, "Measurement capture failed"); }
         }
-        if (!Completion.IsCompleted || due.Count == 0) return;
+        if (current == null || !Completion.IsCompleted || due.Count == 0) return;
         due.Sort((a, b) => a.State.Due.CompareTo(b.State.Due));
         foreach (var entry in due)
         {
-            var rate = entry.Request switch { PixelQueryRequest => _options.PixelRate, LineProfileQueryRequest => _options.LineRate, _ => _options.RegionRate };
-            entry.State.Due = now + TimeSpan.FromSeconds(1 / rate);
+            entry.State.Due = now + Interval(entry);
         }
         Completion = RunAsync(current.Acquire(), due, now);
+    }
+
+    private TimeSpan Interval(Entry entry)
+    {
+        var rate = entry.Request switch { PixelQueryRequest => _options.PixelRate, LineProfileQueryRequest => _options.LineRate, _ => _options.RegionRate };
+        if (entry.Item.Policy.MaximumRate is double maximum) rate = Math.Min(rate, maximum);
+        return TimeSpan.FromSeconds(1 / rate);
     }
 
     private static PixelCoordinate[] Coordinates(QueryRequest request) => request switch
@@ -188,18 +209,27 @@ internal sealed class MeasurementScheduler : IDisposable
     {
         if (_disposed) return;
         using var current = _acquire();
-        if (current == null) return;
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
             if (!_states.TryGetValue(entry.Item, out var state) || !ReferenceEquals(state, entry.State)) continue;
+            if (entry.Item.Policy.AllowMovingResult) state.Due = _runtime.Now + Interval(entry);
             try
             {
+                if (current == null)
+                {
+                    state.Valid = state.HasResult = false;
+                    entry.Item.InvalidateResult(ResultInvalidation.NoFrame);
+                    continue;
+                }
                 var latest = entry.Item.Capture(current.Descriptor);
-                if (latest == null || latest.Identity != entry.Request.Identity || !Equals(current.Descriptor, frame.Descriptor)) continue;
+                if (latest == null || !Equals(current.Descriptor, frame.Descriptor)) continue;
+                bool sameSession = latest.Identity.MeasurementId == entry.Request.Identity.MeasurementId &&
+                    latest.Identity.SessionVersion == entry.Request.Identity.SessionVersion;
+                if (!sameSession || (!entry.Item.Policy.AllowMovingResult && latest.Identity != entry.Request.Identity)) continue;
                 if (_runtime.Now - started > _options.MaxResultAge)
-                { Interlocked.Increment(ref _expired); state.Valid = false; entry.Item.ClearResult(); continue; }
-                if (results[i] is FailedQueryResult) { state.Valid = false; entry.Item.ClearResult(); continue; }
+                { Interlocked.Increment(ref _expired); state.Valid = state.HasResult = false; entry.Item.InvalidateResult(ResultInvalidation.Expired); continue; }
+                if (results[i] is FailedQueryResult) { state.Valid = state.HasResult = false; entry.Item.InvalidateResult(ResultInvalidation.Failed); continue; }
                 // Preserve bounded-age publication during live video; requiring the newest
                 // FrameId here would starve every query slower than the frame rate.
                 switch (entry.Request, results[i])
@@ -209,13 +239,14 @@ internal sealed class MeasurementScheduler : IDisposable
                     case (RegionStatisticsQueryRequest r, StatisticsResult s): r.Publish(s.Statistics); break;
                     default: throw new InvalidOperationException("Mismatched query result.");
                 }
-                state.Valid = true; state.Frame = frame.Info.FrameId; state.Started = started;
+                state.Valid = state.HasResult = true; state.Frame = frame.Info.FrameId; state.Started = started;
+                state.PublishedIdentity = entry.Request.Identity;
                 entry.Item.ResultPublished(frame.Info.FrameId);
             }
             catch (Exception ex)
             {
-                state.Valid = false; _logger.LogWarning(ex, "Measurement publication failed");
-                try { entry.Item.ClearResult(); }
+                state.Valid = state.HasResult = false; _logger.LogWarning(ex, "Measurement publication failed");
+                try { entry.Item.InvalidateResult(ResultInvalidation.Failed); }
                 catch (Exception clearError) { _logger.LogWarning(clearError, "Measurement result cleanup failed"); }
             }
         }

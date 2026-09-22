@@ -69,6 +69,12 @@ an object never accepts work from its previous subscription. Geometry changes,
 invalid regions, cancellation and disposal prevent stale publication. Query and
 publication failures are isolated per subscriber; failed results remain invalid.
 
+The pixel HUD alone opts into a moving-result policy: geometry changes retain the
+last coordinate/value pair, and completed samples can publish within the same
+interaction session. Session and descriptor changes still reject old work. Its
+completion-based 10 Hz cap and 300 ms display retention do not alter other tools'
+rates or geometry validation. See [pixel query contracts](frame-pipeline.md).
+
 A result retains the source frame ID. A newer frame with the same descriptor does
 not by itself reject an in-flight result: it may publish within `MaxResultAge`.
 This bounded-age policy prevents starvation when video arrives faster than queries
