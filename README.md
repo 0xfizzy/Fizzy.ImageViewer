@@ -1,12 +1,31 @@
-# Fizzy.ImageViewer
+<p align="center">
+  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="160">
+</p>
 
-![Fizzy.ImageViewer icon](assets/icon.svg)
+<h1 align="center">Fizzy.ImageViewer</h1>
 
-A fast, standalone WPF image viewer for .NET 8. It provides zoom and pan,
-shape overlays, measurements, interactive editing, HUD content, and pixel inspection.
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="docs/frame-pipeline.md">Frame pipeline</a>
+</p>
 
-[![NuGet](https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg)](https://www.nuget.org/packages/Fizzy.ImageViewer)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <strong>View, measure, and inspect images in WPF applications.</strong>
+</p>
+
+<p align="center">
+  A fast, standalone image viewer for .NET 8 with zoom and pan, shape overlays,
+  measurements, interactive editing, HUD content, and pixel inspection.
+</p>
+
+<p align="center">
+  <a href="https://www.nuget.org/packages/Fizzy.ImageViewer"><img src="https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg" alt="NuGet version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/.NET-8-512BD4.svg" alt=".NET 8">
+  <img src="https://img.shields.io/badge/platform-WPF-0078D4.svg" alt="Platform: WPF">
+</p>
 
 ## Install
 

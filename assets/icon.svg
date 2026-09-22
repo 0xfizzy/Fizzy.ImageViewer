@@ -1,11 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Fizzy.ImageViewer icon</title>
-  <desc id="desc">A flat image frame with a mountain, sun, and fizzy bubbles.</desc>
-  <rect width="512" height="512" rx="112" fill="#0f172a"/>
-  <rect x="82" y="116" width="348" height="280" rx="44" fill="#38bdf8"/>
-  <circle cx="340" cy="188" r="34" fill="#fde047"/>
-  <path d="M112 346 216 228l70 82 48-51 68 87Z" fill="#f8fafc"/>
-  <path d="M112 346 216 228l42 49-60 69Z" fill="#cbd5e1"/>
-  <circle cx="390" cy="82" r="26" fill="#a3e635"/>
-  <circle cx="438" cy="48" r="15" fill="#a3e635"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Fizzy.ImageViewer — Image Fold</title>
+  <desc id="desc">One softly folded image tile with a flat outer silhouette. Its continuous surface rises into a ridge, suggesting the landscape of an image. Cyan light and a blue fold give the single form quiet depth.</desc>
+  <defs>
+    <linearGradient id="surface" gradientUnits="userSpaceOnUse" x1="126" y1="90" x2="372" y2="362">
+      <stop offset="0" stop-color="#91E9E2" />
+      <stop offset="0.48" stop-color="#48BED4" />
+      <stop offset="1" stop-color="#288BC5" />
+    </linearGradient>
+    <linearGradient id="fold" gradientUnits="userSpaceOnUse" x1="166" y1="250" x2="300" y2="426">
+      <stop offset="0" stop-color="#318ECD" />
+      <stop offset="0.55" stop-color="#346FC0" />
+      <stop offset="1" stop-color="#3C51A5" />
+    </linearGradient>
+    <linearGradient id="light" gradientUnits="userSpaceOnUse" x1="272" y1="218" x2="416" y2="396">
+      <stop offset="0" stop-color="#7AE0E0" />
+      <stop offset="1" stop-color="#399BC7" />
+    </linearGradient>
+  </defs>
+  <path fill="url(#surface)" d="M 128 80 L 370 80 C 399 80 420 101 420 130 L 420 364 C 420 393 399 414 370 414 L 128 414 C 99 414 78 393 78 364 L 78 130 C 78 101 99 80 128 80 Z" />
+  <!-- Split the outer corner's exact cubic at t=0.5 so both faces meet its silhouette. -->
+  <path fill="url(#fold)" d="M 78 330 L 243 218 C 252 212 260 213 268 222 L 405.875 399.875 C 397 408.75 384.5 414 370 414 L 128 414 C 99 414 78 393 78 364 Z" />
+  <path fill="url(#light)" d="M 254 215 C 259 215 264 218 268 222 L 420 326 L 420 364 C 420 378.5 414.75 391 405.875 399.875 Z" />
 </svg>
