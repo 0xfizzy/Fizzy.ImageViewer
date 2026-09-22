@@ -110,13 +110,10 @@ Prefer `await viewer.DisposeAsync()` / `CloseAsync()`: these terminate queued/re
 measurement work without blocking the STA. Synchronous Dispose on that STA initiates closure;
 off the STA it waits. Once closed the Viewer cannot be reopened.
 
-RobotController adapters use the new API. Shared IImageFrame references are transferred;
-borrowed Mat inputs are synchronously copied, including ROI rows, CV_16UC1 and CV_32FC1.
-Robot's domain RefreshAsync awaits a terminal result and always consumes the reference,
-including failure. Its callers must not release it again in exception handlers.
-Parallax supports CPU frame copies and CUDA-resident frames through its CudaImageViewer module.
-Consumers remain package-based by default; the old published package is not compatible with
-the migrated adapters. Use Source mode until a separately authorized package release/update.
+Application integrations should adapt their own frame and image types to `ImageFrame`.
+Use `Copy` for borrowed storage, `TakeOwnership` to transfer immutable CPU storage, or
+`TakeD3D9Surface` to transfer a ready GPU surface. Producers own conversion, lifetime and
+device compatibility; integration tests for their adapters belong in the consumer repository.
 
 ## GPU surfaces and explicit pixel queries
 
@@ -131,12 +128,12 @@ CPU pixel provider is invoked on the normal GPU display path. Front-buffer resto
 the retained current surface. CPU submissions switch back to WriteableBitmap.
 
 `IFramePixelSource` supplies asynchronous gather, statistics and region reads independently of
-the display surface. ImageViewer has no CUDA dependency. The producer retains its source image
+the display surface. The library has no CUDA dependency. The producer retains its source image
 and query resources until the final frame lease is released. Query failures affect interaction,
 not display, and must never trigger an implicit full-image readback. Cancellation of submitted
 GPU work must retain buffers and leases until device completion, even when publication is cancelled.
 
 DisplayRange is unsupported for GPU surfaces; producers must apply their GPU mapping before
-submission. The current Parallax producer supports standard Gray8/BGR24/RGB24 conversion.
+submission. Consumers are responsible for converting source formats to the supported frame contract.
 Surface loss due to a driver reset is distinct from WPF front-buffer availability and is not
 recovered by recreating the producer's device here. No software rendering fallback is enabled.

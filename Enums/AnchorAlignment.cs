@@ -3,9 +3,6 @@ namespace Fizzy.ImageViewer.Enums;
 /// <summary>
 /// 指定锚点在 HUD 文本元素上的对齐位置（九宫格）。
 /// </summary>
-/// <remarks>
-/// 值与 <c>Robot.Core.Visualization.AnchorAlignment</c> 保持一致，用于 WPF 层。
-/// </remarks>
 public enum AnchorAlignment
 {
     /// <summary>锚点位于文本左上角（默认）。</summary>

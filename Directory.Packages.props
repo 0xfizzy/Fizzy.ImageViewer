@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <!-- Versions live here so this directory can be built independently. -->
+    <!-- Package versions are declared by each project so this directory builds independently. -->
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 </Project>
