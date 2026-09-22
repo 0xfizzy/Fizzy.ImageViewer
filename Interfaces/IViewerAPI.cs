@@ -70,34 +70,35 @@ public interface IViewerAPI : IDisposable, IAsyncDisposable
     Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
         Fizzy.ImageViewer.Snapshots.SnapshotKind kind, CancellationToken ct = default);
     // === 绘图 ===
+    Fizzy.ImageViewer.Drawing.ViewerLayers Layers { get; }
 
     /// <summary>
-    /// 在覆盖层上绘制一条线段。
+    /// 在默认不参与命中测试的 Markers 图层绘制一条线段。
     /// </summary>
     IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0);
 
     /// <summary>
-    /// 在覆盖层上绘制文本标签。
+    /// 在默认不参与命中测试的 Markers 图层绘制文本标签。
     /// </summary>
     IDisposable DrawText(Point anchor, string text, Brush brush, int fontSize = 14, Vector offset = default);
 
     /// <summary>
-    /// 在覆盖层上绘制准星。
+    /// 在默认不参与命中测试的 Markers 图层绘制准星。
     /// </summary>
     IDisposable DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2);
 
     /// <summary>
-    /// 在覆盖层上绘制矩形框。
+    /// 在默认不参与命中测试的 Markers 图层绘制矩形框。
     /// </summary>
     IDisposable DrawRectangle(Rect rect, Brush brush, double thickness = 1.0);
 
     /// <summary>
-    /// 在覆盖层上绘制圆形。
+    /// 在默认不参与命中测试的 Markers 图层绘制圆形。
     /// </summary>
     IDisposable DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null);
 
     /// <summary>
-    /// 清除覆盖层上的所有形状。
+    /// 取消测量并清空全部业务图层，保留 HUD。
     /// </summary>
     void ClearShapes();
 

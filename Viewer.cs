@@ -46,6 +46,8 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     }
 
     private readonly bool _showWindow;
+    public Drawing.ViewerLayers Layers => _window.Layers;
+
     internal Dispatcher UiDispatcher => _window.Dispatcher;
     internal MeasureContext MeasurementContext => _measureManager!.Context;
 
@@ -72,6 +74,8 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
 
                 // 在 UI 线程创建 Managers
                 var measureMgr = new MeasureManager(win.Layer0, win.Layer1, AcquireCurrentFrame, _logger);
+                measureMgr.InputSuppressionChanged += win.Layers.SuppressInput;
+                win.Layers.CancelMeasurement = measureMgr.Cancel;
                 var editMgr = new EditManager(win.Layer0, win.Layer1);
                 var menuMgr = new MenuManager(win)
                 {
@@ -145,7 +149,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
         
         menuMgr.Register(new MenuItem("Cancel Measurement", measureMgr.Cancel, Enums.MenuItemType.ContextAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
-        menuMgr.Register(new MenuItem("Clear All Shapes", () => { measureMgr.Cancel(); win.Layer1.Clear(); }));
+        menuMgr.Register(new MenuItem("Clear All Shapes", () => { win.Layers.Clear(); }));
         menuMgr.Register(new SaveImageMenuItem(this, false));
         menuMgr.Register(new SaveImageMenuItem(this, true));
         menuMgr.Register(new SaveImageMenuItem(this, false, true));

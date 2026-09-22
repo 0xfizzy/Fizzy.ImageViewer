@@ -231,7 +231,7 @@ public partial class Viewer
         ReleaseFrame(_menuSnapshot?.Frame); _menuSnapshot = null;
         Cleanup(() => _pixelInfoOverlay?.Disable());
         Cleanup(() => _measureManager?.Dispose());
-        Cleanup(() => _window.Layer1.Clear());
+        Cleanup(() => _window.Layers.Close());
         Cleanup(_presenter.Dispose);
         Cleanup(() => { _d3dPresenter?.Dispose(); _d3dPresenter = null; });
         FrameCommitted = null;

@@ -93,6 +93,8 @@ public class EditManager
         _currentEditor = null;
         _isDragging = false;
         _draggingPointIndex = -1;
+        if (_outputLayer.Canvas.IsMouseCaptured) _outputLayer.Canvas.ReleaseMouseCapture();
+        _inputLayer.Container.Cursor = Cursors.Cross;
 
         // Note: We do NOT re-enable hit testing here because we never disabled it
     }

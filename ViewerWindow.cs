@@ -11,6 +11,7 @@ namespace Fizzy.ImageViewer
         public ImageLayer Layer0 { get; }
         public OverlayLayer Layer1 { get; }
         public HudLayer Layer2 { get; }
+        public Drawing.ViewerLayers Layers { get; }
 
         public ViewerWindow(string title)
         {
@@ -27,10 +28,12 @@ namespace Fizzy.ImageViewer
             Layer2 = new HudLayer();
 
             Layer1.BindTransform(Layer0.TransformGroup);
+            Layers = new Drawing.ViewerLayers(Layer1, Layer0.TransformGroup);
 
             Layer0.ScaleChanged += scale =>
             {
                 Layer1.UpdateScale(scale);
+                Layers.UpdateScale(scale);
             };
 
             // 点击图像空白处（未命中 overlay 形状）时取消选中
@@ -43,7 +46,7 @@ namespace Fizzy.ImageViewer
 
             // 叠加顺序很重要：0在底，2在顶
             grid.Children.Add(Layer0);
-            grid.Children.Add(Layer1);
+            grid.Children.Add(Layers.Root);
             grid.Children.Add(Layer2);
 
             Content = grid;

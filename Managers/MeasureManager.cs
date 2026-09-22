@@ -19,6 +19,12 @@ namespace Fizzy.ImageViewer.Managers
 
         public IReadOnlyDictionary<string, IMeasureMethod> RegisteredMethods => _registeredMethods;
         public bool HasSelection => _hasSelection;
+        internal event Action<bool>? InputSuppressionChanged;
+        private void SetInputSuppressed(bool suppressed)
+        {
+            if (InputSuppressionChanged != null) InputSuppressionChanged(suppressed);
+            else _outputLayer.SetHitTestEnabled(!suppressed);
+        }
 
         /// <summary>
         /// 获取 MeasureContext，供外部访问图像更新事件。
@@ -57,9 +63,9 @@ namespace Fizzy.ImageViewer.Managers
             if (_registeredMethods.TryGetValue(methodName, out var method))
             {
                 _activeMethod = method;
-                _inputLayer.Container.Cursor = Cursors.Pen;
                 _hasSelection = true;
-                _outputLayer.SetHitTestEnabled(false); // 测量时关闭选择
+                SetInputSuppressed(true); // 测量时关闭选择
+                _inputLayer.Container.Cursor = Cursors.Pen;
             }
         }
 
@@ -76,7 +82,7 @@ namespace Fizzy.ImageViewer.Managers
                 _activeMethod.Cancel(_context);
                 _activeMethod = null;
                 _inputLayer.Container.Cursor = Cursors.Cross;
-                _outputLayer.SetHitTestEnabled(true); // 恢复选择
+                SetInputSuppressed(false); // 恢复选择
             }
             _hasSelection = false;
         }
@@ -92,7 +98,7 @@ namespace Fizzy.ImageViewer.Managers
                 _activeMethod = null;
                 _inputLayer.Container.Cursor = Cursors.Cross;
                 _hasSelection = false;
-                _outputLayer.SetHitTestEnabled(true); // 测量完成，恢复选择
+                SetInputSuppressed(false); // 测量完成，恢复选择
             }
         }
 

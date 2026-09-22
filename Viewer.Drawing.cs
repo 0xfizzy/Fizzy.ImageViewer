@@ -10,114 +10,24 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <summary>
-    /// 在覆盖层上绘制一条线段。
-    /// </summary>
-    /// <param name="p1">起点（图像坐标）</param>
-    /// <param name="p2">终点（图像坐标）</param>
-    /// <param name="brush">画刷颜色</param>
-    /// <param name="thickness">线宽</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该线段</returns>
-    public IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0)
-    {
-        return InvokeAndCreateHandle(() =>
-        {
-            var line = Shapes.CreateLine();
-            line.X1 = p1.X; line.Y1 = p1.Y;
-            line.X2 = p2.X; line.Y2 = p2.Y;
-            line.Stroke = brush;
-            line.StrokeThickness = thickness;
-            return line;
-        });
-    }
+    /// <summary>Draws a non-interactive single-element batch in the Markers layer.</summary>
+    public IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0) =>
+        Layers.Markers.AddBatch([new Drawing.LineElement(p1, p2, brush, thickness)]);
 
-    /// <summary>
-    /// 在覆盖层上绘制文本标签。
-    /// </summary>
-    /// <param name="anchor">锚点位置（图像坐标）</param>
-    /// <param name="text">文本内容</param>
-    /// <param name="brush">文本颜色</param>
-    /// <param name="fontSize">字体大小</param>
-    /// <param name="offset">相对于锚点的屏幕偏移量</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该标签</returns>
-    public IDisposable DrawText(Point anchor, string text, Brush brush, int fontSize = 14, Vector offset = default)
-    {
-        return InvokeAndCreateHandle(() =>
-        {
-            var tb = Shapes.CreateLabel(anchor, text, offset.X, offset.Y);
-            tb.Foreground = brush;
-            tb.FontSize = fontSize;
-            return tb;
-        });
-    }
+    public IDisposable DrawText(Point anchor, string text, Brush brush, int fontSize = 14, Vector offset = default) =>
+        Layers.Markers.AddBatch([new Drawing.TextElement(anchor, text, brush, fontSize, offset)]);
 
-    /// <summary>
-    /// 在覆盖层上绘制准星。
-    /// </summary>
-    /// <param name="center">中心点（图像坐标）</param>
-    /// <param name="brush">画刷颜色</param>
-    /// <param name="size">准星大小</param>
-    /// <param name="thickness">线宽</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该准星</returns>
-    public IDisposable DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2)
-    {
-        return InvokeAndCreateHandle(() =>
-        {
-            var path = Shapes.CreateCrosshair(center, size, thickness);
-            path.Stroke = brush;
-            return path;
-        });
-    }
+    public IDisposable DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2) =>
+        Layers.Markers.AddBatch([new Drawing.CrosshairElement(center, brush, size, thickness)]);
 
-    /// <summary>
-    /// 在覆盖层上绘制矩形框。
-    /// </summary>
-    /// <param name="rect">矩形区域（图像坐标）</param>
-    /// <param name="brush">边框颜色</param>
-    /// <param name="thickness">边框宽度</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该矩形</returns>
-    public IDisposable DrawRectangle(Rect rect, Brush brush, double thickness = 1.0)
-    {
-        return InvokeAndCreateHandle(() =>
-        {
-            var shape = Shapes.CreateRectangle();
-            shape.Width = rect.Width;
-            shape.Height = rect.Height;
-            shape.Stroke = brush;
-            shape.StrokeThickness = thickness;
-            Canvas.SetLeft(shape, rect.Left);
-            Canvas.SetTop(shape, rect.Top);
-            return shape;
-        });
-    }
+    public IDisposable DrawRectangle(Rect rect, Brush brush, double thickness = 1.0) =>
+        Layers.Markers.AddBatch([new Drawing.RectangleElement(rect, brush, thickness)]);
 
-    /// <summary>
-    /// 在覆盖层上绘制圆形。
-    /// </summary>
-    /// <param name="center">圆心（图像坐标）</param>
-    /// <param name="radius">半径（图像坐标）</param>
-    /// <param name="brush">边框颜色</param>
-    /// <param name="thickness">边框宽度</param>
-    /// <param name="fill">填充画刷，null 表示不填充</param>
-    /// <returns>IDisposable 句柄，Dispose 时移除该圆形</returns>
-    public IDisposable DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null)
-    {
-        return InvokeAndCreateHandle(() =>
-        {
-            var path = Shapes.CreateCircle(center, radius);
-            path.Stroke = brush;
-            path.StrokeThickness = thickness;
-            if (fill != null) path.Fill = fill;
-            return path;
-        });
-    }
+    public IDisposable DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null) =>
+        Layers.Markers.AddBatch([new Drawing.CircleElement(center, radius, brush, thickness, fill)]);
 
-    /// <summary>
-    /// 清除覆盖层上的所有形状。
-    /// </summary>
-    public void ClearShapes()
-        => _window?.Dispatcher.Invoke(() => _window.Layer1.Clear());
-
+    /// <summary>Clears all business layers, including measurements, without clearing the HUD.</summary>
+    public void ClearShapes() => Layers.Clear();
     /// <summary>
     /// 在 HUD 层绘制或更新文本显示（屏幕坐标，不随图像缩放）。
     /// </summary>
@@ -179,19 +89,4 @@ public partial class Viewer
         }
     }
 
-    /// <summary>
-    /// 在 UI 线程上创建形状并返回管理句柄。
-    /// </summary>
-    /// <param name="createShapeFactory">创建形状的工厂方法</param>
-    /// <returns>IDisposable 句柄，Dispose 时从覆盖层移除该形状</returns>
-    private DrawingHandle InvokeAndCreateHandle(Func<UIElement> createShapeFactory) => _window.Dispatcher.Invoke(() =>
-    {
-        var shape = createShapeFactory();
-        _window.Layer1.AddShape(shape);
-
-        return new DrawingHandle(() =>
-        {
-            _window.Dispatcher.InvokeAsync(() => _window.Layer1.RemoveShape(shape));
-        });
-    });
 }

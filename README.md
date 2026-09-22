@@ -35,14 +35,28 @@ Submission transfers ownership immediately. Awaiting returns a commit/drop resul
 not a physical presentation timestamp. One frame is processed while only the newest
 waiting frame is retained. Measurements read original pixels independently of display.
 
+For thousands of markers, submit a collection as one visual:
+
+```csharp
+using var markers = viewer.Layers.Markers.AddBatch(
+    Enumerable.Range(0, 10000).Select(i =>
+        new Fizzy.ImageViewer.Drawing.CircleElement(
+            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
+            3, System.Windows.Media.Brushes.Red)));
+viewer.StartMeasure("Length"); // Independent interactive measurement layer.
+```
+
+See [drawing layers](docs/drawing-layers.md) for updates, hit testing, and API behavior.
 See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 [validation commands](docs/validation.md).
+
 ## Features
 
 - Independent STA window with thread-safe API dispatch
 - Low-allocation frame rendering and bounded render queue
 - Zoom, pan, fit-to-window, and borderless modes
 - Lines, text, crosshairs, rectangles, circles, and HUD text
+- [Batch drawing and configurable layers](docs/drawing-layers.md): one visual per collection
 - Built-in point, line, rectangle, and line-strength measurements
 - Shape selection and interactive editing
 - Extensible context menu and measurement APIs

@@ -119,10 +119,9 @@ namespace Fizzy.ImageViewer.Controls
         /// </summary>
         public void ClearSelection()
         {
-            if (_selectedShape == null) return;
-
-            // Exit edit mode if active
+            // Exit edit mode even when editing was started programmatically.
             ExitEditMode();
+            if (_selectedShape == null) return;
 
             ApplySelectionStyle(_selectedShape, false);
 
@@ -203,25 +202,7 @@ namespace Fizzy.ImageViewer.Controls
                 {
                     Dispatcher.InvokeAsync(() =>
                     {
-                        if (!_canvas.Children.Contains(shape)) return;
-
-                        // 先移除关联形状（如标签）
-                        if (shape is FrameworkElement fe && fe.Tag is OverlayTagData data && data.Selection.LinkedShapes != null)
-                        {
-                            foreach (var linked in data.Selection.LinkedShapes)
-                            {
-                                if (_canvas.Children.Contains(linked))
-                                {
-                                    InvokeOnRemoved(linked);
-                                    ShapeRemoved?.Invoke(linked);
-                                    _canvas.Children.Remove(linked);
-                                }
-                            }
-                        }
-
-                        InvokeOnRemoved(shape);
-                        ShapeRemoved?.Invoke(shape);
-                        _canvas.Children.Remove(shape);
+                        RemoveShape(shape);
                     });
                 });
 
@@ -232,6 +213,7 @@ namespace Fizzy.ImageViewer.Controls
         internal void RemoveShape(UIElement shape)
         {
             if (!_canvas.Children.Contains(shape)) return;
+            if (ReferenceEquals(_selectedShape, shape)) ClearSelection();
 
             // 先移除关联形状
             if (shape is FrameworkElement fe && fe.Tag is OverlayTagData data && data.Selection.LinkedShapes != null)
@@ -255,12 +237,9 @@ namespace Fizzy.ImageViewer.Controls
         internal void Clear()
         {
             ClearSelection();
-            foreach (UIElement child in _canvas.Children)
-            {
-                InvokeOnRemoved(child);
-                ShapeRemoved?.Invoke(child);
-            }
-            _canvas.Children.Clear();
+            ExitEditMode();
+            foreach (var child in _canvas.Children.Cast<UIElement>().ToArray())
+                RemoveShape(child);
         }
 
         private static void InvokeOnRemoved(UIElement shape)
