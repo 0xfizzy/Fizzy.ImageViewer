@@ -65,6 +65,119 @@ public class DrawingTests
     }
 
     [Fact]
+    public async Task ReplacementKeepsArrayAndMutableBrushSnapshotsIsolated()
+    {
+        await using var viewer = Create();
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var brush = new SolidColorBrush(Colors.Blue);
+            DrawingElement[] input = [Circle() with { Stroke = brush, Fill = brush }, Circle(60, 60)];
+            using var batch = viewer.Layers.Markers.AddBatch([]);
+            batch.Replace(input);
+            brush.Color = Colors.Green;
+            input[1] = Circle(200, 200);
+            {
+                var first = Assert.IsType<CircleElement>(batch.Elements[0]);
+                Assert.Same(first.Stroke, first.Fill);
+                Assert.True(first.Stroke.IsFrozen);
+                Assert.Equal(Colors.Blue, Assert.IsType<SolidColorBrush>(first.Stroke).Color);
+                Assert.Equal(new Point(60, 60), Assert.IsType<CircleElement>(batch.Elements[1]).Center);
+                var before = batch.Visual.ContentBounds;
+                Assert.Throws<ArgumentException>(() => batch.Replace([Circle(), null!]));
+                Assert.Equal(before, batch.Visual.ContentBounds);
+            }
+            batch.Replace(input);
+            Assert.Equal(Colors.Green, Assert.IsType<SolidColorBrush>(((CircleElement)batch.Elements[0]).Stroke).Color);
+        });
+    }
+
+    [Fact]
+    public async Task SharedPensPreserveDifferentWidthsAndScaleModes()
+    {
+        await using var viewer = Create();
+        using var batch = viewer.Layers.Markers.AddBatch([
+            Circle(20, 20) with { Thickness = 2 },
+            Circle(60, 60) with { Thickness = 8 },
+            Circle(100, 100) with { Thickness = 8, ScaleMode = OverlayScaleMode.None }]);
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            viewer.Layers.UpdateScale(2); viewer.Layers.FlushScale();
+            var group = batch.Visual.Drawing;
+            var drawings = group.Children.Cast<GeometryDrawing>().ToArray();
+            Assert.Equal(new double[] { 1, 4, 8 }, drawings.Select(d => d.Pen.Thickness));
+            Assert.All(drawings, d => Assert.True(d.Pen.IsFrozen));
+        });
+    }
+
+    [Fact]
+    public async Task DrawingFailureDoesNotPublishPartialContentAndNextUpdateSucceeds()
+    {
+        await using var viewer = Create();
+        using var batch = viewer.Layers.Markers.AddBatch([Circle()]);
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var originalElements = batch.Elements;
+            var originalBounds = batch.Visual.ContentBounds;
+            // This passes element validation, then fails inside WPF text formatting
+            // AFTER the first circle's drawing command has already been recorded.
+            DrawingElement[] invalid = [Circle(200, 200), new TextElement(new(), "x", Brushes.White, double.MaxValue)];
+            Assert.Throws<ArgumentOutOfRangeException>(() => batch.Replace(invalid));
+            Assert.Same(originalElements, batch.Elements);
+            Assert.Equal(originalBounds, batch.Visual.ContentBounds);
+            Assert.NotNull(VisualTreeHelper.HitTest(batch.Visual, new Point(20, 20)));
+            Assert.Null(VisualTreeHelper.HitTest(batch.Visual, new Point(200, 200)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => viewer.Layers.Markers.AddBatch(invalid));
+            Assert.Equal(1, viewer.Layers.Markers.Host.Count);
+            batch.Replace([Circle(200, 200)]);
+            Assert.Null(VisualTreeHelper.HitTest(batch.Visual, new Point(20, 20)));
+            Assert.NotNull(VisualTreeHelper.HitTest(batch.Visual, new Point(200, 200)));
+        });
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task DirectCommandsMatchDrawingGroupPixels(double scale)
+    {
+        await using var viewer = Create();
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var translucent = new SolidColorBrush(Color.FromArgb(110, 30, 200, 80));
+            translucent.Freeze();
+            DrawingElement[] elements = [
+                new CircleElement(new(40, 40), 20, Brushes.Red, 3, translucent),
+                new CircleElement(new(55, 40), 20, Brushes.Red, 3, translucent),
+                new RectangleElement(new(20, 55, 70, 30), Brushes.Yellow, 4, translucent),
+                new LineElement(new(5, 5), new(120, 95), Brushes.Blue, 2),
+                new CrosshairElement(new(100, 30), Brushes.White, 12, 2),
+                new TextElement(new(10, 110), "Camera 123", Brushes.White, 16, new(2, -3))];
+            var layers = new ViewerLayers(Transform.Identity);
+            layers.UpdateScale(scale);
+            layers.FlushScale();
+            using var batch = layers.Markers.AddBatch(elements);
+            // Reference path used before direct command recording.
+            var group = new DrawingGroup();
+            var resources = new DrawingResources();
+            using (var context = group.Open())
+                foreach (var element in elements) element.Draw(context, scale, layers.Markers.PixelsPerDip, resources);
+            group.Freeze();
+            var reference = new DrawingVisual();
+            using (var context = reference.RenderOpen()) context.DrawDrawing(group);
+            byte[] Pixels(Visual visual)
+            {
+                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(160, 140, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(visual);
+                var pixels = new byte[160 * 140 * 4];
+                bitmap.CopyPixels(pixels, 160 * 4, 0);
+                return pixels;
+            }
+            Assert.Equal(reference.ContentBounds, batch.Visual.ContentBounds);
+            Assert.Equal(Pixels(reference), Pixels(batch.Visual));
+            layers.Close();
+        });
+    }
+
+    [Fact]
     public async Task HitTestingUsesDrawingContentAndLayerState()
     {
         await using var viewer = Create();

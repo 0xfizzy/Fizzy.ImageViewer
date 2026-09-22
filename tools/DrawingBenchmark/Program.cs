@@ -13,6 +13,24 @@ internal static class Program
         Run(100, false); // JIT / WPF warm-up.
         Console.WriteLine("count,path,create_ms,replace_ms,scale_ms,children");
         foreach (int count in new[] { 1000, 10000 }) Run(count, true);
+        Console.WriteLine("count,replace_bytes_per_update,replace_ms_per_update");
+        foreach (int count in new[] { 1000, 10000 }) Allocations(count);
+    }
+    private static void Allocations(int count)
+    {
+        var layers = new ViewerLayers(Transform.Identity);
+        var data = Enumerable.Range(0, count).Select(i => (DrawingElement)new CircleElement(new(i % 100 * 10, i / 100 * 10), 3, Brushes.Red, 2, Brushes.Red)).ToArray();
+        var moved = data.Cast<CircleElement>().Select(c => (DrawingElement)(c with { Center = c.Center + new Vector(1, 1) })).ToArray();
+        using var batch = layers.Markers.AddBatch(data);
+        for (int i = 0; i < 10; i++) batch.Replace(i % 2 == 0 ? moved : data);
+        const int iterations = 50;
+        long start = GC.GetAllocatedBytesForCurrentThread();
+        long ticks = Stopwatch.GetTimestamp();
+        for (int i = 0; i < iterations; i++) batch.Replace(i % 2 == 0 ? moved : data);
+        var elapsed = Stopwatch.GetElapsedTime(ticks);
+        long bytes = GC.GetAllocatedBytesForCurrentThread() - start;
+        Console.WriteLine($"{count},{bytes / iterations},{elapsed.TotalMilliseconds / iterations:F3}");
+        layers.Close();
     }
     private static double Time(Action action)
     { var timer = Stopwatch.StartNew(); action(); return timer.Elapsed.TotalMilliseconds; }

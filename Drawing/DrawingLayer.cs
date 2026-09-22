@@ -71,9 +71,8 @@ public sealed class DrawingLayer
         return Owner.Invoke(() =>
         {
             EnsureAlive();
-            var drawing = DrawingBatchHandle.Prepare(snapshot, Owner.Scale, PixelsPerDip);
             var handle = new DrawingBatchHandle(this, snapshot);
-            handle.Commit(snapshot, drawing);
+            handle.Commit(snapshot, Owner.Scale, PixelsPerDip);
             _batches.Add(handle); Host.Add(handle.Visual);
             return handle;
         });
@@ -105,7 +104,7 @@ public sealed class DrawingLayer
     {
         foreach (var batch in _batches)
             if (!scaleOnly || batch.NeedsScale)
-                batch.Commit(batch.Elements, DrawingBatchHandle.Prepare(batch.Elements, Owner.Scale, PixelsPerDip));
+                batch.Commit(batch.Elements, Owner.Scale, PixelsPerDip);
     }
     internal void Detach()
     {

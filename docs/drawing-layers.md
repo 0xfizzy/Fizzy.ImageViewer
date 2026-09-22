@@ -51,6 +51,84 @@ One call per marker still creates one visual per marker: submit the whole collec
 to obtain batching. Text is drawn with `FormattedText`, not layout controls.
 An empty batch retains its visual but draws and hits nothing.
 
+## Live camera overlays: consumer requirements
+
+Keep layers and batches alive for the display session. A camera frame is a data
+update, not a reason to recreate the visual tree. Consumers of continuous camera
+or detection streams must follow these rules:
+
+| Avoid in the frame loop | Use instead |
+| --- | --- |
+| `Clear()` followed by `AddBatch(...)`, or disposing and recreating batches | Create each batch once and call `Replace(...)` on it |
+| Calling `DrawCircle`, `DrawLine`, etc. once per detection | Submit the complete detection collection in one batch per independently managed group |
+| Posting a dispatcher callback or starting a task for every incoming result | Keep one latest pending result and consume it from one serialized, rate-limited display loop |
+| Repainting fixed ROI, crosshairs, and labels with every camera frame | Keep static content in separate batches; update only changed content |
+| Creating mutable brushes for every element or frame | Reuse frozen brushes, such as `Brushes.Lime` |
+| Recreating HUD handles on every status update | Keep the handle and call `Update` only when content changes |
+
+For example, the following operations belong to three different lifecycle stages;
+do not put the initialization or cleanup in the per-frame callback:
+
+```csharp
+// Initialization: retain these handles for the display session.
+var detections = viewer.Layers.CreateLayer("camera-detections");
+var batch = detections.AddBatch(Array.Empty<DrawingElement>());
+
+// Display update: call from ONE serialized consumer at the chosen display rate.
+// Build this collection only for the latest result selected for display.
+batch.Replace(new DrawingElement[] {
+    new CircleElement(new Point(100, 100), 8, Brushes.Lime, 2),
+    new RectangleElement(new Rect(20, 20, 50, 40), Brushes.Yellow)
+});
+
+// A valid result with no detections clears content while retaining the visual.
+batch.Replace(Array.Empty<DrawingElement>());
+
+// Shutdown: first stop and await the producer/display loop, then release handles.
+batch.Dispose();
+viewer.Layers.RemoveLayer(detections);
+```
+
+Choose the display rate independently of acquisition/inference (for example,
+30 or 60 updates per second, subject to measured rendering cost). Overwrite stale
+pending results rather than queueing them. No new result means no `Replace` call;
+a new empty result means `Replace(Array.Empty<DrawingElement>())`. Build drawing
+elements after selecting the latest result so discarded results do not allocate
+unused drawing objects. Release overwritten results if they own pooled buffers or
+other resources, and do not mutate a result while the display consumer reads it.
+
+`Replace` is synchronous and marshals visual work to the viewer thread. It does
+not throttle, merge, or drop updates. The image pipeline's latest-frame queue does
+not apply to overlay calls, and image submission plus overlay replacement is not
+an atomic, frame-synchronized presentation. Consumers needing matching image and
+detection results must track frame identity and define their own stale-result
+policy. Do not hold a producer lock while calling viewer APIs.
+
+`Replace` reuses the visual, **not all drawing allocations**: submission copies
+the collection, shares immutable elements whose brushes are already frozen, and
+clones elements/brushes when mutable brushes require a snapshot. Each update records
+commands directly into the existing visual, avoiding intermediate `DrawingGroup`
+and per-primitive geometry objects. WPF command buffers and resource references
+still allocate. Equal pen styles share frozen
+pens within one preparation using a bounded cache; text formatting still allocates.
+Reusing the input array alone does not remove these allocations. Frozen brushes avoid brush cloning, but do
+not make replacement allocation-free. Batching reduces visual count; it is not
+a guarantee of zero GC or a particular frame rate.
+
+`Clear`, layer removal, and viewer closure invalidate batch handles. If the host
+allows Clear All Shapes during streaming, serialize that action with the display
+loop and recreate the batch once before resuming; do not retry a disposed handle
+on every frame. Stop subscriptions/timers and await in-flight updates before
+teardown. Do not call `GC.Collect()` in the frame loop.
+
+Validate sustained workloads using allocated bytes per update, GC collection
+counts, and update latency percentiles, including the expected marker/text count
+and zoom behavior. The drawing benchmark below also measures average allocated
+bytes and time across 50 warmed-up replacements on the viewer thread, alternating
+between two prebuilt circle collections with different positions. It excludes
+consumer result creation, cross-thread dispatch, and
+physical presentation; it does not establish sustained camera-stream GC performance.
+
 ## Coordinates, size and input
 
 - Line, rectangle and circle default to `FixedStroke`: geometry uses image pixels,
@@ -74,14 +152,16 @@ An empty batch retains its visual but draws and hits nothing.
 
 ## Ownership and compatibility
 
-Collections and brush values are copied on submission; subsequent mutation is not
-observed. Brushes are cloned and frozen on the calling thread (already frozen brushes
+Collections are copied on submission; subsequent mutation is not observed.
+Immutable elements with frozen brushes can be shared. Mutable brushes are cloned
+and frozen on the calling thread (already frozen brushes
 can be shared). Call from the owning thread for mutable WPF brushes. Non-freezable
 resources, null elements, non-finite coordinates, nonpositive radii/line widths/font
 sizes, and unsupported scale modes throw before content is changed.
 
-`Replace` prepares all data before replacing the visual's content and preserves the
-visual instance and stacking order. Failure keeps the previous drawing. All visual
+`Replace` validates snapshots and records drawing commands before publishing the
+visual's content, preserving the visual instance and stacking order. A recording
+failure discards the unfinished commands and keeps the previous drawing. All visual
 operations dispatch to the viewer thread. `Dispose` removes a batch synchronously
 and is idempotent; clear, layer removal and viewer closure invalidate handles.
 `Replace` on an invalidated handle throws `ObjectDisposedException`.

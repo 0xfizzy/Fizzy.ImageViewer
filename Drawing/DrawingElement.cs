@@ -10,76 +10,81 @@ public abstract record DrawingElement
 {
     private protected DrawingElement() { }
     public OverlayScaleMode ScaleMode { get; init; } = OverlayScaleMode.FixedStroke;
-    internal abstract DrawingElement Snapshot(Dictionary<Brush, Brush> brushes);
-    internal abstract void Draw(DrawingContext context, double scale, double pixelsPerDip);
-    internal static void Finite(params double[] values)
+    internal abstract DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes);
+    internal abstract void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources);
+    internal static void Finite(double a, double b, double c = 0, double d = 0)
     {
-        if (values.Any(v => !double.IsFinite(v))) throw new ArgumentException("Coordinates and dimensions must be finite.");
+        if (!double.IsFinite(a) || !double.IsFinite(b) || !double.IsFinite(c) || !double.IsFinite(d)) throw new ArgumentException("Coordinates and dimensions must be finite.");
     }
     internal static void Positive(double value, string name)
     {
         if (!double.IsFinite(value) || value <= 0) throw new ArgumentOutOfRangeException(name);
     }
-    internal static Brush Copy(Brush brush, Dictionary<Brush, Brush> cache)
+    internal static Brush Copy(Brush brush, ref Dictionary<Brush, Brush>? cache)
     {
         ArgumentNullException.ThrowIfNull(brush);
+        if (brush.IsFrozen) return brush;
+        cache ??= new(ReferenceEqualityComparer.Instance);
         if (cache.TryGetValue(brush, out var copy)) return copy;
-        if (brush.IsFrozen) copy = brush;
-        else
-        {
-            brush.VerifyAccess();
-            copy = brush.CloneCurrentValue();
-            if (!copy.CanFreeze) throw new ArgumentException("Drawing brushes must support freezing.", nameof(brush));
-            copy.Freeze();
-        }
+        brush.VerifyAccess();
+        copy = brush.CloneCurrentValue();
+        if (!copy.CanFreeze) throw new ArgumentException("Drawing brushes must support freezing.", nameof(brush));
+        copy.Freeze();
         cache.Add(brush, copy);
         return copy;
     }
-    internal void ValidateMode(params OverlayScaleMode[] allowed)
+    internal void ValidateMode(OverlayScaleMode a, OverlayScaleMode b, OverlayScaleMode? c = null)
     {
-        if (!allowed.Contains(ScaleMode)) throw new ArgumentException("Unsupported scale mode for this element.");
+        if (ScaleMode != a && ScaleMode != b && ScaleMode != c) throw new ArgumentException("Unsupported scale mode for this element.");
     }
-    internal Pen Pen(Brush brush, double thickness, double scale) =>
-        new(brush, ScaleMode == OverlayScaleMode.None ? thickness : thickness / scale);
+    internal Pen Pen(Brush brush, double thickness, double scale, DrawingResources resources) =>
+        resources.GetPen(brush, ScaleMode == OverlayScaleMode.None ? thickness : thickness / scale);
 }
 
 public sealed record LineElement(Point Start, Point End, Brush Stroke, double Thickness = 1) : DrawingElement
 {
-    internal override DrawingElement Snapshot(Dictionary<Brush, Brush> brushes)
+    internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Start.X, Start.Y, End.X, End.Y); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
-        return this with { Stroke = Copy(Stroke, brushes) };
+        var stroke = Copy(Stroke, ref brushes);
+        return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
-    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip) =>
-        context.DrawLine(Pen(Stroke, Thickness, scale), Start, End);
+    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources) =>
+        context.DrawLine(Pen(Stroke, Thickness, scale, resources), Start, End);
 }
 
 public sealed record CircleElement(Point Center, double Radius, Brush Stroke, double Thickness = 1, Brush? Fill = null) : DrawingElement
 {
-    internal override DrawingElement Snapshot(Dictionary<Brush, Brush> brushes)
+    internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Center.X, Center.Y); Positive(Radius, nameof(Radius)); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
-        return this with { Stroke = Copy(Stroke, brushes), Fill = Fill == null ? null : Copy(Fill, brushes) };
+        var stroke = Copy(Stroke, ref brushes);
+        var fill = Fill == null ? null : Copy(Fill, ref brushes);
+        return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
+            ? this : this with { Stroke = stroke, Fill = fill };
     }
-    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip)
+    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources)
     {
         double radius = ScaleMode == OverlayScaleMode.FixedSize ? Radius / scale : Radius;
-        context.DrawEllipse(Fill, Pen(Stroke, Thickness, scale), Center, radius, radius);
+        context.DrawEllipse(Fill, Pen(Stroke, Thickness, scale, resources), Center, radius, radius);
     }
 }
 
 public sealed record RectangleElement(Rect Bounds, Brush Stroke, double Thickness = 1, Brush? Fill = null) : DrawingElement
 {
-    internal override DrawingElement Snapshot(Dictionary<Brush, Brush> brushes)
+    internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
-        return this with { Stroke = Copy(Stroke, brushes), Fill = Fill == null ? null : Copy(Fill, brushes) };
+        var stroke = Copy(Stroke, ref brushes);
+        var fill = Fill == null ? null : Copy(Fill, ref brushes);
+        return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
+            ? this : this with { Stroke = stroke, Fill = fill };
     }
-    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip) =>
-        context.DrawRectangle(Fill, Pen(Stroke, Thickness, scale), Bounds);
+    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources) =>
+        context.DrawRectangle(Fill, Pen(Stroke, Thickness, scale, resources), Bounds);
 }
 
 public sealed record CrosshairElement : DrawingElement
@@ -91,16 +96,17 @@ public sealed record CrosshairElement : DrawingElement
     public double Thickness { get; init; }
     public CrosshairElement(Point center, Brush stroke, double size = 20, double thickness = 2)
     { Center = center; Stroke = stroke; Size = size; Thickness = thickness; ScaleMode = OverlayScaleMode.FixedSize; }
-    internal override DrawingElement Snapshot(Dictionary<Brush, Brush> brushes)
+    internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Center.X, Center.Y); Positive(Size, nameof(Size)); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
-        return this with { Stroke = Copy(Stroke, brushes) };
+        var stroke = Copy(Stroke, ref brushes);
+        return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
-    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip)
+    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources)
     {
         double size = ScaleMode == OverlayScaleMode.FixedSize ? Size / scale : Size;
-        var pen = Pen(Stroke, Thickness, scale);
+        var pen = Pen(Stroke, Thickness, scale, resources);
         context.DrawLine(pen, new(Center.X - size, Center.Y), new(Center.X + size, Center.Y));
         context.DrawLine(pen, new(Center.X, Center.Y - size), new(Center.X, Center.Y + size));
         context.DrawEllipse(null, pen, Center, size / 2, size / 2);
@@ -117,14 +123,15 @@ public sealed record TextElement : DrawingElement
     public string FontFamily { get; init; } = "Segoe UI";
     public TextElement(Point anchor, string text, Brush foreground, double fontSize = 14, Vector offset = default)
     { Anchor = anchor; Text = text; Foreground = foreground; FontSize = fontSize; Offset = offset; ScaleMode = OverlayScaleMode.AnchoredLabel; }
-    internal override DrawingElement Snapshot(Dictionary<Brush, Brush> brushes)
+    internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Anchor.X, Anchor.Y, Offset.X, Offset.Y); Positive(FontSize, nameof(FontSize));
         ArgumentNullException.ThrowIfNull(Text); ArgumentException.ThrowIfNullOrWhiteSpace(FontFamily);
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.AnchoredLabel);
-        return this with { Foreground = Copy(Foreground, brushes) };
+        var foreground = Copy(Foreground, ref brushes);
+        return ReferenceEquals(foreground, Foreground) ? this : this with { Foreground = foreground };
     }
-    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip)
+    internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources)
     {
         var text = new FormattedText(Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
             new Typeface(FontFamily), FontSize, Foreground, pixelsPerDip);

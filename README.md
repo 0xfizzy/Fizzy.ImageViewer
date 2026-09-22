@@ -67,6 +67,8 @@ viewer.StartMeasure(MeasureToolIds.Length); // Independent interactive measureme
 
 See [measurement ownership and interaction](docs/measurements.md).
 See [drawing layers](docs/drawing-layers.md) for updates, hit testing, and API behavior.
+For camera streams, retain batches and replace their content; follow the
+[live overlay consumer requirements](docs/drawing-layers.md#live-camera-overlays-consumer-requirements).
 See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 [validation commands](docs/validation.md).
 

@@ -17,20 +17,25 @@ public sealed class DrawingBatchHandle : IDisposable
     internal static DrawingElement[] Snapshot(IEnumerable<DrawingElement> elements)
     {
         ArgumentNullException.ThrowIfNull(elements);
-        var brushes = new Dictionary<Brush, Brush>(ReferenceEqualityComparer.Instance);
-        return elements.Select(e => (e ?? throw new ArgumentException("Null drawing element.", nameof(elements))).Snapshot(brushes)).ToArray();
+        Dictionary<Brush, Brush>? brushes = null;
+        // Own the array, but immutable elements with frozen brushes can be shared.
+        var snapshot = elements.ToArray();
+        for (int i = 0; i < snapshot.Length; i++)
+            snapshot[i] = (snapshot[i] ?? throw new ArgumentException("Null drawing element.", nameof(elements))).Snapshot(ref brushes);
+        return snapshot;
     }
-    internal static DrawingGroup Prepare(DrawingElement[] elements, double scale, double dpi)
+    internal void Commit(DrawingElement[] elements, double scale, double dpi)
     {
-        var drawing = new DrawingGroup();
-        using (var context = drawing.Open())
-            foreach (var element in elements) element.Draw(context, scale, dpi);
-        drawing.Freeze();
-        return drawing;
-    }
-    internal void Commit(DrawingElement[] elements, DrawingGroup drawing)
-    {
-        using (var context = Visual.RenderOpen()) context.DrawDrawing(drawing);
+        var resources = new DrawingResources();
+        // RenderOpen records commands; Close publishes them to the visual.
+        // Intentionally do NOT use using/finally: disposing after a Draw failure
+        // would publish partial content. An unclosed WPF visual drawing context
+        // only holds managed recording data and can be discarded on failure.
+        // Avoid DrawingGroup.Open, which materializes geometry/drawing objects
+        // for every primitive instead of recording compact render commands.
+        var context = Visual.RenderOpen();
+        foreach (var element in elements) element.Draw(context, scale, dpi, resources);
+        context.Close();
         Elements = elements;
     }
     public void Replace(IEnumerable<DrawingElement> elements)
@@ -41,8 +46,7 @@ public sealed class DrawingBatchHandle : IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             _layer.EnsureAlive();
-            var drawing = Prepare(snapshot, _layer.Owner.Scale, _layer.PixelsPerDip);
-            Commit(snapshot, drawing);
+            Commit(snapshot, _layer.Owner.Scale, _layer.PixelsPerDip);
         });
     }
     public void Dispose()
