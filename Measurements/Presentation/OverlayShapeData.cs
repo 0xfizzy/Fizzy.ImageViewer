@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
 
-namespace Fizzy.ImageViewer.Controls;
+namespace Fizzy.ImageViewer.Measurements.Presentation;
 
 /// <summary>Private visual metadata. Geometry ownership stays in measurement items.</summary>
 internal sealed class OverlayShapeData(OverlayScaleMode mode, bool usesFill = false)

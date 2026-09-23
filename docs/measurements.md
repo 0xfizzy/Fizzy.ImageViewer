@@ -54,9 +54,11 @@ ViewerInputBinding translates WPF input and applies pointer effects
 without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
 It holds no coordinator or measurement-owner reference. The coordinator receives
-translated input and generic drawing-layer lifecycle notifications; the window composes the
-measurement overlay into its drawing layer. A clear cancels the active session once,
-cleans measurement owners, and invalidates batches even if cancellation fails.
+translated input and layer lifecycle notifications. MeasurementLayer binds its model content
+owner directly. Clearing first cancels input and selection, then always releases measurement
+owners and their queries/resources, even if cancellation throws or no coordinator exists.
+The layer remains in its clearing state throughout both phases. Batch layers independently
+invalidate their batches.
 Bulk clearing rejects new measurement/editing sessions and measurement creation from cleanup
 callbacks; reentrant clears are idempotent, and other layers are still cleared after a failure.
 
@@ -143,10 +145,23 @@ case-sensitive; blank IDs or display names are rejected. `StartMeasurement` thro
 measurement layer is hidden. `UnregisterMeasurementTool(id)` returns whether an entry
 was removed. Call `CancelMeasurement()` to end the active interaction session.
 
-Built-in tool classes are internal but implement the same `IMeasurementTool` protocol
-as extensions. Both receive the public context in each callback. A tool returns `true`
-from `OnClick` to end its input session; call `Complete()` on each result to retain it.
-Returning `true` does not implicitly complete unfinished measurements.
+Built-in and custom registrations implement `IMeasurementTool`: `Id`, `DisplayName`, and
+`CreateSession(IMeasurementToolContext)`. Each activation calls the factory on the viewer STA
+and requires a new `IMeasurementToolSession`. Store preview handles, first-click coordinates
+and other mutable interaction state in this session. The registration contains reusable
+configuration; sharing it across viewers requires a thread-safe factory and configuration.
+
+The session receives `OnClick(Point)`, `OnMouseMove(Point)` and `Cancel()` callbacks and retains
+its own creation context. Returning `true` from `OnClick` ends input; call `Complete()` on each
+measurement to retain it. Unfinished measurements are released automatically. Normal completion
+does not call `Cancel`; interruption calls it once after ending the creation context and releases
+previews even if cancellation throws.
+
+Factories may create previews and may reenter viewer APIs. A newer activation takes precedence.
+If a factory returns after its activation was interrupted, its returned session is cancelled
+without changing the newer session. A factory failure or null return releases its unfinished
+measurements; the factory owns cleanup of resources not yet transferred to a measurement.
+A retained context cannot create measurements after its activation ends.
 
 ### Geometry, editing and notifications
 
@@ -248,37 +263,37 @@ public sealed class CustomRoi : IMeasurementTool
 {
     public string Id => "custom-roi";
     public string DisplayName => "Custom ROI";
-    private IMeasurement? _preview;
-    private Point _start;
+    public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+        => new Session(context);
 
-    public bool OnClick(Point point, IMeasurementToolContext context)
+    private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
     {
-        if (_preview is null or { IsDisposed: true })
+        private IMeasurement? _preview;
+        private Point _start;
+
+        public bool OnClick(Point point)
         {
-            _start = point;
-            _preview = context.CreateMeasurement(
-                MeasurementGeometry.Rectangle(point, point),
-                new() { Query = MeasurementQuery.RegionStatistics });
-            return false;
+            if (_preview is null or { IsDisposed: true })
+            {
+                _start = point;
+                _preview = context.CreateMeasurement(
+                    MeasurementGeometry.Rectangle(point, point),
+                    new() { Query = MeasurementQuery.RegionStatistics });
+                return false;
+            }
+            OnMouseMove(point);
+            _preview.Complete();
+            return true;
         }
-        OnMouseMove(point, context);
-        var completed = _preview;
-        _preview = null; // Completion subscribers may synchronously restart this tool.
-        completed.Complete();
-        return true;
-    }
 
-    public void OnMouseMove(Point point, IMeasurementToolContext context)
-    {
-        if (_preview is { IsDisposed: false })
-            _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_start, point));
-    }
+        public void OnMouseMove(Point point)
+        {
+            if (_preview is { IsDisposed: false })
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_start, point));
+        }
 
-    public void Cancel(IMeasurementToolContext context)
-    {
-        var preview = _preview;
-        _preview = null;
-        preview?.Dispose();
+        // The framework releases unfinished measurements after cancellation.
+        public void Cancel() { }
     }
 }
 ```

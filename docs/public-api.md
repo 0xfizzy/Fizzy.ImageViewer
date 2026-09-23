@@ -14,10 +14,10 @@ application adapters own an instance and use its public API. Raw-window access i
 | Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/change/removal events |
-| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
+| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
-The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, layer settings
-and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
+The root namespace contains `Viewer` and `IViewerAPI`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
+`DrawingLayer`, batch handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
 `MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
@@ -72,7 +72,12 @@ The event's `IDisposable` handle removes the item and its resources from any thr
 including after closure. Removal may occur reentrantly during a completion subscriber.
 Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
 
-Custom and built-in tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
+Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
+Every activation must return a fresh `IMeasurementToolSession`; its `OnClick`, `OnMouseMove`
+and `Cancel` callbacks retain that context and keep all temporary interaction state in the session.
+Registrations may be shared across viewers when their configuration and factory support concurrent
+calls on those viewers' STAs. Sessions and contexts must never be shared between activations.
+Tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
 The context belongs to one creation session. Once that session completes, is cancelled or
 is replaced, creating another preview through its retained context throws `ObjectDisposedException`.
 The returned `IMeasurement` owns geometry, display, queries and registered resources.

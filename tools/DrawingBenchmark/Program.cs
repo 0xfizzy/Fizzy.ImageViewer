@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Measurements.Presentation;
 using System.Diagnostics;
 using System.Windows;

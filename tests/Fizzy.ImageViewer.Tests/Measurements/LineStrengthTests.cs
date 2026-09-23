@@ -95,7 +95,7 @@ public class LineStrengthTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Host.Window.MeasurementOverlay;
-            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
             item.OnDispose(() => throw new InvalidOperationException("resource cleanup failure"));
             item.Complete();
             int removed = 0;
@@ -117,9 +117,10 @@ public class LineStrengthTests
     {
         var before = Windows();
         var session = new MeasurementCreationSession(viewer.Host.Measurements);
-        Assert.False(method.OnClick(new(0, 0), session));
+        var activation = method.CreateSession(session);
+        Assert.False(activation.OnClick(new(0, 0)));
         Assert.Empty(Windows().Except(before));
-        Assert.True(method.OnClick(new(1, 0), session));
+        Assert.True(activation.OnClick(new(1, 0)));
         session.End(); session.ClearPreviews();
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }

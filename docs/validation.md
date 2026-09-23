@@ -154,3 +154,13 @@ WPF drawing commands and offscreen `RenderTargetBitmap` rendering. One red sampl
 changes per update; RGB changes rebuild all channels to preserve shared scaling.
 Drawing measurements include the harness drawing context; they exclude sampling,
 window composition and native allocations. They do not establish a zero-GC frame pipeline.
+
+## Tool sessions and layer ownership
+
+`MeasurementSessionTests` verify independent state when a registration is shared across two
+viewers, factory reentry and failure cleanup, and rejection of ended creation contexts.
+They also clear model-owned content and query subscriptions without an interaction coordinator,
+and after coordinator disposal. Existing reentry tests cover interrupted clicks, moves,
+cancellation, completion and editing using explicit session contexts.
+Test source files are grouped by capability (Measurements, Layers, Drawing, Frames, Imaging,
+PixelInfo, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.

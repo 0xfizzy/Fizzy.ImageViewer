@@ -75,7 +75,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                _context = new MeasurementContext(win.MeasurementOverlay, TryAcquireCurrentFrame, _queryScheduler, _logger);
+                _context = new MeasurementContext(win.Layers.Measurements, TryAcquireCurrentFrame, _queryScheduler, _logger);
                 _tools = new MeasurementToolRegistry();
                 _context.ItemCompleted += _owner.NotifyMeasurementCompleted;
                 _context.ItemRemoved += _owner.NotifyMeasurementRemoved;

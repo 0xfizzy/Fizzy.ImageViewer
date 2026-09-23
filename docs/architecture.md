@@ -13,18 +13,21 @@ public facade, drawing handles and measurement handles.
 | Rendering | CPU preparation/presentation and D3D surface presentation |
 | Imaging | Original-pixel access, regions, query results and display conversion |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
-| Drawing | Shared layer settings, batch drawing descriptions and HUD handles |
+| Layers | Business-layer container, shared visibility, input and clear lifecycle |
+| Drawing | Batch drawing descriptions, marker layers and HUD handles |
 | Measurements | Tool protocols, creation sessions, geometry, styles and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
 | Editing | Measurement edit sessions and control-point interaction |
-| Controls | WPF display surfaces, visual metadata and coordinate transforms |
+| Controls | WPF image/HUD surfaces and coordinate transforms |
+| PixelInfo | Pixel HUD sampling and display state |
 | Snapshots | Captured frame/region ownership and encoding |
 | Menus | Registration ownership, WPF bindings, viewer menu policy and save actions |
 
 Files belong to their feature, including interfaces and enums. Public and internal namespaces
 follow feature ownership; only the Viewer facade and its lifetime/composition helpers live
 in the root namespace. Built-in tools live under Measurements/BuiltIn.
-Measurements/Presentation owns visual creation, geometry projection, labels and line-profile windows.
+Measurements/Presentation owns the measurement overlay, visual metadata, shape creation, geometry projection, labels and line-profile windows.
+Tests follow the same capability folders under tests/Fizzy.ImageViewer.Tests; shared test namespaces remain stable.
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.
 Integration tests access composed internals through Viewer.Host; component tests construct
 their owners directly. Viewer has no menu-freeze or snapshot-target forwarding methods.
@@ -49,11 +52,19 @@ visuals and invalidates their handles on shutdown.
 ViewerInputBinding translates WPF events and coordinates, and applies cursor, focus
 and capture effects. It holds no session state. The interaction coordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
-transitions. MeasurementToolRegistry only stores registrations. Each tool session receives an `IMeasurementToolContext` that owns its unfinished items.
+transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
+`IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
+that activation's mutable state. The coordinator owns this callback session and its explicit
+`MeasurementCreationSession` context; MeasurementContext stores no ambient current session.
+Every preview must be created through its owning context.
 Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
 through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
-`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and
-exposes no batch creation or batch-click events.
+`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and binds
+its MeasurementContext as the content owner. Clear enters the layer's clearing gate, notifies
+the coordinator to cancel input and selection, then clears model-owned content in a finally
+block. Model, query and resource cleanup does not depend on a coordinator being present.
+The same layer gate rejects creation and interaction starts throughout cancellation and cleanup.
+MeasurementLayer exposes no batch creation or batch-click events.
 
 MeasurementItem owns model state, queries and disposal; MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal

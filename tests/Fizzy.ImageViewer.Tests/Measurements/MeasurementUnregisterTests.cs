@@ -13,6 +13,9 @@ public sealed class MeasurementUnregisterTests
     {
         public string Id => "reentrant";
         public string DisplayName => Id;
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+            => new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context) => false;
         public void OnMouseMove(Point point, IMeasurementToolContext context) { }
         public void Cancel(IMeasurementToolContext context) => viewer.StartMeasurement(Id);

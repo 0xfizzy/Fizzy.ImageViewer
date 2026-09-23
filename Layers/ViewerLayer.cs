@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Fizzy.ImageViewer.Drawing;
+namespace Fizzy.ImageViewer.Layers;
 
 /// <summary>Shared visibility, input and lifetime of a business layer. Operations dispatch to the viewer STA.</summary>
 public abstract class ViewerLayer
@@ -11,6 +11,7 @@ public abstract class ViewerLayer
     private bool _visible = true, _hitTest;
     private int _zIndex;
     private bool _removed, _clearing;
+    internal bool IsClearing => _clearing;
     internal event Action? Clearing;
     internal event Action? InputPolicyChanged;
     public string Name { get; }

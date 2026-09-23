@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;

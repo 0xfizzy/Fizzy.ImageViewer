@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Editing;
@@ -41,7 +43,8 @@ public class UnifiedMeasurementTests
     }
     private sealed class Harness : IDisposable
     {
-        public readonly OverlayLayer Overlay = new();
+        public readonly ViewerLayers Layers = new(System.Windows.Media.Transform.Identity);
+        public OverlayLayer Overlay => Layers.Measurements.Overlay;
         public readonly FrameLease Frame;
         public readonly Runtime Runtime;
         public readonly PixelQueryScheduler Queries;
@@ -53,7 +56,7 @@ public class UnifiedMeasurementTests
             Frame.Info = new(42, Frame.Descriptor, null);
             Runtime = new(Overlay.Dispatcher);
             Queries = new(() => Frame.Acquire(), NullLogger.Instance, Runtime);
-            Context = new(Overlay, () => Frame.Acquire(), Queries, NullLogger.Instance);
+            Context = new(Layers.Measurements, () => Frame.Acquire(), Queries, NullLogger.Instance);
         }
         public void Dispose() { Context.Shutdown(); Queries.Dispose(); Frame.Dispose(); }
     }
@@ -61,15 +64,28 @@ public class UnifiedMeasurementTests
     {
         public string Id => "custom-roi";
         public string DisplayName => "Custom ROI";
-        public IMeasurement? Item;
-        public bool OnClick(Point point, IMeasurementToolContext context)
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context) => new Session(context);
+
+        private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
         {
-            if (Item == null) { Item = context.CreateMeasurement(MeasurementGeometry.Rectangle(point, point), new() { Query = MeasurementQuery.RegionStatistics }); return false; }
-            Item.UpdateGeometry(MeasurementGeometry.Rectangle(Item.Geometry.Start, point)); Item.Complete(); return true;
+            private IMeasurement? _item;
+            public bool OnClick(Point point)
+            {
+                if (_item == null)
+                {
+                    _item = context.CreateMeasurement(MeasurementGeometry.Rectangle(point, point),
+                        new() { Query = MeasurementQuery.RegionStatistics });
+                    return false;
+                }
+                _item.UpdateGeometry(MeasurementGeometry.Rectangle(_item.Geometry.Start, point));
+                _item.Complete();
+                return true;
+            }
+            public void OnMouseMove(Point point) { }
+            public void Cancel() { }
         }
-        public void OnMouseMove(Point point, IMeasurementToolContext context) { }
-        public void Cancel(IMeasurementToolContext context) { }
     }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -120,7 +136,7 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             h = new(source);
-            item = h.Context.CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQuery.RegionStatistics });
+            item = new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQuery.RegionStatistics });
             item.ResultChanged += result => { if (result != null) published++; };
             item.Complete(); h.Queries.Tick();
         });
@@ -147,7 +163,7 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             h = new();
-            item = h.Context.CreateMeasurement(query == MeasurementQuery.Pixel ? MeasurementGeometry.Point(new(1, 1))
+            item = new MeasurementCreationSession(h.Context).CreateMeasurement(query == MeasurementQuery.Pixel ? MeasurementGeometry.Point(new(1, 1))
                 : MeasurementGeometry.Line(new(), new(3, 0)), new() { Query = query });
             item.Complete(); h.Queries.Tick();
         });
@@ -176,7 +192,7 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             h = new(source);
-            item = h.Context.CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQuery.RegionStatistics });
+            item = new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQuery.RegionStatistics });
             item.ResultChanged += result => { if (result == null) invalidations++; };
             item.Complete(); h.Queries.Tick();
         });
@@ -199,7 +215,7 @@ public class UnifiedMeasurementTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Circle(new(2, 3), 4));
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Circle(new(2, 3), 4));
             item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(2, 3), 1)); editor.UpdateDrag(new(5, 6)); editor.EndDrag();
@@ -221,13 +237,13 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var context = viewer.Host.Measurements;
-            Assert.Throws<ArgumentException>(() => context.CreateMeasurement(MeasurementGeometry.Circle(new(), 1), new() { Query = MeasurementQuery.RegionStatistics }));
-            Assert.Throws<ArgumentException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new()), new() { ShowLineProfile = true }));
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Circle(new(), 1), new() { Query = MeasurementQuery.RegionStatistics }));
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()), new() { ShowLineProfile = true }));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), double.MaxValue));
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
-            var item = context.CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
-            item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new()))));
+            var item = new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
+            item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()))));
             viewer.ClearShapes();
         });
     }

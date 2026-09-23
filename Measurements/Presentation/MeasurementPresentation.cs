@@ -1,6 +1,5 @@
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Shapes;

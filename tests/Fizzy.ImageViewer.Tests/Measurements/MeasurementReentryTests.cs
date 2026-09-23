@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
@@ -22,6 +24,13 @@ public class MeasurementReentryTests
         public Func<IMeasurementToolContext, bool>? Click;
         public Action<IMeasurementToolContext>? Move, Cancelled;
         public int Clicks;
+        public IMeasurementToolContext Context = null!;
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+        {
+            Context = context;
+            return new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
+        }
         public bool OnClick(Point point, IMeasurementToolContext context) { Clicks++; return Click?.Invoke(context) ?? false; }
         public void OnMouseMove(Point point, IMeasurementToolContext context) => Move?.Invoke(context);
         public void Cancel(IMeasurementToolContext context) => Cancelled?.Invoke(context);
@@ -41,7 +50,7 @@ public class MeasurementReentryTests
             Layers = new(Input.TransformGroup);
             Overlay = Layers.Measurements.Overlay;
             Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
-            Context = new(Overlay, () => null, Queries, NullLogger.Instance);
+            Context = new(Layers.Measurements, () => null, Queries, NullLogger.Instance);
             Tools = new();
             Coordinator = new(new ViewerInputBinding(Input, Overlay), Overlay, new EditManager(Overlay), Tools, Context, Layers);
         }
@@ -64,7 +73,7 @@ public class MeasurementReentryTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness();
-            var independent = h.Context.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var independent = new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Point(new()));
             var tool = new Tool("scope");
             IMeasurementToolContext? retainedContext = null;
             IMeasurement? preview = null;
@@ -151,8 +160,8 @@ public class MeasurementReentryTests
                 if (throws) throw failure;
             }
             h.Coordinator.StartMeasurement(old.Id);
-            var scope = h.Context.CreateMeasurement(MeasurementGeometry.Point(new())); scope.OnDispose(() => oldReleased++);
-            var editable = (MeasurementItem)h.Context.CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
+            var scope = old.Context.CreateMeasurement(MeasurementGeometry.Point(new())); scope.OnDispose(() => oldReleased++);
+            var editable = (MeasurementItem)new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
             var shape = editable.Presentation.PrimaryVisual;
             Action invoke;
             switch (operation)
@@ -184,7 +193,7 @@ public class MeasurementReentryTests
         {
             using var h = new Harness(); var tool = new Tool("old"); h.Tools.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
-            var released = 0; h.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
+            var released = 0; tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
             var failure = new InvalidOperationException("failure");
             Action invoke;
             if (operation == "click") { tool.Click = _ => throw failure; invoke = () => h.Coordinator.ImageDown(0, 0); }
@@ -207,11 +216,11 @@ public class MeasurementReentryTests
             using var h = new Harness(); var tool = new Tool("same"); h.Tools.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
             var released = 0;
-            var old = h.Context.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var old = tool.Context.CreateMeasurement(MeasurementGeometry.Point(new()));
             old.OnDispose(() =>
             {
                 h.Coordinator.StartMeasurement(tool.Id);
-                h.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
+                tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
             });
             tool.Click = _ => true;
             if (completes) h.Coordinator.ImageDown(0, 0); else h.Coordinator.Cancel();
@@ -231,7 +240,7 @@ public class MeasurementReentryTests
             using var h = new Harness(); var tool = new Tool("old"); var next = new Tool("next");
             h.Tools.RegisterTool(tool); h.Tools.RegisterTool(next);
             h.Coordinator.StartMeasurement(tool.Id);
-            var released = 0; h.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
+            var released = 0; tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
             tool.Cancelled = _ => { h.Coordinator.StartMeasurement(next.Id); if (throws) throw new InvalidOperationException(); };
             if (throws) Assert.Throws<InvalidOperationException>(h.Coordinator.Dispose); else h.Coordinator.Dispose();
             h.Coordinator.Dispose();
@@ -250,8 +259,8 @@ public class MeasurementReentryTests
             var tool = new Tool("closing");
             tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.StartMeasurement(tool.Id)); rejected = true; throw new InvalidOperationException(); };
             viewer.RegisterMeasurementTool(tool); viewer.StartMeasurement(tool.Id);
-            var completed = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new())); completed.OnDispose(() => released++); completed.Complete();
-            viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
+            var completed = tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())); completed.OnDispose(() => released++); completed.Complete();
+            tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
         });
         await viewer.DisposeAsync(); await viewer.DisposeAsync();
         Assert.True(rejected); Assert.Equal(2, released);
@@ -271,13 +280,13 @@ public class MeasurementReentryTests
             h.Tools.RegisterTool(old);
             h.Coordinator.StartMeasurement(old.Id);
             var oldReleased = 0; var replacementReleased = 0;
-            h.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => oldReleased++);
+            old.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => oldReleased++);
             var failure = new InvalidOperationException("outgoing cancellation failed");
             old.Cancelled = _ =>
             {
                 h.Tools.RegisterTool(replacement);
                 h.Coordinator.StartMeasurement(replacement.Id);
-                h.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => replacementReleased++);
+                replacement.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => replacementReleased++);
                 if (throws) throw failure;
             };
             if (throws)

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
@@ -86,7 +87,7 @@ public interface IViewerAPI : IAsyncDisposable
     Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
         Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Imaging.PixelRegion region, CancellationToken ct = default);
     // === 绘图 ===
-    Fizzy.ImageViewer.Drawing.ViewerLayers Layers { get; }
+    Fizzy.ImageViewer.Layers.ViewerLayers Layers { get; }
 
     /// <summary>
     /// 在默认不参与命中测试的 Markers 图层绘制一条线段。
@@ -152,7 +153,7 @@ public interface IViewerAPI : IAsyncDisposable
     IDisposable RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
-    /// 注册自定义测量方法。工具回调中通过 IMeasurementToolContext.CreateMeasurement 创建模型驱动测量并托管资源，
+    /// 注册自定义测量工具；CreateSession 为每次启动创建独立会话。会话通过 IMeasurementToolContext.CreateMeasurement 创建测量并托管资源，
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
     /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
     /// </summary>

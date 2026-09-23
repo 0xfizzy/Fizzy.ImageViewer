@@ -1,5 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Controls;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Editing;

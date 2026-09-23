@@ -10,7 +10,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
 {
     private readonly MeasurementContext _context;
     internal MeasurementPresentation Presentation { get; }
-    internal MeasurementCreationSession? Session { get; }
+    internal MeasurementCreationSession Session { get; }
     private readonly MeasurementOptions _options;
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
@@ -29,7 +29,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     public event Action<MeasurementGeometry>? GeometryChanged;
     public event Action<MeasurementResult?>? ResultChanged;
 
-    internal MeasurementItem(MeasurementContext context, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession? session)
+    internal MeasurementItem(MeasurementContext context, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
     {
         _context = context;
         Geometry = geometry;
@@ -79,7 +79,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         EnsureAlive();
         if (IsComplete) return;
         IsComplete = true;
-        Session?.Release(this);
+        Session.Release(this);
         try
         {
             Presentation.Complete(_options.ShowLineProfile);
@@ -149,7 +149,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         _context.VerifyAccess();
         if (IsDisposed) return;
         IsDisposed = true;
-        Session?.Release(this);
+        Session.Release(this);
         List<Exception> errors = [];
         void Release(Action action) { try { action(); } catch (Exception ex) { errors.Add(ex); } }
         Release(() => _subscription?.Dispose());

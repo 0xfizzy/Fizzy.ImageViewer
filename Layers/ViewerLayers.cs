@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 using System.Windows.Controls;
@@ -5,7 +6,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using System.Runtime.ExceptionServices;
 
-namespace Fizzy.ImageViewer.Drawing;
+namespace Fizzy.ImageViewer.Layers;
 
 /// <summary>Owns business layers. Image and HUD surfaces are not business layers.</summary>
 public sealed class ViewerLayers

@@ -8,7 +8,8 @@ below and above the business-layer container, respectively.
 
 `Markers` and custom layers are `DrawingLayer` instances with `AddBatch` and `BatchClicked`.
 `Measurements` is a `MeasurementLayer`: tools create its model-owned content, and it has no
-batch drawing API. Both share `ViewerLayer` settings (`Name`, visibility, hit testing,
+batch drawing API. `ViewerLayers` and the shared `ViewerLayer` base belong to `Fizzy.ImageViewer.Layers`.
+Both layer types share `ViewerLayer` settings (`Name`, visibility, hit testing,
 ZIndex and `Clear`); `Layers.Items` returns a snapshot of those shared handles.
 
 Each completed `LineStrength` measurement links its line, length label, and pixel

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
@@ -6,7 +7,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    public Drawing.ViewerLayers Layers => _host.Window.Layers;
+    public Layers.ViewerLayers Layers => _host.Window.Layers;
 
     /// <summary>Draws a non-interactive single-element batch in the Markers layer.</summary>
     public IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0) =>

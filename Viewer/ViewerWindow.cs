@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Controls;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +13,7 @@ namespace Fizzy.ImageViewer
         public ImageLayer ImageLayer { get; }
         internal OverlayLayer MeasurementOverlay => Layers.Measurements.Overlay;
         public HudLayer HudLayer { get; }
-        public Drawing.ViewerLayers Layers { get; }
+        public Layers.ViewerLayers Layers { get; }
 
         public ViewerWindow(string title) : this(title, new ViewerLifetime()) { }
 
@@ -26,7 +28,7 @@ namespace Fizzy.ImageViewer
 
             // === 实例化图层 ===
             ImageLayer = new ImageLayer();
-            Layers = new Drawing.ViewerLayers(ImageLayer.TransformGroup, lifetime);
+            Layers = new Layers.ViewerLayers(ImageLayer.TransformGroup, lifetime);
             HudLayer = new HudLayer();
 
 

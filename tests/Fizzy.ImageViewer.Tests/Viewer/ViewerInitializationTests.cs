@@ -148,7 +148,7 @@ public class ViewerInitializationTests
                 sta = Thread.CurrentThread;
                 viewer.Host.Window.Closed += (_, _) => closedWindows++;
                 viewer.Host.Window.Closing += (_, e) => e.Cancel = true;
-                var scope = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new()));
+                var scope = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
 
                 scope.OnDispose(() => releasedScopes++);
                 scope.Complete();

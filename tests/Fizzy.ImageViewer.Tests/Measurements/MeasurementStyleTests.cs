@@ -18,8 +18,8 @@ public class MeasurementStyleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var rectangleItem = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
-            using var pointItem = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
+            using var rectangleItem = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
+            using var pointItem = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
                 new() { Style = new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White } });
             var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).Presentation.PrimaryVisual;
             var label = ((MeasurementItem)rectangleItem).Presentation.Label;
@@ -96,6 +96,9 @@ public class MeasurementStyleTests
     {
         public string Id => "styled";
         public string DisplayName => "Styled";
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+            => new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context)
         {
             var scope = context.CreateMeasurement(MeasurementGeometry.Circle(point, 2));

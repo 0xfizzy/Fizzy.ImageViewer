@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace Fizzy.ImageViewer.Controls;
+namespace Fizzy.ImageViewer.Measurements.Presentation;
 
 /// <summary>WPF display, hit testing and selection appearance. Session policy belongs to the coordinator.</summary>
 internal class OverlayLayer : UserControl

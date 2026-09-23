@@ -27,6 +27,9 @@ public class MeasurementToolProtocolTests
         public Point Point;
         public bool Finish;
         public Exception? Failure;
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+            => new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context)
         { Context = context; Point = point; if (Failure != null) throw Failure; return Finish; }
         public void OnMouseMove(Point point, IMeasurementToolContext context)
@@ -39,18 +42,18 @@ public class MeasurementToolProtocolTests
     public void ToolRequiresOnlyPublicContextAndPreservesResultsAndExceptions()
     {
         var context = new PublicContext(); var method = new Probe();
-        var tool = method;
-        Assert.Equal(method.Id, tool.Id); Assert.Equal(method.DisplayName, tool.DisplayName);
-        Assert.False(tool.OnClick(new(1, 2), context));
+        var tool = method.CreateSession(context);
+        Assert.NotSame(tool, method.CreateSession(context));
+        Assert.False(tool.OnClick(new(1, 2)));
         Assert.Same(context, method.Context); Assert.Equal(new Point(1, 2), method.Point);
-        method.Finish = true; Assert.True(tool.OnClick(new(3, 4), context));
-        method.Context = null; tool.OnMouseMove(new(5, 6), context);
+        method.Finish = true; Assert.True(tool.OnClick(new(3, 4)));
+        method.Context = null; tool.OnMouseMove(new(5, 6));
         Assert.Same(context, method.Context); Assert.Equal(new Point(5, 6), method.Point);
-        method.Context = null; tool.Cancel(context); Assert.Same(context, method.Context);
+        method.Context = null; tool.Cancel(); Assert.Same(context, method.Context);
         method.Failure = new InvalidOperationException("plugin failure");
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnClick(new(), context)));
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnMouseMove(new(), context)));
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.Cancel(context)));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnClick(new())));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnMouseMove(new())));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.Cancel()));
     }
 
     [Fact]
@@ -118,6 +121,9 @@ public class MeasurementToolProtocolTests
         public int Notifications, Released;
         public byte Pixel;
         public bool Finish;
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+            => new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context)
         {
             using var frame = context.AcquireCurrentFrame();

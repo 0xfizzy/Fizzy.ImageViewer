@@ -28,7 +28,6 @@ internal sealed class MeasurementCreationSession(MeasurementContext owner) : IMe
     internal void End()
     {
         _ended = true;
-        if (ReferenceEquals(owner.CurrentSession, this)) owner.CurrentSession = null;
     }
 
     internal void ClearPreviews()

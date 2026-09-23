@@ -1,5 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;

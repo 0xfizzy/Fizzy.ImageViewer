@@ -19,6 +19,9 @@ public class LayerInteractionTests
         public string DisplayName => Id;
         public int Cancellations;
         public Action<IMeasurementToolContext>? Cancelled;
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+            => new TestMeasurementSession(point => OnClick(point, context),
+                point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context)
         { context.CreateMeasurement(MeasurementGeometry.Point(point)); return false; }
         public void OnMouseMove(Point point, IMeasurementToolContext context) { }
@@ -83,7 +86,7 @@ public class LayerInteractionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             var shape = item.Presentation.PrimaryVisual;
             void Click() => shape.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
                 { RoutedEvent = Mouse.MouseDownEvent });

@@ -13,23 +13,26 @@ public class MeasurementNotificationsTests
     {
         public string Id => "notification-roi";
         public string DisplayName => Id;
-        private IMeasurement? _preview;
-        public bool OnClick(Point point, IMeasurementToolContext context)
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context) => new Session(context);
+
+        private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
         {
-            if (_preview == null)
+            private IMeasurement? _preview;
+            public bool OnClick(Point point)
             {
-                _preview = context.CreateMeasurement(MeasurementGeometry.Rectangle(point, point),
-                    new() { Query = MeasurementQuery.RegionStatistics });
-                return false;
+                if (_preview == null)
+                {
+                    _preview = context.CreateMeasurement(MeasurementGeometry.Rectangle(point, point),
+                        new() { Query = MeasurementQuery.RegionStatistics });
+                    return false;
+                }
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_preview.Geometry.Start, point));
+                _preview.Complete();
+                return true;
             }
-            var item = _preview;
-            _preview = null;
-            item.UpdateGeometry(MeasurementGeometry.Rectangle(item.Geometry.Start, point));
-            item.Complete();
-            return true;
+            public void OnMouseMove(Point point) { }
+            public void Cancel() { }
         }
-        public void OnMouseMove(Point point, IMeasurementToolContext context) { }
-        public void Cancel(IMeasurementToolContext context) => _preview = null;
     }
 
     [Theory]
@@ -110,7 +113,7 @@ public class MeasurementNotificationsTests
         viewer.MeasurementRemoved += (_, _) => removed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
             item.Complete();
             item.UpdateGeometry(MeasurementGeometry.Point(new(1, 1)));
             Assert.True(item.IsDisposed);

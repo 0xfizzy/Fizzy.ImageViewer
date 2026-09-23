@@ -42,7 +42,7 @@ public class QuerySchedulingTests
             Assert.False(window!.IsVisible);
             Assert.Equal(0, plot!.SampleCount);
             Assert.Equal(0, plot.ChannelCount);
-            var overlay=viewer.Layers.Measurements.Root.Children.OfType<Controls.OverlayLayer>().Single();
+            var overlay=viewer.Layers.Measurements.Root.Children.OfType<Measurements.Presentation.OverlayLayer>().Single();
             Assert.Empty(overlay.Canvas.Children.Cast<System.Windows.UIElement>());
         });
     }

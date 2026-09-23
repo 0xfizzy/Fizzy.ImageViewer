@@ -28,7 +28,7 @@ public sealed record MeasurementGeometry
 
     public static MeasurementGeometry Rectangle(Point a, Point b)
     {
-        var (start, end) = GeometryOperations.NormalizeRectangle(a, b);
+        var (start, end) = NormalizeRectangle(a, b);
         return new(MeasurementKind.Rectangle, start, end);
     }
     public static MeasurementGeometry Line(Point start, Point end) => new(MeasurementKind.Line, start, end);
@@ -48,7 +48,7 @@ public sealed record MeasurementGeometry
 
     internal IReadOnlyList<Point> ControlPoints => Kind switch
     {
-        MeasurementKind.Rectangle => GeometryOperations.RectangleControlPoints(Start, End),
+        MeasurementKind.Rectangle => RectangleControlPoints(Start, End),
         MeasurementKind.Line => [Start, End],
         MeasurementKind.Circle => [Start, new(Start.X + Radius, Start.Y)],
         _ => [Start]
@@ -66,4 +66,15 @@ public sealed record MeasurementGeometry
         MeasurementKind.Circle when index == 1 => Circle(Start, (point - Start).Length),
         _ => throw new ArgumentOutOfRangeException(nameof(index))
     };
+
+    private static (Point Start, Point End) NormalizeRectangle(Point a, Point b)
+    {
+        EnsureFinite(a); EnsureFinite(b);
+        return (new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y)), new(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y)));
+    }
+    private static IReadOnlyList<Point> RectangleControlPoints(Point start, Point end) => [start, new(end.X, start.Y), end, new(start.X, end.Y)];
+    private static void EnsureFinite(Point point)
+    {
+        if (!double.IsFinite(point.X) || !double.IsFinite(point.Y)) throw new ArgumentOutOfRangeException(nameof(point));
+    }
 }

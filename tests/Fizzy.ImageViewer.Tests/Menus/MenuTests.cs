@@ -296,8 +296,8 @@ public class MenuTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var context = viewer.Host.Measurements;
-            var first = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
-            var second = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(2, 2)));
+            var first = (MeasurementItem)new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
+            var second = (MeasurementItem)new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new(2, 2)));
             first.Complete(); second.Complete();
             viewer.Host.Interaction.Select(first);
             var menu = viewer.Host.Window.ContextMenu;

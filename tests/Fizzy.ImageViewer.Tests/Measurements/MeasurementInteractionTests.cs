@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
@@ -117,7 +119,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
@@ -250,17 +252,18 @@ public class MeasurementInteractionTests
         {
             // No physical mouse/foreground-window dependency in the state-machine test.
             var image = new ImageLayer();
-            var layers = new Drawing.ViewerLayers(image.TransformGroup);
+            var layers = new Layers.ViewerLayers(image.TransformGroup);
             var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
-            var context = new MeasurementContext(overlay, () => null, queries, NullLogger.Instance);
+            var context = new MeasurementContext(layers.Measurements, () => null, queries, NullLogger.Instance);
             var tools = new MeasurementToolRegistry();
             var editor = new EditManager(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
             var tool = new RectTool();
             var creation = new MeasurementCreationSession(context);
-            tool.OnClick(new(2, 2), creation); tool.OnClick(new(6, 6), creation);
+            var session = tool.CreateSession(creation);
+            session.OnClick(new(2, 2)); session.OnClick(new(6, 6));
             creation.End(); creation.ClearPreviews();
             var shape = overlay.Canvas.Children.OfType<Rectangle>().Single();
             coordinator.StartEditing(context.Find(shape));
