@@ -10,7 +10,7 @@ public class LineMeasure : IMeasureMethod
     private Point _start;
     private MeasurementItem? _item;
     private protected virtual MeasurementItem CreateItem(IMeasureToolContext context, Point start) =>
-        new((MeasureContext)context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0));
+        new((IMeasurementContext)context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0));
     public bool OnClick(Point point, IMeasureToolContext context)
     {
         if (_item == null || _item.IsDisposed)

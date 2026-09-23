@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Editor for Point shapes (Path with EllipseGeometry).
 /// Control points: [0] = center position
 /// </summary>
-public class PointEditor : IShapeEditor
+internal class PointEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {

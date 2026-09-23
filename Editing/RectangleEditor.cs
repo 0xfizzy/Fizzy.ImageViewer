@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Editor for Rectangle shapes.
 /// Control points: 4 corners (top-left, top-right, bottom-right, bottom-left)
 /// </summary>
-public class RectangleEditor : IShapeEditor
+internal class RectangleEditor : IShapeEditor
 {
     internal static Action<Point> CreateDrag(UIElement shape, int index, IReadOnlyList<Point> points)
     {

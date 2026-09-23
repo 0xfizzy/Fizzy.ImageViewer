@@ -12,7 +12,7 @@ public class RectMeasure : IMeasureMethod
     public bool OnClick(Point point, IMeasureToolContext context)
     {
         if (_item == null || _item.IsDisposed)
-        { _start = point; _item = new((MeasureContext)context, point); return false; }
+        { _start = point; _item = new((IMeasurementContext)context, point); return false; }
         OnMouseMove(point, context);
         var item = _item; _item = null;
         try { item.Complete(); } catch { item.Dispose(); throw; }

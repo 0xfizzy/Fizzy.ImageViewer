@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer;
 /// <summary>UI-thread owner of one measurement, including its query and optional result window.</summary>
 internal class MeasurementItem : IFrameMeasurement, IDisposable
 {
-    protected readonly MeasureContext Context;
+    protected readonly IMeasurementContext Context;
     private readonly MeasurementDisplayAdapter _display;
     private MeasurementSubscription? _subscription;
     private Window? _window;
@@ -23,7 +23,7 @@ internal class MeasurementItem : IFrameMeasurement, IDisposable
     protected Window? ResultWindow => _window;
     public IEnumerable<UIElement> Visuals => [PrimaryVisual, Label];
 
-    public MeasurementItem(MeasureContext context, MeasurementGeometry geometry, UIElement primary, TextBlock label)
+    public MeasurementItem(IMeasurementContext context, MeasurementGeometry geometry, UIElement primary, TextBlock label)
     {
         Context = context; Geometry = geometry; PrimaryVisual = primary; Label = label;
         _display = new(context, primary, label);
@@ -42,12 +42,17 @@ internal class MeasurementItem : IFrameMeasurement, IDisposable
         ClearResult();
     }
 
-    public virtual void Complete()
+    public void Complete()
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
+        if (IsComplete) return;
         IsComplete = true;
         UpdateText();
+        OnComplete();
+        if (!IsDisposed) Context.NotifyCompleted(this);
     }
+    protected virtual void OnComplete() { }
+    internal bool CompletionNotified { get; set; }
     protected void Subscribe() => _subscription ??= Context.Register(this);
     protected void OwnWindow(Window window)
     {

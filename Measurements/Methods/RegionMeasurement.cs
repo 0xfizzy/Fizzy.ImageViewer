@@ -6,9 +6,9 @@ namespace Fizzy.ImageViewer.MeasureMethods;
 
 internal sealed class RegionMeasurement : MeasurementItem
 {
-    public RegionMeasurement(IMeasureToolContext context, Point start)
-        : base((MeasureContext)context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "等待数据", 5, 0)) { }
-    public override void Complete() { base.Complete(); Subscribe(); }
+    public RegionMeasurement(IMeasurementContext context, Point start)
+        : base(context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "等待数据", 5, 0)) { }
+    protected override void OnComplete() => Subscribe();
     public override QueryRequest? Capture(FrameDescriptor descriptor)
     {
         if (IsDisposed || !IsComplete) return null;

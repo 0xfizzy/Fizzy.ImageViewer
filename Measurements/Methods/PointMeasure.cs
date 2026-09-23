@@ -9,7 +9,7 @@ public class PointMeasure : IMeasureMethod
     public string DisplayName => "Point";
     public bool OnClick(Point point, IMeasureToolContext context)
     {
-        new MeasurementItem((MeasureContext)context, MeasurementGeometry.Point(point), Shapes.CreatePoint(point), Shapes.CreateLabel(point, "", 10, -20)).Complete();
+        new MeasurementItem((IMeasurementContext)context, MeasurementGeometry.Point(point), Shapes.CreatePoint(point), Shapes.CreateLabel(point, "", 10, -20)).Complete();
         return true;
     }
     public void OnMouseMove(Point point, IMeasureToolContext context) { }

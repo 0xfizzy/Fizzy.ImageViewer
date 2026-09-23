@@ -8,7 +8,7 @@ using Fizzy.ImageViewer.Interfaces;
 namespace Fizzy.ImageViewer;
 
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
-internal sealed class MeasureContext : IMeasureToolContext
+internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
 {
     private readonly OverlayLayer _layer;
     private readonly Func<FrameLease?> _acquire;
@@ -24,6 +24,13 @@ internal sealed class MeasureContext : IMeasureToolContext
     internal Task Completion => _scheduler.Completion;
     public event Action<FrameInfo>? FrameCommitted;
     internal event Action<MeasurementItem>? ItemRemoving;
+    internal event Action<MeasurementItem>? ItemCompleted;
+    internal event Action<MeasurementItem>? ItemRemoved;
+    public void NotifyCompleted(MeasurementItem item)
+    {
+        item.CompletionNotified = true;
+        ItemCompleted?.Invoke(item);
+    }
 
     internal MeasureContext(OverlayLayer layer, Func<FrameLease?> acquire, ILogger logger)
     {
@@ -40,7 +47,7 @@ internal sealed class MeasureContext : IMeasureToolContext
         if (_cleaningScopes) throw new InvalidOperationException("Cannot create a measurement scope during cleanup.");
         var scope = new MeasurementScope(this); _scopes.Add(scope); return scope;
     }
-    internal void VerifyAccess() => _layer.Dispatcher.VerifyAccess();
+    public void VerifyAccess() => _layer.Dispatcher.VerifyAccess();
     internal void AttachVisualInternal(UIElement shape) { ObjectDisposedException.ThrowIf(_disposed, this); _layer.AddShape(shape); }
     public void RemoveShape(UIElement shape)
     {
@@ -49,9 +56,9 @@ internal sealed class MeasureContext : IMeasureToolContext
         else _layer.RemoveVisual(shape);
     }
     public void UpdateAnchor(UIElement shape, Point point) => _layer.UpdateAnchor(shape, point);
-    internal MeasurementSubscription Register(IFrameMeasurement item) => _scheduler.Register(item);
+    public MeasurementSubscription Register(IFrameMeasurement item) => _scheduler.Register(item);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _items.TryGetValue(shape, out var item) ? item : null;
-    internal void Attach(MeasurementItem item)
+    public void Attach(MeasurementItem item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         foreach (var visual in item.Visuals) _items.Add(visual, item);
@@ -65,7 +72,7 @@ internal sealed class MeasureContext : IMeasureToolContext
         }
         catch { item.Dispose(); throw; }
     }
-    internal void Detach(MeasurementItem item)
+    public void Detach(MeasurementItem item)
     {
         try { ItemRemoving?.Invoke(item); }
         finally
@@ -73,7 +80,11 @@ internal sealed class MeasureContext : IMeasureToolContext
             foreach (var visual in item.Visuals) _items.Remove(visual);
             // Remove the label before the primary element; events can safely re-enter removal.
             try { _layer.RemoveVisual(item.Label); }
-            finally { _layer.RemoveVisual(item.PrimaryVisual); }
+            finally
+            {
+                _layer.RemoveVisual(item.PrimaryVisual);
+                if (item.CompletionNotified) ItemRemoved?.Invoke(item);
+            }
         }
     }
     internal void ClearMeasurements()
@@ -94,14 +105,14 @@ internal sealed class MeasureContext : IMeasureToolContext
         }
         finally { _cleaningScopes = cleaning; }
     }
-    internal void AttachScopeShape(MeasurementScope scope, UIElement shape)
+    public void AttachScopeShape(MeasurementScope scope, UIElement shape)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_scopeVisuals.ContainsKey(shape) || _items.ContainsKey(shape) || _layer.Canvas.Children.Contains(shape)) throw new ArgumentException("Shape is already registered.", nameof(shape));
         _scopeVisuals.Add(shape, scope);
         try { AttachVisualInternal(shape); } catch { _scopeVisuals.Remove(shape); _layer.RemoveVisual(shape); throw; }
     }
-    internal void DetachScope(MeasurementScope scope, IReadOnlyCollection<UIElement> shapes)
+    public void DetachScope(MeasurementScope scope, IReadOnlyCollection<UIElement> shapes)
     {
         _scopes.Remove(scope);
         foreach (var shape in shapes) _scopeVisuals.Remove(shape);

@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace Fizzy.ImageViewer.Managers
 {
-    public class MenuManager
+    internal sealed class MenuManager
     {
         private readonly ContextMenu _contextMenu;
         private readonly List<Func<IEnumerable<IMenuItem>>> _registeredItems = [];

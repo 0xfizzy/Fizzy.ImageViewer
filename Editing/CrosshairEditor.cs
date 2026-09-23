@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Editor for Crosshair shapes (Path with GeometryGroup).
 /// Control points: [0] = center position
 /// </summary>
-public class CrosshairEditor : IShapeEditor
+internal class CrosshairEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {

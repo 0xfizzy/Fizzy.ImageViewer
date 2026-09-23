@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Editor for Line shapes.
 /// Control points: [0] = start point (X1, Y1), [1] = end point (X2, Y2)
 /// </summary>
-public class LineEditor : IShapeEditor
+internal class LineEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {

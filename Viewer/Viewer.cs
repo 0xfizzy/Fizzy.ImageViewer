@@ -15,7 +15,7 @@ namespace Fizzy.ImageViewer;
 public partial class Viewer : IViewerAPI, IAsyncDisposable
 {
     private readonly Thread _windowThread;
-    protected ViewerWindow _window;
+    private ViewerWindow _window;
     private readonly ILogger _logger;
 
     // === Managers ===

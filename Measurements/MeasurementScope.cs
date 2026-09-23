@@ -5,13 +5,13 @@ namespace Fizzy.ImageViewer;
 
 internal sealed class MeasurementScope : IMeasurementScope
 {
-    private readonly MeasureContext _context;
+    private readonly IMeasurementContext _context;
     private readonly List<UIElement> _shapes = [];
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
     private bool _disposed;
     internal bool IsComplete { get; private set; }
-    internal MeasurementScope(MeasureContext context) => _context = context;
+    internal MeasurementScope(IMeasurementContext context) => _context = context;
     public void AddShape(UIElement shape)
     {
         EnsureAlive(); ArgumentNullException.ThrowIfNull(shape);

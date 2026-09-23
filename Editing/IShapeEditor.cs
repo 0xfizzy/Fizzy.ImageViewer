@@ -7,7 +7,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Interface for shape-specific editing logic.
 /// Each shape type (Line, Rectangle, Circle, etc.) has its own editor implementation.
 /// </summary>
-public interface IShapeEditor
+internal interface IShapeEditor
 {
     /// <summary>
     /// Get control points in image coordinates.

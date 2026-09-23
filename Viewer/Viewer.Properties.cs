@@ -73,6 +73,7 @@ public partial class Viewer
         set => InvokeAlive(() => _window.Borderless = value);
     }
 
+    /// <inheritdoc />
     public void Show() => InvokeAlive(() =>
     {
         if (_window!.WindowState == WindowState.Minimized)
@@ -80,6 +81,18 @@ public partial class Viewer
         _window.Show();
         _window.Activate();   // raise above any maximized/foreground window
     });
+
+    /// <inheritdoc />
+    public void Hide() => InvokeAlive(() => _window.Hide());
+
+    /// <inheritdoc />
+    public void Minimize() => InvokeAlive(() => _window.WindowState = WindowState.Minimized);
+
+    /// <inheritdoc />
+    public bool IsVisible => InvokeAlive(() => _window.IsVisible);
+
+    /// <inheritdoc />
+    public bool IsMinimized => InvokeAlive(() => _window.WindowState == WindowState.Minimized);
 
     public void FitImageToContainer()
     {

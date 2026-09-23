@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer
 {
-    public class ViewerWindow : Window
+    internal class ViewerWindow : Window
     {
         // 公开图层供 Manager 使用
         public ImageLayer Layer0 { get; }

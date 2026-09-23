@@ -19,7 +19,7 @@ namespace Fizzy.ImageViewer.Controls
     /// </list>
     /// </para>
     /// </summary>
-    public class ImageLayer : UserControl
+    internal class ImageLayer : UserControl
     {
         // === UI 组件 ===
         

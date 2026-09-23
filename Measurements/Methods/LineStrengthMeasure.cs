@@ -20,10 +20,9 @@ public class LineStrengthMeasure : LineMeasure
         private double[] _xs = [], _rs = [], _gs = [], _bs = [];
         private ScottPlot.Plottables.Scatter? _red, _green, _blue;
         public LineStrengthItem(IMeasureToolContext context, Point start)
-            : base((MeasureContext)context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0)) { }
-        public override void Complete()
+            : base((IMeasurementContext)context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0)) { }
+        protected override void OnComplete()
         {
-            base.Complete();
             var window = new Window { Title = "Pixel Values", Width = 600, Height = 400, Topmost = true, Content = new ScottPlot.WPF.WpfPlot() };
             OwnWindow(window);
             window.Show();

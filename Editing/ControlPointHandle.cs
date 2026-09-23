@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// <summary>
 /// Factory for creating control point visual handles.
 /// </summary>
-public static class ControlPointHandle
+internal static class ControlPointHandle
 {
     public static Brush HandleBrush { get; set; } = Brushes.Orange;
     public const double HandleRadius = 5.0;

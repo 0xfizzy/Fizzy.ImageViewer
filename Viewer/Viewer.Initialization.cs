@@ -26,6 +26,8 @@ public partial class Viewer
 
                 // 在 UI 线程创建 Managers
                 var measureMgr = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _logger);
+                measureMgr.Context.ItemCompleted += item => NotifyMeasurement(MeasurementCompleted, item);
+                measureMgr.Context.ItemRemoved += item => NotifyMeasurement(MeasurementRemoved, item);
 
                 var editMgr = new EditManager(win.Layer1, measureMgr.Context);
                 var interaction = new InteractionCoordinator(win.Layer0, win.Layer1, editMgr, measureMgr, win.Layers);

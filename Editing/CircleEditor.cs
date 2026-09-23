@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// Editor for Circle shapes (Path with EllipseGeometry).
 /// Control points: [0] = center, [1] = point on circumference (for radius control)
 /// </summary>
-public class CircleEditor : IShapeEditor
+internal class CircleEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {

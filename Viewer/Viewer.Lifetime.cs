@@ -39,6 +39,8 @@ public partial class Viewer
         Cleanup(CloseHud);
         Cleanup(_presentation.Dispose);
         FrameCommitted = null;
+        MeasurementCompleted = null;
+        MeasurementRemoved = null;
     }
 
     private void Cleanup(Action action)

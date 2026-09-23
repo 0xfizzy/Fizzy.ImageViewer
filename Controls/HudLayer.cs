@@ -12,7 +12,7 @@ namespace Fizzy.ImageViewer.Controls
     /// Layer 2: 屏幕坐标系 HUD 层
     /// 不随图片缩放移动
     /// </summary>
-    public class HudLayer : UserControl
+    internal class HudLayer : UserControl
     {
         private readonly StackPanel _topLeftPanel;
         private readonly Canvas _absoluteCanvas;
