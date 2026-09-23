@@ -14,9 +14,12 @@ omitting it uses immutable defaults. Shape helpers also snapshot supplied brushe
 
 Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primary
 visual, label, result, query subscription and optional plot window. A context-owned
-registry maps visuals to their owner without putting business state in `Tag`.
+registry maps visuals to their owner using private attached metadata.
 Previews are owned items too; completing a preview enables its queries, and
-cancelling disposes it. Internal shape metadata contains only presentation state.
+cancelling disposes it. Internal shape metadata contains only presentation state. `Tag` remains caller-owned.
+Line widths, label sizes and normal selection brushes are captured when a visual is
+first attached; configure those WPF properties before `AddShape`. Zoom uses that
+per-visual snapshot, and point selection changes its fill rather than adding a stroke.
 Each visual is added once; completing a preview does not remove and re-add it.
 
 Geometry uses source-image coordinates. A rectangle stores normalized opposite
@@ -152,8 +155,7 @@ visual disposes its entire scope. Clear and viewer closure dispose all scopes.
 `IMeasurementScope.Dispose()` explicitly cancels/removes a scope and is idempotent.
 
 Scopes own resources, not their calculation logic. The scheduler, measurement
-models, editor factory and typed query protocol remain internal. `Tag` contains
-only display metadata. All scope operations run on the viewer STA. Cleanup callbacks
+models, editor factory and typed query protocol remain internal. `Tag` is available for caller data; private attached metadata stores display state. All scope operations run on the viewer STA. Cleanup callbacks
 run before disposable resources, followed by visual removal. Cleanup continues after
 failures; explicit disposal reports an aggregate exception, while framework cleanup
 logs failures and continues. Visual observer failures are logged during scope cleanup.
@@ -164,7 +166,7 @@ extension contract.
 Use `scope.UpdateAnchor(shape, point)` to move an owned `Shapes.Create*` visual during
 preview. Coordinates are in image space; fixed-size and label-offset zoom policies are
 preserved. The operation requires the viewer STA and rejects foreign visuals, disposed
-scopes and non-finite coordinates. No access to internal Tag metadata is needed.
+scopes and non-finite coordinates. No access to internal metadata is needed.
 `FrameCommitted` remains a notification, not a query execution callback.
 
 For example, this tool owns a marker and a frame notification subscription:

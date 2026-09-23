@@ -25,7 +25,7 @@ internal sealed class MeasurementScope : IMeasurementScope
     {
         EnsureAlive();
         ArgumentNullException.ThrowIfNull(shape);
-        if (!_shapes.Contains(shape) || shape is not FrameworkElement { Tag: OverlayShapeData })
+        if (!_shapes.Contains(shape) || OverlayShapeData.Get(shape) == null)
             throw new ArgumentException("The visual must be created by Shapes and owned by this scope.", nameof(shape));
         if (!double.IsFinite(anchor.X) || !double.IsFinite(anchor.Y))
             throw new ArgumentOutOfRangeException(nameof(anchor));

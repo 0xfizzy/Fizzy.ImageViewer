@@ -9,7 +9,7 @@ internal static class ShapeEditorFactory
 {
     internal static ShapeEditSession? Create(UIElement shape, MeasurementItem? item)
     {
-        if (shape is not FrameworkElement { Tag: OverlayShapeData data }) return null;
+        if (OverlayShapeData.Get(shape) is not { } data) return null;
         IShapeEditor? editor = data.ShapeType switch
         {
             ShapeType.Point or ShapeType.Crosshair => new AnchorEditor(),

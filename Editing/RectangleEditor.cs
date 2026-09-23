@@ -23,7 +23,7 @@ internal class RectangleEditor : IShapeEditor
             var (start, end) = GeometryOperations.NormalizeRectangle(opposite, point);
             rectangle.Width = end.X - start.X; rectangle.Height = end.Y - start.Y;
             Canvas.SetLeft(rectangle, start.X); Canvas.SetTop(rectangle, start.Y);
-            if (rectangle.Tag is OverlayShapeData data) data.AnchorPoint = start;
+            if (OverlayShapeData.Get(rectangle) is { } data) data.AnchorPoint = start;
         };
     }
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)

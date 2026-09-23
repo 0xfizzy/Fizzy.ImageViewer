@@ -16,19 +16,20 @@ namespace Fizzy.ImageViewer
         public static Line CreateLine(ShapeStyle? style = null)
         {
             style = (style ?? ShapeStyle.Default).Snapshot();
-            return new()
+            var visual = new Line
             {
                 Stroke = style.NormalBrush,
-                StrokeThickness = BaseStrokeThickness,
-                Tag = new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Line) { OriginalBrush = style.NormalBrush, SelectedBrush = style.SelectedBrush }
+                StrokeThickness = BaseStrokeThickness
             };
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Line) { OriginalBrush = style.NormalBrush, SelectedBrush = style.SelectedBrush });
+            return visual;
         }
 
         // 2. 创建文字标签 (AnchoredLabel)
         public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10, ShapeStyle? style = null)
         {
             style = (style ?? ShapeStyle.Default).Snapshot();
-            return new TextBlock
+            var visual = new TextBlock
             {
                 Text = text,
                 Foreground = style.NormalBrush,
@@ -36,14 +37,15 @@ namespace Fizzy.ImageViewer
                 Padding = new Thickness(3),
                 FontSize = BaseFontSize,
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
-                Tag = new OverlayShapeData(OverlayScaleMode.AnchoredLabel, ShapeType.Text)
+            };
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.AnchoredLabel, ShapeType.Text)
                 {
                     AnchorPoint = anchor,
                     ScreenOffset = new Vector(offsetX, offsetY),
                     OriginalBrush = style.NormalBrush,
                     SelectedBrush = style.SelectedBrush
-                }
-            };
+                });
+            return visual;
         }
 
         // 3. 创建点/锚点形状 (FixedSize)
@@ -57,15 +59,14 @@ namespace Fizzy.ImageViewer
             var path = new Path
             {
                 Fill = style.PointBrush,
-                Data = geometry,
-                Tag = new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
+                Data = geometry
+            };
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
                 {
                     AnchorPoint = position,
                     OriginalBrush = style.PointBrush,
                     SelectedBrush = style.SelectedBrush
-                }
-
-            };
+                });
             return path;
         }
 
@@ -82,14 +83,14 @@ namespace Fizzy.ImageViewer
             {
                 Stroke = style.NormalBrush,
                 StrokeThickness = thickness,
-                Data = geometry,
-                Tag = new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Crosshair)
+                Data = geometry
+            };
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Crosshair)
                 {
                     AnchorPoint = position,
                     OriginalBrush = style.NormalBrush,
                     SelectedBrush = style.SelectedBrush
-                }
-            };
+                });
             return path;
         }
 
@@ -97,15 +98,16 @@ namespace Fizzy.ImageViewer
         public static Rectangle CreateRectangle(ShapeStyle? style = null)
         {
             style = (style ?? ShapeStyle.Default).Snapshot();
-            return new()
+            var visual = new Rectangle
             {
                 Width = 0,
                 Height = 0,
                 Stroke = style.RegionBrush,
                 StrokeThickness = 1.0,
-                StrokeDashArray = new DoubleCollection { 4, 2 },
-                Tag = new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { OriginalBrush = style.RegionBrush, SelectedBrush = style.SelectedBrush }
+                StrokeDashArray = new DoubleCollection { 4, 2 }
             };
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { OriginalBrush = style.RegionBrush, SelectedBrush = style.SelectedBrush });
+            return visual;
         }
 
         // 6. 创建圆形 (FixedStroke)
@@ -118,14 +120,14 @@ namespace Fizzy.ImageViewer
             {
                 Stroke = style.NormalBrush,
                 StrokeThickness = BaseStrokeThickness,
-                Data = geometry,
-                Tag = new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Circle)
+                Data = geometry
+            };
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Circle)
                 {
                     AnchorPoint = center,
                     OriginalBrush = style.NormalBrush,
                     SelectedBrush = style.SelectedBrush
-                }
-            };
+                });
 
             Canvas.SetLeft(path, center.X);
             Canvas.SetTop(path, center.Y);

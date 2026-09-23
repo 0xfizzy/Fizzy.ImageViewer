@@ -33,9 +33,13 @@ internal class OverlayLayer : UserControl
     }
     private static void ApplySelectionStyle(UIElement element, bool selected)
     {
-        if (element is not FrameworkElement { Tag: OverlayShapeData data }) return;
+        if (OverlayShapeData.Get(element) is not { } data) return;
         var brush = selected ? data.SelectedBrush : data.OriginalBrush;
-        if (element is Shape shape) shape.Stroke = brush;
+        if (element is Shape shape)
+        {
+            if (data.ShapeType == ShapeType.Point) shape.Fill = brush;
+            else shape.Stroke = brush;
+        }
         else if (element is TextBlock text) text.Foreground = brush;
     }
     internal void AddShape(UIElement shape)
@@ -63,7 +67,7 @@ internal class OverlayLayer : UserControl
     }
     internal void UpdateAnchor(UIElement element, Point newAnchor)
     {
-        if (element is FrameworkElement fe && fe.Tag is OverlayShapeData data)
+        if (element is FrameworkElement fe && OverlayShapeData.Get(fe) is { } data)
         {
             data.AnchorPoint = newAnchor;
             ApplyScaleToShape(fe, _currentScale);
@@ -83,15 +87,16 @@ internal class OverlayLayer : UserControl
 
     private void ApplyScaleToShape(UIElement shape, double scale)
     {
-        if (shape is not FrameworkElement element || element.Tag is not OverlayShapeData data) return;
+        if (shape is not FrameworkElement element || OverlayShapeData.Get(element) is not { } data) return;
 
+        data.CaptureAppearance(element);
         var transform = data;
 
         switch (transform.Mode)
         {
             case OverlayScaleMode.FixedStroke:
                 if (shape is Shape s)
-                    s.StrokeThickness = Shapes.BaseStrokeThickness / scale;
+                    s.StrokeThickness = data.StrokeThickness / scale;
                 Canvas.SetLeft(element, transform.AnchorPoint.X);
                 Canvas.SetTop(element, transform.AnchorPoint.Y);
                 break;
@@ -120,7 +125,7 @@ internal class OverlayLayer : UserControl
             case OverlayScaleMode.AnchoredLabel:
                 if (shape is TextBlock t)
                 {
-                    double newSize = Shapes.BaseFontSize / scale;
+                    double newSize = data.FontSize / scale;
                     t.FontSize = Math.Max(1, newSize);
                     double finalX = transform.AnchorPoint.X + (transform.ScreenOffset.X / scale);
                     double finalY = transform.AnchorPoint.Y + (transform.ScreenOffset.Y / scale);

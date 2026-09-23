@@ -34,10 +34,10 @@ internal static class ControlPointHandle
             Stroke = Brushes.Black,
             StrokeThickness = 1.0,
             Data = geometry,
-            Cursor = System.Windows.Input.Cursors.Hand,
-            Tag = tagData
+            Cursor = System.Windows.Input.Cursors.Hand
         };
 
+        OverlayShapeData.Attach(path, tagData);
         return path;
     }
 }

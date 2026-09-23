@@ -14,7 +14,7 @@ internal sealed class AnchorEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayShapeData data)
+        if (shape is not FrameworkElement fe || OverlayShapeData.Get(fe) is not { } data)
             return Array.Empty<Point>();
 
         return new[] { data.AnchorPoint };
@@ -22,7 +22,7 @@ internal sealed class AnchorEditor : IShapeEditor
 
     public Action<Point> CreateDrag(UIElement shape, int pointIndex) => newPosition =>
     {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayShapeData data)
+        if (shape is not FrameworkElement fe || OverlayShapeData.Get(fe) is not { } data)
             return;
 
         if (pointIndex == 0)

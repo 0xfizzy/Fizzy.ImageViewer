@@ -13,6 +13,48 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementStyleTests
 {
     [Fact]
+    public async Task VisualMetadataDoesNotOccupyTagAndZoomRetainsPerVisualAppearance()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            using var scope = viewer.MeasurementContext.CreateScope();
+            var rectangle = Shapes.CreateRectangle();
+            var label = Shapes.CreateLabel(new(2, 3));
+            label.FontSize = 24;
+            var point = Shapes.CreatePoint(new(4, 5), new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White });
+            var tag = new object();
+            rectangle.Tag = label.Tag = point.Tag = tag;
+            scope.AddShape(rectangle); scope.AddShape(label); scope.AddShape(point);
+            scope.Complete();
+            var overlay = viewer.WindowForTests.MeasurementOverlay;
+            Assert.Equal(1, rectangle.StrokeThickness);
+            overlay.UpdateScale(2);
+            Assert.Equal(0.5, rectangle.StrokeThickness);
+            Assert.Equal(12, label.FontSize);
+            scope.UpdateAnchor(point, new(8, 9));
+            Assert.Equal(8, System.Windows.Controls.Canvas.GetLeft(point));
+            viewer.Interaction.Select(point);
+            Assert.Same(Brushes.White, point.Fill);
+            Assert.Null(point.Stroke);
+            viewer.Interaction.ClearSelection();
+            Assert.Same(Brushes.Blue, point.Fill);
+            point.Tag = "consumer data changed";
+            viewer.Interaction.StartEditing(point);
+            Assert.True(viewer.Interaction.Editor.BeginDrag(new(8, 9), 1));
+            viewer.Interaction.Editor.UpdateDrag(new(10, 11));
+            viewer.Interaction.StopEditing();
+            overlay.UpdateScale(1);
+            Assert.Equal(1, rectangle.StrokeThickness);
+            Assert.Equal(24, label.FontSize);
+            Assert.Equal(10, System.Windows.Controls.Canvas.GetLeft(point));
+            Assert.Same(tag, rectangle.Tag);
+            Assert.Same(tag, label.Tag);
+            Assert.Equal("consumer data changed", point.Tag);
+        });
+    }
+
+    [Fact]
     public async Task StylesAreFrozenIsolatedAndRetainedByExistingShapes()
     {
         await using var first = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
