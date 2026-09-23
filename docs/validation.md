@@ -71,3 +71,11 @@ hiding and stable invariant columns for gray, floating-point and premultiplied d
 closing handlers, rejects subsequent API calls and consumes submissions with a
 `Closed` result. `DrawingTests` check layer and drawing-handle invalidation and
 that clearing business layers retains HUD text.
+
+`ViewerTests` cover pending versus committed display settings, redraw without new-frame
+notifications, menu Closed-before-Click and rapid reopening, independently retained menu
+targets after shutdown, and exactly-once STA presenter disposal. `SnapshotCaptureTests`
+exercise serialized export reads, cancellation while queued, read failures, and lease
+release independently of a window or a native GPU surface.
+`FramePresentationTests` verify that GPU preparation performs no pixel reads and rejects
+CPU display mapping; they do not bind a native surface or validate real CPU/GPU switching.

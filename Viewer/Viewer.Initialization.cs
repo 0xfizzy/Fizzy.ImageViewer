@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private void InitializeWindow(out Thread thread, out ViewerWindow window, double left, double top, double width, double height)
+    private void InitializeWindow(Rendering.IImagePresenter? presenter, out Thread thread, out ViewerWindow window, double left, double top, double width, double height)
     {
         var tcs = new TaskCompletionSource<ViewerWindow>();
 
@@ -18,6 +18,10 @@ public partial class Viewer
             {
                 var win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
                 _window = win;
+                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.Layer0,
+                    presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
+                _pipeline = new Internal.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
+                _menuSession = new Snapshots.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
                 win.Closed += OnWindowClosed;
 
                 // 在 UI 线程创建 Managers

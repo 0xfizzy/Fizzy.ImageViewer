@@ -1,5 +1,33 @@
 # Frame pipeline
 
+## Internal composition
+
+`Viewer` assembles the internal components on its STA, forwards public API calls, and
+coordinates notifications and window shutdown. It does not own rendering queue or menu-target state.
+
+| Component | State and responsibility |
+| --- | --- |
+| `FramePipeline` | Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results |
+| `FramePresentation` | Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal |
+| `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
+| `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
+
+`CommittedFrameLease` owns a frame lease plus the range and version captured atomically
+from the last committed display. Crop regions are separate values; export synchronization
+belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
+before showing a file dialog.
+
+The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
+Expensive upload runs outside that gate; image attachment and current-frame publication run
+inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
+Only the Viewer notification callback connects committed submissions to measurements,
+public subscribers and the pixel HUD; display-only redraws do not invoke it.
+
+Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
+resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
+measurement completion and the window thread. Already acquired export work retains its own
+lease and export gate and may finish after the Viewer closes.
+
 ## Input and lifetime
 
 `ImageFrame.Copy(descriptor, bytes)` copies synchronously; the caller keeps its storage.

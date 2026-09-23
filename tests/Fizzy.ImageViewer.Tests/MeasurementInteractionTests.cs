@@ -38,7 +38,7 @@ public class MeasurementInteractionTests
     {
         await using var viewer = Create();
         await viewer.SubmitFrameAsync(ImageFrame.Copy(new(10, 10, 10, FramePixelFormat.Gray8), Enumerable.Range(0, 100).Select(i => (byte)i).ToArray()));
-        Viewer.SnapshotRequest? frozen = null;
+        MenuSnapshotSession.Target? frozen = null;
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var item = DrawRoi(viewer);
@@ -69,7 +69,7 @@ public class MeasurementInteractionTests
             Assert.Equal(request.Region, frozen.Region);
             viewer.Unfreeze();
         });
-        using var snapshot = await Viewer.CaptureSnapshotAsync(frozen!, SnapshotKind.Raw, default);
+        using var snapshot = await viewer.CaptureSnapshotAsync(frozen!, SnapshotKind.Raw, default);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(frozen!.Region!.Value.Width, pixels.Descriptor.Width);
         Assert.Equal(frozen.Region.Value.Height, pixels.Descriptor.Height);

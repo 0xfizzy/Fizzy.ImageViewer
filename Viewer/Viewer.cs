@@ -25,15 +25,14 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     private volatile InteractionCoordinator? _interaction;
 
     public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
-        : this(logger, new Rendering.WriteableBitmapPresenter(), true, left, top, width, height) { }
+        : this(logger, null, true, left, top, width, height) { }
 
-    internal Viewer(ILogger<Viewer> logger, Rendering.IImagePresenter presenter, bool showWindow,
+    internal Viewer(ILogger<Viewer> logger, Rendering.IImagePresenter? presenter, bool showWindow,
         double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
     {
         _logger = logger;
-        _presenter = presenter;
         _showWindow = showWindow;
-        InitializeWindow(out _windowThread, out _window, left, top, width, height);
+        InitializeWindow(presenter, out _windowThread, out _window, left, top, width, height);
     }
 
     private readonly bool _showWindow;

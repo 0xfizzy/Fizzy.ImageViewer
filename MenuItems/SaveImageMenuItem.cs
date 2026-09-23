@@ -24,7 +24,7 @@ public sealed class SaveImageMenuItem(Viewer viewer, bool raw, bool region = fal
                 FileName = region ? "Region" : "Image"
             };
             if (dialog.ShowDialog() != true) return;
-            using var snapshot = await Viewer.CaptureSnapshotAsync(target.Acquire(), raw ? SnapshotKind.Raw : SnapshotKind.Display, default).ConfigureAwait(false);
+            using var snapshot = await viewer.CaptureSnapshotAsync(target.Acquire(includeRegion: true), raw ? SnapshotKind.Raw : SnapshotKind.Display, default).ConfigureAwait(false);
             await snapshot.SaveAsync(dialog.FileName, raw ? SnapshotEncoding.Tiff : dialog.FilterIndex switch
             { 1 => SnapshotEncoding.Png, 2 => SnapshotEncoding.Jpeg, _ => SnapshotEncoding.Bmp }).ConfigureAwait(false);
         }

@@ -19,6 +19,101 @@ public class ViewerTests
     private static Viewer Create(IImagePresenter? presenter = null) => new(NullLogger<Viewer>.Instance, presenter ?? new WriteableBitmapPresenter(), false);
 
     [Fact]
+    public async Task SnapshotUsesCommittedRangeWhileRedrawIsWaiting()
+    {
+        var presenter = new ObservingPresenter();
+        await using var viewer = Create(presenter);
+        await viewer.SubmitFrameAsync(Frame(100));
+        int notifications = 0;
+        viewer.FrameCommitted += _ => notifications++;
+        Task<ImageSnapshot>? capture = null;
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            viewer.DisplayRange = new(0, 100);
+            // Redraw cannot commit while this dispatcher action is executing.
+            capture = viewer.CaptureSnapshotAsync(SnapshotKind.Display);
+        });
+        using var snapshot = await capture!;
+        using var pixels = snapshot.AcquirePixels();
+        Assert.Equal(0, snapshot.DisplayVersion);
+        Assert.Equal(100, pixels.CpuPixels.Span[0]);
+        await presenter.Redrawn.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await viewer.UiDispatcher.InvokeAsync(() => { });
+        using var redrawn = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
+        using var mapped = redrawn.AcquirePixels();
+        Assert.Equal(1, redrawn.DisplayVersion);
+        Assert.Equal(snapshot.Frame, redrawn.Frame);
+        Assert.Equal(255, mapped.CpuPixels.Span[0]);
+        Assert.Equal(0, notifications);
+    }
+
+    [Fact]
+    public async Task MenuLeaseOutlivesShutdownAndPresenterIsDisposedOnceOnSta()
+    {
+        var presenter = new ObservingPresenter();
+        var viewer = Create(presenter);
+        int released = 0;
+        try
+        {
+            await viewer.SubmitFrameAsync(Frame(63, () => Interlocked.Increment(ref released)));
+            await viewer.UiDispatcher.InvokeAsync(viewer.Freeze);
+            using var target = viewer.AcquireMenuSnapshot();
+            await viewer.DisposeAsync();
+            await viewer.DisposeAsync();
+            Assert.Equal(0, released);
+            Assert.Equal(1, presenter.Disposals);
+            Assert.Equal(ApartmentState.STA, presenter.PresentApartment);
+            Assert.Equal(ApartmentState.STA, presenter.DisposeApartment);
+            using var snapshot = await viewer.CaptureSnapshotAsync(target!.Acquire(includeRegion: true), SnapshotKind.Raw, default);
+            using var pixels = snapshot.AcquirePixels();
+            Assert.Equal(63, pixels.CpuPixels.Span[0]);
+            target.Dispose();
+            target.Dispose();
+            Assert.Equal(1, released);
+        }
+        finally { await viewer.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task MenuCloseBeforeClickAndReopenRetainIndependentTargets()
+    {
+        await using var viewer = Create();
+        await viewer.SubmitFrameAsync(Frame(17));
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            viewer.Freeze();
+            viewer.Unfreeze();
+            using var clickTarget = viewer.AcquireMenuSnapshot();
+            Assert.Equal(17, clickTarget!.View.Frame.CpuPixels.Span[0]);
+            viewer.Freeze(); // Old ContextIdle cleanup must not release this session.
+        });
+        await viewer.UiDispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        using var reopened = viewer.AcquireMenuSnapshot();
+        Assert.Equal(17, reopened!.View.Frame.CpuPixels.Span[0]);
+        Assert.Equal(FrameSubmitStatus.Frozen, (await viewer.SubmitFrameAsync(Frame(25))).Status);
+        await viewer.UiDispatcher.InvokeAsync(viewer.Unfreeze);
+        await viewer.SubmitFrameAsync(Frame(30));
+        Assert.Equal(17, reopened.View.Frame.CpuPixels.Span[0]);
+    }
+
+    [Fact]
+    public async Task CapturedSnapshotSurvivesCloseAndNewCapturesAreRejected()
+    {
+        var viewer = Create();
+        try
+        {
+            await viewer.SubmitFrameAsync(Frame(81));
+            var capture = viewer.CaptureSnapshotAsync(SnapshotKind.Raw);
+            await viewer.DisposeAsync();
+            using var snapshot = await capture;
+            using var pixels = snapshot.AcquirePixels();
+            Assert.Equal(81, pixels.CpuPixels.Span[0]);
+            Assert.Throws<ObjectDisposedException>(() => { _ = viewer.CaptureSnapshotAsync(SnapshotKind.Raw); });
+        }
+        finally { await viewer.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task NotificationsReadNewFrameAndFailuresAreIsolated()
     {
         await using var viewer = Create();
@@ -70,7 +165,7 @@ public class ViewerTests
         using var target = viewer.AcquireMenuSnapshot();
         await viewer.UiDispatcher.InvokeAsync(viewer.Unfreeze);
         await viewer.SubmitFrameAsync(Frame(25));
-        using var snapshot = await Viewer.CaptureSnapshotAsync(target!.Acquire(), SnapshotKind.Raw, default);
+        using var snapshot = await viewer.CaptureSnapshotAsync(target!.Acquire(includeRegion: true), SnapshotKind.Raw, default);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(first.FrameId, snapshot.Frame.FrameId); Assert.Equal(17, pixels.CpuPixels.Span[0]);
     }
@@ -211,6 +306,28 @@ public class ViewerTests
             Value=samples![0].Gray;PublishApartment=Thread.CurrentThread.GetApartmentState();Published.TrySetResult(true);
         });
         public void ClearResult() { }        public void Dispose() => Disposed = true;
+    }
+
+    private sealed class ObservingPresenter : IImagePresenter
+    {
+        private readonly WriteableBitmapPresenter _inner = new();
+        private int _presentations;
+        internal TaskCompletionSource Redrawn { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal int Disposals;
+        internal ApartmentState PresentApartment, DisposeApartment;
+        public ImageSource Present(DisplayBuffer pixels)
+        {
+            PresentApartment = Thread.CurrentThread.GetApartmentState();
+            var source = _inner.Present(pixels);
+            if (++_presentations == 2) Redrawn.TrySetResult();
+            return source;
+        }
+        public void Dispose()
+        {
+            DisposeApartment = Thread.CurrentThread.GetApartmentState();
+            Disposals++;
+            _inner.Dispose();
+        }
     }
 
     private sealed class BlockingPresenter : IImagePresenter

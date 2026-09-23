@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Frames;
 using Microsoft.Extensions.Logging;
 using System.Windows.Threading;
 
@@ -27,28 +26,18 @@ public partial class Viewer
 
     private void CleanupOnWindowClosed()
     {
-        Submission? pending;
-        FrameLease? current;
-        lock (_frameGate)
-        {
-            if (_closed) return;
-            _lifetime.BeginDisposal();
-            _closed = true;
-            pending = _pending; _pending = null;
-            current = _currentFrame; _currentFrame = null;
-        }
-        _shutdown.Cancel();
-        if (pending != null) Finish(pending, FrameSubmitStatus.Closed);
+        if (_closed) return;
+        _lifetime.BeginDisposal();
+        _closed = true;
+        Cleanup(_pipeline.StopOnUiThread);
+        Cleanup(_menuSession.Dispose);
 
         Cleanup(() => _interaction?.Dispose());
         Cleanup(() => _pixelInfoOverlay?.Disable());
         Cleanup(() => _measureManager?.Dispose());
         Cleanup(() => _window.Layers.Close());
         Cleanup(CloseHud);
-        ReleaseFrame(current);
-        ReleaseFrame(_menuSnapshot?.Frame); _menuSnapshot = null;
-        Cleanup(_presenter.Dispose);
-        Cleanup(() => { _d3dPresenter?.Dispose(); _d3dPresenter = null; });
+        Cleanup(_presentation.Dispose);
         FrameCommitted = null;
     }
 
@@ -71,9 +60,7 @@ public partial class Viewer
                 }
                 catch (TaskCanceledException) { }
             }
-            Task render;
-            lock (_frameGate) render = _renderTask;
-            await Task.WhenAll(render, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+            await Task.WhenAll(_pipeline.Completion, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
             _lifetime.Complete();
             if (_window.ClosingError is { } error) _disposeCompletion.TrySetException(error);
             else _disposeCompletion.TrySetResult();
