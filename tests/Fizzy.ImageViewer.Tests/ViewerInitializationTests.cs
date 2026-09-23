@@ -10,6 +10,39 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class ViewerInitializationTests
 {
+    private sealed class ThrowingDisposalViewer(Presenter presenter, Action<Viewer>? initialize = null)
+        : Viewer(NullLogger<Viewer>.Instance, presenter, false, initialize: initialize)
+    {
+        public override ValueTask DisposeAsync() => throw new InvalidOperationException("Subclass disposal must not run internally.");
+        public ValueTask DisposeBaseAsync() => base.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task StartupRollbackDoesNotInvokeSubclassDisposal()
+    {
+        var presenter = new Presenter();
+        var failure = new InvalidOperationException("startup failure");
+        Thread? sta = null;
+        var observed = await Task.Run(() => Assert.Throws<InvalidOperationException>(() =>
+            new ThrowingDisposalViewer(presenter, _ => { sta = Thread.CurrentThread; throw failure; })))
+            .WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Same(failure, observed);
+        Assert.False(sta!.IsAlive);
+        Assert.Equal(1, presenter.Disposals);
+    }
+
+    [Fact]
+    public async Task WindowClosureDoesNotInvokeSubclassDisposal()
+    {
+        var presenter = new Presenter();
+        var viewer = new ThrowingDisposalViewer(presenter);
+        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
+        await viewer.UiDispatcher.InvokeAsync(viewer.WindowForTests.CloseProgrammatically);
+        await viewer.DisposeBaseAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.False(sta.IsAlive);
+        Assert.Equal(1, presenter.Disposals);
+    }
+
     [Fact]
     public async Task NormalShutdownWaitsForActualStaExit()
     {

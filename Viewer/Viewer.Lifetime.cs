@@ -17,7 +17,7 @@ public partial class Viewer
         try
         {
             CleanupOnWindowClosed();
-            _ = DisposeAsync();
+            _ = BeginDisposal();
             foreach (EventHandler handler in Closed?.GetInvocationList() ?? [])
                 try { handler(this, EventArgs.Empty); } catch (Exception ex) { _logger.LogWarning(ex, "Closed handler failed"); }
         }
@@ -73,7 +73,10 @@ public partial class Viewer
         }
         catch (Exception ex) { _disposeCompletion.TrySetException(ex); }
     }
-    public virtual ValueTask DisposeAsync()
+    public virtual ValueTask DisposeAsync() => BeginDisposal();
+
+    // Internal ownership must never dispatch into a partially constructed or failing subclass.
+    private ValueTask BeginDisposal()
     {
         _lifetime.BeginDisposal();
         if (Interlocked.Exchange(ref _disposeRequested, 1) == 0) _ = CompleteDisposalAsync();

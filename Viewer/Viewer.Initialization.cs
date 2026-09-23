@@ -77,7 +77,7 @@ public partial class Viewer
                 if (win != null) Cleanup(win.CloseProgrammatically);
                 Cleanup(Dispatcher.CurrentDispatcher.InvokeShutdown);
                 _windowStopped.TrySetResult();
-                _ = DisposeAsync();
+                _ = BeginDisposal();
                 if (failure != null) tcs.TrySetException(failure);
             }
         });

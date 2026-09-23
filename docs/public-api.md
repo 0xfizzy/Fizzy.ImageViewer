@@ -29,6 +29,9 @@ Minimizing an already hidden window does not implicitly show it.
 Construction validates window bounds before starting the STA. If initialization fails,
 all created resources are released on their owning thread and background work is drained
 before the original exception is rethrown.
+Internal shutdown and startup rollback never invoke an overridden `DisposeAsync`.
+Overrides apply to explicit caller disposal and should await the base implementation;
+use `Closed` for application resources that must also be released on user closure.
 `Closed` is a window notification, not a substitute for awaiting disposal. There is no
 separate public `Close` method. Event callbacks run on the viewer STA; do not block them
 waiting for shutdown or for work that needs that dispatcher.
