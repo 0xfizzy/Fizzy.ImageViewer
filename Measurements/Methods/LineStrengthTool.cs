@@ -15,7 +15,7 @@ internal sealed class LineStrengthTool(IMeasurementContext context) : LineTool(c
         private Imaging.LineProfile _profile = new();
         private LineProfilePlotView? _plotView;
         public LineStrengthItem(IMeasurementContext context, Point start)
-            : base(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0)) { }
+            : base(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(context.Style), Shapes.CreateLabel(start, "", 5, 0, context.Style)) { }
         protected override void OnComplete()
         {
             _plotView = new LineProfilePlotView();

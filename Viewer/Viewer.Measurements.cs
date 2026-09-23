@@ -4,6 +4,18 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    public Drawing.ShapeStyle MeasurementStyle
+    {
+        get => InvokeAlive(() => _measureManager!.Context.Style);
+        set
+        {
+            _lifetime.ThrowIfStopping();
+            ArgumentNullException.ThrowIfNull(value);
+            var snapshot = value.Snapshot();
+            InvokeAlive(() => _measureManager!.Context.Style = snapshot);
+        }
+    }
+
     public void RegisterMeasureMethod(IMeasureMethod method)
     {
         InvokeAlive(() => _measureManager!.RegisterMethod(method));

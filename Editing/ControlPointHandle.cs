@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// </summary>
 internal static class ControlPointHandle
 {
-    public static Brush HandleBrush { get; set; } = Brushes.Orange;
+    private static Brush HandleBrush => Brushes.Orange;
     public const double HandleRadius = 5.0;
 
     /// <summary>

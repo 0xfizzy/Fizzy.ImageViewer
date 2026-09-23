@@ -10,6 +10,7 @@ namespace Fizzy.ImageViewer.Measurements;
 /// External tools use Interfaces.IMeasureToolContext instead.</remarks>
 internal interface IMeasurementContext
 {
+    Drawing.ShapeStyle Style { get; }
     void VerifyAccess();
     void UpdateAnchor(UIElement shape, Point point);
     void Attach(MeasurementItem item);

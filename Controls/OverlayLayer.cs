@@ -72,7 +72,7 @@ internal class OverlayLayer : UserControl
     private static void ApplySelectionStyle(UIElement element, bool selected)
     {
         if (element is not FrameworkElement { Tag: OverlayTagData data }) return;
-        var brush = selected ? Shapes.SelectedBrush : data.OriginalBrush;
+        var brush = selected ? data.SelectedBrush : data.OriginalBrush;
         if (element is Shape shape) shape.Stroke = brush;
         else if (element is TextBlock text) text.Foreground = brush;
     }

@@ -13,6 +13,8 @@ namespace Fizzy.ImageViewer.Interfaces;
 /// </summary>
 public interface IViewerAPI : IAsyncDisposable
 {
+    /// <summary>Style for future measurements. Brushes are copied and frozen before UI dispatch.</summary>
+    ShapeStyle MeasurementStyle { get; set; }
     // === 窗口管理 ===
 
     /// <summary>

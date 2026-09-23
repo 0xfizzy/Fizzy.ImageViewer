@@ -21,4 +21,5 @@ public sealed class OverlayTagData(OverlayScaleMode mode, ShapeType type)
     public Point AnchorPoint { get => Transform.AnchorPoint; set => Transform.AnchorPoint = value; }
     public Vector ScreenOffset { get => Transform.ScreenOffset; set => Transform.ScreenOffset = value; }
     public Brush? OriginalBrush { get; set; }
+    internal Brush SelectedBrush { get; init; } = Brushes.Yellow;
 }

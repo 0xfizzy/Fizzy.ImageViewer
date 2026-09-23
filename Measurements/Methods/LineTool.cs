@@ -9,7 +9,7 @@ internal class LineTool(IMeasurementContext context) : IMeasureTool
     private Point _start;
     private MeasurementItem? _item;
     private protected virtual MeasurementItem CreateItem(IMeasurementContext context, Point start) =>
-        new(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0));
+        new(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(context.Style), Shapes.CreateLabel(start, "", 5, 0, context.Style));
     public bool OnClick(Point point)
     {
         if (_item == null || _item.IsDisposed)

@@ -6,6 +6,12 @@ measurement elements. Batch markers continue to use `DrawingElement` and
 
 ## Ownership and geometry
 
+`Viewer.MeasurementStyle` configures newly created measurements independently for each
+viewer. Assignment copies and freezes all brushes on the caller's thread before UI
+dispatch. Existing shapes retain their normal and selected colors. Custom tools can
+pass `IMeasureToolContext.Style` to the optional `style` parameter of `Shapes.Create*`;
+omitting it uses immutable defaults. Shape helpers also snapshot supplied brushes.
+
 Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primary
 visual, label, result, query subscription and optional plot window. A context-owned
 registry maps visuals to their owner without putting business state in `Tag`.

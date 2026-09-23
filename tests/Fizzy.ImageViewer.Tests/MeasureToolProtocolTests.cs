@@ -13,6 +13,7 @@ public class MeasureToolProtocolTests
 {
     private sealed class PublicContext : IMeasureToolContext
     {
+        public Drawing.ShapeStyle Style { get; } = new();
         public FrameLease? AcquireCurrentFrame() => null;
         public IMeasurementScope CreateScope() => throw new NotSupportedException();
         public event Action<FrameInfo>? FrameCommitted { add { } remove { } }

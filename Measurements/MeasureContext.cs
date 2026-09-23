@@ -10,6 +10,7 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
 internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
 {
+    public Drawing.ShapeStyle Style { get; internal set; } = Drawing.ShapeStyle.Default;
     private readonly OverlayLayer _layer;
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,38 +9,30 @@ namespace Fizzy.ImageViewer
 {
     public static class Shapes
     {
-        // === 样式配置 ===
-        public static Brush NormalBrush { get; set; } = Brushes.LimeGreen;
-        public static Brush SelectedBrush { get; set; } = Brushes.Yellow;
-        public static Brush TextBackground { get; set; } = Brushes.Transparent;
-        //public static Brush TextBackground { get; set; } = CreateFrozenBrush(Color.FromArgb(160, 0, 0, 0));
-
-        private static SolidColorBrush CreateFrozenBrush(Color color)
-        {
-            var brush = new SolidColorBrush(color);
-            brush.Freeze();
-            return brush;
-        }
-
         public const double BaseStrokeThickness = 2.0;
         public const double BaseFontSize = 14.0;
 
         // 1. 创建线段 (FixedStroke)
-        public static Line CreateLine() => new()
+        public static Line CreateLine(ShapeStyle? style = null)
         {
-            Stroke = NormalBrush,
-            StrokeThickness = BaseStrokeThickness,
-            Tag = new OverlayTagData(OverlayScaleMode.FixedStroke, ShapeType.Line) { OriginalBrush = NormalBrush }
-        };
+            style = (style ?? ShapeStyle.Default).Snapshot();
+            return new()
+            {
+                Stroke = style.NormalBrush,
+                StrokeThickness = BaseStrokeThickness,
+                Tag = new OverlayTagData(OverlayScaleMode.FixedStroke, ShapeType.Line) { OriginalBrush = style.NormalBrush, SelectedBrush = style.SelectedBrush }
+            };
+        }
 
         // 2. 创建文字标签 (AnchoredLabel)
-        public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10)
+        public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10, ShapeStyle? style = null)
         {
+            style = (style ?? ShapeStyle.Default).Snapshot();
             return new TextBlock
             {
                 Text = text,
-                Foreground = NormalBrush,
-                Background = TextBackground,
+                Foreground = style.NormalBrush,
+                Background = style.TextBackground,
                 Padding = new Thickness(3),
                 FontSize = BaseFontSize,
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
@@ -47,26 +40,29 @@ namespace Fizzy.ImageViewer
                 {
                     AnchorPoint = anchor,
                     ScreenOffset = new Vector(offsetX, offsetY),
-                    OriginalBrush = NormalBrush
+                    OriginalBrush = style.NormalBrush,
+                    SelectedBrush = style.SelectedBrush
                 }
             };
         }
 
         // 3. 创建点/锚点形状 (FixedSize)
-        public static Path CreatePoint(Point position)
+        public static Path CreatePoint(Point position, ShapeStyle? style = null)
         {
+            style = (style ?? ShapeStyle.Default).Snapshot();
             var geometry = new GeometryGroup();
             double r = 4;
             geometry.Children.Add(new EllipseGeometry(new Point(0, 0), r, r));
 
             var path = new Path
             {
-                Fill = Brushes.Red,
+                Fill = style.PointBrush,
                 Data = geometry,
                 Tag = new OverlayTagData(OverlayScaleMode.FixedSize, ShapeType.Point)
                 {
                     AnchorPoint = position,
-                    OriginalBrush = Brushes.Red
+                    OriginalBrush = style.PointBrush,
+                    SelectedBrush = style.SelectedBrush
                 }
 
             };
@@ -74,8 +70,9 @@ namespace Fizzy.ImageViewer
         }
 
         // 4. 创建准星 (FixedSize)
-        public static Path CreateCrosshair(Point position, double size = 20, double thickness = 2)
+        public static Path CreateCrosshair(Point position, double size = 20, double thickness = 2, ShapeStyle? style = null)
         {
+            style = (style ?? ShapeStyle.Default).Snapshot();
             var geometry = new GeometryGroup();
             geometry.Children.Add(new LineGeometry(new Point(-size, 0), new Point(size, 0)));
             geometry.Children.Add(new LineGeometry(new Point(0, -size), new Point(0, size)));
@@ -83,42 +80,49 @@ namespace Fizzy.ImageViewer
 
             var path = new Path
             {
-                Stroke = NormalBrush,
+                Stroke = style.NormalBrush,
                 StrokeThickness = thickness,
                 Data = geometry,
                 Tag = new OverlayTagData(OverlayScaleMode.FixedSize, ShapeType.Crosshair)
                 {
                     AnchorPoint = position,
-                    OriginalBrush = NormalBrush
+                    OriginalBrush = style.NormalBrush,
+                    SelectedBrush = style.SelectedBrush
                 }
             };
             return path;
         }
 
         // 5. 创建矩形框 (FixedStroke)
-        public static Rectangle CreateRectangle() => new()
+        public static Rectangle CreateRectangle(ShapeStyle? style = null)
         {
-            Width = 0, Height = 0,
-            Stroke = Brushes.Cyan,
-            StrokeThickness = 1.0,
-            StrokeDashArray = new DoubleCollection { 4, 2 },
-            Tag = new OverlayTagData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { OriginalBrush = Brushes.Cyan }
-        };
+            style = (style ?? ShapeStyle.Default).Snapshot();
+            return new()
+            {
+                Width = 0, Height = 0,
+                Stroke = style.RegionBrush,
+                StrokeThickness = 1.0,
+                StrokeDashArray = new DoubleCollection { 4, 2 },
+                Tag = new OverlayTagData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { OriginalBrush = style.RegionBrush, SelectedBrush = style.SelectedBrush }
+            };
+        }
 
         // 6. 创建圆形 (FixedStroke)
-        public static Path CreateCircle(Point center, double radius)
+        public static Path CreateCircle(Point center, double radius, ShapeStyle? style = null)
         {
+            style = (style ?? ShapeStyle.Default).Snapshot();
             var geometry = new EllipseGeometry(new Point(0, 0), radius, radius);
 
             var path = new Path
             {
-                Stroke = NormalBrush,
+                Stroke = style.NormalBrush,
                 StrokeThickness = BaseStrokeThickness,
                 Data = geometry,
                 Tag = new OverlayTagData(OverlayScaleMode.FixedStroke, ShapeType.Circle)
                 {
                     AnchorPoint = center,
-                    OriginalBrush = NormalBrush
+                    OriginalBrush = style.NormalBrush,
+                    SelectedBrush = style.SelectedBrush
                 }
             };
 

@@ -13,7 +13,7 @@ but there is no protected window or supported raw-window access.
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
 | Drawing | `Layers`, `ViewerLayers`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
-| Measurements | tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
+| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasureMethod`, `IMeasureToolContext`, `IMeasurementScope` |
 
 ## Threads and window lifetime
