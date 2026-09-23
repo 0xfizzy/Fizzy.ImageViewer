@@ -13,6 +13,7 @@ internal sealed class MeasureManager : IDisposable
     private readonly Dictionary<string, Registration> _methods = new(StringComparer.Ordinal);
     private IMeasureMethod? _active;
     private bool _disposed;
+    internal long SessionVersion { get; private set; }
     public Registration[] RegisteredMethods => _methods.Values.ToArray();
     public string? ActiveId { get; private set; }
     public bool HasSelection => _active != null;
@@ -45,11 +46,14 @@ internal sealed class MeasureManager : IDisposable
     internal bool Click(Point point)
     {
         if (_active == null) return true;
+        var version = SessionVersion;
         if (!_active.OnClick(point, Context)) return false;
+        // A completion subscriber can restart even the same registered tool instance.
+        if (version != SessionVersion) return false;
         _active = null; ActiveId = null; Context.CancelUncompletedScopes(); return true;
     }
     internal void Move(Point point) => _active?.OnMouseMove(point, Context);
-    internal void Cancel() { var method = _active; _active = null; ActiveId = null; try { method?.Cancel(Context); } finally { Context.CancelUncompletedScopes(); } }
+    internal void Cancel() { SessionVersion++; var method = _active; _active = null; ActiveId = null; try { method?.Cancel(Context); } finally { Context.CancelUncompletedScopes(); } }
     internal void NotifyFrameCommitted(FrameInfo info) => Context.NotifyFrameCommitted(info);
     public void Dispose()
     {

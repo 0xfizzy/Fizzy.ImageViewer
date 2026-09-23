@@ -128,8 +128,9 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void ImageDown(double x, double y)
     {
         if (Mode != InteractionMode.Measuring) return;
-        try { if (_measure.Click(new(x, y))) { Mode = InteractionMode.Idle; RestoreInput(); } }
-        catch { Cancel(); throw; }
+        var version = _measure.SessionVersion;
+        try { if (_measure.Click(new(x, y)) && version == _measure.SessionVersion) { Mode = InteractionMode.Idle; RestoreInput(); } }
+        catch { if (version == _measure.SessionVersion) Cancel(); throw; }
     }
     internal void ImageMove(double x, double y)
     {

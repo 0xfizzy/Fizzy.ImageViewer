@@ -52,8 +52,10 @@ public sealed class ViewerLayers
     });
     public void Clear() => Invoke(() =>
     {
+        // New layers created by callbacks survive; removed layers have already been cleared.
+        var layers = _layers.ToArray();
         try { CancelMeasurement?.Invoke(); }
-        finally { foreach (var layer in _layers) layer.ClearCore(); }
+        finally { foreach (var layer in layers) if (_layers.Contains(layer)) layer.ClearCore(); }
     });
     internal void SuppressInput(bool suppressed)
     {

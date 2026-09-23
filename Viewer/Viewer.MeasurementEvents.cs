@@ -5,6 +5,7 @@ namespace Fizzy.ImageViewer;
 public partial class Viewer
 {
     /// <summary>Raised once after a built-in measurement completes, on the viewer STA. Previews are excluded.</summary>
+    /// <remarks>Subscribers may start a new measurement, including the same tool, before returning.</remarks>
     public event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
     /// <summary>Raised when a previously completed built-in measurement is removed, including clear and closure.</summary>
     public event EventHandler<MeasurementEventArgs>? MeasurementRemoved;

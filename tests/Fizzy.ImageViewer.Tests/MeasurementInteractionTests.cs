@@ -21,6 +21,34 @@ public class MeasurementInteractionTests
 {
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     private static OverlayLayer Overlay(Viewer viewer) => viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CompletionSubscriberCanStartNextMeasurement(bool startRectangle)
+    {
+        await using var viewer = Create();
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            int completed = 0;
+            viewer.MeasurementCompleted += (_, _) =>
+            {
+                completed++;
+                if (completed != 1) return;
+                viewer.StartMeasure(startRectangle ? MeasureToolIds.ROI : MeasureToolIds.Point);
+                if (startRectangle) viewer.Interaction.ImageDown(2, 2);
+            };
+            viewer.StartMeasure(MeasureToolIds.Point);
+            viewer.Interaction.ImageDown(1, 1);
+            Assert.Equal(InteractionMode.Measuring, viewer.Interaction.Mode);
+            Assert.True(viewer.Layers.InputSuppressed);
+            viewer.Interaction.ImageDown(5, 5);
+            Assert.Equal(2, completed);
+            Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
+            Assert.False(viewer.Layers.InputSuppressed);
+        });
+    }
+
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
         var method = new RectMeasure();

@@ -183,6 +183,10 @@ or measurement scopes for public access. See [measurement contracts](measurement
 
 `ClearShapes()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing
+uses a snapshot of layers taken before cancellation: layers created by callbacks
+survive this clear, and layers removed by callbacks are skipped (removal already
+clears them). Existing layers that remain attached are cleared in snapshot order.
+Clearing
 `Measurements` also cancels active measurement and editing sessions.
 Snapshot export still exports image data, not overlay layers.
 

@@ -15,6 +15,43 @@ public class DrawingTests
 {
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     private static CircleElement Circle(double x = 20, double y = 20) => new(new(x, y), 5, Brushes.Red, 2, Brushes.Red);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ClearUsesInitialLayersWhenRemovalSubscriberChangesCollection(bool removeLayer)
+    {
+        await using var viewer = Create();
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var original = viewer.Layers.CreateLayer("original");
+            var originalBatch = original.AddBatch([Circle()]);
+            DrawingLayer? replacement = null;
+            DrawingBatchHandle? replacementBatch = null;
+            int removed = 0;
+            viewer.MeasurementRemoved += (_, _) =>
+            {
+                removed++;
+                if (removeLayer) viewer.Layers.RemoveLayer(original);
+                replacement = viewer.Layers.CreateLayer("replacement");
+                replacementBatch = replacement.AddBatch([Circle()]);
+            };
+            viewer.StartMeasure(MeasureToolIds.Point);
+            viewer.Interaction.ImageDown(1, 1);
+            viewer.ClearShapes();
+            Assert.Equal(1, removed);
+            Assert.NotNull(replacement);
+            Assert.Contains(replacement, viewer.Layers.Items);
+            Assert.Equal(1, replacement.Host.Count);
+            replacementBatch!.Replace([Circle(30, 30)]);
+            Assert.Throws<ObjectDisposedException>(() => originalBatch.Replace([Circle()]));
+            Assert.Equal(!removeLayer, viewer.Layers.Items.Contains(original));
+            viewer.ClearShapes();
+            Assert.Equal(0, replacement.Host.Count);
+            Assert.Throws<ObjectDisposedException>(() => replacementBatch.Replace([Circle()]));
+        });
+    }
+
     private static void Arrange(ViewerLayers layers)
     { layers.Root.Measure(new(800, 600)); layers.Root.Arrange(new(0, 0, 800, 600)); layers.Root.UpdateLayout(); }
 
