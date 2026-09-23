@@ -89,18 +89,24 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
     }
     internal void ClearMeasurements()
     {
-        CleanupScopes(false);
+        CleanupScopes();
         foreach (var item in _items.Values.Distinct().ToArray())
             try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
     }
-    internal void CancelUncompletedScopes()
-        => CleanupScopes(true);
-    private void CleanupScopes(bool previewsOnly)
+    internal MeasurementScope[] CaptureUncompletedScopes()
+        => _scopes.Where(s => !s.IsComplete).ToArray();
+    internal void CancelScopes(MeasurementScope[] scopes)
+    {
+        // A disposal callback may start a new session and create its own scopes.
+        foreach (var scope in scopes)
+            try { scope.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement scope cleanup failed"); }
+    }
+    private void CleanupScopes()
     {
         var cleaning = _cleaningScopes; _cleaningScopes = true;
         try
         {
-            foreach (var scope in _scopes.Where(s => !previewsOnly || !s.IsComplete).ToArray())
+            foreach (var scope in _scopes.ToArray())
                 try { scope.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement scope cleanup failed"); }
         }
         finally { _cleaningScopes = cleaning; }

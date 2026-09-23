@@ -54,6 +54,18 @@ Temporary input suppression never changes configured layer hit-testing flags.
 Restoring input recomputes effective flags for every layer, including layers
 created while measuring. A hidden measurement layer does not start new tools.
 
+During normal operation, a session started synchronously inside a tool callback
+or completion notification takes precedence, even when it uses the same tool.
+Returning or throwing from the old callback does not cancel that session or
+restore its input state. This also applies when cancellation interrupts an outer
+start request: the callback's session wins. Callback exceptions still propagate
+according to the existing interaction rules. Cancellation captures the old preview
+scopes before invoking the tool and cleans only that snapshot; scopes created by
+the new session survive. Scope disposal during session cleanup may itself start a
+new session. Full clear still rejects scope creation during bulk cleanup.
+Once viewer shutdown begins, new sessions are rejected and all resources are
+released; public viewer calls during shutdown throw `ObjectDisposedException`.
+
 ## Query execution
 
 `MeasurementScheduler` runs one batch at a time. It captures typed pixel, line and

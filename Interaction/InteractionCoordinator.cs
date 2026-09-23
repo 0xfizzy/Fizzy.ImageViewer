@@ -75,24 +75,29 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void StartMeasurement(string name)
     {
         if (_disposed || !_measure.HasMethod(name) || !_layers.Measurements.IsVisible) return;
-        Cancel(); ClearSelection();
+        var version = _measure.SessionVersion;
         try
         {
-            if (!_measure.Start(name)) return;
+            if (!_measure.Start(name, out version)) return;
+            ClearSelection();
+            if (version != _measure.SessionVersion || _disposed) return;
             Mode = InteractionMode.Measuring;
             _layers.SuppressInput(true);
             _input.Container.Cursor = Cursors.Pen;
             _input.Container.Focus();
         }
-        catch { Cancel(); throw; }
+        catch { if (version == _measure.SessionVersion) Cancel(); throw; }
     }
     internal void StartEditing(UIElement shape)
     {
         if (_disposed || !_overlay.Canvas.Children.Contains(shape) || !_edit.CanEdit(shape) ||
             !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
-        Cancel(); Select(shape);
+        if (!CancelCore()) return;
+        var version = _measure.SessionVersion;
+        Select(shape);
+        if (version != _measure.SessionVersion || _disposed) return;
         try { if (_edit.StartEditing(SelectedShape!)) Mode = InteractionMode.Editing; }
-        catch { Cancel(); throw; }
+        catch { if (version == _measure.SessionVersion) Cancel(); throw; }
     }
     internal void StopEditing()
     {
@@ -102,8 +107,21 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void Cancel()
     {
         if (_disposed) return;
-        try { _measure.Cancel(); }
-        finally { _edit.StopEditing(); Mode = InteractionMode.Idle; RestoreInput(); }
+        CancelCore();
+    }
+    private bool CancelCore()
+    {
+        var version = _measure.SessionVersion;
+        try { _measure.Cancel(out version); }
+        finally
+        {
+            if (version == _measure.SessionVersion)
+            {
+                _edit.StopEditing();
+                if (version == _measure.SessionVersion) { Mode = InteractionMode.Idle; RestoreInput(); }
+            }
+        }
+        return version == _measure.SessionVersion;
     }
     private void RestoreInput()
     {
@@ -135,7 +153,8 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void ImageMove(double x, double y)
     {
         if (Mode != InteractionMode.Measuring) return;
-        try { _measure.Move(new(x, y)); } catch { Cancel(); throw; }
+        var version = _measure.SessionVersion;
+        try { _measure.Move(new(x, y)); } catch { if (version == _measure.SessionVersion) Cancel(); throw; }
     }
     private void KeyDown(object sender, KeyEventArgs e)
     {
@@ -175,10 +194,11 @@ internal sealed class InteractionCoordinator : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        try { Cancel(); }
+        _disposed = true;
+        try { CancelCore(); }
         finally
         {
-            ClearSelection(); _disposed = true;
+            ClearSelection();
             _overlay.VisualRemoving -= VisualRemoving; _measure.Context.ItemRemoving -= ItemRemoving;
             _input.ImageMouseDown -= ImageDown; _input.ImageMouseMove -= ImageMove;
             _input.Container.PreviewKeyDown -= KeyDown;

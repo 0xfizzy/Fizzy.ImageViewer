@@ -43,23 +43,46 @@ internal sealed class MeasureManager : IDisposable
         return true;
     }
     internal bool HasMethod(string name) => _methods.ContainsKey(name);
-    internal bool Start(string name)
+    internal bool Start(string name) => Start(name, out _);
+    // Publish ownership before callbacks, including when cancellation throws.
+    internal bool Start(string name, out long version)
     {
+        version = SessionVersion;
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!_methods.TryGetValue(name, out var method)) return false;
-        Cancel(); _active = method.Tool; ActiveId = name; return true;
+        version = ++SessionVersion;
+        CancelCore();
+        if (version != SessionVersion || _disposed) return false;
+        _active = method.Tool; ActiveId = name; return true;
     }
     internal bool Click(Point point)
     {
-        if (_active == null) return true;
+        var method = _active;
+        if (method == null) return true;
         var version = SessionVersion;
-        if (!_active.OnClick(point)) return false;
+        if (!method.OnClick(point)) return false;
         // A completion subscriber can restart even the same registered tool instance.
         if (version != SessionVersion) return false;
-        _active = null; ActiveId = null; Context.CancelUncompletedScopes(); return true;
+        var scopes = Context.CaptureUncompletedScopes();
+        _active = null; ActiveId = null;
+        Context.CancelScopes(scopes);
+        return version == SessionVersion;
     }
-    internal void Move(Point point) => _active?.OnMouseMove(point);
-    internal void Cancel() { SessionVersion++; var method = _active; _active = null; ActiveId = null; try { method?.Cancel(); } finally { Context.CancelUncompletedScopes(); } }
+    internal void Move(Point point) { var method = _active; method?.OnMouseMove(point); }
+    internal void Cancel() => Cancel(out _);
+    internal void Cancel(out long version)
+    {
+        version = ++SessionVersion;
+        CancelCore();
+    }
+    private void CancelCore()
+    {
+        var method = _active;
+        var scopes = Context.CaptureUncompletedScopes();
+        _active = null; ActiveId = null;
+        try { method?.Cancel(); }
+        finally { Context.CancelScopes(scopes); }
+    }
     internal void NotifyFrameCommitted(FrameInfo info) => Context.NotifyFrameCommitted(info);
     public void Dispose()
     {
