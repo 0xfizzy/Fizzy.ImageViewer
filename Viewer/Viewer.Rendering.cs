@@ -1,32 +1,28 @@
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private FramePipeline _pipeline = null!;
-    private FramePresentation _presentation = null!;
     public event Action<FrameInfo>? FrameCommitted;
 
     public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken ct = default)
-        => _pipeline.SubmitAsync(frame, options, ct);
+        => _runtime.Pipeline.SubmitAsync(frame, options, ct);
 
-    public FrameLease? AcquireCurrentFrame() => _pipeline.AcquireCurrentFrame();
-    private FrameLease? TryAcquireCurrentFrame() => _pipeline.TryAcquireCurrentFrame();
+    public FrameLease? AcquireCurrentFrame() => _runtime.Pipeline.AcquireCurrentFrame();
 
     public GrayDisplayRange? DisplayRange
     {
-        get => _pipeline.DisplayRange;
-        set => _pipeline.DisplayRange = value;
+        get => _runtime.Pipeline.DisplayRange;
+        set => _runtime.Pipeline.DisplayRange = value;
     }
 
-    private void NotifyFrameCommitted(FrameLease frame, FrameSubmissionOptions? options)
+    internal void NotifyFrameCommitted(FrameLease frame, FrameSubmissionOptions? options)
     {
         Notify(() => { using var borrowed = frame.Acquire(); options?.OnCommitted?.Invoke(borrowed); });
-        Notify(() => _measureManager?.NotifyFrameCommitted(frame.Info));
+        Notify(() => _runtime.Measurements?.NotifyFrameCommitted(frame.Info));
         foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
             Notify(() => handler(frame.Info));
     }

@@ -1,8 +1,8 @@
 # Supported public API
 
 `Viewer` constructs an independent STA window. `IViewerAPI` is its complete consumer
-contract, including `Label`, `QueryOptions` and `QueryMetrics`. Inheritance is allowed,
-but there is no protected window or supported raw-window access.
+contract, including `Label`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
+application adapters own an instance and use its public API. Raw-window access is not supported.
 
 | Capability | Supported entry points |
 | --- | --- |
@@ -14,13 +14,19 @@ but there is no protected window or supported raw-window access.
 | Drawing | `Layers`, `ViewerLayers`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
-| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurementScope` |
+| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
 The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, helpers
-and enums belong to `.Drawing`; measurement tools, scopes and notifications belong
+and enums belong to `.Drawing`; measurement tools, models and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
 ## Threads and window lifetime
+
+Construction shows the window by default. Pass `showWindow: false` to create a hidden
+viewer, configure it and subscribe to events before calling `Show()`. A hidden viewer
+has a running STA and can accept frames; its owner must await `DisposeAsync()` even
+if it is never shown. Application adapters should register their resources before
+showing, and dispose the viewer if their own initialization fails.
 
 Window methods and properties synchronously dispatch to the viewer STA and throw
 `ObjectDisposedException` once disposal begins. `Show` restores a minimized window,
@@ -33,9 +39,10 @@ Minimizing an already hidden window does not implicitly show it.
 Construction validates window bounds before starting the STA. If initialization fails,
 all created resources are released on their owning thread and background work is drained
 before the original exception is rethrown.
-Internal shutdown and startup rollback never invoke an overridden `DisposeAsync`.
-Overrides apply to explicit caller disposal and should await the base implementation;
-use `Closed` for application resources that must also be released on user closure.
+Application adapters route user closure (`Closed`) and explicit adapter disposal to
+one idempotent cleanup task, release application resources and await the owned viewer's
+`DisposeAsync`. Keep measurement subscriptions until window cleanup finishes when
+the adapter forwards removal notifications.
 `Closed` is a window notification, not a substitute for awaiting disposal. There is no
 separate public `Close` method. Event callbacks run on the viewer STA; do not block them
 waiting for shutdown or for work that needs that dispatcher.
@@ -47,29 +54,32 @@ See [frame contracts](frame-pipeline.md) and [drawing contracts](drawing-layers.
 
 ## Measurement notifications and extensions
 
-`MeasurementCompleted` reports completed built-in point, line and rectangle geometry,
-including line-strength measurements. It excludes previews and custom scope visuals.
-`MeasurementRemoved` reports only previously completed measurements, including clear
-and window closure. Removal contains the latest geometry; completion contains the
-geometry at completion. Both snapshots share a stable measurement ID.
+`MeasurementCompleted` reports all completed measurements, including custom tools;
+previews are excluded. `MeasurementRemoved` reports only previously completed items,
+including clear and closure. `MeasurementSnapshot` carries the stable ID, immutable
+geometry and owner-maintained geometry version. Completion captures geometry at completion;
+removal captures the latest geometry. Circle snapshots include their radius.
 
-`MeasurementSnapshot` is immutable image-coordinate data. `Start` is the point position;
-line uses both endpoints; rectangle uses normalized opposite corners. The event's
-`IDisposable` handle removes the measurement and its resources from any thread and is
-safe to dispose repeatedly or after closure. It exposes no geometry mutation API.
-Subscribers may remove a measurement during completion; removal can therefore be
-delivered reentrantly before later completion subscribers. Subscriber failures are logged
-and isolated. Notifications do not promise pixel-query results are already available.
+The event's `IDisposable` handle removes the item and its resources from any thread,
+including after closure. Removal may occur reentrantly during a completion subscriber.
+Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
 
-Custom measurement tools own visuals and resources exclusively through
-`IMeasurementScope`; scope operations and tool callbacks use the viewer STA.
-During normal operation, a session started synchronously from a tool callback or
-completion subscriber takes precedence over the interrupted session. Tool callback
-exceptions propagate without cancelling a newer session; notification subscriber
-exceptions are logged and isolated. Once disposal begins, `StartMeasurement` throws
-`ObjectDisposedException`.
-See [measurement contracts](measurements.md). Arbitrary custom control-point editors
-are not a public extension point. Built-in editing remains supported.
+Custom and built-in tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
+The returned `IMeasurement` owns geometry, display, queries and registered resources.
+Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
+observe `ResultChanged` for immutable query results or invalidation. `Complete` retains
+a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
+and measurement operations use the viewer STA. Only event removal handles marshal disposal.
+
+Geometry is a closed family: point, crosshair, line, rectangle and circle. Query options
+compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
+combinations fail on creation. The framework owns primary visuals, labels and control points.
+Arbitrary WPF attachment, geometry implementations and query algorithms are not extension
+contracts. See [measurement contracts and example](measurements.md).
+
+During normal operation, a new session started synchronously from a callback takes
+precedence over the interrupted session. Once disposal begins, `StartMeasurement` throws
+`ObjectDisposedException` and measurement creation is rejected.
 
 ## Internal implementation
 
@@ -77,15 +87,15 @@ Built-in measurement tool implementations are internal; use
 `StartMeasurement(MeasurementToolIds.Point)` (or another built-in ID) to activate them.
 
 `ViewerWindow`, `MenuManager`, WPF image/overlay/HUD layer controls, control-point visuals, all shape
-editors and their factory, `MeasurementItem`, `MeasurementGeometry`, scheduling and
+editors and their factory, `MeasurementItem`, scheduling and
 rendering internals are not public contracts. `DrawingElement` is a closed family of
 supported drawing descriptions, not a custom-renderer base class. Public shape helpers
-used by custom measurement tools remain available; consumers must not parse their WPF
+remain available as drawing helpers; consumers must not parse their WPF
 visual trees or cached transform metadata to observe built-in measurement results.
 
 The pixel HUD controller, built-in save-menu item and shape metadata/cache are internal.
-Custom menus use `IMenuItem` or the action-based menu helpers; custom measurement visuals
-use `Shapes.Create*` and scopes. Built-in save actions receive snapshot services directly.
+Custom menus use `IMenuItem` or the action-based menu helpers; custom measurements
+use `CreateMeasurement`. Built-in save actions receive snapshot services directly.
 Menu visibility is determined by `IMenuItem.IsVisible`, evaluated on each opening.
 Action-based helpers accept an optional visibility predicate. Use `SeparatorMenuItem`
 for separators; the renderer removes leading, repeated and trailing separators.

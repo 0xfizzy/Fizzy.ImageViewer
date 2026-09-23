@@ -1,30 +1,21 @@
-using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Drawing;
 using System.Windows;
-
 namespace Fizzy.ImageViewer.Measurements.BuiltIn;
-
-internal class LineTool(IMeasurementContext context) : IMeasurementToolHandler
+internal class LineTool : IMeasurementTool
 {
     public virtual string Id => MeasurementToolIds.Length;
     public virtual string DisplayName => "Length";
+    protected virtual MeasurementOptions Options => new();
     private Point _start;
-    private MeasurementItem? _item;
-    private protected virtual MeasurementItem CreateItem(IMeasurementContext context, Point start) =>
-        new(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(context.Style), Shapes.CreateLabel(start, "", 5, 0, context.Style));
-    public bool OnClick(Point point)
+    private IMeasurement? _item;
+    public bool OnClick(Point point, IMeasurementToolContext context)
     {
         if (_item == null || _item.IsDisposed)
-        { _start = point; _item = CreateItem(context, point); return false; }
-        OnMouseMove(point);
+        { _start = point; _item = context.CreateMeasurement(MeasurementGeometry.Line(point, point), Options); return false; }
+        OnMouseMove(point, context);
         var item = _item; _item = null;
-        try { item.Complete(); } catch { item.Dispose(); throw; }
-        return true;
+        item.Complete(); return true;
     }
-    public void OnMouseMove(Point point)
-    {
-        if (_item is { IsDisposed: false }) _item.UpdateGeometry(MeasurementGeometry.Line(_start, point));
-    }
-    public void Cancel() { var item = _item; _item = null; item?.Dispose(); }
+    public void OnMouseMove(Point point, IMeasurementToolContext context)
+    { if (_item is { IsDisposed: false }) _item.UpdateGeometry(MeasurementGeometry.Line(_start, point)); }
+    public void Cancel(IMeasurementToolContext context) { var item = _item; _item = null; item?.Dispose(); }
 }
-

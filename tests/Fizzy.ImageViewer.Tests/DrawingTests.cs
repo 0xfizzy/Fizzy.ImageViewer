@@ -356,14 +356,15 @@ public class DrawingTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            foreach (var shape in new UIElement[] { Shapes.CreatePoint(new(30, 30)), Shapes.CreateLine(), Shapes.CreateRectangle() })
+            foreach (var geometry in new[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
-                viewer.MeasurementContext.AttachVisualInternal(shape);
+                var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(geometry);
+                var shape = item.PrimaryVisual; item.Complete();
                 viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!);
                 var data = OverlayShapeData.Get(shape)!;
                 Assert.NotEmpty(viewer.Interaction.Editor.Handles);
                 var editor = viewer.Interaction.Editor;
-                Assert.True(editor.BeginDrag(data.AnchorPoint, 1));
+                Assert.True(editor.BeginDrag(geometry.Start, 1));
                 editor.UpdateDrag(new(40, 40)); editor.EndDrag();
 
                 viewer.Interaction.DeleteSelected();
@@ -371,9 +372,8 @@ public class DrawingTests
                 Assert.Empty(viewer.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
-            var line = Shapes.CreateLine(); var label = Shapes.CreateLabel(new(1, 1), "length");
-            new MeasurementItem(viewer.MeasurementContext, MeasurementGeometry.Line(new(0,0), new(1,1)), line, label).Complete();
-            viewer.MeasurementContext.AttachVisualInternal(line); viewer.MeasurementContext.AttachVisualInternal(label);
+            var measurement = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
+            measurement.Complete(); var line = measurement.PrimaryVisual;
             viewer.Interaction.Select(line); viewer.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
@@ -385,18 +385,18 @@ public class DrawingTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            foreach (Measurements.IMeasurementToolHandler method in new Measurements.IMeasurementToolHandler[] {
-                new Measurements.BuiltIn.PointTool(viewer.MeasurementContext), new Measurements.BuiltIn.LineTool(viewer.MeasurementContext), new Measurements.BuiltIn.RectTool(viewer.MeasurementContext) })
+            foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
+                new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LineTool(), new Measurements.BuiltIn.RectTool() })
             {
-                bool done = method.OnClick(new(10, 10));
+                bool done = method.OnClick(new(10, 10), viewer.MeasurementContext);
                 if (!done)
                 {
-                    method.OnMouseMove(new(50, 50));
+                    method.OnMouseMove(new(50, 50), viewer.MeasurementContext);
                     Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
-                    method.Cancel();
+                    method.Cancel(viewer.MeasurementContext);
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-                    Assert.False(method.OnClick(new(10, 10)));
-                    Assert.True(method.OnClick(new(50, 50)));
+                    Assert.False(method.OnClick(new(10, 10), viewer.MeasurementContext));
+                    Assert.True(method.OnClick(new(50, 50), viewer.MeasurementContext));
                 }
                 Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
                 viewer.Layers.Measurements.Clear();

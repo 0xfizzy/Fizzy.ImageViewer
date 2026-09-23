@@ -49,14 +49,19 @@ the consumer repository. This library does not require a specific GPU runtime or
 
 ## Measurement ownership and interaction
 
-`MeasurementScopeTests` cover custom-tool cleanup, cancellation exceptions,
+`UnifiedMeasurementTests` compare built-in and custom ROI notifications, labels and
+statistics, verify immutable retained pixel/profile results, reject stale in-flight ROI
+results after editing/removal, and exercise circle edit writeback and callback removal.
+Query failures, invalid combinations and geometry validation also have regression coverage.
+
+`MeasurementOwnershipTests` cover model-owned custom-tool cleanup, cancellation exceptions,
 visual ownership, reentrant registration/disposal, viewer closure, unsupported editors,
 rectangle drag sessions and the absence of standalone overlay interaction.
 
 `MeasurementReentryTests` cover session replacement from click, move, cancellation,
 tool switching and entry into editing, with and without callback exceptions. They
 check active tool, interaction mode, cursor, input suppression and preview ownership,
-including restart during scope disposal and rejection of new sessions during closure.
+including restart during measurement disposal and rejection of new sessions during closure.
 `MeasurementInteractionTests` also cover restarting the same built-in tool from a
 completion subscriber. Run the focused suite with:
 
@@ -106,14 +111,18 @@ CPU display mapping; they do not bind a native surface or validate real CPU/GPU 
 
 `MeasurementStyleTests` exercise independent STA viewers, brush snapshots and per-item
 selection colors. `ViewerInitializationTests` inject startup/cleanup failures and verify
-frame/scope/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
+frame/measurement/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
 cover routed selection input, one cancellation per layer operation and complete bulk cleanup
 after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
 context. The public API baseline test detects exported type/member changes; its update
 procedure is documented in [public API](public-api.md).
 
-Initialization tests also verify that rollback and window closure bypass overridden
-disposal methods. Style tests cover caller-owned `Tag` data, per-visual zoom dimensions,
+Initialization tests also verify public hidden creation, configuration and frame submission
+before showing, disposal without showing, and shared cleanup after window closure.
+Partial composition failures after window, pipeline and measurement
+creation verify exactly-once presenter cleanup on the STA, original exception preservation
+and actual thread exit even when presenter disposal throws.
+Style tests cover caller-owned `Tag` data, per-visual zoom dimensions,
 point fill selection and editing after metadata changes. Menu tests cover visibility,
 check state, separator normalization and captured targets across closure/reopening.
 Measurement resource failure tests verify visual detachment and idempotent disposal

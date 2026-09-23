@@ -82,7 +82,7 @@ public class PixelQuerySchedulerTests
             Published++;
         }
         public void ClearResult() => Clears++;
-        public void ResultPublished(long frameId) => FrameId = frameId;
+        public void ResultPublished(FrameInfo frame) => FrameId = frame.FrameId;
     }
     private sealed class Source(Runtime runtime) : IFramePixelSource
     {

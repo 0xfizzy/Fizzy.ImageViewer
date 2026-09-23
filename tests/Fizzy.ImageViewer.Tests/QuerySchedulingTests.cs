@@ -21,9 +21,9 @@ public class QuerySchedulingTests
         Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl? plot=null;
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
-            var method=new Measurements.BuiltIn.LineStrengthTool(viewer.MeasurementContext);
-            method.OnClick(new(0,0));
-            method.OnClick(new(1,0));
+            var method=new Measurements.BuiltIn.LineStrengthTool();
+            method.OnClick(new(0,0), viewer.MeasurementContext);
+            method.OnClick(new(1,0), viewer.MeasurementContext);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
                 .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl);
             plot=(Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl)window.Content;

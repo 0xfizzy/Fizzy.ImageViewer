@@ -6,25 +6,25 @@ public partial class Viewer
 {
     public Drawing.ShapeStyle MeasurementStyle
     {
-        get => InvokeAlive(() => _measureManager!.Context.Style);
+        get => InvokeAlive(() => _runtime.Measurements.Style);
         set
         {
-            _lifetime.ThrowIfStopping();
+            _runtime.Lifetime.ThrowIfStopping();
             ArgumentNullException.ThrowIfNull(value);
             var snapshot = value.Snapshot();
-            InvokeAlive(() => _measureManager!.Context.Style = snapshot);
+            InvokeAlive(() => _runtime.Measurements.Style = snapshot);
         }
     }
 
     public void RegisterMeasurementTool(IMeasurementTool tool)
     {
-        InvokeAlive(() => _measureManager!.RegisterTool(tool));
+        InvokeAlive(() => _runtime.Tools.RegisterTool(tool));
     }
 
     public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-        return _interaction!.UnregisterMeasurementTool(toolId);
+        return _runtime.Interaction.UnregisterMeasurementTool(toolId);
     });
 
     public void StartMeasurement(string toolId)
@@ -32,15 +32,15 @@ public partial class Viewer
         InvokeAlive(() =>
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-            if (!_measureManager!.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
+            if (!_runtime.Tools.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
             if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
-            _interaction!.StartMeasurement(toolId);
+            _runtime.Interaction.StartMeasurement(toolId);
         });
     }
 
     public void CancelMeasurement()
     {
-        InvokeAlive(() => _interaction!.Cancel());
+        InvokeAlive(() => _runtime.Interaction.Cancel());
     }
 
 }

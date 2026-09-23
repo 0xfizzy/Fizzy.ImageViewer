@@ -68,6 +68,8 @@ viewer.StartMeasurement(MeasurementToolIds.Length); // Independent interactive m
 
 See [measurement ownership and interaction](docs/measurements.md).
 See [supported public API and window lifetime](docs/public-api.md).
+Application adapters own a sealed `Viewer`; use `showWindow: false` to configure and
+subscribe before `Show()`, and await `DisposeAsync()` when the adapter stops.
 See [drawing layers](docs/drawing-layers.md) for updates, hit testing, and API behavior.
 For camera streams, retain batches and replace their content; follow the
 [live overlay consumer requirements](docs/drawing-layers.md#live-camera-overlays-consumer-requirements).
@@ -83,7 +85,8 @@ See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 - [Batch drawing and configurable layers](docs/drawing-layers.md): one visual per collection
 - Built-in point, line, rectangle, and line-strength measurements
 - Shape selection and interactive editing
-- Extensible context menu and measurement APIs
+- Model-driven custom measurements with shared editing, queries and notifications
+- Extensible context menus
 - Pixel value inspection
 
 ## Build

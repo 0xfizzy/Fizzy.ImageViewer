@@ -52,9 +52,9 @@ public class MeasurementInteractionTests
 
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
-        var method = new RectTool(viewer.MeasurementContext);
-        method.OnClick(new(2, 2));
-        method.OnClick(new(6, 6));
+        var method = new RectTool();
+        method.OnClick(new(2, 2), viewer.MeasurementContext);
+        method.OnClick(new(6, 6), viewer.MeasurementContext);
         var shape = Overlay(viewer).Canvas.Children.OfType<Rectangle>().Last();
         return viewer.MeasurementContext.Find(shape)!;
     }
@@ -75,14 +75,14 @@ public class MeasurementInteractionTests
             var overlay = Overlay(viewer);
             viewer.Interaction.StartEditing(item.PrimaryVisual);
             var editor = viewer.Interaction.Editor;
-            var initial = item.Geometry;
+            var initial = item.Geometry; var initialVersion = item.GeometryVersion;
             Assert.True(editor.BeginDrag(initial.ControlPoints[index], 1));
             editor.UpdateDrag(new(x, y));
             // Continuing beyond the crossing must keep the ORIGINAL opposite corner fixed.
             editor.UpdateDrag(new(x + .25, y + .25));
             var expected = MeasurementGeometry.Rectangle(initial.ControlPoints[(index + 2) % 4], new(x + .25, y + .25));
             Assert.Equal(expected.Start, item.Geometry.Start); Assert.Equal(expected.End, item.Geometry.End);
-            Assert.Equal(2, item.Geometry.Version - initial.Version);
+            Assert.Equal(2, item.GeometryVersion - initialVersion);
             var rectangle = (Rectangle)item.PrimaryVisual;
             Assert.Equal(expected.Width, rectangle.Width); Assert.Equal(expected.Height, rectangle.Height);
             Assert.Equal(expected.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Y, Canvas.GetTop(rectangle));
@@ -91,7 +91,7 @@ public class MeasurementInteractionTests
             using var frame = viewer.AcquireCurrentFrame();
             var request = Assert.IsType<RegionStatisticsQueryRequest>(((IFrameQueryClient)item).Capture(frame!.Descriptor));
             Assert.Equal(item.Geometry.ToRegion(frame.Descriptor), request.Region);
-            Assert.Equal(item.Geometry.Version, request.Identity.GeometryVersion);
+            Assert.Equal(item.GeometryVersion, request.Identity.GeometryVersion);
             viewer.FreezeMenuRegion(); frozen = viewer.AcquireMenuRegionSnapshot();
             Assert.NotNull(frozen); Assert.Equal(request.Region, frozen!.Region);
             // The menu captures an immutable region, even if geometry changes afterwards.
@@ -115,11 +115,11 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var rectangle = Shapes.CreateRectangle(); rectangle.Width = 4; rectangle.Height = 4;
-            Canvas.SetLeft(rectangle, 2); Canvas.SetTop(rectangle, 2);
-            var editor = new RectangleEditor();
-            var opposite = editor.GetControlPoints(rectangle)[(index + 2) % 4];
-            editor.CreateDrag(rectangle, index)(new(x, y));
+            var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var rectangle = (Rectangle)item.PrimaryVisual;
+            using var editor = ShapeEditorFactory.Create(rectangle, item)!;
+            var opposite = editor.Points[(index + 2) % 4];
+            editor.BeginDrag(index); editor.Update(new(x, y));
             Assert.Equal(Math.Abs(x - opposite.X), rectangle.Width);
             Assert.Equal(Math.Abs(y - opposite.Y), rectangle.Height);
         });
@@ -136,7 +136,7 @@ public class MeasurementInteractionTests
             viewer.Interaction.StartEditing(invalid);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.Empty(viewer.Interaction.Editor.Handles);
-            var tool = new PointTool(viewer.MeasurementContext); tool.OnClick(new(3, 4));
+            var tool = new PointTool(); tool.OnClick(new(3, 4), viewer.MeasurementContext);
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
             viewer.Interaction.StartEditing(point);
             Assert.Equal(InteractionMode.Editing, viewer.Interaction.Mode);
@@ -252,11 +252,12 @@ public class MeasurementInteractionTests
             var overlay = new OverlayLayer();
             layers.Measurements.Root.Children.Add(overlay);
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
-            using var measure = new MeasurementManager(overlay, () => null, queries, NullLogger.Instance);
-            var editor = new EditManager(overlay, measure.Context);
+            var context = new MeasurementContext(overlay, () => null, queries, NullLogger.Instance);
+            var tools = new MeasurementToolRegistry();
+            var editor = new EditManager(overlay, context.Find);
             var capture = new FakeCapture { Succeeds = action != "failed" };
-            using var coordinator = new InteractionCoordinator(image, overlay, editor, measure, layers, capture);
-            var tool = new RectTool(measure.Context); tool.OnClick(new(2, 2)); tool.OnClick(new(6, 6));
+            using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
+            var tool = new RectTool(); tool.OnClick(new(2, 2), context); tool.OnClick(new(6, 6), context);
             var shape = overlay.Canvas.Children.OfType<Rectangle>().Single();
             coordinator.StartEditing(shape);
             Assert.Equal(action != "failed", coordinator.BeginDrag(new(2, 2)));
@@ -275,6 +276,7 @@ public class MeasurementInteractionTests
             Assert.Same(Cursors.Cross, image.Container.Cursor);
             Assert.False(layers.InputSuppressed);
             Assert.Equal(action is "lost" or "failed" ? InteractionMode.Editing : InteractionMode.Idle, coordinator.Mode);
+            context.Shutdown();
         });
     }
 }

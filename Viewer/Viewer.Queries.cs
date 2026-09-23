@@ -5,12 +5,11 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private PixelQueryScheduler _queryScheduler = null!;
-    internal PixelQueryScheduler QueryScheduler => _queryScheduler;
+    internal PixelQueryScheduler QueryScheduler => _runtime.Queries;
     public PixelQueryOptions QueryOptions
     {
-        get => InvokeAlive(() => _queryScheduler.QueryOptions);
-        set => InvokeAlive(() => _queryScheduler.QueryOptions = value);
+        get => InvokeAlive(() => _runtime.Queries.QueryOptions);
+        set => InvokeAlive(() => _runtime.Queries.QueryOptions = value);
     }
-    public PixelQueryMetrics QueryMetrics => InvokeAlive(() => _queryScheduler.QueryMetrics);
+    public PixelQueryMetrics QueryMetrics => InvokeAlive(() => _runtime.Queries.QueryMetrics);
 }

@@ -8,7 +8,7 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
-internal sealed class MeasurementContext : IMeasurementToolContext, IMeasurementContext
+internal sealed class MeasurementContext : IMeasurementToolContext
 {
     public Drawing.ShapeStyle Style { get; internal set; } = Drawing.ShapeStyle.Default;
     private readonly OverlayLayer _layer;
@@ -16,10 +16,9 @@ internal sealed class MeasurementContext : IMeasurementToolContext, IMeasurement
     private readonly ILogger _logger;
     private readonly PixelQueryScheduler _scheduler;
     private readonly Dictionary<UIElement, MeasurementItem> _items = [];
-    private readonly HashSet<MeasurementScope> _scopes = [];
-    private readonly Dictionary<UIElement, MeasurementScope> _scopeVisuals = [];
-    private bool _cleaningScopes;
+    private bool _cleaning;
     private bool _disposed;
+    internal bool CreationBlocked { get; set; }
     public event Action<FrameInfo>? FrameCommitted;
     internal event Action<MeasurementItem>? ItemRemoving;
     internal event Action<MeasurementItem>? ItemCompleted;
@@ -36,18 +35,24 @@ internal sealed class MeasurementContext : IMeasurementToolContext, IMeasurement
         _scheduler = scheduler;
     }
     public FrameLease? AcquireCurrentFrame() => _acquire();
-    /// <summary>Creates a preview owner on the viewer STA. Call Complete to retain it after the tool ends.</summary>
-    public IMeasurementScope CreateScope()
+    public IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null)
     {
         VerifyAccess(); ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_cleaningScopes) throw new InvalidOperationException("Cannot create a measurement scope during cleanup.");
-        var scope = new MeasurementScope(this); _scopes.Add(scope); return scope;
+        if (_cleaning || CreationBlocked) throw new InvalidOperationException("Cannot create a measurement during cleanup.");
+        ArgumentNullException.ThrowIfNull(geometry);
+        options ??= new(); options.Validate(geometry);
+        var item = new MeasurementItem(this, geometry, options);
+        Attach(item); return item;
+    }
+    internal void Notify<T>(Action<T>? handlers, T value)
+    {
+        foreach (Action<T> handler in handlers?.GetInvocationList() ?? [])
+            try { handler(value); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
     }
     public void VerifyAccess() => _layer.Dispatcher.VerifyAccess();
     internal void AttachVisualInternal(UIElement shape) { ObjectDisposedException.ThrowIf(_disposed, this); _layer.AddShape(shape); }
     public void RemoveShape(UIElement shape)
     {
-        if (_scopeVisuals.TryGetValue(shape, out var scope)) { scope.Dispose(); return; }
         if (_items.TryGetValue(shape, out var item)) item.Dispose();
         else _layer.RemoveVisual(shape);
     }
@@ -85,48 +90,22 @@ internal sealed class MeasurementContext : IMeasurementToolContext, IMeasurement
     }
     internal void ClearMeasurements()
     {
-        if (_cleaningScopes) return;
-        _cleaningScopes = true;
+        if (_cleaning) return;
+        _cleaning = true;
         try
         {
-            CleanupScopes();
             foreach (var item in _items.Values.Distinct().ToArray())
                 try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
             _layer.ClearVisuals();
         }
-        finally { _cleaningScopes = false; }
+        finally { _cleaning = false; }
     }
-    internal MeasurementScope[] CaptureUncompletedScopes()
-        => _scopes.Where(s => !s.IsComplete).ToArray();
-    internal void CancelScopes(MeasurementScope[] scopes)
+    internal MeasurementItem[] CaptureUncompletedItems()
+        => _items.Values.Distinct().Where(item => !item.IsComplete).ToArray();
+    internal void CancelItems(MeasurementItem[] items)
     {
-        // A disposal callback may start a new session and create its own scopes.
-        foreach (var scope in scopes)
-            try { scope.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement scope cleanup failed"); }
-    }
-    private void CleanupScopes()
-    {
-        var cleaning = _cleaningScopes; _cleaningScopes = true;
-        try
-        {
-            foreach (var scope in _scopes.ToArray())
-                try { scope.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement scope cleanup failed"); }
-        }
-        finally { _cleaningScopes = cleaning; }
-    }
-    public void AttachScopeShape(MeasurementScope scope, UIElement shape)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_scopeVisuals.ContainsKey(shape) || _items.ContainsKey(shape) || _layer.Canvas.Children.Contains(shape)) throw new ArgumentException("Shape is already registered.", nameof(shape));
-        _scopeVisuals.Add(shape, scope);
-        try { AttachVisualInternal(shape); } catch { _scopeVisuals.Remove(shape); _layer.RemoveVisual(shape); throw; }
-    }
-    public void DetachScope(MeasurementScope scope, IReadOnlyCollection<UIElement> shapes)
-    {
-        _scopes.Remove(scope);
-        foreach (var shape in shapes) _scopeVisuals.Remove(shape);
-        foreach (var shape in shapes)
-            try { _layer.RemoveVisual(shape); } catch (Exception ex) { _logger.LogWarning(ex, "Scope visual cleanup failed"); }
+        foreach (var item in items)
+            try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
     }
     internal void NotifyFrameCommitted(FrameInfo info)
     {

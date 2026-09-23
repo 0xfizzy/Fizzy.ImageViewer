@@ -69,7 +69,7 @@ public interface IViewerAPI : IAsyncDisposable
     bool Borderless { get; set; }
     /// <summary>右上角 HUD 标签，通过查看器 STA 读写。关闭或释放开始后抛出 ObjectDisposedException。</summary>
     string? Label { get; set; }
-    /// <summary>内置测量及像素 HUD 的查询配置，通过查看器 STA 读写。</summary>
+    /// <summary>测量及像素 HUD 的查询配置，通过查看器 STA 读写。</summary>
     Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { get; set; }
     /// <summary>内置查询调度器的统计快照，通过查看器 STA 读取。</summary>
     Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { get; }
@@ -136,9 +136,9 @@ public interface IViewerAPI : IAsyncDisposable
     /// 取消当前进行中的测量。
     /// </summary>
     void CancelMeasurement();
-    /// <summary>Completed built-in measurements only; raised on the viewer STA, excluding previews.</summary>
+    /// <summary>Completed measurements only; raised on the viewer STA, excluding previews.</summary>
     event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
-    /// <summary>Removal of completed built-in measurements; raised on the viewer STA, including closure.</summary>
+    /// <summary>Removal of completed measurements; raised on the viewer STA, including closure.</summary>
     event EventHandler<MeasurementEventArgs>? MeasurementRemoved;
 
     // === 扩展 ===
@@ -149,9 +149,9 @@ public interface IViewerAPI : IAsyncDisposable
     void RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
-    /// 注册自定义测量方法。工具回调中通过 IMeasurementToolContext.CreateScope 登记视觉元素和资源，
+    /// 注册自定义测量方法。工具回调中通过 IMeasurementToolContext.CreateMeasurement 创建模型驱动测量并托管资源，
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
-    /// 调度器、内部测量模型及逐帧查询注册不是公共扩展接口。
+    /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
     /// </summary>
     void RegisterMeasurementTool(IMeasurementTool tool);
     bool UnregisterMeasurementTool(string toolId);

@@ -28,5 +28,5 @@ internal interface IFrameQueryClient
     QueryRequest? Capture(FrameDescriptor descriptor);
     void ClearResult();
     void InvalidateResult(ResultInvalidation reason) => ClearResult();
-    void ResultPublished(long frameId) { }
+    void ResultPublished(FrameInfo frame) { }
 }

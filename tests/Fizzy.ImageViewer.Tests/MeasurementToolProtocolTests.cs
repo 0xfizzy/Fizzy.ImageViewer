@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Rendering;
@@ -16,7 +15,7 @@ public class MeasurementToolProtocolTests
     {
         public Drawing.ShapeStyle Style { get; } = new();
         public FrameLease? AcquireCurrentFrame() => null;
-        public IMeasurementScope CreateScope() => throw new NotSupportedException();
+        public IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null) => throw new NotSupportedException();
         public event Action<FrameInfo>? FrameCommitted { add { } remove { } }
     }
 
@@ -37,21 +36,21 @@ public class MeasurementToolProtocolTests
     }
 
     [Fact]
-    public void AdapterRequiresOnlyPublicContextAndPreservesResultsAndExceptions()
+    public void ToolRequiresOnlyPublicContextAndPreservesResultsAndExceptions()
     {
         var context = new PublicContext(); var method = new Probe();
-        var tool = new CustomMeasurementTool(method, context);
+        var tool = method;
         Assert.Equal(method.Id, tool.Id); Assert.Equal(method.DisplayName, tool.DisplayName);
-        Assert.False(tool.OnClick(new(1, 2)));
+        Assert.False(tool.OnClick(new(1, 2), context));
         Assert.Same(context, method.Context); Assert.Equal(new Point(1, 2), method.Point);
-        method.Finish = true; Assert.True(tool.OnClick(new(3, 4)));
-        method.Context = null; tool.OnMouseMove(new(5, 6));
+        method.Finish = true; Assert.True(tool.OnClick(new(3, 4), context));
+        method.Context = null; tool.OnMouseMove(new(5, 6), context);
         Assert.Same(context, method.Context); Assert.Equal(new Point(5, 6), method.Point);
-        method.Context = null; tool.Cancel(); Assert.Same(context, method.Context);
+        method.Context = null; tool.Cancel(context); Assert.Same(context, method.Context);
         method.Failure = new InvalidOperationException("plugin failure");
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnClick(new())));
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnMouseMove(new())));
-        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(tool.Cancel));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnClick(new(), context)));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.OnMouseMove(new(), context)));
+        Assert.Same(method.Failure, Assert.Throws<InvalidOperationException>(() => tool.Cancel(context)));
     }
 
     [Fact]
@@ -73,8 +72,7 @@ public class MeasurementToolProtocolTests
             Assert.Throws<KeyNotFoundException>(() => viewer.StartMeasurement("changed"));
             Assert.True(viewer.UnregisterMeasurementTool("point"));
             Assert.False(viewer.UnregisterMeasurementTool("point"));
-            using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(viewer.UiDispatcher));
-            using var manager = new MeasurementManager(new Controls.OverlayLayer(), () => null, queries, NullLogger.Instance);
+            var manager = new MeasurementToolRegistry();
             var original = new Probe(); manager.RegisterTool(original);
             original.Id = "changed"; original.DisplayName = "Changed";
             var entry = Assert.Single(manager.RegisteredTools);
@@ -124,8 +122,8 @@ public class MeasurementToolProtocolTests
         {
             using var frame = context.AcquireCurrentFrame();
             Pixel = frame!.CpuPixels.Span[0];
-            var scope = context.CreateScope();
-            scope.AddShape(Shapes.CreatePoint(point));
+            var scope = context.CreateMeasurement(MeasurementGeometry.Point(new()));
+
             void Changed(FrameInfo _) => Notifications++;
             context.FrameCommitted += Changed;
             scope.OnDispose(() => { context.FrameCommitted -= Changed; Released++; });

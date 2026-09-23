@@ -6,10 +6,12 @@ using System.Windows.Shapes;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>One-way projection from canonical geometry to WPF presentation.</summary>
-internal sealed class MeasurementDisplayAdapter(IMeasurementContext context, UIElement shape, TextBlock label)
+internal sealed class MeasurementDisplayAdapter(MeasurementContext context, UIElement shape, TextBlock label)
 {
     public void Apply(MeasurementGeometry geometry)
     {
+        if (geometry.Kind == ShapeType.Circle && shape is Path path && path.Data is System.Windows.Media.EllipseGeometry ellipse)
+        { ellipse.RadiusX = ellipse.RadiusY = geometry.Radius; }
         switch (shape)
         {
             case Rectangle rectangle:

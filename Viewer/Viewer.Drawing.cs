@@ -1,15 +1,12 @@
 using Fizzy.ImageViewer.Drawing;
-using System;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    public Drawing.ViewerLayers Layers => _window.Layers;
+    public Drawing.ViewerLayers Layers => _runtime.Window.Layers;
 
     /// <summary>Draws a non-interactive single-element batch in the Markers layer.</summary>
     public IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0) =>
@@ -29,50 +26,8 @@ public partial class Viewer
 
     /// <summary>Clears all business layers, including measurements, without clearing the HUD.</summary>
     public void ClearShapes() => Layers.Clear();
-    private readonly Dictionary<Drawing.HudTextHandle, TextBlock> _hudTexts = [];
-
-    /// <summary>Creates HUD text with fixed layout. Update text and color through the returned handle.</summary>
-    public Drawing.HudTextHandle DrawHudText(string text, Brush brush,
+    /// <summary>Creates HUD text with fixed layout.</summary>
+    public HudTextHandle DrawHudText(string text, Brush brush,
         Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft, double fontSize = 14)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        var frozen = Drawing.HudTextHandle.SnapshotBrush(brush);
-        if (!double.IsFinite(fontSize) || fontSize <= 0) throw new ArgumentOutOfRangeException(nameof(fontSize));
-        if (anchor is { } point && (!double.IsFinite(point.X) || !double.IsFinite(point.Y))) throw new ArgumentOutOfRangeException(nameof(anchor));
-        if (!Enum.IsDefined(alignment)) throw new ArgumentOutOfRangeException(nameof(alignment));
-        return InvokeAlive(() =>
-        {
-            var tb = anchor.HasValue ? _window.HudLayer.AddTextAt(text, frozen, fontSize, anchor.Value, alignment)
-                : _window.HudLayer.AddText(text, frozen, fontSize);
-            Drawing.HudTextHandle? handle = null;
-            handle = new Drawing.HudTextHandle((nextText, nextBrush) => InvokeAlive(() =>
-            {
-                ObjectDisposedException.ThrowIf(handle!.IsDisposed, handle);
-                _window.HudLayer.UpdateText(tb, nextText, nextBrush);
-            }), () => RemoveHud(handle!));
-            _hudTexts.Add(handle, tb);
-            return handle;
-        });
-    }
-
-    private void RemoveHud(Drawing.HudTextHandle handle)
-    {
-        if (_lifetime.IsStopping) return;
-        try { _window.Dispatcher.Invoke(() =>
-        {
-            if (_hudTexts.Remove(handle, out var text)) _window.HudLayer.RemoveText(text);
-        }); }
-        catch (TaskCanceledException) when (_closed) { }
-        catch (InvalidOperationException) when (_closed) { }
-    }
-
-    private void CloseHud()
-    {
-        foreach (var (handle, text) in _hudTexts)
-        {
-            handle.Invalidate();
-            _window.HudLayer.RemoveText(text);
-        }
-        _hudTexts.Clear();
-    }
+        => _runtime.Hud.Add(text, brush, anchor, alignment, fontSize);
 }

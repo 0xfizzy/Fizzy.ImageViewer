@@ -174,11 +174,12 @@ removal and closure release subscriptions and drawing resources.
 `DrawText` create single-element batches in `Markers`, without default selection
 or editing. Use `Layers.<layer>.AddBatch(...)` for bulk drawing and layer selection.
 For editable measurement shapes, continue using measurement tools and
-`IMeasurementToolContext.CreateScope().AddShape(...)`. Keep the returned scope and call
-`Complete()` when creation finishes. Scopes own related visuals and registered
-resources until deletion, clear or viewer closure. Measurement shapes remain
-individual WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles
-or measurement scopes for public access. See [measurement contracts](measurements.md).
+`IMeasurementToolContext.CreateMeasurement(geometry, options)`. Keep the returned
+`IMeasurement`, update its geometry during creation and call `Complete()` to retain it.
+The measurement owns its framework-generated visual, label, query and registered
+resources until deletion, clear or viewer closure. Measurement shapes remain individual
+WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles or measurement
+models for public access. See [measurement contracts](measurements.md).
 
 `ClearShapes()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing

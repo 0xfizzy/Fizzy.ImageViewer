@@ -1,32 +1,28 @@
 # Measurements and interaction
 
-Built-in tools (`Point`, `Length`, `ROI`, `LineStrength`) create individual WPF
-measurement elements. Batch markers continue to use `DrawingElement` and
+Built-in and custom tools create the same model-owned measurements through
+`IMeasurementToolContext.CreateMeasurement`. Built-in IDs are `Point`, `Length`,
+`ROI` and `LineStrength`. Batch markers continue to use `DrawingElement` and
 `DrawingVisual`; the two rendering paths have independent purposes.
 
 ## Ownership and geometry
 
 `Viewer.MeasurementStyle` configures newly created measurements independently for each
 viewer. Assignment copies and freezes all brushes on the caller's thread before UI
-dispatch. Existing shapes retain their normal and selected colors. Custom tools can
-pass `IMeasurementToolContext.Style` to the optional `style` parameter of `Shapes.Create*`;
-omitting it uses immutable defaults. Shape helpers also snapshot supplied brushes.
+dispatch. Existing measurements retain their normal and selected colors. `MeasurementOptions.Style`
+overrides the viewer default for a new measurement and is snapshotted on creation.
 
-Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primary
-visual and label. ROI and line-profile measurements implement query clients and own
-their subscriptions; the line-profile measurement alone owns its plot window.
-Plain points and lengths have no query or window state. A context-owned
-registry maps visuals to their owner using private attached metadata.
-Previews are owned items too; completing a preview enables its queries, and
-cancelling disposes it. Internal shape metadata contains only presentation state. `Tag` remains caller-owned.
-Line widths, label sizes and normal selection brushes are captured when a visual is
-first attached; configure those WPF properties before `AddShape`. Zoom uses that
-per-visual snapshot, and point selection changes its fill rather than adding a stroke.
-Each visual is added once; completing a preview does not remove and re-add it.
+Each measurement owns immutable `MeasurementGeometry`, a framework-generated primary
+visual and label, an optional pixel query subscription and its registered resources.
+The context has one registry mapping visuals to their measurement owner. A preview is
+already an owned measurement; `Complete` retains it and enables queries. Cancelling
+creation disposes unfinished measurements. `Tag` remains caller-owned presentation data.
+Visuals attach once and are not replaced on completion.
 
 Geometry uses source-image coordinates. A rectangle stores normalized opposite
 corners. Editing updates the model first; the display adapter projects it to WPF.
-Every actual geometry change increments a monotonic version and clears results.
+Every actual geometry change increments `IMeasurement.GeometryVersion` and clears results.
+An equal geometry update is a no-op. Geometry kind cannot change after creation.
 During a rectangle drag, the opposite corner comes from the drag-start snapshot,
 so crossing it does not change which corner is fixed. Labels follow geometry
 immediately, even when queries are slow or fail.
@@ -34,7 +30,7 @@ immediately, even when queries are slow or fail.
 ROI statistics and menu export use the same `PixelRegion.Clip` conversion of the
 selected item's geometry. The menu freezes the frame lease and region together;
 subsequent editing does not change an already captured export request. Editing
-WPF properties directly is not a supported way to change built-in measurements.
+WPF properties directly is not a supported way to change measurements.
 
 Deletion, clear, plot-window closure and viewer closure converge on idempotent
 item disposal: release specialized resources, then remove the label and primary
@@ -46,15 +42,17 @@ leases, including sources that do not immediately honor cancellation.
 
 ## Interaction
 
-The internal coordinator owns the selected item/shape and Idle, Editing and
-Measuring modes. The edit manager owns its session and control-point visuals;
-the measure manager owns the tool registry and current creation session.
+The internal coordinator owns the selected item/shape, Idle/Editing/Measuring mode,
+active measurement tool and session version. The tool registry only stores registrations.
+The edit manager owns its session and control-point visuals and borrows a measurement
+lookup delegate. ViewerInputBinding translates WPF input and applies pointer effects
+without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
-It holds no coordinator or measurement-owner reference. The coordinator subscribes to
-input and generic drawing-layer lifecycle notifications; the window composes the
+It holds no coordinator or measurement-owner reference. The coordinator receives
+translated input and generic drawing-layer lifecycle notifications; the window composes the
 measurement overlay into its drawing layer. A clear cancels the active session once,
 cleans measurement owners, and invalidates batches even if cancellation fails.
-Bulk clearing rejects new measurement/editing sessions and scope creation from cleanup
+Bulk clearing rejects new measurement/editing sessions and measurement creation from cleanup
 callbacks; reentrant clears are idempotent, and other layers are still cleared after a failure.
 
 Starting a valid measurement ends editing; starting valid editing cancels a
@@ -80,14 +78,14 @@ to their caller; cleanup restores idle only if that operation still owns the ses
 Completion/removal notification subscribers are instead isolated: their exceptions
 are logged and later subscribers still run.
 
-Cancellation captures the unfinished scopes before invoking the tool and cleans
-only that snapshot; scopes created by the new session survive. Normal completion
-captures unfinished scopes after `OnClick` returns, provided no newer session has
-replaced it. Scope disposal during session cleanup may itself start a new session.
-Cleanup attempts every captured scope and logs disposal failures. Bulk scope cleanup
-during clear rejects new scope creation.
+Cancellation captures the unfinished measurements before invoking the tool and cleans
+only that snapshot; measurements created by the new session survive. Normal completion
+captures unfinished measurements after `OnClick` returns, provided no newer session has
+replaced it. Measurement disposal during session cleanup may itself start a new session.
+Cleanup attempts every captured measurement and logs disposal failures. Bulk measurement cleanup
+during clear rejects new measurement creation.
 Once viewer shutdown begins, `StartMeasurement` throws `ObjectDisposedException`;
-shutdown cleans both completed and unfinished scopes and waits for owned queries.
+shutdown cleans both completed and unfinished measurements and waits for owned queries.
 
 ## Query execution
 
@@ -139,85 +137,120 @@ case-sensitive; blank IDs or display names are rejected. `StartMeasurement` thro
 measurement layer is hidden. `UnregisterMeasurementTool(id)` returns whether an entry
 was removed. Call `CancelMeasurement()` to end the active interaction session.
 
-Built-in tool classes are internal and receive their internal context at construction.
-The manager executes all tools through one internal protocol and registry; a small
-adapter supplies the public context to custom tool callbacks. Built-ins are started
-only by their tool IDs, rather than by constructing or inheriting tool classes.
-Custom scopes do not participate in built-in completion/removal events, model editing
-or the internal query scheduler.
+Built-in tool classes are internal but implement the same `IMeasurementTool` protocol
+as extensions. Both receive the public context in each callback. A tool returns `true`
+from `OnClick` to end its input session; call `Complete()` on each result to retain it.
+Returning `true` does not implicitly complete unfinished measurements.
 
-The public extension boundary consists of `IMeasurementTool` and the `IMeasurementToolContext` capability facade.
-Custom tools should use `IMeasurementToolContext.CreateScope()` to obtain an
-`IMeasurementScope`. Register visuals with `AddShape`, disposable resources with
-`AddResource`, and cleanup callbacks with `OnDispose`. Call `Complete()` before
-returning `true` from `OnClick` to retain a result; incomplete scopes are released
-when creation finishes or is cancelled (including tool changes and layer hiding).
-Completed scopes survive cancellation and tool unregistration. Removing any owned
-visual disposes its entire scope. Clear and viewer closure dispose all scopes.
-`IMeasurementScope.Dispose()` explicitly cancels/removes a scope and is idempotent.
+### Geometry, editing and notifications
 
-Scopes own resources, not their calculation logic. The scheduler, measurement
-models, editor factory and typed query protocol remain internal. `Tag` is available for caller data; private attached metadata stores display state. All scope operations run on the viewer STA. Cleanup callbacks
-run before disposable resources, followed by visual removal. Cleanup continues after
-failures; explicit disposal reports an aggregate exception, while framework cleanup
-logs failures and continues. Visual observer failures are logged during scope cleanup.
-Creating scopes during bulk cleanup is rejected. Register each visual with one owner
-through `IMeasurementScope.AddShape`. Scope registration is the public tool path for
-owning visuals, subscriptions and windows; internal visual attachment is not an
-extension contract.
-Use `scope.UpdateAnchor(shape, point)` to move an owned `Shapes.Create*` visual during
-preview. Coordinates are in image space; fixed-size and label-offset zoom policies are
-preserved. The operation requires the viewer STA and rejects foreign visuals, disposed
-scopes and non-finite coordinates. No access to internal metadata is needed.
-`FrameCommitted` remains a notification, not a query execution callback.
+Create geometry with `MeasurementGeometry.Point`, `Crosshair`, `Line`, `Rectangle` or
+`Circle`. Point and crosshair use `Start`; lines use `Start`/`End`; rectangles normalize
+opposite corners. Circles use `Start` as center and `Radius`; `End` equals the center.
+Coordinates and extents must be finite; circle radii must be nonnegative.
 
-For example, this tool owns a marker and a frame notification subscription:
+The framework creates the shape, label and supported control points. Use
+`UpdateGeometry` for previews and programmatic updates. Directly changing WPF properties
+is not a measurement mutation API. `GeometryChanged` reports the new immutable geometry
+after model, label and result invalidation have been applied. Use it to write edits back
+to an application model. A multi-shape tool creates multiple measurements, each with its
+own identity, completion and removal lifetime; there is no arbitrary visual attachment path.
+
+`Viewer.MeasurementCompleted` and `MeasurementRemoved` cover every tool. Completion fires
+once, excludes previews and does not imply query readiness. Removal fires only for a
+previously completed item. Snapshots include `Id`, complete `Geometry` and `GeometryVersion`.
+The event's removal handle can be disposed from any thread, repeatedly or after closure.
+
+### Queries and retained results
+
+`MeasurementOptions.Query` selects a closed set of capabilities:
+
+| Query | Supported geometry | Result |
+| --- | --- | --- |
+| `None` (default) | All | Geometry label; no pixel subscription |
+| `Pixel` | Point, crosshair | Sample and integer source coordinate |
+| `LineProfile` | Line | Ordered samples and source coordinates |
+| `RegionStatistics` | Rectangle | Clipped region and channel statistics |
+
+Incompatible combinations are rejected before any visual attaches. Pixel queries use
+floor coordinates and reject points outside the frame. Line profiles clip to the frame;
+ROI queries and export share `PixelRegion.Clip`. Empty targets have no result.
+`ShowLineProfile` requires `LineProfile`; it opens an owned plot window on completion.
+Closing that window removes the measurement. Built-in LineStrength enables it; custom
+line queries default to data only. Built-in ROI explicitly selects region statistics.
+
+`IMeasurement.Result` is null until successful publication. `ResultChanged` provides an
+immutable `MeasurementResult`, or null when a previous result becomes invalid. The result
+includes measurement ID, geometry version, source `FrameInfo`, query kind and read-only
+copies of samples, coordinates or channel statistics. It is safe to retain the result
+after another frame, editing or removal. Collections never borrow scheduler buffers.
+Labels and plots update before notification. Geometry changes invalidate immediately;
+query failure, descriptor change, missing targets and expiration clear obsolete results.
+The scheduler and query protocol remain internal.
+
+### Resources and threads
+
+Tool callbacks, measurement operations and notifications use the viewer STA. Use
+`AddResource` and `OnDispose` to bind external resources and event subscriptions to the
+measurement. Unregistering a tool retains completed measurements. Removing its primary
+visual or label removes the entire measurement. Hiding cancels previews but retains
+completed items; clear and viewer closure dispose all items.
+
+Disposal revokes queries, executes cleanup callbacks, disposes resources, closes the plot
+and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates
+cleanup errors; framework cleanup logs errors and continues. Disposal is idempotent.
+Creation is rejected during bulk cleanup and shutdown. Geometry/result and viewer event
+subscriber failures are logged and isolated. `FrameCommitted` is a notification, not a
+query execution callback.
+
+This custom ROI gets the same model editing, statistics, labels and viewer notifications
+as the built-in ROI:
 
 ```csharp
-using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
-public sealed class CustomPoint : IMeasurementTool
+public sealed class CustomRoi : IMeasurementTool
 {
-    public string Id => "custom-point";
-    public string DisplayName => "Custom point";
+    public string Id => "custom-roi";
+    public string DisplayName => "Custom ROI";
+    private IMeasurement? _preview;
+    private Point _start;
+
     public bool OnClick(Point point, IMeasurementToolContext context)
     {
-        var scope = context.CreateScope();
-        try
+        if (_preview is null or { IsDisposed: true })
         {
-            var marker = Shapes.CreatePoint(point);
-            scope.AddShape(marker);
-            Action<Fizzy.ImageViewer.Frames.FrameInfo> changed = _ =>
-                marker.ToolTip = "A new frame is available";
-            context.FrameCommitted += changed;
-            scope.OnDispose(() => context.FrameCommitted -= changed);
-            scope.AddResource(new System.IO.MemoryStream()); // Owned external resource.
-            scope.Complete();
-            return true;
+            _start = point;
+            _preview = context.CreateMeasurement(
+                MeasurementGeometry.Rectangle(point, point),
+                new() { Query = MeasurementQuery.RegionStatistics });
+            return false;
         }
-        catch { scope.Dispose(); throw; }
+        OnMouseMove(point, context);
+        var completed = _preview;
+        _preview = null; // Completion subscribers may synchronously restart this tool.
+        completed.Complete();
+        return true;
     }
-    public void OnMouseMove(Point point, IMeasurementToolContext context) { }
-    public void Cancel(IMeasurementToolContext context) { } // Framework releases incomplete scopes.
+
+    public void OnMouseMove(Point point, IMeasurementToolContext context)
+    {
+        if (_preview is { IsDisposed: false })
+            _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_start, point));
+    }
+
+    public void Cancel(IMeasurementToolContext context)
+    {
+        var preview = _preview;
+        _preview = null;
+        preview?.Dispose();
+    }
 }
 ```
 
-`OverlayLayer` and `ViewerWindow.MeasurementOverlay` are internal. Public access uses
-`Viewer.Layers`, drawing handles, and measurement scopes.
-The overlay does not offer standalone selection, deletion or editing; the
-coordinator owns all interaction. The internal editor factory selects supported shape
-types and creates disposable editing sessions. Rectangle sessions retain the original
-opposite corner throughout a drag; built-in measurement sessions update model
-geometry and invalidate query results before projecting visuals.
-
-The scheduler revokes subscriptions but does not dispose subscribers. Built-in
-measurement items own their subscription handles; the pixel HUD is a separate
-subscriber owned by the viewer.
-
-
+The scheduler revokes subscriptions but does not dispose subscribers. Measurements own
+their subscription handles; the pixel HUD is an independent subscriber owned by the viewer.
 
 ## Line-profile rendering
 

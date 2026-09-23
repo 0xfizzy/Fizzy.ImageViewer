@@ -12,21 +12,15 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class ViewerInitializationTests
 {
-    private sealed class ThrowingDisposalViewer(Presenter presenter, Action<Viewer>? initialize = null)
-        : Viewer(NullLogger<Viewer>.Instance, presenter, false, initialize: initialize)
-    {
-        public override ValueTask DisposeAsync() => throw new InvalidOperationException("Subclass disposal must not run internally.");
-        public ValueTask DisposeBaseAsync() => base.DisposeAsync();
-    }
-
     [Fact]
-    public async Task StartupRollbackDoesNotInvokeSubclassDisposal()
+    public async Task StartupRollbackPreservesFailureAndStopsSta()
     {
         var presenter = new Presenter();
         var failure = new InvalidOperationException("startup failure");
         Thread? sta = null;
         var observed = await Task.Run(() => Assert.Throws<InvalidOperationException>(() =>
-            new ThrowingDisposalViewer(presenter, _ => { sta = Thread.CurrentThread; throw failure; })))
+            new Viewer(NullLogger<Viewer>.Instance, presenter, false,
+                initialize: _ => { sta = Thread.CurrentThread; throw failure; })))
             .WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Same(failure, observed);
         Assert.False(sta!.IsAlive);
@@ -34,13 +28,13 @@ public class ViewerInitializationTests
     }
 
     [Fact]
-    public async Task WindowClosureDoesNotInvokeSubclassDisposal()
+    public async Task WindowClosureAndExplicitDisposalShareCleanup()
     {
         var presenter = new Presenter();
-        var viewer = new ThrowingDisposalViewer(presenter);
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
         var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
         await viewer.UiDispatcher.InvokeAsync(viewer.WindowForTests.CloseProgrammatically);
-        await viewer.DisposeBaseAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(sta.IsAlive);
         Assert.Equal(1, presenter.Disposals);
     }
@@ -52,6 +46,59 @@ public class ViewerInitializationTests
         var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
         await viewer.DisposeAsync();
         Assert.False(sta.IsAlive);
+    }
+
+    [Fact]
+    public async Task PublicHiddenCreationAllowsSetupBeforeShowing()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        Assert.False(viewer.IsVisible);
+        viewer.Title = "Configured before show";
+        var closed = 0;
+        viewer.Closed += (_, _) => closed++;
+        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+            ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }))).Status);
+        Assert.False(viewer.IsVisible);
+        viewer.Show();
+        Assert.True(viewer.IsVisible);
+        Assert.Equal("Configured before show", viewer.Title);
+        await viewer.DisposeAsync();
+        Assert.Equal(1, closed);
+    }
+
+    [Fact]
+    public async Task NeverShownViewerClosesAndStopsSta()
+    {
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var closed = 0;
+        viewer.Closed += (_, _) => closed++;
+        await viewer.DisposeAsync();
+        await viewer.DisposeAsync();
+        Assert.False(sta.IsAlive);
+        Assert.Equal(1, closed);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task PartialCompositionFailurePreservesExceptionAndReleasesPresenterOnSta(int stage)
+    {
+        var presenter = new Presenter(failDispose: true);
+        var failure = new InvalidOperationException("partial composition failure");
+        Thread? sta = null;
+        var observed = await Task.Run(() => Assert.Throws<InvalidOperationException>(() =>
+            new Viewer(NullLogger<Viewer>.Instance, presenter, false, checkpoint: current =>
+            {
+                if ((int)current != stage) return;
+                sta = Thread.CurrentThread;
+                throw failure;
+            }))).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Same(failure, observed);
+        Assert.False(sta!.IsAlive);
+        Assert.Equal(1, presenter.Disposals);
+        Assert.Equal(ApartmentState.STA, presenter.Apartment);
     }
 
     private sealed class Presenter(bool failDispose = false) : ICpuImagePresenter
@@ -100,8 +147,8 @@ public class ViewerInitializationTests
                 sta = Thread.CurrentThread;
                 viewer.WindowForTests.Closed += (_, _) => closedWindows++;
                 viewer.WindowForTests.Closing += (_, e) => e.Cancel = true;
-                var scope = viewer.MeasurementContext.CreateScope();
-                scope.AddShape(Shapes.CreatePoint(new()));
+                var scope = viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new()));
+
                 scope.OnDispose(() => releasedScopes++);
                 scope.Complete();
                 _ = viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),

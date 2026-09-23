@@ -3,13 +3,15 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
 
-/// <summary>Immutable image-coordinate snapshot of a completed built-in measurement.
-/// Point uses Start; line uses Start/End; rectangle uses normalized opposite corners.</summary>
-public sealed record MeasurementSnapshot(Guid Id, ShapeType Kind, Point Start, Point End);
+/// <summary>Immutable geometry snapshot of any completed measurement.</summary>
+public sealed record MeasurementSnapshot(Guid Id, MeasurementGeometry Geometry, long GeometryVersion)
+{
+    public ShapeType Kind => Geometry.Kind;
+    public Point Start => Geometry.Start;
+    public Point End => Geometry.End;
+}
 
-/// <summary>Built-in measurement notification. Delivered on the viewer STA.
-/// Handle removes the measurement from any thread; disposal is idempotent, including after closure.
-/// Snapshot is captured at notification time and does not change during subsequent editing.</summary>
+/// <summary>Delivered on the viewer STA. The removal handle is thread-safe and idempotent.</summary>
 public sealed class MeasurementEventArgs : EventArgs
 {
     public MeasurementSnapshot Snapshot { get; }

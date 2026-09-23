@@ -210,7 +210,7 @@ internal sealed class PixelQueryScheduler : IDisposable
                 }
                 state.Valid = state.HasResult = true; state.Frame = frame.Info.FrameId; state.Started = started;
                 state.PublishedIdentity = entry.Request.Identity;
-                entry.Item.ResultPublished(frame.Info.FrameId);
+                entry.Item.ResultPublished(frame.Info);
             }
             catch (Exception ex)
             {

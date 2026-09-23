@@ -20,7 +20,7 @@ public class LayerInteractionTests
         public int Cancellations;
         public Action<IMeasurementToolContext>? Cancelled;
         public bool OnClick(Point point, IMeasurementToolContext context)
-        { context.CreateScope().AddShape(Shapes.CreatePoint(point)); return false; }
+        { context.CreateMeasurement(MeasurementGeometry.Point(point)); return false; }
         public void OnMouseMove(Point point, IMeasurementToolContext context) { }
         public void Cancel(IMeasurementToolContext context) { Cancellations++; Cancelled?.Invoke(context); }
     }
@@ -62,6 +62,7 @@ public class LayerInteractionTests
             tool.Cancelled = context =>
             {
                 Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
+                Assert.Throws<InvalidOperationException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new())));
                 viewer.ClearShapes(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
@@ -82,8 +83,8 @@ public class LayerInteractionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var shape = Shapes.CreatePoint(new(1, 2));
-            viewer.MeasurementContext.CreateScope().AddShape(shape);
+            var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var shape = item.PrimaryVisual;
             void Click() => shape.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
                 { RoutedEvent = Mouse.MouseDownEvent });
             Click(); Assert.Same(shape, viewer.Interaction.SelectedShape);

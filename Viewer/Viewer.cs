@@ -13,24 +13,20 @@ namespace Fizzy.ImageViewer;
 /// 所有 UI 操作都会自动调度到 UI 线程执行。
 /// </para>
 /// </summary>
-public partial class Viewer : IViewerAPI, IAsyncDisposable
+public sealed partial class Viewer : IViewerAPI, IAsyncDisposable
 {
-    private readonly Thread _windowThread;
-    private ViewerWindow _window;
+    private readonly ViewerRuntime _runtime;
     private readonly ILogger _logger;
 
-    // === Managers ===
-    // 使用 volatile 保证跨线程可见性，因为这些字段在 UI 线程初始化，但可能在其他线程读取
-    private volatile MenuManager? _menuManager;
-    private volatile MeasurementManager? _measureManager;
-    private volatile InteractionCoordinator? _interaction;
-
-    public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
-        : this(logger, null, true, left, top, width, height) { }
+    /// <summary>Creates a viewer on its own STA. Use showWindow: false to configure and
+    /// subscribe before calling Show. The caller owns disposal even if never shown.</summary>
+    public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
+        bool showWindow = true)
+        : this(logger, null, showWindow, left, top, width, height) { }
 
     internal Viewer(ILogger<Viewer> logger, Rendering.ICpuImagePresenter? presenter, bool showWindow,
         double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
-        Action<Viewer>? initialize = null)
+        Action<Viewer>? initialize = null, Action<ViewerInitializationStage>? checkpoint = null)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ValidateWindowArgument(left, nameof(left));
@@ -38,8 +34,8 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
         ValidateWindowArgument(width, nameof(width), dimension: true);
         ValidateWindowArgument(height, nameof(height), dimension: true);
         _logger = logger;
-        _showWindow = showWindow;
-        InitializeWindow(presenter, out _windowThread, out _window, left, top, width, height, initialize);
+        _runtime = new ViewerRuntime(this, logger, showWindow);
+        _runtime.Start(presenter, left, top, width, height, initialize, checkpoint);
     }
 
     private static void ValidateWindowArgument(double value, string name, bool dimension = false)
@@ -48,15 +44,13 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
             throw new ArgumentOutOfRangeException(name);
     }
 
-    private readonly bool _showWindow;
-
-    internal Dispatcher UiDispatcher => _window.Dispatcher;
-    internal ViewerWindow WindowForTests => _window;
-    internal InteractionCoordinator Interaction => _interaction!;
-    internal MeasurementContext MeasurementContext => _measureManager!.Context;
+    internal Dispatcher UiDispatcher => _runtime.Window.Dispatcher;
+    internal ViewerWindow WindowForTests => _runtime.Window;
+    internal InteractionCoordinator Interaction => _runtime.Interaction;
+    internal MeasurementContext MeasurementContext => _runtime.Measurements;
 
     public void RegisterMenu(IMenuItem menuItem)
     {
-        InvokeAlive(() => _menuManager!.Register(menuItem));
+        InvokeAlive(() => _runtime.Menus.Register(menuItem));
     }
 }

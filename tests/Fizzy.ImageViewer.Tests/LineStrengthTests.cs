@@ -87,12 +87,6 @@ public class LineStrengthTests
         });
     }
 
-    private sealed class FailingResourceMeasurement(IMeasurementContext context)
-        : MeasurementItem(context, MeasurementGeometry.Point(new()), Shapes.CreatePoint(new()), Shapes.CreateLabel(new()))
-    {
-        protected override void OnDisposing() => throw new InvalidOperationException("resource cleanup failure");
-    }
-
     [Fact]
     public async Task ResourceFailureStillDetachesMeasurementAndAllowsRepeatedDisposal()
     {
@@ -100,11 +94,12 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.WindowForTests.MeasurementOverlay;
-            var item = new FailingResourceMeasurement(viewer.MeasurementContext);
+            var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new()));
+            item.OnDispose(() => throw new InvalidOperationException("resource cleanup failure"));
             item.Complete();
             int removed = 0;
             viewer.MeasurementRemoved += (_, _) => removed++;
-            Assert.Throws<InvalidOperationException>(item.Dispose);
+            Assert.Throws<AggregateException>(item.Dispose);
             Assert.True(item.IsDisposed);
             Assert.Null(viewer.MeasurementContext.Find(item.PrimaryVisual));
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -120,9 +115,9 @@ public class LineStrengthTests
     private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthTool method, OverlayLayer overlay)
     {
         var before = Windows();
-        Assert.False(method.OnClick(new(0, 0)));
+        Assert.False(method.OnClick(new(0, 0), viewer.MeasurementContext));
         Assert.Empty(Windows().Except(before));
-        Assert.True(method.OnClick(new(1, 0)));
+        Assert.True(method.OnClick(new(1, 0), viewer.MeasurementContext));
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
 
@@ -241,11 +236,12 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.WindowForTests.MeasurementOverlay;
-            var pair = Draw(viewer, new LineStrengthTool(viewer.MeasurementContext), overlay);
+            var pair = Draw(viewer, new LineStrengthTool(), overlay);
             var item = viewer.MeasurementContext.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             request.Publish([new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
+            item.ResultPublished(new FrameInfo(1, descriptor, null));
             var plot = (LineProfilePlotView.LineProfilePlotControl)pair.Window.Content;
             Assert.Equal(2, plot.SampleCount);
             Assert.Equal(1, plot.ChannelCount);
@@ -256,6 +252,7 @@ public class LineStrengthTests
             var updated = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             Assert.NotEqual(request.Identity, updated.Identity);
             updated.Publish(Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), updated.Coordinates.Length).ToArray());
+            item.ResultPublished(new FrameInfo(2, descriptor, null));
             Assert.Equal(1, plot.ChannelCount);
             Assert.Equal(3, plot.SampleCount);
             Assert.Equal(42, plot.GetSamples(0).Span[2]);
@@ -274,7 +271,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool(viewer.MeasurementContext);
+            var method = new LineStrengthTool();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             int removed = 0, closed = 0;
@@ -302,7 +299,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool(viewer.MeasurementContext);
+            var method = new LineStrengthTool();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             viewer.MeasurementContext.Shutdown();
@@ -321,7 +318,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool(viewer.MeasurementContext);
+            var method = new LineStrengthTool();
             var first = Draw(viewer, method, overlay); var second = Draw(viewer, method, overlay);
             first.Window.Closed += (_, _) => closed++;
             second.Window.Closed += (_, _) => closed++;

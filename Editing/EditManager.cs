@@ -5,9 +5,9 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
-internal sealed class EditManager(OverlayLayer overlay, MeasurementContext context)
+internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, MeasurementItem?> findMeasurement)
 {
-    private ShapeEditSession? _session;
+    private IShapeEditTarget? _session;
     private int _dragIndex = -1;
     private readonly List<UIElement> _handles = [];
     public UIElement? EditingShape { get; private set; }
@@ -17,13 +17,13 @@ internal sealed class EditManager(OverlayLayer overlay, MeasurementContext conte
 
     internal bool CanEdit(UIElement shape)
     {
-        using var session = ShapeEditorFactory.Create(shape, context.Find(shape));
+        using var session = ShapeEditorFactory.Create(shape, findMeasurement(shape));
         return session != null;
     }
     internal bool StartEditing(UIElement shape)
     {
         if (EditingShape == shape) return true;
-        var session = ShapeEditorFactory.Create(shape, context.Find(shape));
+        var session = ShapeEditorFactory.Create(shape, findMeasurement(shape));
         if (session == null) return false;
         StopEditing();
         EditingShape = shape; _session = session;
@@ -53,8 +53,10 @@ internal sealed class EditManager(OverlayLayer overlay, MeasurementContext conte
     {
         if (!IsDragging || EditingShape == null || _session == null) return;
         if (!double.IsFinite(point.X) || !double.IsFinite(point.Y)) return;
-        _session.UpdateDrag(point);
-        var points = _session.Points;
+        var session = _session;
+        session.Update(point);
+        if (!ReferenceEquals(_session, session)) return;
+        var points = session.Points;
         for (int i = 0; i < _handles.Count; i++) overlay.UpdateAnchor(_handles[i], points[i]);
     }
     internal void EndDrag()
