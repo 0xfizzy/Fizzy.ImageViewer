@@ -18,11 +18,11 @@ public sealed record ShapeStyle
         Dictionary<Brush, Brush>? cache = null;
         return this with
         {
-            NormalBrush = DrawingElement.Copy(NormalBrush, ref cache),
-            SelectedBrush = DrawingElement.Copy(SelectedBrush, ref cache),
-            TextBackground = DrawingElement.Copy(TextBackground, ref cache),
-            PointBrush = DrawingElement.Copy(PointBrush, ref cache),
-            RegionBrush = DrawingElement.Copy(RegionBrush, ref cache)
+            NormalBrush = BrushSnapshots.Copy(NormalBrush, ref cache),
+            SelectedBrush = BrushSnapshots.Copy(SelectedBrush, ref cache),
+            TextBackground = BrushSnapshots.Copy(TextBackground, ref cache),
+            PointBrush = BrushSnapshots.Copy(PointBrush, ref cache),
+            RegionBrush = BrushSnapshots.Copy(RegionBrush, ref cache)
         };
     }
 }

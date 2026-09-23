@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Imaging;
 
-public sealed class FramePixelReader : IFramePixelReader
+public sealed class FramePixelReader
 {
     public static FramePixelReader Instance { get; } = new();
     public bool TryRead(FrameLease frame, int x, int y, out PixelSample sample)

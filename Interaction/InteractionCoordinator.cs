@@ -113,6 +113,16 @@ internal sealed class InteractionCoordinator : IDisposable
         if (_disposed) return;
         CancelCore();
     }
+
+    internal bool UnregisterMeasurementTool(string id)
+    {
+        if (_disposed) return false;
+        // Remove before callbacks: the outgoing registration cannot restart itself.
+        // A newly registered replacement or another tool may still take ownership.
+        if (!_measure.UnregisterTool(id)) return false;
+        if (_measure.ActiveId == id) Cancel();
+        return true;
+    }
     private bool CancelCore()
     {
         var version = _measure.SessionVersion;

@@ -19,7 +19,7 @@ internal static class ShapeEditorFactory
             _ => null
         };
         if (editor == null) return null;
-        var session = new ShapeEditSession(shape, item, editor);
+        var session = new ShapeEditSession(item != null ? new MeasurementShapeEditTarget(item) : new VisualShapeEditTarget(shape, editor));
         var points = session.Points;
         if (points.Count > 0 && points.All(p => double.IsFinite(p.X) && double.IsFinite(p.Y))) return session;
         session.Dispose();

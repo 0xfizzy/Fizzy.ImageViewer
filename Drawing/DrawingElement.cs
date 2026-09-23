@@ -19,19 +19,6 @@ public abstract record DrawingElement
     {
         if (!double.IsFinite(value) || value <= 0) throw new ArgumentOutOfRangeException(name);
     }
-    internal static Brush Copy(Brush brush, ref Dictionary<Brush, Brush>? cache)
-    {
-        ArgumentNullException.ThrowIfNull(brush);
-        if (brush.IsFrozen) return brush;
-        cache ??= new(ReferenceEqualityComparer.Instance);
-        if (cache.TryGetValue(brush, out var copy)) return copy;
-        brush.VerifyAccess();
-        copy = brush.CloneCurrentValue();
-        if (!copy.CanFreeze) throw new ArgumentException("Drawing brushes must support freezing.", nameof(brush));
-        copy.Freeze();
-        cache.Add(brush, copy);
-        return copy;
-    }
     internal void ValidateMode(OverlayScaleMode a, OverlayScaleMode b, OverlayScaleMode? c = null)
     {
         if (ScaleMode != a && ScaleMode != b && ScaleMode != c) throw new ArgumentException("Unsupported scale mode for this element.");
@@ -46,7 +33,7 @@ public sealed record LineElement(Point Start, Point End, Brush Stroke, double Th
     {
         Finite(Start.X, Start.Y, End.X, End.Y); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
-        var stroke = Copy(Stroke, ref brushes);
+        var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
     internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources) =>
@@ -59,8 +46,8 @@ public sealed record CircleElement(Point Center, double Radius, Brush Stroke, do
     {
         Finite(Center.X, Center.Y); Positive(Radius, nameof(Radius)); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
-        var stroke = Copy(Stroke, ref brushes);
-        var fill = Fill == null ? null : Copy(Fill, ref brushes);
+        var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
+        var fill = Fill == null ? null : BrushSnapshots.Copy(Fill, ref brushes);
         return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
             ? this : this with { Stroke = stroke, Fill = fill };
     }
@@ -77,8 +64,8 @@ public sealed record RectangleElement(Rect Bounds, Brush Stroke, double Thicknes
     {
         Finite(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
-        var stroke = Copy(Stroke, ref brushes);
-        var fill = Fill == null ? null : Copy(Fill, ref brushes);
+        var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
+        var fill = Fill == null ? null : BrushSnapshots.Copy(Fill, ref brushes);
         return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
             ? this : this with { Stroke = stroke, Fill = fill };
     }
@@ -99,7 +86,7 @@ public sealed record CrosshairElement : DrawingElement
     {
         Finite(Center.X, Center.Y); Positive(Size, nameof(Size)); Positive(Thickness, nameof(Thickness));
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
-        var stroke = Copy(Stroke, ref brushes);
+        var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
     internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources)
@@ -127,7 +114,7 @@ public sealed record TextElement : DrawingElement
         Finite(Anchor.X, Anchor.Y, Offset.X, Offset.Y); Positive(FontSize, nameof(FontSize));
         ArgumentNullException.ThrowIfNull(Text); ArgumentException.ThrowIfNullOrWhiteSpace(FontFamily);
         ValidateMode(OverlayScaleMode.None, OverlayScaleMode.AnchoredLabel);
-        var foreground = Copy(Foreground, ref brushes);
+        var foreground = BrushSnapshots.Copy(Foreground, ref brushes);
         return ReferenceEquals(foreground, Foreground) ? this : this with { Foreground = foreground };
     }
     internal override void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources)

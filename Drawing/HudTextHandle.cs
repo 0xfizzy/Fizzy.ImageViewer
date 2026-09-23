@@ -28,13 +28,5 @@ public sealed class HudTextHandle : IDisposable
         Interlocked.Exchange(ref _update, null);
         Interlocked.Exchange(ref _dispose, null);
     }
-    internal static Brush SnapshotBrush(Brush brush)
-    {
-        ArgumentNullException.ThrowIfNull(brush);
-        if (brush.IsFrozen) return brush;
-        var copy = brush.CloneCurrentValue();
-        if (!copy.CanFreeze) throw new ArgumentException("Brush must support freezing.", nameof(brush));
-        copy.Freeze();
-        return copy;
-    }
+    internal static Brush SnapshotBrush(Brush brush) => BrushSnapshots.Freeze(brush);
 }

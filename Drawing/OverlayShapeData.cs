@@ -31,7 +31,7 @@ internal sealed class OverlayShapeData(OverlayScaleMode mode, ShapeType type)
         if (OriginalBrush != null)
         {
             Dictionary<Brush, Brush>? cache = null;
-            OriginalBrush = DrawingElement.Copy(OriginalBrush, ref cache);
+            OriginalBrush = BrushSnapshots.Copy(OriginalBrush, ref cache);
         }
     }
     internal OverlayScaleMode Mode { get; } = mode;

@@ -297,8 +297,6 @@ Fizzy.ImageViewer.Imaging.GrayDisplayRange: public static System.Boolean op_Ineq
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public virtual System.Boolean Equals(System.Object obj)
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public virtual System.String ToString()
-Fizzy.ImageViewer.Imaging.IFramePixelReader: public abstract System.Boolean TryRead(Fizzy.ImageViewer.Frames.FrameLease frame, System.Int32 x, System.Int32 y, out Fizzy.ImageViewer.Imaging.PixelSample sample)
-Fizzy.ImageViewer.Imaging.IFramePixelReader: public abstract System.Void ReadPixels(Fizzy.ImageViewer.Frames.FrameLease frame, System.ReadOnlySpan<Fizzy.ImageViewer.Imaging.PixelCoordinate> coordinates, System.Span<Fizzy.ImageViewer.Imaging.PixelSample> samples)
 Fizzy.ImageViewer.Imaging.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.ImageFrame> ReadRegionAsync(Fizzy.ImageViewer.Imaging.PixelRegion region, System.Threading.CancellationToken ct)
 Fizzy.ImageViewer.Imaging.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Imaging.PixelSample[]> ReadPixelsAsync(System.ReadOnlyMemory<Fizzy.ImageViewer.Imaging.PixelCoordinate> coordinates, System.Threading.CancellationToken ct)
 Fizzy.ImageViewer.Imaging.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Imaging.RegionStatistics> ComputeRegionStatisticsAsync(Fizzy.ImageViewer.Imaging.PixelRegion region, System.Threading.CancellationToken ct)
@@ -521,7 +519,6 @@ enum Fizzy.ImageViewer.Frames.FrameSubmitStatus : System.IComparable, System.ICo
 enum Fizzy.ImageViewer.Snapshots.SnapshotEncoding : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Snapshots.SnapshotKind : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 interface Fizzy.ImageViewer.IViewerAPI : System.IAsyncDisposable
-interface Fizzy.ImageViewer.Imaging.IFramePixelReader
 interface Fizzy.ImageViewer.Imaging.IFramePixelSource
 interface Fizzy.ImageViewer.Measurements.IMeasurementScope : System.IDisposable
 interface Fizzy.ImageViewer.Measurements.IMeasurementTool
@@ -542,7 +539,7 @@ sealed class Fizzy.ImageViewer.Drawing.ViewerLayers
 sealed class Fizzy.ImageViewer.Frames.FrameLease : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.FrameSubmissionOptions : System.IEquatable<Fizzy.ImageViewer.Frames.FrameSubmissionOptions>
 sealed class Fizzy.ImageViewer.Frames.ImageFrame : System.IDisposable
-sealed class Fizzy.ImageViewer.Imaging.FramePixelReader : Fizzy.ImageViewer.Imaging.IFramePixelReader
+sealed class Fizzy.ImageViewer.Imaging.FramePixelReader
 sealed class Fizzy.ImageViewer.Imaging.PixelQueryOptions : System.IEquatable<Fizzy.ImageViewer.Imaging.PixelQueryOptions>
 sealed class Fizzy.ImageViewer.Imaging.PixelQueryResult : System.IEquatable<Fizzy.ImageViewer.Imaging.PixelQueryResult>
 sealed class Fizzy.ImageViewer.Imaging.RegionPixels : System.IDisposable

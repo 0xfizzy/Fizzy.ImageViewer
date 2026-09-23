@@ -24,8 +24,7 @@ public partial class Viewer
     public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-        if (_measureManager!.ActiveId == toolId) _interaction!.Cancel();
-        return _measureManager.UnregisterTool(toolId);
+        return _interaction!.UnregisterMeasurementTool(toolId);
     });
 
     public void StartMeasurement(string toolId)

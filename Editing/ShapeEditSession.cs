@@ -3,20 +3,11 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Editing;
 
-internal sealed class ShapeEditSession(UIElement shape, MeasurementItem? item, IShapeEditor editor) : IDisposable
+internal sealed class ShapeEditSession(IShapeEditTarget target) : IDisposable
 {
-    private Action<Point>? _drag;
-    internal IReadOnlyList<Point> Points => item?.Geometry.ControlPoints ?? editor.GetControlPoints(shape);
-    internal void BeginDrag(int index)
-    {
-        if (item != null)
-        {
-            var original = item.Geometry;
-            _drag = point => item.UpdateGeometry(original.MoveControlPoint(index, point));
-        }
-        else _drag = editor.CreateDrag(shape, index);
-    }
-    internal void UpdateDrag(Point point) => _drag?.Invoke(point);
-    internal void EndDrag() => _drag = null;
-    public void Dispose() => EndDrag();
+    internal IReadOnlyList<Point> Points => target.Points;
+    internal void BeginDrag(int index) => target.BeginDrag(index);
+    internal void UpdateDrag(Point point) => target.Update(point);
+    internal void EndDrag() => target.EndDrag();
+    public void Dispose() => target.Dispose();
 }

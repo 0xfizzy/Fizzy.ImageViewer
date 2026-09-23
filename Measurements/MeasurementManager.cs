@@ -38,7 +38,6 @@ internal sealed class MeasurementManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!_tools.Remove(id, out _)) return false;
-        if (ActiveId == id) Cancel();
         return true;
     }
     internal bool HasTool(string name) => _tools.ContainsKey(name);
