@@ -84,7 +84,7 @@ public class LayerInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
-            var shape = item.PrimaryVisual;
+            var shape = item.Presentation.PrimaryVisual;
             void Click() => shape.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
                 { RoutedEvent = Mouse.MouseDownEvent });
             Click(); Assert.Same(item, viewer.Host.Interaction.SelectedMeasurement);

@@ -11,13 +11,14 @@ application adapters own an instance and use its public API. Raw-window access i
 | Frames | `SubmitFrameAsync`, `AcquireCurrentFrame`, `FrameCommitted`, frame descriptors, leases and submission results |
 | Pixels | CPU readers, external `IFramePixelSource`, query data and display range |
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
-| Drawing | `Layers`, `ViewerLayers`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
+| Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
-| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
+| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/change/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
-The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, styles
-and drawing enums belong to `.Drawing`; measurement tools, models and notifications belong
+The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, layer settings
+and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
+`MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
 ## Threads and window lifetime
@@ -60,11 +61,20 @@ including clear and closure. `MeasurementSnapshot` carries the stable ID, immuta
 geometry and owner-maintained geometry version. Completion captures geometry at completion;
 removal captures the latest geometry. Circle snapshots include their radius.
 
+`MeasurementChanged` reports geometry edits, successful query publication and result
+invalidation for completed items, both built-in and custom. Each event includes `Snapshot`
+and `Result`; a null result means no valid query result is currently available. A geometry
+change reports its new version and clears the old result. Completion precedes change
+notifications; previews do not emit changes. Snapshots and result arrays can be retained
+on other threads. Callbacks run on the viewer STA and subscriber failures are isolated.
+
 The event's `IDisposable` handle removes the item and its resources from any thread,
 including after closure. Removal may occur reentrantly during a completion subscriber.
 Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
 
 Custom and built-in tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
+The context belongs to one creation session. Once that session completes, is cancelled or
+is replaced, creating another preview through its retained context throws `ObjectDisposedException`.
 The returned `IMeasurement` owns geometry, display, queries and registered resources.
 Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
 observe `ResultChanged` for immutable query results or invalidation. `Complete` retains
@@ -128,6 +138,15 @@ using var registration = viewer.RegisterMenu(
     new Fizzy.ImageViewer.Menus.MenuItem("Inspect target", InspectTarget));
 // Keep the registration for the lifetime of this feature.
 ```
+
+## Layer capabilities
+
+`Layers.Markers` and `CreateLayer` return `DrawingLayer`, which supports `AddBatch` and
+`BatchClicked`. `Layers.Measurements` returns `MeasurementLayer`; measurement tools create
+its content. Both derive from the closed `ViewerLayer` family, which exposes `Name`,
+`IsVisible`, `IsHitTestVisible`, `ZIndex` and `Clear`. `Layers.Items` returns a snapshot of
+these common layer handles. Built-in layers cannot be removed; the layer base cannot be
+subclassed by consumers.
 
 ## API baseline
 

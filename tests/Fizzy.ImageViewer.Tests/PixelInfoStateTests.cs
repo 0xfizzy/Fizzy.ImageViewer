@@ -46,7 +46,7 @@ public class PixelInfoStateTests
         hud.Enable(); hud.Move(9, 0);
         var descriptor = new FrameDescriptor(100, 1, 100, FramePixelFormat.Gray8);
         var request = Assert.IsType<PixelQueryRequest>(hud.Capture(descriptor));
-        request.Publish([new(FramePixelFormat.Gray8, 42, 0, 0, 0, 255)]);
+        request.Publish(new FrameInfo(1, descriptor, null), [new(FramePixelFormat.Gray8, 42, 0, 0, 0, 255)]);
         var result = updates.Last();
         hud.Move(10, 0); hud.InvalidateResult(ResultInvalidation.CoordinatesChanged);
         Assert.Equal(result, updates.Last());

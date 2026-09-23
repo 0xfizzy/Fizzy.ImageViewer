@@ -334,12 +334,17 @@ public class DrawingTests
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([Circle()]));
             Assert.Throws<ObjectDisposedException>(() => custom.Clear()); batch.Dispose();
             var marker = viewer.Layers.Markers.AddBatch([Circle()]);
-            var measure = viewer.Layers.Measurements.AddBatch([Circle()]);
+            var measure = await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+            {
+                var item = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
+                item.Complete();
+                return item;
+            });
             using var hud = viewer.DrawHudText("HUD", Brushes.White);
             viewer.ClearShapes();
             hud.Update("HUD 2", Brushes.White);
             Assert.Throws<ObjectDisposedException>(() => marker.Replace([Circle()]));
-            Assert.Throws<ObjectDisposedException>(() => measure.Replace([Circle()]));
+            Assert.True(measure.IsDisposed);
             var last = viewer.Layers.Markers.AddBatch([Circle()]);
             await viewer.DisposeAsync();
             Assert.Throws<ObjectDisposedException>(() => last.Replace([Circle()]));
@@ -359,7 +364,7 @@ public class DrawingTests
             foreach (var geometry in new[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
                 var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(geometry);
-                var shape = item.PrimaryVisual; item.Complete();
+                var shape = item.Presentation.PrimaryVisual; item.Complete();
                 viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!);
                 var data = OverlayShapeData.Get(shape)!;
                 Assert.NotEmpty(viewer.Host.Interaction.Editor.Handles);
@@ -373,7 +378,7 @@ public class DrawingTests
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
             var measurement = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
-            measurement.Complete(); var line = measurement.PrimaryVisual;
+            measurement.Complete(); var line = measurement.Presentation.PrimaryVisual;
             viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(line)); viewer.Host.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
@@ -388,16 +393,21 @@ public class DrawingTests
             foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
                 new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LineTool(), new Measurements.BuiltIn.RectTool() })
             {
-                bool done = method.OnClick(new(10, 10), viewer.Host.Measurements);
+                var session = new MeasurementCreationSession(viewer.Host.Measurements);
+                bool done = method.OnClick(new(10, 10), session);
                 if (!done)
                 {
-                    method.OnMouseMove(new(50, 50), viewer.Host.Measurements);
+                    method.OnMouseMove(new(50, 50), session);
                     Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
-                    method.Cancel(viewer.Host.Measurements);
+                    session.End();
+                    method.Cancel(session);
+                    session.ClearPreviews();
+                    session = new MeasurementCreationSession(viewer.Host.Measurements);
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-                    Assert.False(method.OnClick(new(10, 10), viewer.Host.Measurements));
-                    Assert.True(method.OnClick(new(50, 50), viewer.Host.Measurements));
+                    Assert.False(method.OnClick(new(10, 10), session));
+                    Assert.True(method.OnClick(new(50, 50), session));
                 }
+                session.End(); session.ClearPreviews();
                 Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
                 viewer.Layers.Measurements.Clear();
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());

@@ -30,7 +30,7 @@ public class MeasurementReentryTests
     private sealed class Harness : IDisposable
     {
         internal readonly ImageLayer Input = new();
-        internal readonly OverlayLayer Overlay = new();
+        internal readonly OverlayLayer Overlay;
         internal readonly ViewerLayers Layers;
         internal readonly PixelQueryScheduler Queries;
         internal readonly MeasurementToolRegistry Tools;
@@ -39,7 +39,7 @@ public class MeasurementReentryTests
         internal Harness()
         {
             Layers = new(Input.TransformGroup);
-            Layers.Measurements.Root.Children.Add(Overlay);
+            Overlay = Layers.Measurements.Overlay;
             Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
             Context = new(Overlay, () => null, Queries, NullLogger.Instance);
             Tools = new();
@@ -53,6 +53,73 @@ public class MeasurementReentryTests
             Assert.Same(Cursors.Pen, Input.Container.Cursor);
         }
         public void Dispose() { try { Coordinator.Dispose(); } finally { Context.Shutdown(); Queries.Dispose(); } }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SessionOwnsOnlyItsPreviewsAndExpiredContextsCannotCreate(bool complete)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            using var h = new Harness();
+            var independent = h.Context.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var tool = new Tool("scope");
+            IMeasurementToolContext? retainedContext = null;
+            IMeasurement? preview = null;
+            tool.Click = context =>
+            {
+                retainedContext = context;
+                preview = context.CreateMeasurement(MeasurementGeometry.Point(new(2, 3)));
+                return complete;
+            };
+            h.Tools.RegisterTool(tool);
+            h.Coordinator.StartMeasurement(tool.Id);
+            h.Coordinator.ImageDown(2, 3);
+            if (!complete) h.Coordinator.Cancel();
+            Assert.True(preview!.IsDisposed);
+            Assert.False(independent.IsDisposed);
+            h.Coordinator.StartMeasurement(tool.Id);
+            Assert.Throws<ObjectDisposedException>(() => retainedContext!.CreateMeasurement(MeasurementGeometry.Point(new())));
+            h.Context.ClearMeasurements();
+            Assert.True(independent.IsDisposed);
+        });
+    }
+
+    [Fact]
+    public async Task InterruptedCallbackCannotAttachNewPreviewToItsReplacementSession()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            using var h = new Harness();
+            var old = new Tool("old");
+            var next = new Tool("next");
+            IMeasurement? survivor = null;
+            next.Click = context =>
+            {
+                survivor = context.CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
+                return false;
+            };
+            old.Click = context =>
+            {
+                context.CreateMeasurement(MeasurementGeometry.Point(new()));
+                h.Coordinator.StartMeasurement(next.Id);
+                h.Coordinator.ImageDown(1, 1);
+                Assert.Throws<ObjectDisposedException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new())));
+                return true;
+            };
+            h.Tools.RegisterTool(old);
+            h.Tools.RegisterTool(next);
+            h.Coordinator.StartMeasurement(old.Id);
+            h.Coordinator.ImageDown(0, 0);
+            h.AssertActive(next.Id);
+            Assert.False(survivor!.IsDisposed);
+            h.Coordinator.Cancel();
+            Assert.True(survivor.IsDisposed);
+            Assert.Empty(h.Overlay.Canvas.Children);
+        });
     }
 
     [Theory]
@@ -86,7 +153,7 @@ public class MeasurementReentryTests
             h.Coordinator.StartMeasurement(old.Id);
             var scope = h.Context.CreateMeasurement(MeasurementGeometry.Point(new())); scope.OnDispose(() => oldReleased++);
             var editable = (MeasurementItem)h.Context.CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
-            var shape = editable.PrimaryVisual;
+            var shape = editable.Presentation.PrimaryVisual;
             Action invoke;
             switch (operation)
             {

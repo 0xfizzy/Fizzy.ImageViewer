@@ -17,6 +17,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly MeasurementToolRegistry _tools;
     private readonly MeasurementContext _context;
     private IMeasurementTool? _active;
+    private MeasurementCreationSession? _session;
     private long _sessionVersion;
     internal string? ActiveId { get; private set; }
     private readonly ViewerLayers _layers;
@@ -28,7 +29,12 @@ internal sealed class InteractionCoordinator : IDisposable
     internal InteractionCoordinator(ViewerInputBinding input, OverlayLayer overlay, EditManager edit,
         MeasurementToolRegistry tools, MeasurementContext context, ViewerLayers layers)
     {
-        _input = input; _overlay = overlay; _edit = edit; _tools = tools; _context = context; _layers = layers;
+        _input = input;
+        _overlay = overlay;
+        _edit = edit;
+        _tools = tools;
+        _context = context;
+        _layers = layers;
         layers.Measurements.Clearing += ClearMeasurements;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
         context.ItemRemoving += ItemRemoving;
@@ -46,15 +52,17 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void Select(MeasurementItem? item)
     {
         if (_disposed || Mode == InteractionMode.Measuring || item is null || item.IsDisposed ||
-            !ReferenceEquals(_context.Find(item.PrimaryVisual), item)) return;
+            !_context.Contains(item)) return;
         StopEditing();
         if (item.IsDisposed) return;
         SelectedMeasurement = item;
-        _overlay.SetSelection(item.PrimaryVisual, item.Visuals);
+        _overlay.SetSelection(item.Presentation.PrimaryVisual, item.Presentation.Visuals);
     }
     internal void ClearSelection()
     {
-        StopEditing(); SelectedMeasurement = null; _overlay.SetSelection(null, []);
+        StopEditing();
+        SelectedMeasurement = null;
+        _overlay.SetSelection(null, []);
     }
     internal void StartMeasurement(string name)
     {
@@ -68,7 +76,10 @@ internal sealed class InteractionCoordinator : IDisposable
             version = ++_sessionVersion;
             CancelTool();
             if (version != _sessionVersion || _disposed) return;
-            _active = tool; ActiveId = name;
+            _active = tool;
+            ActiveId = name;
+            _session = new MeasurementCreationSession(_context);
+            _context.CurrentSession = _session;
             ClearSelection();
             if (version != _sessionVersion || _disposed) return;
             Mode = InteractionMode.Measuring;
@@ -80,7 +91,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void StartEditing(MeasurementItem? item)
     {
         if (_clearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
-        if (_disposed || item is null || !ReferenceEquals(_context.Find(item.PrimaryVisual), item) || !_edit.CanEdit(item) ||
+        if (_disposed || item is null || !_context.Contains(item) || !_edit.CanEdit(item) ||
             !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
         if (!CancelCore()) return;
         var version = _sessionVersion;
@@ -126,11 +137,14 @@ internal sealed class InteractionCoordinator : IDisposable
     private void CancelTool()
     {
         var tool = _active;
-        var items = _context.CaptureUncompletedItems();
-        _active = null; ActiveId = null;
+        var session = _session;
+        _session = null;
+        session?.End();
+        _active = null;
+        ActiveId = null;
         if (Mode == InteractionMode.Measuring) Mode = InteractionMode.Idle;
-        try { tool?.Cancel(_context); }
-        finally { _context.CancelItems(items); }
+        try { if (tool != null && session != null) tool.Cancel(session); }
+        finally { session?.ClearPreviews(); }
     }
     private void RestoreInput()
     {
@@ -141,7 +155,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void Delete(MeasurementItem? selected)
     {
         if (_disposed || selected is null || selected.IsDisposed ||
-            !ReferenceEquals(_context.Find(selected.PrimaryVisual), selected)) return;
+            !_context.Contains(selected)) return;
         ClearSelection();
         selected.Dispose();
     }
@@ -157,10 +171,14 @@ internal sealed class InteractionCoordinator : IDisposable
         var version = _sessionVersion;
         try
         {
-            if (_active == null || !_active.OnClick(new(x, y), _context) || version != _sessionVersion) return;
-            var items = _context.CaptureUncompletedItems();
-            _active = null; ActiveId = null; Mode = InteractionMode.Idle;
-            _context.CancelItems(items);
+            if (_active == null || !_active.OnClick(new(x, y), _session!) || version != _sessionVersion) return;
+            var session = _session;
+            _session = null;
+            session?.End();
+            _active = null;
+            ActiveId = null;
+            Mode = InteractionMode.Idle;
+            session?.ClearPreviews();
             if (version == _sessionVersion) RestoreInput();
         }
         catch { if (version == _sessionVersion) Cancel(); throw; }
@@ -169,7 +187,7 @@ internal sealed class InteractionCoordinator : IDisposable
     {
         if (Mode != InteractionMode.Measuring) return;
         var version = _sessionVersion;
-        try { _active?.OnMouseMove(new(x, y), _context); } catch { if (version == _sessionVersion) Cancel(); throw; }
+        try { _active?.OnMouseMove(new(x, y), _session!); } catch { if (version == _sessionVersion) Cancel(); throw; }
     }
     private void InputPolicyChanged()
     {
@@ -181,7 +199,8 @@ internal sealed class InteractionCoordinator : IDisposable
     private void ClearMeasurements()
     {
         if (_clearing) return;
-        _clearing = true; _context.CreationBlocked = true;
+        _clearing = true;
+        _context.CreationBlocked = true;
         try { Cancel(); }
         finally
         {
@@ -225,7 +244,8 @@ internal sealed class InteractionCoordinator : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true; _context.CreationBlocked = true;
+        _disposed = true;
+        _context.CreationBlocked = true;
         try { CancelCore(); }
         finally
         {

@@ -9,7 +9,7 @@ namespace Fizzy.ImageViewer
     {
         // 公开图层供 Manager 使用
         public ImageLayer ImageLayer { get; }
-        internal OverlayLayer MeasurementOverlay { get; }
+        internal OverlayLayer MeasurementOverlay => Layers.Measurements.Overlay;
         public HudLayer HudLayer { get; }
         public Drawing.ViewerLayers Layers { get; }
 
@@ -27,17 +27,10 @@ namespace Fizzy.ImageViewer
             // === 实例化图层 ===
             ImageLayer = new ImageLayer();
             Layers = new Drawing.ViewerLayers(ImageLayer.TransformGroup, lifetime);
-            MeasurementOverlay = new OverlayLayer();
-            Layers.Measurements.Root.Children.Add(MeasurementOverlay);
             HudLayer = new HudLayer();
 
-            MeasurementOverlay.BindTransform(ImageLayer.TransformGroup);
 
-            ImageLayer.ScaleChanged += scale =>
-            {
-                MeasurementOverlay.UpdateScale(scale);
-                Layers.UpdateScale(scale);
-            };
+            ImageLayer.ScaleChanged += Layers.UpdateScale;
 
             var grid = new Grid();
 

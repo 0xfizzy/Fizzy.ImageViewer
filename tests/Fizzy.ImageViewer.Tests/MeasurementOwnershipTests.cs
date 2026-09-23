@@ -23,7 +23,7 @@ public class MeasurementOwnershipTests
             var item = (MeasurementItem)owner;
             viewer.Host.Window.MeasurementOverlay.UpdateScale(2);
             owner.UpdateGeometry(MeasurementGeometry.Point(new(3, 4)));
-            Assert.Equal(5.5, System.Windows.Controls.Canvas.GetLeft(item.Label));
+            Assert.Equal(5.5, System.Windows.Controls.Canvas.GetLeft(item.Presentation.Label));
             Assert.Equal(new Point(3, 4), item.Geometry.Start);
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Point(new(double.NaN, 1)));
         });
@@ -45,7 +45,7 @@ public class MeasurementOwnershipTests
         {
             var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(kind == MeasurementKind.Point
                 ? MeasurementGeometry.Point(new(1, 2)) : MeasurementGeometry.Crosshair(new(1, 2)));
-            var shape = (System.Windows.Shapes.Path)item.PrimaryVisual;
+            var shape = (System.Windows.Shapes.Path)item.Presentation.PrimaryVisual;
             var geometry = shape.Data;
             using var target = new MeasurementEditSession(item);
             target.BeginDrag(0); target.Update(new(5, 6)); target.EndDrag();
@@ -105,8 +105,8 @@ public class MeasurementOwnershipTests
             var ctx = viewer.Host.Measurements;
             var a = (MeasurementItem)ctx.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             var b = (MeasurementItem)ctx.CreateMeasurement(MeasurementGeometry.Point(new(3, 4)));
-            var primary = a.PrimaryVisual; var label = a.Label; a.Complete(); b.Complete();
-            var survivor = b.PrimaryVisual;
+            var primary = a.Presentation.PrimaryVisual; var label = a.Presentation.Label; a.Complete(); b.Complete();
+            var survivor = b.Presentation.PrimaryVisual;
             var disposed = 0;
             a.OnDispose(() => { a.Dispose(); ctx.Find(primary)?.Dispose(); throw new Exception("cleanup failure"); });
             a.AddResource(new Resource(() => disposed++));
@@ -195,7 +195,7 @@ public class MeasurementOwnershipTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
-            var rectangle = (System.Windows.Shapes.Rectangle)item.PrimaryVisual;
+            var rectangle = (System.Windows.Shapes.Rectangle)item.Presentation.PrimaryVisual;
             using var session = new MeasurementEditSession(item);
             Assert.NotNull(session); session.BeginDrag(0); session.Update(new(8, 9)); session.Update(new(10, 11));
             Assert.Equal(4, rectangle.Width); Assert.Equal(5, rectangle.Height);
@@ -244,6 +244,28 @@ public class MeasurementOwnershipTests
             Assert.Contains(orphan, viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
             Assert.False(interaction.Hit(orphan));
             Assert.Null(interaction.SelectedMeasurement);
+        });
+    }
+
+    [Fact]
+    public async Task ModelOwnershipSurvivesVisualDetachmentUntilExplicitCleanup()
+    {
+        await using var viewer = Create();
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var context = viewer.Host.Measurements;
+            var item = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var released = 0;
+            item.OnDispose(() => released++);
+            item.Complete();
+            item.Presentation.Dispose();
+            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
+            Assert.True(context.Contains(item));
+            context.ClearMeasurements();
+            Assert.True(item.IsDisposed);
+            Assert.False(context.Contains(item));
+            Assert.Null(context.Find(item.Presentation.PrimaryVisual));
+            Assert.Equal(1, released);
         });
     }
 }

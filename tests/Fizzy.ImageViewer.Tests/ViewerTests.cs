@@ -332,7 +332,7 @@ public class ViewerTests
         public bool Disposed;
         public ApartmentState PublishApartment;
         public TaskCompletionSource<bool> Published { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new LineProfileQueryRequest(new(Guid.Empty, 0), [new(0,0)], samples=> {
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new LineProfileQueryRequest(new(Guid.Empty, 0), [new(0,0)], (_, samples)=> {
             Value=samples![0].Gray;PublishApartment=Thread.CurrentThread.GetApartmentState();Published.TrySetResult(true);
         });
         public void ClearResult() { }        public void Dispose() => Disposed = true;

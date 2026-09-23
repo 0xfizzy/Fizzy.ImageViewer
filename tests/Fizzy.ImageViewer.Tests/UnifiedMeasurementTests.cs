@@ -96,14 +96,14 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.Equal(1, completed); Assert.Equal(item!.Id, result.MeasurementId);
-            Assert.Equal(2.5, Assert.Single(result.Channels).Mean); Assert.Contains("mean=2.5", item.Label.Text);
+            Assert.Equal(2.5, Assert.Single(result.Channels).Mean); Assert.Contains("mean=2.5", item.Presentation.Label.Text);
             var changes = 0;
             item.GeometryChanged += _ => changes++;
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.PrimaryVisual));
+            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(0, 0), 1));
             viewer.Host.Interaction.Editor.UpdateDrag(new(3, 3));
-            Assert.Null(item.Result); Assert.DoesNotContain("mean=", item.Label.Text); Assert.Equal(1, changes);
-            Assert.Equal(item.Geometry.Start, OverlayShapeData.Get(item.Label)!.AnchorPoint);
+            Assert.Null(item.Result); Assert.DoesNotContain("mean=", item.Presentation.Label.Text); Assert.Equal(1, changes);
+            Assert.Equal(item.Geometry.Start, OverlayShapeData.Get(item.Presentation.Label)!.AnchorPoint);
             Assert.Equal(2.5, result.Channels[0].Mean);
             Assert.Throws<NotSupportedException>(() => ((IList<ChannelStatistics>)result.Channels)[0] = default);
             viewer.ClearShapes(); Assert.Equal(1, removed);
@@ -187,7 +187,7 @@ public class UnifiedMeasurementTests
             h.Frame.Info = new(43, h.Frame.Descriptor, null);
             h.Runtime.Now = TimeSpan.FromSeconds(10); source.Fail = true; h.Queries.Tick();
             Assert.Null(item.Result); Assert.Equal(1, invalidations);
-            Assert.DoesNotContain("mean=", ((MeasurementItem)item).Label.Text);
+            Assert.DoesNotContain("mean=", ((MeasurementItem)item).Presentation.Label.Text);
         });
         await h.Queries.Completion.WaitAsync(TimeSpan.FromSeconds(3));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { using (h) { Assert.Null(item!.Result); Assert.Equal(1, invalidations); } });
@@ -200,13 +200,13 @@ public class UnifiedMeasurementTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Circle(new(2, 3), 4));
-            item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.PrimaryVisual));
+            item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(2, 3), 1)); editor.UpdateDrag(new(5, 6)); editor.EndDrag();
             Assert.Equal(new Point(5, 6), item.Geometry.Start); Assert.Equal(4, item.Geometry.Radius);
             Assert.True(editor.BeginDrag(new(9, 6), 1)); editor.UpdateDrag(new(5, 9)); editor.EndDrag();
             Assert.Equal(3, item.Geometry.Radius);
-            var ellipse = (System.Windows.Media.EllipseGeometry)((System.Windows.Shapes.Path)item.PrimaryVisual).Data;
+            var ellipse = (System.Windows.Media.EllipseGeometry)((System.Windows.Shapes.Path)item.Presentation.PrimaryVisual).Data;
             Assert.Equal(3, ellipse.RadiusX);
             item.GeometryChanged += _ => throw new Exception("isolated");
             item.GeometryChanged += _ => item.Dispose();

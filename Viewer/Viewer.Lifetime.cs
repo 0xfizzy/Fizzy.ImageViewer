@@ -16,6 +16,7 @@ public partial class Viewer
         FrameCommitted = null;
         MeasurementCompleted = null;
         MeasurementRemoved = null;
+        MeasurementChanged = null;
     }
     public ValueTask DisposeAsync()
     {

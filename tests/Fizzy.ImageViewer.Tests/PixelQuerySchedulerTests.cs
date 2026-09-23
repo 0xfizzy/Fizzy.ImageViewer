@@ -70,19 +70,19 @@ public class PixelQuerySchedulerTests
             var identity = new QueryIdentity(Id, Version);
             return kind switch
             {
-                0 => new PixelQueryRequest(identity, [new(0, 0)], _ => Publish()),
-                1 => new LineProfileQueryRequest(identity, [new(0, 0), new(1, 0)], _ => Publish()),
-                _ => new RegionStatisticsQueryRequest(identity, new(0, 0, 2, 1), _ => Publish())
+                0 => new PixelQueryRequest(identity, [new(0, 0)], (frame, _) => Publish(frame)),
+                1 => new LineProfileQueryRequest(identity, [new(0, 0), new(1, 0)], (frame, _) => Publish(frame)),
+                _ => new RegionStatisticsQueryRequest(identity, new(0, 0, 2, 1), (frame, _) => Publish(frame))
             };
         }
-        private void Publish()
+        private void Publish(FrameInfo frame)
         {
             Assert.True(runtime.InPublisher);
             if (ThrowOnPublish) throw new InvalidOperationException();
             Published++;
+            FrameId = frame.FrameId;
         }
         public void ClearResult() => Clears++;
-        public void ResultPublished(FrameInfo frame) => FrameId = frame.FrameId;
     }
     private sealed class Source(Runtime runtime) : IFramePixelSource
     {
@@ -126,9 +126,9 @@ public class PixelQuerySchedulerTests
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         double[]? pixelValues = null, lineValues = null;
         var pixel = new SliceClient(new PixelQueryRequest(new(Guid.NewGuid(), 0), [new(2, 0)],
-            samples => pixelValues = samples.ToArray().Select(p => p.Gray).ToArray()));
+            (_, samples) => pixelValues = samples.ToArray().Select(p => p.Gray).ToArray()));
         var line = new SliceClient(new LineProfileQueryRequest(new(Guid.NewGuid(), 0), [new(0, 0), new(1, 0)],
-            samples => lineValues = samples.ToArray().Select(p => p.Gray).ToArray()));
+            (_, samples) => lineValues = samples.ToArray().Select(p => p.Gray).ToArray()));
         using var a = scheduler.Register(pixel);
         using var b = scheduler.Register(line);
         runtime.Tick!();

@@ -1,5 +1,3 @@
-using Fizzy.ImageViewer.Drawing;
-
 namespace Fizzy.ImageViewer.Measurements;
 
 public enum MeasurementQuery { None, Pixel, LineProfile, RegionStatistics }
@@ -8,7 +6,7 @@ public sealed record MeasurementOptions
 {
     public MeasurementQuery Query { get; init; }
     public bool ShowLineProfile { get; init; }
-    public ShapeStyle? Style { get; init; }
+    public MeasurementStyle? Style { get; init; }
 
     internal void Validate(MeasurementGeometry geometry)
     {

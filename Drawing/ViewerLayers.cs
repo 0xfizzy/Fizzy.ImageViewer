@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,7 +12,7 @@ public sealed class ViewerLayers
 {
     private readonly Dispatcher _dispatcher;
     private readonly ViewerLifetime _lifetime;
-    private readonly List<DrawingLayer> _layers = [];
+    private readonly List<ViewerLayer> _layers = [];
     private volatile bool _closed;
     private bool _redrawPending, _clearing;
     internal Grid Root { get; } = new() { Background = null };
@@ -19,18 +20,20 @@ public sealed class ViewerLayers
     internal double Scale { get; private set; } = 1;
     internal bool InputSuppressed { get; private set; }
     public DrawingLayer Markers { get; }
-    public DrawingLayer Measurements { get; }
-    public IReadOnlyList<DrawingLayer> Items => Invoke(() => (IReadOnlyList<DrawingLayer>)_layers.ToArray());
+    public MeasurementLayer Measurements { get; }
+    public IReadOnlyList<ViewerLayer> Items => Invoke(() => (IReadOnlyList<ViewerLayer>)_layers.ToArray());
     internal ViewerLayers(Transform transform, ViewerLifetime? lifetime = null)
     {
         _lifetime = lifetime ?? new ViewerLifetime();
         _dispatcher = Root.Dispatcher; Transform = transform;
         Markers = Add("Markers", 0, true);
-        Measurements = Add("Measurements", 1000, true, hitTest: true);
+        Measurements = new MeasurementLayer(this);
+        _layers.Add(Measurements);
+        Root.Children.Add(Measurements.Root);
     }
-    private DrawingLayer Add(string name, int zIndex, bool builtIn, bool hitTest = false)
+    private DrawingLayer Add(string name, int zIndex, bool builtIn)
     {
-        var layer = new DrawingLayer(this, name, zIndex, builtIn, hitTest);
+        var layer = new DrawingLayer(this, name, zIndex, builtIn);
         _layers.Add(layer); Root.Children.Add(layer.Root); return layer;
     }
     public DrawingLayer CreateLayer(string name) => Invoke(() =>
@@ -39,7 +42,7 @@ public sealed class ViewerLayers
         if (_layers.Any(l => l.Name == name)) throw new ArgumentException("Layer names must be unique.", nameof(name));
         return Add(name, 100, false);
     });
-    public void RemoveLayer(DrawingLayer layer) => Invoke(() =>
+    public void RemoveLayer(ViewerLayer layer) => Invoke(() =>
     {
         ArgumentNullException.ThrowIfNull(layer);
         if (!ReferenceEquals(layer.Owner, this)) throw new ArgumentException("Layer belongs to another viewer.", nameof(layer));

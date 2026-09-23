@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Geometry;
+namespace Fizzy.ImageViewer.Measurements;
 
 internal static class GeometryOperations
 {

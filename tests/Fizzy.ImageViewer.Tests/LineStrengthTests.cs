@@ -102,7 +102,7 @@ public class LineStrengthTests
             viewer.MeasurementRemoved += (_, _) => removed++;
             Assert.Throws<AggregateException>(item.Dispose);
             Assert.True(item.IsDisposed);
-            Assert.Null(viewer.Host.Measurements.Find(item.PrimaryVisual));
+            Assert.Null(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.Equal(1, removed);
             item.Dispose();
@@ -116,9 +116,11 @@ public class LineStrengthTests
     private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthTool method, OverlayLayer overlay)
     {
         var before = Windows();
-        Assert.False(method.OnClick(new(0, 0), viewer.Host.Measurements));
+        var session = new MeasurementCreationSession(viewer.Host.Measurements);
+        Assert.False(method.OnClick(new(0, 0), session));
         Assert.Empty(Windows().Except(before));
-        Assert.True(method.OnClick(new(1, 0), viewer.Host.Measurements));
+        Assert.True(method.OnClick(new(1, 0), session));
+        session.End(); session.ClearPreviews();
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
 
@@ -241,8 +243,7 @@ public class LineStrengthTests
             var item = viewer.Host.Measurements.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
-            request.Publish([new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
-            item.ResultPublished(new FrameInfo(1, descriptor, null));
+            request.Publish(new FrameInfo(1, descriptor, null), [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
             var plot = (LineProfilePlotView.LineProfilePlotControl)pair.Window.Content;
             Assert.Equal(2, plot.SampleCount);
             Assert.Equal(1, plot.ChannelCount);
@@ -252,8 +253,7 @@ public class LineStrengthTests
             Assert.Equal(0, plot.ChannelCount);
             var updated = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             Assert.NotEqual(request.Identity, updated.Identity);
-            updated.Publish(Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), updated.Coordinates.Length).ToArray());
-            item.ResultPublished(new FrameInfo(2, descriptor, null));
+            updated.Publish(new FrameInfo(2, descriptor, null), Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), updated.Coordinates.Length).ToArray());
             Assert.Equal(1, plot.ChannelCount);
             Assert.Equal(3, plot.SampleCount);
             Assert.Equal(42, plot.GetSamples(0).Span[2]);

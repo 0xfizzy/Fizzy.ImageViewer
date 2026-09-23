@@ -1,6 +1,5 @@
 using System.Windows;
 using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Geometry;
 
 namespace Fizzy.ImageViewer.Measurements;
 

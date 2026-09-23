@@ -7,14 +7,15 @@ Built-in and custom tools create the same model-owned measurements through
 
 ## Ownership and geometry
 
-`Viewer.MeasurementStyle` configures newly created measurements independently for each
+`MeasurementStyle` belongs to `.Measurements`. `Viewer.MeasurementStyle` configures newly created measurements independently for each
 viewer. Assignment copies and freezes all brushes on the caller's thread before UI
 dispatch. Existing measurements retain their normal and selected colors. `MeasurementOptions.Style`
 overrides the viewer default for a new measurement and is snapshotted on creation.
 
 Each measurement owns immutable `MeasurementGeometry`, a framework-generated primary
 visual and label, an optional pixel query subscription and its registered resources.
-The context has one registry mapping visuals to their measurement owner. A preview is
+The context registers measurement owners independently of visuals; a separate visual index
+resolves hit testing. Each tool session owns its own unfinished measurements. A preview is
 already an owned measurement; `Complete` retains it and enables queries. Cancelling
 creation disposes unfinished measurements. `Tag` remains caller-owned presentation data.
 Visuals attach once and are not replaced on completion.
@@ -82,12 +83,13 @@ to their caller; cleanup restores idle only if that operation still owns the ses
 Completion/removal notification subscribers are instead isolated: their exceptions
 are logged and later subscribers still run.
 
-Cancellation captures the unfinished measurements before invoking the tool and cleans
-only that snapshot; measurements created by the new session survive. Normal completion
-captures unfinished measurements after `OnClick` returns, provided no newer session has
-replaced it. Measurement disposal during session cleanup may itself start a new session.
-Cleanup attempts every captured measurement and logs disposal failures. Bulk measurement cleanup
-during clear rejects new measurement creation.
+Cancellation ends the outgoing creation context before invoking the tool and then releases
+that session's unfinished items. Normal completion also ends the context and releases only
+its unfinished items. Completed items belong to the measurement registry until removal.
+A callback interrupted by a newer session cannot create through its old context; creation
+throws `ObjectDisposedException`. Measurements created by the new session survive cleanup,
+even when a disposal callback starts it. Cleanup attempts every owned preview and logs
+disposal failures. Bulk measurement cleanup rejects new measurement creation.
 Once viewer shutdown begins, `StartMeasurement` throws `ObjectDisposedException`;
 shutdown cleans both completed and unfinished measurements and waits for owned queries.
 
@@ -167,6 +169,31 @@ own identity, completion and removal lifetime; there is no arbitrary visual atta
 once, excludes previews and does not imply query readiness. Removal fires only for a
 previously completed item. Snapshots include `Id`, complete `Geometry` and `GeometryVersion`.
 The event's removal handle can be disposed from any thread, repeatedly or after closure.
+
+### Observing built-in and custom measurements
+
+Use `Viewer.MeasurementChanged` (also on `IViewerAPI`) to observe completed items without
+implementing a tool or accessing WPF visuals. Geometry edits, query publication and result
+invalidation all carry the measurement ID, immutable geometry/version and current immutable
+`Result`. `Result` is null after geometry changes, query failure or expiration. Previews do
+not emit this event, and an unchanged geometry or already-empty result does not emit it.
+
+```csharp
+viewer.MeasurementChanged += (_, e) =>
+{
+    var id = e.Snapshot.Id;
+    var geometry = e.Snapshot.Geometry;
+    var result = e.Result; // Null means the measurement currently has no valid pixel result.
+    // Retain these immutable values or dispatch them to the application's UI.
+};
+viewer.StartMeasurement(MeasurementToolIds.ROI);
+```
+
+Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's removal
+handle can be disposed from any thread. Removal is terminal for that item; a callback may
+remove it reentrantly. Completion and removal events carry the same result snapshot field,
+but completion does not promise query readiness. Custom tools may additionally subscribe to
+`IMeasurement.GeometryChanged` and `ResultChanged` on their own items.
 
 ### Queries and retained results
 
@@ -271,5 +298,6 @@ Within each physical pixel column, rendering retains each finite run's endpoints
 and minimum/maximum in sample order. Non-finite samples remain gaps. This bounds
 dense curve detail by display resolution without changing raw measurement samples.
 Sample buffers grow geometrically and remain owned by their plot. Query publication
-uses read-only spans into the batch result; callbacks consume them synchronously.
+delivers frame identity and read-only spans into the batch result together; callbacks consume
+them synchronously.
 WPF geometry serialization and frame queries still allocate when data changes.

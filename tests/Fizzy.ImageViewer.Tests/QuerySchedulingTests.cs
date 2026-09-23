@@ -22,9 +22,9 @@ public class QuerySchedulingTests
         Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl? plot=null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
-            var method=new Measurements.BuiltIn.LineStrengthTool();
-            method.OnClick(new(0,0), viewer.Host.Measurements);
-            method.OnClick(new(1,0), viewer.Host.Measurements);
+            viewer.StartMeasurement(MeasurementToolIds.LineStrength);
+            viewer.Host.Interaction.ImageDown(0, 0);
+            viewer.Host.Interaction.ImageDown(1, 0);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
                 .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl);
             plot=(Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl)window.Content;
@@ -105,7 +105,7 @@ public class QuerySchedulingTests
     private sealed class UnsupportedRegion : IFrameQueryClient
     {
         public bool Published;
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new RegionStatisticsQueryRequest(new(Guid.Empty, 0), new PixelRegion(0,0,1,1), _=>Published=true);
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new RegionStatisticsQueryRequest(new(Guid.Empty, 0), new PixelRegion(0,0,1,1), (_, _) => Published=true);
         public void ClearResult() { }
         public void Dispose() { }
     }
@@ -124,7 +124,7 @@ public class QuerySchedulingTests
     private sealed class Client : IFrameQueryClient
     {
         public int Revision;public List<double> Values=[];public TaskCompletionSource Published=new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new PixelQueryRequest(new(Guid.Empty, Revision), [new(0,0)], samples=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new PixelQueryRequest(new(Guid.Empty, Revision), [new(0,0)], (_, samples)=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
         public void ClearResult() { }
         public void Dispose() { }
     }

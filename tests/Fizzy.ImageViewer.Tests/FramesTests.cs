@@ -71,7 +71,8 @@ public class FramesTests
         using var lease = frame.Acquire();
         using var display = DisplayConverter.Convert(lease, null, default);
         Assert.Equal(new byte[] { 0, 0, 255, 128 }, Enumerable.Range(0, 4).Select(i => display.Bytes[i * 4]).ToArray());
-        var profile = new LineProfile(); await profile.SampleAsync(lease, -1e9, 0, 1e9, 0, default);
+        var profile = new LineProfile(); var coordinates = profile.Prepare(lease.Descriptor, -1e9, 0, 1e9, 0);
+        profile.Apply((await lease.ReadPixelsAsync(coordinates, default)).Samples);
         Assert.Equal(4, profile.Count); Assert.True(double.IsNaN(profile.Red[0]));
     }
 }

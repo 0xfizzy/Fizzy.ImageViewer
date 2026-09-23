@@ -21,9 +21,9 @@ public class MeasurementStyleTests
             using var rectangleItem = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
             using var pointItem = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
                 new() { Style = new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White } });
-            var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).PrimaryVisual;
-            var label = ((MeasurementItem)rectangleItem).Label;
-            var point = (System.Windows.Shapes.Path)((MeasurementItem)pointItem).PrimaryVisual;
+            var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).Presentation.PrimaryVisual;
+            var label = ((MeasurementItem)rectangleItem).Presentation.Label;
+            var point = (System.Windows.Shapes.Path)((MeasurementItem)pointItem).Presentation.PrimaryVisual;
             var tag = new object(); rectangle.Tag = label.Tag = point.Tag = tag;
             rectangleItem.Complete(); pointItem.Complete();
             var overlay = viewer.Host.Window.MeasurementOverlay;

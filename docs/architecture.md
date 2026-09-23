@@ -13,8 +13,8 @@ public facade, drawing handles and measurement handles.
 | Rendering | CPU preparation/presentation and D3D surface presentation |
 | Imaging | Original-pixel access, regions, query results and display conversion |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
-| Drawing | Batch layers, drawing descriptions, styles and HUD handles |
-| Measurements | Tool protocols, registry, geometry and resource owners |
+| Drawing | Shared layer settings, batch drawing descriptions and HUD handles |
+| Measurements | Tool protocols, creation sessions, geometry, styles and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
 | Editing | Measurement edit sessions and control-point interaction |
 | Controls | WPF display surfaces, visual metadata and coordinate transforms |
@@ -49,21 +49,23 @@ visuals and invalidates their handles on shutdown.
 ViewerInputBinding translates WPF events and coordinates, and applies cursor, focus
 and capture effects. It holds no session state. The interaction coordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
-transitions. MeasurementToolRegistry only stores registrations. All tools receive the same public
-measurement context when the coordinator executes their callbacks. Display controls do not call controllers
-through stored references. Generic drawing layers manage
-visibility, hit testing, batches and clear notifications; the window mounts the WPF
-measurement overlay into its layer.
+transitions. MeasurementToolRegistry only stores registrations. Each tool session receives an `IMeasurementToolContext` that owns its unfinished items.
+Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
+through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
+`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and
+exposes no batch creation or batch-click events.
 
 MeasurementItem owns model state, queries and disposal; MeasurementPresentation owns its WPF
-visuals, labels and optional plot. Plot closure requests item disposal, and active disposal
+visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
-Measurement context owns one set of model-driven items and their visual ownership mappings,
+Measurement context owns a primary set of model-driven items and a separate visual lookup index,
 and borrows query scheduling. The host creates and closes it independently of the
 tool registry. Hit testing resolves a visual to its registered measurement before selection.
 The edit manager receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and
 query runtime are internal imaging capabilities, not public measurement extension points.
+A validated query publishes frame identity and its payload in one synchronous call;
+clients never stage samples awaiting a second publication notification.
 The query runtime controls time, worker execution and UI publication for deterministic tests.
 
 EditManager directly owns a MeasurementEditSession and its control-point visuals.

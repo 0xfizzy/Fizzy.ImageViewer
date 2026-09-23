@@ -57,12 +57,7 @@ Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.Boolean Equals(S
 Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.DrawingElement: virtual System.Type EqualityContract { protected get; }
-Fizzy.ImageViewer.Drawing.DrawingLayer: System.Boolean IsHitTestVisible { public get; public set; }
-Fizzy.ImageViewer.Drawing.DrawingLayer: System.Boolean IsVisible { public get; public set; }
-Fizzy.ImageViewer.Drawing.DrawingLayer: System.Int32 ZIndex { public get; public set; }
-Fizzy.ImageViewer.Drawing.DrawingLayer: System.String Name { public get; }
 Fizzy.ImageViewer.Drawing.DrawingLayer: public Fizzy.ImageViewer.Drawing.DrawingBatchHandle AddBatch(System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Drawing.DrawingElement> elements)
-Fizzy.ImageViewer.Drawing.DrawingLayer: public System.Void Clear()
 Fizzy.ImageViewer.Drawing.DrawingLayer: public event System.EventHandler<Fizzy.ImageViewer.Drawing.BatchClickedEventArgs>? BatchClicked
 Fizzy.ImageViewer.Drawing.HudTextHandle: System.Boolean IsDisposed { public get; }
 Fizzy.ImageViewer.Drawing.HudTextHandle: public System.Void Dispose()
@@ -104,19 +99,6 @@ Fizzy.ImageViewer.Drawing.RectangleElement: public virtual System.Boolean Equals
 Fizzy.ImageViewer.Drawing.RectangleElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.RectangleElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.RectangleElement: virtual System.Type EqualityContract { protected get; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: System.Windows.Media.Brush NormalBrush { public get; public init; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: System.Windows.Media.Brush PointBrush { public get; public init; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: System.Windows.Media.Brush RegionBrush { public get; public init; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: System.Windows.Media.Brush SelectedBrush { public get; public init; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: System.Windows.Media.Brush TextBackground { public get; public init; }
-Fizzy.ImageViewer.Drawing.ShapeStyle: public Fizzy.ImageViewer.Drawing.ShapeStyle <Clone>$()
-Fizzy.ImageViewer.Drawing.ShapeStyle: public System.Boolean Equals(Fizzy.ImageViewer.Drawing.ShapeStyle? other)
-Fizzy.ImageViewer.Drawing.ShapeStyle: public ctor()
-Fizzy.ImageViewer.Drawing.ShapeStyle: public static System.Boolean op_Equality(Fizzy.ImageViewer.Drawing.ShapeStyle? left, Fizzy.ImageViewer.Drawing.ShapeStyle? right)
-Fizzy.ImageViewer.Drawing.ShapeStyle: public static System.Boolean op_Inequality(Fizzy.ImageViewer.Drawing.ShapeStyle? left, Fizzy.ImageViewer.Drawing.ShapeStyle? right)
-Fizzy.ImageViewer.Drawing.ShapeStyle: public virtual System.Boolean Equals(System.Object? obj)
-Fizzy.ImageViewer.Drawing.ShapeStyle: public virtual System.Int32 GetHashCode()
-Fizzy.ImageViewer.Drawing.ShapeStyle: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.TextElement: System.Double FontSize { public get; public init; }
 Fizzy.ImageViewer.Drawing.TextElement: System.String FontFamily { public get; public init; }
 Fizzy.ImageViewer.Drawing.TextElement: System.String Text { public get; public init; }
@@ -134,12 +116,17 @@ Fizzy.ImageViewer.Drawing.TextElement: public virtual System.Boolean Equals(Syst
 Fizzy.ImageViewer.Drawing.TextElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.TextElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.TextElement: virtual System.Type EqualityContract { protected get; }
+Fizzy.ImageViewer.Drawing.ViewerLayer: System.Boolean IsHitTestVisible { public get; public set; }
+Fizzy.ImageViewer.Drawing.ViewerLayer: System.Boolean IsVisible { public get; public set; }
+Fizzy.ImageViewer.Drawing.ViewerLayer: System.Int32 ZIndex { public get; public set; }
+Fizzy.ImageViewer.Drawing.ViewerLayer: System.String Name { public get; }
+Fizzy.ImageViewer.Drawing.ViewerLayer: public System.Void Clear()
 Fizzy.ImageViewer.Drawing.ViewerLayers: Fizzy.ImageViewer.Drawing.DrawingLayer Markers { public get; }
-Fizzy.ImageViewer.Drawing.ViewerLayers: Fizzy.ImageViewer.Drawing.DrawingLayer Measurements { public get; }
-Fizzy.ImageViewer.Drawing.ViewerLayers: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Drawing.DrawingLayer> Items { public get; }
+Fizzy.ImageViewer.Drawing.ViewerLayers: Fizzy.ImageViewer.Measurements.MeasurementLayer Measurements { public get; }
+Fizzy.ImageViewer.Drawing.ViewerLayers: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Drawing.ViewerLayer> Items { public get; }
 Fizzy.ImageViewer.Drawing.ViewerLayers: public Fizzy.ImageViewer.Drawing.DrawingLayer CreateLayer(System.String name)
 Fizzy.ImageViewer.Drawing.ViewerLayers: public System.Void Clear()
-Fizzy.ImageViewer.Drawing.ViewerLayers: public System.Void RemoveLayer(Fizzy.ImageViewer.Drawing.DrawingLayer layer)
+Fizzy.ImageViewer.Drawing.ViewerLayers: public System.Void RemoveLayer(Fizzy.ImageViewer.Drawing.ViewerLayer layer)
 Fizzy.ImageViewer.Frames.FrameDescriptor: Fizzy.ImageViewer.Frames.FramePixelFormat Format { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameDescriptor: System.Int32 Height { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameDescriptor: System.Int32 RequiredBytes { public get; }
@@ -218,10 +205,10 @@ Fizzy.ImageViewer.Frames.ImageFrame: public System.Void Dispose()
 Fizzy.ImageViewer.Frames.ImageFrame: public static Fizzy.ImageViewer.Frames.ImageFrame Copy(Fizzy.ImageViewer.Frames.FrameDescriptor descriptor, System.ReadOnlySpan<System.Byte> data)
 Fizzy.ImageViewer.Frames.ImageFrame: public static Fizzy.ImageViewer.Frames.ImageFrame TakeD3D9Surface(Fizzy.ImageViewer.Frames.FrameDescriptor descriptor, System.IntPtr surface, Fizzy.ImageViewer.Imaging.IFramePixelSource pixelSource, System.Action release)
 Fizzy.ImageViewer.Frames.ImageFrame: public static Fizzy.ImageViewer.Frames.ImageFrame TakeOwnership(Fizzy.ImageViewer.Frames.FrameDescriptor descriptor, System.ReadOnlyMemory<System.Byte> data, System.Action release)
-Fizzy.ImageViewer.IViewerAPI: abstract Fizzy.ImageViewer.Drawing.ShapeStyle MeasurementStyle { public get; public set; }
 Fizzy.ImageViewer.IViewerAPI: abstract Fizzy.ImageViewer.Drawing.ViewerLayers Layers { public get; }
 Fizzy.ImageViewer.IViewerAPI: abstract Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { public get; }
 Fizzy.ImageViewer.IViewerAPI: abstract Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { public get; public set; }
+Fizzy.ImageViewer.IViewerAPI: abstract Fizzy.ImageViewer.Measurements.MeasurementStyle MeasurementStyle { public get; public set; }
 Fizzy.ImageViewer.IViewerAPI: abstract System.Boolean Borderless { public get; public set; }
 Fizzy.ImageViewer.IViewerAPI: abstract System.Boolean CanUserClose { public get; public set; }
 Fizzy.ImageViewer.IViewerAPI: abstract System.Boolean IsMinimized { public get; }
@@ -254,6 +241,7 @@ Fizzy.ImageViewer.IViewerAPI: public abstract System.Void RegisterMeasurementToo
 Fizzy.ImageViewer.IViewerAPI: public abstract System.Void Show()
 Fizzy.ImageViewer.IViewerAPI: public abstract System.Void StartMeasurement(System.String toolId)
 Fizzy.ImageViewer.IViewerAPI: public abstract event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
+Fizzy.ImageViewer.IViewerAPI: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
 Fizzy.ImageViewer.IViewerAPI: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.IViewerAPI: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
 Fizzy.ImageViewer.IViewerAPI: public abstract event System.EventHandler? Closed
@@ -406,10 +394,11 @@ Fizzy.ImageViewer.Measurements.IMeasurementTool: abstract System.String Id { pub
 Fizzy.ImageViewer.Measurements.IMeasurementTool: public abstract System.Boolean OnClick(System.Windows.Point point, Fizzy.ImageViewer.Measurements.IMeasurementToolContext ctx)
 Fizzy.ImageViewer.Measurements.IMeasurementTool: public abstract System.Void Cancel(Fizzy.ImageViewer.Measurements.IMeasurementToolContext ctx)
 Fizzy.ImageViewer.Measurements.IMeasurementTool: public abstract System.Void OnMouseMove(System.Windows.Point point, Fizzy.ImageViewer.Measurements.IMeasurementToolContext ctx)
-Fizzy.ImageViewer.Measurements.IMeasurementToolContext: abstract Fizzy.ImageViewer.Drawing.ShapeStyle Style { public get; }
+Fizzy.ImageViewer.Measurements.IMeasurementToolContext: abstract Fizzy.ImageViewer.Measurements.MeasurementStyle Style { public get; }
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract Fizzy.ImageViewer.Measurements.IMeasurement CreateMeasurement(Fizzy.ImageViewer.Measurements.MeasurementGeometry geometry, Fizzy.ImageViewer.Measurements.MeasurementOptions? options = null)
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
+Fizzy.ImageViewer.Measurements.MeasurementEventArgs: Fizzy.ImageViewer.Measurements.MeasurementResult? Result { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementEventArgs: Fizzy.ImageViewer.Measurements.MeasurementSnapshot Snapshot { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementEventArgs: System.IDisposable Handle { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementGeometry: Fizzy.ImageViewer.Measurements.MeasurementKind Kind { public get; }
@@ -437,8 +426,8 @@ Fizzy.ImageViewer.Measurements.MeasurementKind: public const Fizzy.ImageViewer.M
 Fizzy.ImageViewer.Measurements.MeasurementKind: public const Fizzy.ImageViewer.Measurements.MeasurementKind Line = 2
 Fizzy.ImageViewer.Measurements.MeasurementKind: public const Fizzy.ImageViewer.Measurements.MeasurementKind Point = 0
 Fizzy.ImageViewer.Measurements.MeasurementKind: public const Fizzy.ImageViewer.Measurements.MeasurementKind Rectangle = 3
-Fizzy.ImageViewer.Measurements.MeasurementOptions: Fizzy.ImageViewer.Drawing.ShapeStyle? Style { public get; public init; }
 Fizzy.ImageViewer.Measurements.MeasurementOptions: Fizzy.ImageViewer.Measurements.MeasurementQuery Query { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementOptions: Fizzy.ImageViewer.Measurements.MeasurementStyle? Style { public get; public init; }
 Fizzy.ImageViewer.Measurements.MeasurementOptions: System.Boolean ShowLineProfile { public get; public init; }
 Fizzy.ImageViewer.Measurements.MeasurementOptions: public Fizzy.ImageViewer.Measurements.MeasurementOptions <Clone>$()
 Fizzy.ImageViewer.Measurements.MeasurementOptions: public System.Boolean Equals(Fizzy.ImageViewer.Measurements.MeasurementOptions? other)
@@ -476,6 +465,19 @@ Fizzy.ImageViewer.Measurements.MeasurementSnapshot: public static System.Boolean
 Fizzy.ImageViewer.Measurements.MeasurementSnapshot: public virtual System.Boolean Equals(System.Object? obj)
 Fizzy.ImageViewer.Measurements.MeasurementSnapshot: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Measurements.MeasurementSnapshot: public virtual System.String ToString()
+Fizzy.ImageViewer.Measurements.MeasurementStyle: System.Windows.Media.Brush NormalBrush { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementStyle: System.Windows.Media.Brush PointBrush { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementStyle: System.Windows.Media.Brush RegionBrush { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementStyle: System.Windows.Media.Brush SelectedBrush { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementStyle: System.Windows.Media.Brush TextBackground { public get; public init; }
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public Fizzy.ImageViewer.Measurements.MeasurementStyle <Clone>$()
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public System.Boolean Equals(Fizzy.ImageViewer.Measurements.MeasurementStyle? other)
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public ctor()
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public static System.Boolean op_Equality(Fizzy.ImageViewer.Measurements.MeasurementStyle? left, Fizzy.ImageViewer.Measurements.MeasurementStyle? right)
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public static System.Boolean op_Inequality(Fizzy.ImageViewer.Measurements.MeasurementStyle? left, Fizzy.ImageViewer.Measurements.MeasurementStyle? right)
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public virtual System.Boolean Equals(System.Object? obj)
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public virtual System.Int32 GetHashCode()
+Fizzy.ImageViewer.Measurements.MeasurementStyle: public virtual System.String ToString()
 Fizzy.ImageViewer.Measurements.MeasurementToolIds: public const System.String Length = "Length"
 Fizzy.ImageViewer.Measurements.MeasurementToolIds: public const System.String LineStrength = "LineStrength"
 Fizzy.ImageViewer.Measurements.MeasurementToolIds: public const System.String Point = "Point"
@@ -511,10 +513,10 @@ Fizzy.ImageViewer.Snapshots.SnapshotEncoding: public const Fizzy.ImageViewer.Sna
 Fizzy.ImageViewer.Snapshots.SnapshotKind: public System.Int32 value__
 Fizzy.ImageViewer.Snapshots.SnapshotKind: public const Fizzy.ImageViewer.Snapshots.SnapshotKind Display = 1
 Fizzy.ImageViewer.Snapshots.SnapshotKind: public const Fizzy.ImageViewer.Snapshots.SnapshotKind Raw = 0
-Fizzy.ImageViewer.Viewer: Fizzy.ImageViewer.Drawing.ShapeStyle MeasurementStyle { public get; public set; }
 Fizzy.ImageViewer.Viewer: Fizzy.ImageViewer.Drawing.ViewerLayers Layers { public get; }
 Fizzy.ImageViewer.Viewer: Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { public get; }
 Fizzy.ImageViewer.Viewer: Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { public get; public set; }
+Fizzy.ImageViewer.Viewer: Fizzy.ImageViewer.Measurements.MeasurementStyle MeasurementStyle { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Boolean Borderless { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Boolean CanUserClose { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Boolean IsMinimized { public get; }
@@ -549,10 +551,12 @@ Fizzy.ImageViewer.Viewer: public System.Void Show()
 Fizzy.ImageViewer.Viewer: public System.Void StartMeasurement(System.String toolId)
 Fizzy.ImageViewer.Viewer: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.Viewer> logger, System.Double left = NaN, System.Double top = NaN, System.Double width = NaN, System.Double height = NaN, System.Boolean showWindow = true)
 Fizzy.ImageViewer.Viewer: public event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
+Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
 Fizzy.ImageViewer.Viewer: public event System.EventHandler? Closed
 abstract class Fizzy.ImageViewer.Drawing.DrawingElement : System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
+abstract class Fizzy.ImageViewer.Drawing.ViewerLayer
 enum Fizzy.ImageViewer.Drawing.AnchorAlignment : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Drawing.OverlayScaleMode : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Frames.FramePixelFormat : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
@@ -572,11 +576,10 @@ sealed class Fizzy.ImageViewer.Drawing.BatchClickedEventArgs : System.EventArgs
 sealed class Fizzy.ImageViewer.Drawing.CircleElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.CircleElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
 sealed class Fizzy.ImageViewer.Drawing.CrosshairElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.CrosshairElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
 sealed class Fizzy.ImageViewer.Drawing.DrawingBatchHandle : System.IDisposable
-sealed class Fizzy.ImageViewer.Drawing.DrawingLayer
+sealed class Fizzy.ImageViewer.Drawing.DrawingLayer : Fizzy.ImageViewer.Drawing.ViewerLayer
 sealed class Fizzy.ImageViewer.Drawing.HudTextHandle : System.IDisposable
 sealed class Fizzy.ImageViewer.Drawing.LineElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.LineElement>
 sealed class Fizzy.ImageViewer.Drawing.RectangleElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.RectangleElement>
-sealed class Fizzy.ImageViewer.Drawing.ShapeStyle : System.IEquatable<Fizzy.ImageViewer.Drawing.ShapeStyle>
 sealed class Fizzy.ImageViewer.Drawing.TextElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.TextElement>
 sealed class Fizzy.ImageViewer.Drawing.ViewerLayers
 sealed class Fizzy.ImageViewer.Frames.FrameLease : System.IDisposable
@@ -590,9 +593,11 @@ sealed class Fizzy.ImageViewer.Imaging.RegionStatistics : System.IEquatable<Fizz
 sealed class Fizzy.ImageViewer.Imaging.RegionStatisticsResult : System.IEquatable<Fizzy.ImageViewer.Imaging.RegionStatisticsResult>
 sealed class Fizzy.ImageViewer.Measurements.MeasurementEventArgs : System.EventArgs
 sealed class Fizzy.ImageViewer.Measurements.MeasurementGeometry : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementGeometry>
+sealed class Fizzy.ImageViewer.Measurements.MeasurementLayer : Fizzy.ImageViewer.Drawing.ViewerLayer
 sealed class Fizzy.ImageViewer.Measurements.MeasurementOptions : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementOptions>
 sealed class Fizzy.ImageViewer.Measurements.MeasurementResult
 sealed class Fizzy.ImageViewer.Measurements.MeasurementSnapshot : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementSnapshot>
+sealed class Fizzy.ImageViewer.Measurements.MeasurementStyle : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementStyle>
 sealed class Fizzy.ImageViewer.Menus.CheckableMenuItem : Fizzy.ImageViewer.Menus.ICheckableMenuItem, Fizzy.ImageViewer.Menus.IMenuItem
 sealed class Fizzy.ImageViewer.Menus.MenuItem : Fizzy.ImageViewer.Menus.IMenuItem
 sealed class Fizzy.ImageViewer.Menus.SeparatorMenuItem : Fizzy.ImageViewer.Menus.IMenuItem

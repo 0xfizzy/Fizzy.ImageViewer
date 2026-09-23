@@ -13,9 +13,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         public const double BaseFontSize = 14.0;
 
         // 1. 创建线段 (FixedStroke)
-        public static Line CreateLine(ShapeStyle? style = null)
+        public static Line CreateLine(MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var visual = new Line
             {
                 Stroke = style.NormalBrush,
@@ -26,9 +26,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 2. 创建文字标签 (AnchoredLabel)
-        public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10, ShapeStyle? style = null)
+        public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10, MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var visual = new TextBlock
             {
                 Text = text,
@@ -48,9 +48,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 3. 创建点/锚点形状 (FixedSize)
-        public static Path CreatePoint(Point position, ShapeStyle? style = null)
+        public static Path CreatePoint(Point position, MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var geometry = new GeometryGroup();
             double r = 4;
             geometry.Children.Add(new EllipseGeometry(new Point(0, 0), r, r));
@@ -69,9 +69,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 4. 创建准星 (FixedSize)
-        public static Path CreateCrosshair(Point position, double size = 20, double thickness = 2, ShapeStyle? style = null)
+        public static Path CreateCrosshair(Point position, double size = 20, double thickness = 2, MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var geometry = new GeometryGroup();
             geometry.Children.Add(new LineGeometry(new Point(-size, 0), new Point(size, 0)));
             geometry.Children.Add(new LineGeometry(new Point(0, -size), new Point(0, size)));
@@ -92,9 +92,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 5. 创建矩形框 (FixedStroke)
-        public static Rectangle CreateRectangle(ShapeStyle? style = null)
+        public static Rectangle CreateRectangle(MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var visual = new Rectangle
             {
                 Width = 0,
@@ -108,9 +108,9 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 6. 创建圆形 (FixedStroke)
-        public static Path CreateCircle(Point center, double radius, ShapeStyle? style = null)
+        public static Path CreateCircle(Point center, double radius, MeasurementStyle? style = null)
         {
-            style = (style ?? ShapeStyle.Default).Snapshot();
+            style = (style ?? MeasurementStyle.Default).Snapshot();
             var geometry = new EllipseGeometry(new Point(0, 0), radius, radius);
 
             var path = new Path

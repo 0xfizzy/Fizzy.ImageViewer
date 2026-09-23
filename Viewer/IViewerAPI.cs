@@ -15,7 +15,7 @@ namespace Fizzy.ImageViewer;
 public interface IViewerAPI : IAsyncDisposable
 {
     /// <summary>Style for future measurements. Brushes are copied and frozen before UI dispatch.</summary>
-    ShapeStyle MeasurementStyle { get; set; }
+    MeasurementStyle MeasurementStyle { get; set; }
     // === 窗口管理 ===
 
     /// <summary>
@@ -140,6 +140,8 @@ public interface IViewerAPI : IAsyncDisposable
     event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
     /// <summary>Removal of completed measurements; raised on the viewer STA, including closure.</summary>
     event EventHandler<MeasurementEventArgs>? MeasurementRemoved;
+    /// <summary>Immutable geometry and query state of completed measurements after editing, publication or invalidation.</summary>
+    event EventHandler<MeasurementEventArgs>? MeasurementChanged;
 
     // === 扩展 ===
 

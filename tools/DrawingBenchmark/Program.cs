@@ -49,9 +49,7 @@ internal static class Program
         layers.Close();
 
         var legacyLayers = new ViewerLayers(Transform.Identity);
-        var legacy = new OverlayLayer();
-        legacy.BindTransform(legacyLayers.Transform);
-        legacyLayers.Measurements.Root.Children.Add(legacy);
+        var legacy = legacyLayers.Measurements.Overlay;
         void AddLegacy()
         {
             foreach (CircleElement circle in data)

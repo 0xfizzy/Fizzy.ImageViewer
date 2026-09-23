@@ -53,9 +53,9 @@ public class MeasurementInteractionTests
 
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
-        var method = new RectTool();
-        method.OnClick(new(2, 2), viewer.Host.Measurements);
-        method.OnClick(new(6, 6), viewer.Host.Measurements);
+        viewer.StartMeasurement(MeasurementToolIds.ROI);
+        viewer.Host.Interaction.ImageDown(2, 2);
+        viewer.Host.Interaction.ImageDown(6, 6);
         var shape = Overlay(viewer).Canvas.Children.OfType<Rectangle>().Last();
         return viewer.Host.Measurements.Find(shape)!;
     }
@@ -74,7 +74,7 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer);
             var overlay = Overlay(viewer);
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.PrimaryVisual));
+            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             var initial = item.Geometry; var initialVersion = item.GeometryVersion;
             Assert.True(editor.BeginDrag(initial.ControlPoints[index], 1));
@@ -84,10 +84,10 @@ public class MeasurementInteractionTests
             var expected = MeasurementGeometry.Rectangle(initial.ControlPoints[(index + 2) % 4], new(x + .25, y + .25));
             Assert.Equal(expected.Start, item.Geometry.Start); Assert.Equal(expected.End, item.Geometry.End);
             Assert.Equal(2, item.GeometryVersion - initialVersion);
-            var rectangle = (Rectangle)item.PrimaryVisual;
+            var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             Assert.Equal(expected.Bounds.Width, rectangle.Width); Assert.Equal(expected.Bounds.Height, rectangle.Height);
             Assert.Equal(expected.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Y, Canvas.GetTop(rectangle));
-            Assert.Equal(expected.Start, OverlayShapeData.Get(item.Label)!.AnchorPoint);
+            Assert.Equal(expected.Start, OverlayShapeData.Get(item.Presentation.Label)!.AnchorPoint);
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
             var request = Assert.IsType<RegionStatisticsQueryRequest>(((IFrameQueryClient)item).Capture(frame!.Descriptor));
@@ -118,7 +118,7 @@ public class MeasurementInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
-            var rectangle = (Rectangle)item.PrimaryVisual;
+            var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
             editor.BeginDrag(index); editor.Update(new(x, y));
@@ -138,7 +138,7 @@ public class MeasurementInteractionTests
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(invalid));
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.Empty(viewer.Host.Interaction.Editor.Handles);
-            var tool = new PointTool(); tool.OnClick(new(3, 4), viewer.Host.Measurements);
+            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(3, 4);
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(point));
             Assert.Equal(InteractionMode.Editing, viewer.Host.Interaction.Mode);
@@ -148,7 +148,7 @@ public class MeasurementInteractionTests
             Assert.True(editor.BeginDrag(new(3, 4), 1)); editor.UpdateDrag(new(7, 8)); editor.EndDrag();
             var item = viewer.Host.Measurements.Find(point)!;
             Assert.Equal(new Point(7, 8), item.Geometry.Start);
-            Assert.Equal($"X:{7:F2}\nY:{8:F2}", item.Label.Text);
+            Assert.Equal($"X:{7:F2}\nY:{8:F2}", item.Presentation.Label.Text);
             viewer.Host.Interaction.DeleteSelected(); Assert.True(item.IsDisposed);
             Assert.Empty(editor.Handles); Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
         });
@@ -168,7 +168,7 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             viewer.Layers.Markers.IsHitTestVisible = false;
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.PrimaryVisual));
+            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             Assert.True(viewer.Host.Interaction.Editor.BeginDrag(item.Geometry.Start, 1));
             viewer.Host.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
@@ -251,15 +251,17 @@ public class MeasurementInteractionTests
             // No physical mouse/foreground-window dependency in the state-machine test.
             var image = new ImageLayer();
             var layers = new Drawing.ViewerLayers(image.TransformGroup);
-            var overlay = new OverlayLayer();
-            layers.Measurements.Root.Children.Add(overlay);
+            var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
             var context = new MeasurementContext(overlay, () => null, queries, NullLogger.Instance);
             var tools = new MeasurementToolRegistry();
             var editor = new EditManager(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
-            var tool = new RectTool(); tool.OnClick(new(2, 2), context); tool.OnClick(new(6, 6), context);
+            var tool = new RectTool();
+            var creation = new MeasurementCreationSession(context);
+            tool.OnClick(new(2, 2), creation); tool.OnClick(new(6, 6), creation);
+            creation.End(); creation.ClearPreviews();
             var shape = overlay.Canvas.Children.OfType<Rectangle>().Single();
             coordinator.StartEditing(context.Find(shape));
             Assert.Equal(action != "failed", coordinator.BeginDrag(new(2, 2)));

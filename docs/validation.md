@@ -58,6 +58,12 @@ Query failures, invalid combinations and geometry validation also have regressio
 visual ownership, reentrant registration/disposal, viewer closure, unsupported editors,
 rectangle drag sessions and the absence of standalone overlay interaction.
 
+`MeasurementNotificationsTests` verify the public change stream for built-in and custom ROI,
+retained geometry/result snapshots, STA callbacks, subscriber isolation, editing invalidation
+and reentrant removal. Session ownership tests verify that interrupted or ended contexts
+cannot attach previews to replacement sessions, and unrelated items survive session cleanup.
+Measurement cleanup is also checked after presentation detachment.
+
 `MeasurementReentryTests` cover session replacement from click, move, cancellation,
 tool switching and entry into editing, with and without callback exceptions. They
 check active tool, interaction mode, cursor, input suppression and preview ownership,

@@ -13,10 +13,12 @@ internal sealed class MeasurementPresentation : IDisposable
     private readonly OverlayLayer _layer;
     private readonly Action _closed;
     private LineProfilePlotView? _plot;
+    private bool _disposed;
+    internal IEnumerable<UIElement> Visuals => [PrimaryVisual, Label];
     public UIElement PrimaryVisual { get; }
     public TextBlock Label { get; }
 
-    internal MeasurementPresentation(OverlayLayer layer, MeasurementGeometry geometry, ShapeStyle style, Action closed)
+    internal MeasurementPresentation(OverlayLayer layer, MeasurementGeometry geometry, MeasurementStyle style, Action closed)
     {
         _layer = layer;
         _closed = closed;
@@ -32,6 +34,15 @@ internal sealed class MeasurementPresentation : IDisposable
         Label = MeasurementVisualFactory.CreateLabel(geometry.Start, "", 5, 0, style);
         Apply(geometry);
         ClearResult(geometry);
+    }
+
+    internal void Attach()
+    {
+        foreach (var visual in Visuals)
+        {
+            if (_disposed) break;
+            _layer.AddShape(visual);
+        }
     }
 
     internal void Complete(bool showLineProfile)
@@ -75,11 +86,24 @@ internal sealed class MeasurementPresentation : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         var plot = _plot;
         _plot = null;
-        if (plot == null) return;
-        plot.Window.Closed -= PlotClosed;
-        plot.Window.Close();
+        try
+        {
+            if (plot != null)
+            {
+                plot.Window.Closed -= PlotClosed;
+                plot.Window.Close();
+            }
+        }
+        finally
+        {
+            // Labels leave first so removal callbacks cannot see an orphaned label.
+            try { _layer.RemoveVisual(Label); }
+            finally { _layer.RemoveVisual(PrimaryVisual); }
+        }
     }
 
     public void Apply(MeasurementGeometry geometry)

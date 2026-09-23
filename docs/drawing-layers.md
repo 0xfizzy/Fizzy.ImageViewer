@@ -6,6 +6,11 @@
 Higher ZIndex draws on top; equal values use creation order. Image and HUD remain
 below and above the business-layer container, respectively.
 
+`Markers` and custom layers are `DrawingLayer` instances with `AddBatch` and `BatchClicked`.
+`Measurements` is a `MeasurementLayer`: tools create its model-owned content, and it has no
+batch drawing API. Both share `ViewerLayer` settings (`Name`, visibility, hit testing,
+ZIndex and `Clear`); `Layers.Items` returns a snapshot of those shared handles.
+
 Each completed `LineStrength` measurement links its line, length label, and pixel
 curve window. Closing the window removes its line and label; deleting the line
 closes its window. Clearing measurements or disposing the viewer cleans up all
@@ -149,7 +154,7 @@ physical presentation; it does not establish sustained camera-stream GC performa
   cancelling measurement restores each layer's configured flag, including changes
   made during measurement. `IsHitTestVisible` reports the configured flag.
 
-## Ownership and compatibility
+## Ownership and lifetime
 
 Collections are copied on submission; subsequent mutation is not observed.
 Immutable elements with frozen brushes can be shared. Mutable brushes are cloned

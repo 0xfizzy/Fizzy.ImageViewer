@@ -203,14 +203,13 @@ internal sealed class PixelQueryScheduler : IDisposable
                 // FrameId here would starve every query slower than the frame rate.
                 switch (entry.Request, results[i])
                 {
-                    case (PixelQueryRequest p, SamplesResult s): p.Publish(s.Samples.Span); break;
-                    case (LineProfileQueryRequest l, SamplesResult s): l.Publish(s.Samples.Span); break;
-                    case (RegionStatisticsQueryRequest r, StatisticsResult s): r.Publish(s.Statistics); break;
+                    case (PixelQueryRequest p, SamplesResult s): p.Publish(frame.Info, s.Samples.Span); break;
+                    case (LineProfileQueryRequest l, SamplesResult s): l.Publish(frame.Info, s.Samples.Span); break;
+                    case (RegionStatisticsQueryRequest r, StatisticsResult s): r.Publish(frame.Info, s.Statistics); break;
                     default: throw new InvalidOperationException("Mismatched query result.");
                 }
                 state.Valid = state.HasResult = true; state.Frame = frame.Info.FrameId; state.Started = started;
                 state.PublishedIdentity = entry.Request.Identity;
-                entry.Item.ResultPublished(frame.Info);
             }
             catch (Exception ex)
             {

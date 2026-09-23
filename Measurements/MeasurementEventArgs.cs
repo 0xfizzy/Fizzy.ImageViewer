@@ -10,11 +10,13 @@ public sealed record MeasurementSnapshot(Guid Id, MeasurementGeometry Geometry, 
     public Point End => Geometry.End;
 }
 
-/// <summary>Delivered on the viewer STA. The removal handle is thread-safe and idempotent.</summary>
+/// <summary>Immutable geometry and query state delivered on the viewer STA. The removal handle is thread-safe and idempotent.</summary>
 public sealed class MeasurementEventArgs : EventArgs
 {
     public MeasurementSnapshot Snapshot { get; }
     public IDisposable Handle { get; }
-    internal MeasurementEventArgs(MeasurementSnapshot snapshot, IDisposable handle)
-    { Snapshot = snapshot; Handle = handle; }
+    /// <summary>Current immutable query result, or null before publication and after invalidation.</summary>
+    public MeasurementResult? Result { get; }
+    internal MeasurementEventArgs(MeasurementSnapshot snapshot, IDisposable handle, MeasurementResult? result)
+    { Snapshot = snapshot; Handle = handle; Result = result; }
 }

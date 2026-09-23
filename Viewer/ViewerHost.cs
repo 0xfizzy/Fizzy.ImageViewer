@@ -79,6 +79,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 _tools = new MeasurementToolRegistry();
                 _context.ItemCompleted += _owner.NotifyMeasurementCompleted;
                 _context.ItemRemoved += _owner.NotifyMeasurementRemoved;
+                _context.ItemChanged += _owner.NotifyMeasurementChanged;
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editMgr = new EditManager(win.MeasurementOverlay);

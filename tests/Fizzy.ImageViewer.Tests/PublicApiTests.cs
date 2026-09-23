@@ -66,6 +66,24 @@ public class PublicApiTests
     }
 
     [Fact]
+    public async Task LayerTypesExposeOnlyTheirContentCapabilities()
+    {
+        await using var viewer = Create();
+        Assert.IsType<DrawingLayer>(viewer.Layers.Markers);
+        Assert.IsType<MeasurementLayer>(viewer.Layers.Measurements);
+        Assert.Null(typeof(MeasurementLayer).GetMethod("AddBatch"));
+        Assert.Null(typeof(MeasurementLayer).GetEvent("BatchClicked"));
+        Assert.Empty(typeof(ViewerLayer).GetConstructors());
+        Assert.Contains(viewer.Layers.Measurements, viewer.Layers.Items);
+        Assert.Throws<InvalidOperationException>(() => viewer.Layers.RemoveLayer(viewer.Layers.Measurements));
+        using var batch = viewer.Layers.Markers.AddBatch([new CircleElement(new(), 2, Brushes.Red)]);
+        viewer.Layers.Measurements.Clear();
+        batch.Replace([new CircleElement(new(), 3, Brushes.Red)]);
+        viewer.Layers.Measurements.IsVisible = false;
+        Assert.True(viewer.Layers.Markers.IsVisible);
+    }
+
+    [Fact]
     public async Task MeasurementEventsExcludePreviewsAndCaptureLatestRemovalGeometry()
     {
         await using var viewer = Create();
