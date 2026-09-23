@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Enums;
@@ -386,7 +387,7 @@ public class DrawingTests
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             foreach (Measurements.IMeasureTool method in new Measurements.IMeasureTool[] {
-                new MeasureMethods.PointTool(viewer.MeasurementContext), new MeasureMethods.LineTool(viewer.MeasurementContext), new MeasureMethods.RectTool(viewer.MeasurementContext) })
+                new Measurements.Methods.PointTool(viewer.MeasurementContext), new Measurements.Methods.LineTool(viewer.MeasurementContext), new Measurements.Methods.RectTool(viewer.MeasurementContext) })
             {
                 bool done = method.OnClick(new(10, 10));
                 if (!done)

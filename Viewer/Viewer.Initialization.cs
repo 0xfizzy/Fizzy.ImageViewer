@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Editing;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Interaction;
-using Fizzy.ImageViewer.MeasureMethods;
+using Fizzy.ImageViewer.Measurements.Methods;
 using Fizzy.ImageViewer.Menus;
 using System.Windows.Threading;
 

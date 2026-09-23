@@ -1,13 +1,12 @@
 using Fizzy.ImageViewer.Frames;
 using System.Windows;
-using Fizzy.ImageViewer.Interfaces;
 
-namespace Fizzy.ImageViewer.MeasureMethods;
+namespace Fizzy.ImageViewer.Measurements.Methods;
 
 internal sealed class RegionMeasurement : MeasurementItem
 {
     public RegionMeasurement(IMeasurementContext context, Point start)
-        : base(context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "等待数据", 5, 0)) { }
+        : base(context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "绛夊緟鏁版嵁", 5, 0)) { }
     protected override void OnComplete() => Subscribe();
     public override QueryRequest? Capture(FrameDescriptor descriptor)
     {
@@ -18,7 +17,7 @@ internal sealed class RegionMeasurement : MeasurementItem
         {
             Result = stats;
             var names = stats.Channels.Length == 1 ? new[] { "Gray" } : new[] { "R", "G", "B", "A" };
-            Label.Text = $"{region.Width}×{region.Height} px | " + string.Join(" | ", stats.Channels.Select((s, i) =>
+            Label.Text = $"{region.Width}脳{region.Height} px | " + string.Join(" | ", stats.Channels.Select((s, i) =>
                 $"{names[i]}: n={s.Count} min={s.Minimum:G7} max={s.Maximum:G7} mean={s.Mean:G7}"));
         });
     }

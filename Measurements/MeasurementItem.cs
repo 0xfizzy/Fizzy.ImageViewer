@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>UI-thread owner of one measurement, including its query and optional result window.</summary>
 internal class MeasurementItem : IFrameMeasurement, IDisposable

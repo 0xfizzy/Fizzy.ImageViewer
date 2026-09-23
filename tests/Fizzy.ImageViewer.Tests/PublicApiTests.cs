@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interfaces;

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Windows;
 using Fizzy.ImageViewer.Interfaces;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
 internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext

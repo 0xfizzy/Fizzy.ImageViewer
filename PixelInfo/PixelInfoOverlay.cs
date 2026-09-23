@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Frames;
 using System.Windows.Input;

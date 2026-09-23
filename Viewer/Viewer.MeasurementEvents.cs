@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;

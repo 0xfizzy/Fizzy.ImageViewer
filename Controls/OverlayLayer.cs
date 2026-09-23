@@ -80,8 +80,12 @@ internal class OverlayLayer : UserControl
     {
         if (_canvas.Children.Contains(shape)) return;
         ApplyScaleToShape(shape, _currentScale); _canvas.Children.Add(shape);
-        var handle = new Internal.DrawingHandle(() => Dispatcher.InvokeAsync(() => RemoveShape(shape)));
-        ShapeAdded?.Invoke(shape, handle);
+        var handler = ShapeAdded;
+        if (handler != null)
+        {
+            var handle = new Internal.DrawingHandle(() => Dispatcher.InvokeAsync(() => RemoveShape(shape)));
+            handler(shape, handle);
+        }
     }
     internal void RemoveShape(UIElement shape)
     {

@@ -1,8 +1,13 @@
-using Fizzy.ImageViewer.Frames;
 using System.Windows;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
+/// <summary>Internal measurement resource protocol: registers items and scopes, associates
+/// visuals, owns query subscriptions, and reports completion.</summary>
+/// <remarks>All operations, including disposal of returned subscriptions, run on the owning
+/// viewer's UI/STA thread. This protocol does not marshal calls; VerifyAccess checks the caller.
+/// The scheduler samples off the UI thread and publishes results back on it.
+/// External tools use Interfaces.IMeasureToolContext instead.</remarks>
 internal interface IMeasurementContext
 {
     void VerifyAccess();

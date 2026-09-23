@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,7 +20,7 @@ public class QuerySchedulingTests
         ScottPlot.WPF.WpfPlot? plot=null;
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
-            var method=new MeasureMethods.LineStrengthTool(viewer.MeasurementContext);
+            var method=new Measurements.Methods.LineStrengthTool(viewer.MeasurementContext);
             method.OnClick(new(0,0));
             method.OnClick(new(1,0));
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()

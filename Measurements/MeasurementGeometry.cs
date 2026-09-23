@@ -1,9 +1,9 @@
 using System.Windows;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Geometry;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Immutable, versioned image-space geometry. Rectangles are always normalized.</summary>
 internal sealed record MeasurementGeometry

@@ -1,7 +1,6 @@
-using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.MeasureMethods;
+namespace Fizzy.ImageViewer.Measurements.Methods;
 
 internal sealed class RectTool(IMeasurementContext context) : IMeasureTool
 {

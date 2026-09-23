@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Shapes;
 using Fizzy.ImageViewer.Enums;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>One-way projection from canonical geometry to WPF presentation.</summary>
 internal sealed class MeasurementDisplayAdapter(IMeasurementContext context, UIElement shape, TextBlock label)

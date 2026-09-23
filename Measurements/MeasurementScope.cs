@@ -1,7 +1,7 @@
 using Fizzy.ImageViewer.Interfaces;
 using System.Windows;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 internal sealed class MeasurementScope : IMeasurementScope
 {

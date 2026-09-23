@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Windows;

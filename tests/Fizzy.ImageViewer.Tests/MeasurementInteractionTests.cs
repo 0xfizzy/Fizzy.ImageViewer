@@ -4,7 +4,7 @@ using Fizzy.ImageViewer.Editing;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interaction;
-using Fizzy.ImageViewer.MeasureMethods;
+using Fizzy.ImageViewer.Measurements.Methods;
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Snapshots;
 using Microsoft.Extensions.Logging.Abstractions;
