@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using System.Windows;
 using System.Windows.Controls;
 using Fizzy.ImageViewer.Enums;
@@ -6,11 +7,11 @@ using Fizzy.ImageViewer.Frames;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>UI-thread owner of one measurement, including its query and optional result window.</summary>
-internal class MeasurementItem : IFrameMeasurement, IDisposable
+internal class MeasurementItem : IFrameQueryClient, IDisposable
 {
     protected readonly IMeasurementContext Context;
     private readonly MeasurementDisplayAdapter _display;
-    private MeasurementSubscription? _subscription;
+    private QuerySubscription? _subscription;
     private Window? _window;
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }

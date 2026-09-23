@@ -31,7 +31,8 @@ public partial class Viewer
                 win.Closed += OnWindowClosed;
 
                 // 在 UI 线程创建 Managers
-                var measureMgr = _measureManager = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _logger);
+                _queryScheduler = new(AcquireCurrentFrameForMeasurement, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
+                var measureMgr = _measureManager = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _queryScheduler, _logger);
                 measureMgr.Context.ItemCompleted += item => NotifyMeasurement(MeasurementCompleted, item);
                 measureMgr.Context.ItemRemoved += item => NotifyMeasurement(MeasurementRemoved, item);
 

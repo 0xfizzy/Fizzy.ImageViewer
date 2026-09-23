@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;

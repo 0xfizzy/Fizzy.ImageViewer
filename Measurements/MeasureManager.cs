@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Frames;
@@ -18,8 +19,7 @@ internal sealed class MeasureManager : IDisposable
     public string? ActiveId { get; private set; }
     public bool HasSelection => _active != null;
     public MeasureContext Context { get; }
-    public Task Completion => Context.Completion;
-    internal MeasureManager(OverlayLayer output, Func<FrameLease?> acquire, ILogger logger) => Context = new(output, acquire, logger);
+    internal MeasureManager(OverlayLayer output, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger) => Context = new(output, acquire, scheduler, logger);
     public void RegisterMethod(IMeasureMethod method)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

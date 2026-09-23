@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Editing;
@@ -250,7 +251,8 @@ public class MeasurementInteractionTests
             var layers = new Drawing.ViewerLayers(image.TransformGroup);
             var overlay = new OverlayLayer();
             layers.Measurements.Root.Children.Add(overlay);
-            using var measure = new MeasureManager(overlay, () => null, NullLogger.Instance);
+            using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
+            using var measure = new MeasureManager(overlay, () => null, queries, NullLogger.Instance);
             var editor = new EditManager(overlay, measure.Context);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(image, overlay, editor, measure, layers, capture);

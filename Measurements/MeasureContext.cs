@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
@@ -14,15 +15,12 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
     private readonly OverlayLayer _layer;
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
-    private readonly MeasurementScheduler _scheduler;
+    private readonly PixelQueryScheduler _scheduler;
     private readonly Dictionary<UIElement, MeasurementItem> _items = [];
     private readonly HashSet<MeasurementScope> _scopes = [];
     private readonly Dictionary<UIElement, MeasurementScope> _scopeVisuals = [];
     private bool _cleaningScopes;
     private bool _disposed;
-    internal PixelQueryOptions QueryOptions { get => _scheduler.QueryOptions; set => _scheduler.QueryOptions = value; }
-    internal PixelQueryMetrics QueryMetrics => _scheduler.QueryMetrics;
-    internal Task Completion => _scheduler.Completion;
     public event Action<FrameInfo>? FrameCommitted;
     internal event Action<MeasurementItem>? ItemRemoving;
     internal event Action<MeasurementItem>? ItemCompleted;
@@ -33,10 +31,10 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
         ItemCompleted?.Invoke(item);
     }
 
-    internal MeasureContext(OverlayLayer layer, Func<FrameLease?> acquire, ILogger logger)
+    internal MeasureContext(OverlayLayer layer, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
     {
         _layer = layer; _acquire = acquire; _logger = logger;
-        _scheduler = new(acquire, logger, new DispatcherMeasurementRuntime(layer.Dispatcher));
+        _scheduler = scheduler;
     }
     public FrameLease? AcquireCurrentFrame() => _acquire();
     /// <summary>Creates a preview owner on the viewer STA. Call Complete to retain it after the tool ends.</summary>
@@ -55,7 +53,7 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
         else _layer.RemoveVisual(shape);
     }
     public void UpdateAnchor(UIElement shape, Point point) => _layer.UpdateAnchor(shape, point);
-    public MeasurementSubscription Register(IFrameMeasurement item) => _scheduler.Register(item);
+    public QuerySubscription Register(IFrameQueryClient item) => _scheduler.Register(item);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _items.TryGetValue(shape, out var item) ? item : null;
     public void Attach(MeasurementItem item)
     {
@@ -140,7 +138,6 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
     {
         if (_disposed) return;
         _disposed = true;
-        _scheduler.Dispose();
         ClearMeasurements();
         FrameCommitted = null;
     }

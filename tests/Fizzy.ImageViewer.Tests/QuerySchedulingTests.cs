@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
@@ -34,7 +35,7 @@ public class QuerySchedulingTests
             await viewer.UiDispatcher.InvokeAsync(()=>window!.Close());
         }
         finally { source.Release.TrySetResult(); }
-        await viewer.MeasurementContext.Completion.WaitAsync(TimeSpan.FromSeconds(3));
+        await viewer.QueryScheduler.Completion.WaitAsync(TimeSpan.FromSeconds(3));
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
             Assert.False(window!.IsVisible);
@@ -99,7 +100,7 @@ public class QuerySchedulingTests
         Assert.Equal(42,pixel.Values[0]);
         Assert.False(region.Published);
     }
-    private sealed class UnsupportedRegion : IFrameMeasurement
+    private sealed class UnsupportedRegion : IFrameQueryClient
     {
         public bool Published;
         public QueryRequest? Capture(FrameDescriptor descriptor)=>new RegionStatisticsQueryRequest(new(Guid.Empty, 0), new PixelRegion(0,0,1,1), _=>Published=true);
@@ -118,7 +119,7 @@ public class QuerySchedulingTests
         public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
         public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
     }
-    private sealed class Client : IFrameMeasurement
+    private sealed class Client : IFrameQueryClient
     {
         public int Revision;public List<double> Values=[];public TaskCompletionSource Published=new(TaskCreationOptions.RunContinuationsAsynchronously);
         public QueryRequest? Capture(FrameDescriptor descriptor)=>new PixelQueryRequest(new(Guid.Empty, Revision), [new(0,0)], samples=>{Values.Add(samples![0].Gray);Published.TrySetResult();});

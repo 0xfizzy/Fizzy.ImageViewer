@@ -1,12 +1,12 @@
-using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using System.Globalization;
 
 namespace Fizzy.ImageViewer.PixelInfo;
 
-/// <summary>UI-thread state; sampling and time belong to MeasurementScheduler.</summary>
-internal sealed class PixelInfoState(Action<string?> display) : IFrameMeasurement
+/// <summary>UI-thread state; sampling and time belong to PixelQueryScheduler.</summary>
+internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClient
 {
     private readonly Guid _id = Guid.NewGuid();
     private FrameDescriptor? _descriptor;
@@ -15,7 +15,7 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameMeasuremen
     private long _positionVersion, _sessionVersion;
     private string? _text;
 
-    public MeasurementPolicy Policy => new(true, 10, TimeSpan.FromMilliseconds(300));
+    public QueryPolicy Policy => new(true, 10, TimeSpan.FromMilliseconds(300));
 
     public void Enable() { _enabled = true; _sessionVersion++; }
     public void Disable() { _enabled = false; Leave(); }

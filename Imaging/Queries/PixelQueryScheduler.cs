@@ -1,70 +1,16 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using System.Windows.Threading;
 
-namespace Fizzy.ImageViewer.Measurements;
-
-internal sealed class MeasurementSubscription(Action dispose) : IDisposable
-{
-    private Action? _dispose = dispose;
-    public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
-}
-
-internal readonly record struct QueryIdentity(Guid MeasurementId, long GeometryVersion, long SessionVersion = 0);
-internal enum ResultInvalidation { CoordinatesChanged, DescriptorChanged, NoTarget, NoFrame, Expired, Failed }
-internal readonly record struct MeasurementPolicy(bool AllowMovingResult = false, double? MaximumRate = null, TimeSpan? DisplayAge = null);
-internal abstract record QueryRequest(QueryIdentity Identity);
-internal sealed record PixelQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
-internal sealed record LineProfileQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
-internal sealed record RegionStatisticsQueryRequest(QueryIdentity Identity, PixelRegion Region, Action<RegionStatistics> Publish) : QueryRequest(Identity);
-internal abstract record QueryResult;
-internal sealed record SamplesResult(PixelSample[] Samples) : QueryResult;
-internal sealed record StatisticsResult(RegionStatistics Statistics) : QueryResult;
-internal sealed record FailedQueryResult : QueryResult;
-
-internal interface IFrameMeasurement
-{
-    MeasurementPolicy Policy => default;
-    QueryRequest? Capture(FrameDescriptor descriptor);
-    void ClearResult();
-    void InvalidateResult(ResultInvalidation reason) => ClearResult();
-    void ResultPublished(long frameId) { }
-}
-
-/// <summary>All time and thread boundaries are replaceable without constructing a Window.</summary>
-internal interface IMeasurementRuntime
-{
-    TimeSpan Now { get; }
-    IDisposable StartTicks(Action tick);
-    Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken token);
-    Task PublishAsync(Action action, CancellationToken token);
-}
-
-internal sealed class DispatcherMeasurementRuntime(Dispatcher dispatcher) : IMeasurementRuntime
-{
-    private readonly long _started = Stopwatch.GetTimestamp();
-    public TimeSpan Now => Stopwatch.GetElapsedTime(_started);
-    public IDisposable StartTicks(Action tick)
-    {
-        var timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMilliseconds(10) };
-        EventHandler handler = (_, _) => tick();
-        timer.Tick += handler; timer.Start();
-        return new MeasurementSubscription(() => { timer.Stop(); timer.Tick -= handler; });
-    }
-    public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken token) => Task.Run(action, token);
-    public Task PublishAsync(Action action, CancellationToken token) => dispatcher.InvokeAsync(action, DispatcherPriority.Background, token).Task;
-}
+namespace Fizzy.ImageViewer.Imaging.Queries;
 
 /// <summary>Single-flight batches: capture on UI, sample off UI, validate and publish on UI.</summary>
-internal sealed class MeasurementScheduler : IDisposable
+internal sealed class PixelQueryScheduler : IDisposable
 {
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
-    private readonly IMeasurementRuntime _runtime;
+    private readonly IQueryRuntime _runtime;
     private readonly IDisposable _ticks;
-    private readonly Dictionary<IFrameMeasurement, State> _states = [];
+    private readonly Dictionary<IFrameQueryClient, State> _states = [];
     private readonly CancellationTokenSource _stop = new();
     private readonly CancellationToken _token;
     private bool _disposed;
@@ -82,18 +28,18 @@ internal sealed class MeasurementScheduler : IDisposable
         public QueryIdentity? PublishedIdentity;
     }
     // A batch captures the frame identity and descriptor together with its owned lease.
-    private sealed record Entry(IFrameMeasurement Item, QueryRequest Request, State State);
+    private sealed record Entry(IFrameQueryClient Item, QueryRequest Request, State State);
     public PixelQueryOptions QueryOptions { get => _options; set { value.Validate(); _options = value; } }
     public PixelQueryMetrics QueryMetrics => new(Interlocked.Read(ref _batches), Interlocked.Read(ref _expired), Volatile.Read(ref _duration));
     public Task Completion { get; private set; } = Task.CompletedTask;
 
-    public MeasurementScheduler(Func<FrameLease?> acquire, ILogger logger, IMeasurementRuntime runtime)
+    public PixelQueryScheduler(Func<FrameLease?> acquire, ILogger logger, IQueryRuntime runtime)
     {
         _acquire = acquire; _logger = logger; _runtime = runtime;
         _token = _stop.Token;
         _ticks = runtime.StartTicks(Tick);
     }
-    public MeasurementSubscription Register(IFrameMeasurement item)
+    public QuerySubscription Register(IFrameQueryClient item)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_states.ContainsKey(item)) throw new InvalidOperationException("Already subscribed.");
@@ -133,7 +79,7 @@ internal sealed class MeasurementScheduler : IDisposable
                 { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.Expired); }
                 if (now >= state.Due && needsUpdate) due.Add(new(item, request, state));
             }
-            catch (Exception ex) { state.Valid = false; _logger.LogWarning(ex, "Measurement capture failed"); }
+            catch (Exception ex) { state.Valid = false; _logger.LogWarning(ex, "Pixel query capture failed"); }
         }
         if (current == null || !Completion.IsCompleted || due.Count == 0) return;
         due.Sort((a, b) => a.State.Due.CompareTo(b.State.Due));
@@ -201,7 +147,7 @@ internal sealed class MeasurementScheduler : IDisposable
             await _runtime.PublishAsync(() => Publish(frame, entries, results, started), _token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { _logger.LogWarning(ex, "Measurement batch failed"); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Pixel query batch failed"); }
         finally { frame.Dispose(); }
     }
 
@@ -224,7 +170,7 @@ internal sealed class MeasurementScheduler : IDisposable
                 }
                 var latest = entry.Item.Capture(current.Descriptor);
                 if (latest == null || !Equals(current.Descriptor, frame.Descriptor)) continue;
-                bool sameSession = latest.Identity.MeasurementId == entry.Request.Identity.MeasurementId &&
+                bool sameSession = latest.Identity.ClientId == entry.Request.Identity.ClientId &&
                     latest.Identity.SessionVersion == entry.Request.Identity.SessionVersion;
                 if (!sameSession || (!entry.Item.Policy.AllowMovingResult && latest.Identity != entry.Request.Identity)) continue;
                 if (_runtime.Now - started > _options.MaxResultAge)
@@ -245,9 +191,9 @@ internal sealed class MeasurementScheduler : IDisposable
             }
             catch (Exception ex)
             {
-                state.Valid = state.HasResult = false; _logger.LogWarning(ex, "Measurement publication failed");
+                state.Valid = state.HasResult = false; _logger.LogWarning(ex, "Pixel query publication failed");
                 try { entry.Item.InvalidateResult(ResultInvalidation.Failed); }
-                catch (Exception clearError) { _logger.LogWarning(clearError, "Measurement result cleanup failed"); }
+                catch (Exception clearError) { _logger.LogWarning(clearError, "Pixel query result cleanup failed"); }
             }
         }
     }

@@ -86,9 +86,11 @@ shutdown cleans both completed and unfinished scopes and waits for owned queries
 
 ## Query execution
 
-`MeasurementScheduler` runs one batch at a time. It captures typed pixel, line and
+`PixelQueryScheduler` runs one batch at a time. It captures typed pixel, line and
 region requests on the viewer STA, performs all pixel-source operations off STA,
-and publishes results on STA. Pixel and line coordinates share one gather call;
+and publishes results on STA. Viewer owns this shared imaging service. Measurement
+context and pixel HUD subscribe independently; disposing a measurement owner does not
+stop other query clients. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
 not discard successful pixel results. Query options control rates and result-age limits;
 query metrics report execution, and each batch owns its frame lease until completion.
@@ -111,7 +113,7 @@ This bounded-age policy prevents starvation when video arrives faster than queri
 finish. Changed descriptors and expired results are rejected. A result from an
 unchanged frozen frame remains valid without repeated queries.
 
-`IMeasurementRuntime` supplies monotonic time, ticks, worker execution and UI
+`IQueryRuntime` supplies monotonic time, ticks, worker execution and UI
 publication. Deterministic tests manually advance those boundaries without a real
 window or wall-clock waits. The production runtime uses DispatcherTimer,
 Stopwatch, Task.Run and Dispatcher publication.

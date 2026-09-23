@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Measurements;
@@ -72,7 +73,8 @@ public class MeasureToolProtocolTests
             Assert.Throws<KeyNotFoundException>(() => viewer.StartMeasure("changed"));
             Assert.True(viewer.UnregisterMeasureMethod("point"));
             Assert.False(viewer.UnregisterMeasureMethod("point"));
-            using var manager = new MeasureManager(new Controls.OverlayLayer(), () => null, NullLogger.Instance);
+            using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(viewer.UiDispatcher));
+            using var manager = new MeasureManager(new Controls.OverlayLayer(), () => null, queries, NullLogger.Instance);
             var original = new Probe(); manager.RegisterMethod(original);
             original.Id = "changed"; original.DisplayName = "Changed";
             var entry = Assert.Single(manager.RegisteredMethods);

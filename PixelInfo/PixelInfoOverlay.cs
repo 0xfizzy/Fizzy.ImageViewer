@@ -1,22 +1,22 @@
-using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Frames;
 using System.Windows.Input;
 
 namespace Fizzy.ImageViewer.PixelInfo;
 
-public sealed class PixelInfoOverlay : IFrameMeasurement, IDisposable
+public sealed class PixelInfoOverlay : IDisposable
 {
     private readonly ImageLayer _image;
-    private readonly MeasureContext _context;
+    private readonly PixelQueryScheduler _scheduler;
     private readonly PixelInfoState _state;
-    private MeasurementSubscription? _subscription;
+    private QuerySubscription? _subscription;
     public bool IsEnabled { get; private set; }
 
-    internal PixelInfoOverlay(ImageLayer image, HudLayer hud, MeasureContext context)
+    internal PixelInfoOverlay(ImageLayer image, HudLayer hud, PixelQueryScheduler scheduler)
     {
         _image = image;
-        _context = context;
+        _scheduler = scheduler;
         _state = new(text =>
         {
             if (text != null) hud.UpdatePixelInfo(text.AsSpan());
@@ -27,7 +27,7 @@ public sealed class PixelInfoOverlay : IFrameMeasurement, IDisposable
     public void Enable()
     {
         if (IsEnabled) return;
-        _subscription = _context.Register(this);
+        _subscription = _scheduler.Register(_state);
         IsEnabled = true;
         _state.Enable();
         _image.ImageMouseMove += Move;
@@ -46,9 +46,5 @@ public sealed class PixelInfoOverlay : IFrameMeasurement, IDisposable
     }
     private void Move(double x, double y) => _state.Move(x, y);
     private void Leave(object sender, MouseEventArgs e) => _state.Leave();
-    MeasurementPolicy IFrameMeasurement.Policy => _state.Policy;
-    QueryRequest? IFrameMeasurement.Capture(FrameDescriptor descriptor) => _state.Capture(descriptor);
-    void IFrameMeasurement.InvalidateResult(ResultInvalidation reason) => _state.InvalidateResult(reason);
-    public void ClearResult() => _state.ClearResult();
     public void Dispose() => Disable();
 }

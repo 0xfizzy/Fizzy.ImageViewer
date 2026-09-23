@@ -62,7 +62,7 @@ completion subscriber. Run the focused suite with:
 dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release --filter FullyQualifiedName~MeasurementReentryTests
 ```
 
-`MeasurementSchedulerTests` use a manual clock and execution/publication queues for
+`PixelQuerySchedulerTests` use a manual clock and execution/publication queues for
 batching, independent rates, expiration, failed queries, stale geometry,
 re-registration and cancellation ownership. `MeasurementInteractionTests` cover
 corner crossing, model/query/export consistency, label updates, invalid editing,
@@ -81,7 +81,7 @@ measurement. Close the viewer during a preview and with a completed line-profile
 window open, then confirm both windows close and `DisposeAsync` completes. These
 checks use synthetic frames and do not require camera or motion hardware.
 
-Pixel HUD cases in `MeasurementSchedulerTests` cover the completion-based 10 Hz
+Pixel HUD cases in `PixelQuerySchedulerTests` cover the completion-based 10 Hz
 cap, lower configured rates, moving results, 300 ms retention, failures, expiration,
 session changes and stationary video updates without real-clock sleeps.
 `PixelInfoStateTests` cover coordinate/value pairing, immediate invalid-target

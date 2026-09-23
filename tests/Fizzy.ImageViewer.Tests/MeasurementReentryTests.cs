@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Editing;
@@ -32,13 +33,15 @@ public class MeasurementReentryTests
         internal readonly ImageLayer Input = new();
         internal readonly OverlayLayer Overlay = new();
         internal readonly ViewerLayers Layers;
+        internal readonly PixelQueryScheduler Queries;
         internal readonly MeasureManager Manager;
         internal readonly InteractionCoordinator Coordinator;
         internal Harness()
         {
             Layers = new(Input.TransformGroup);
             Layers.Measurements.Root.Children.Add(Overlay);
-            Manager = new(Overlay, () => null, NullLogger.Instance);
+            Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
+            Manager = new(Overlay, () => null, Queries, NullLogger.Instance);
             Coordinator = new(Input, Overlay, new EditManager(Overlay, Manager.Context), Manager, Layers);
         }
         internal void AssertActive(string id)
@@ -48,7 +51,7 @@ public class MeasurementReentryTests
             Assert.True(Layers.InputSuppressed);
             Assert.Same(Cursors.Pen, Input.Container.Cursor);
         }
-        public void Dispose() { try { Coordinator.Dispose(); } finally { Manager.Dispose(); } }
+        public void Dispose() { try { Coordinator.Dispose(); } finally { Manager.Dispose(); Queries.Dispose(); } }
     }
 
     [Theory]

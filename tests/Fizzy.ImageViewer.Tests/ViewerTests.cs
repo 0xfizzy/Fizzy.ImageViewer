@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
@@ -297,7 +298,7 @@ public class ViewerTests
         finally { await viewer.DisposeAsync(); }
     }
 
-    private sealed class TestMeasurement : IFrameMeasurement
+    private sealed class TestMeasurement : IFrameQueryClient
     {
         public double Value;
         public bool Disposed;

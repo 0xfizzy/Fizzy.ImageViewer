@@ -44,10 +44,4 @@ public partial class Viewer
         InvokeAlive(() => _interaction!.Cancel());
     }
 
-    public Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions
-    {
-        get => InvokeAlive(() => _measureManager!.Context.QueryOptions);
-        set => InvokeAlive(() => _measureManager!.Context.QueryOptions = value);
-    }
-    public Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics => InvokeAlive(() => _measureManager!.Context.QueryMetrics);
 }

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements.Methods;

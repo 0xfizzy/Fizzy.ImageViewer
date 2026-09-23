@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
@@ -16,7 +17,7 @@ internal interface IMeasurementContext
     void Attach(MeasurementItem item);
     void Detach(MeasurementItem item);
     void NotifyCompleted(MeasurementItem item);
-    MeasurementSubscription Register(IFrameMeasurement item);
+    QuerySubscription Register(IFrameQueryClient item);
     void AttachScopeShape(MeasurementScope scope, UIElement shape);
     void DetachScope(MeasurementScope scope, IReadOnlyCollection<UIElement> shapes);
 }

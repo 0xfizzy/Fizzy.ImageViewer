@@ -34,6 +34,7 @@ public partial class Viewer
 
         Cleanup(() => _interaction?.Dispose());
         Cleanup(() => _pixelInfoOverlay?.Disable());
+        Cleanup(() => _queryScheduler?.Dispose());
         Cleanup(() => _measureManager?.Dispose());
         Cleanup(() => _window?.Layers.Close());
         Cleanup(CloseHud);
@@ -62,7 +63,7 @@ public partial class Viewer
                 }
                 catch (TaskCanceledException) { }
             }
-            await Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+            await Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _queryScheduler?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
             _lifetime.Complete();
             if (_window?.ClosingError is { } error) _disposeCompletion.TrySetException(error);
             else _disposeCompletion.TrySetResult();

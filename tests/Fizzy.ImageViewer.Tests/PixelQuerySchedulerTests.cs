@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
@@ -6,9 +7,9 @@ using Xunit;
 
 namespace Fizzy.ImageViewer.Tests;
 
-public class MeasurementSchedulerTests
+public class PixelQuerySchedulerTests
 {
-    private sealed class Runtime : IMeasurementRuntime
+    private sealed class Runtime : IQueryRuntime
     {
         public TimeSpan Now { get; set; }
         public Action? Tick;
@@ -16,7 +17,7 @@ public class MeasurementSchedulerTests
         public readonly Queue<Action> Publications = new();
         public TaskCompletionSource PublicationQueued = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool InWorker, InPublisher;
-        public IDisposable StartTicks(Action tick) { Tick = tick; return new MeasurementSubscription(() => Tick = null); }
+        public IDisposable StartTicks(Action tick) { Tick = tick; return new QuerySubscription(() => Tick = null); }
         public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken token)
         {
             var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -44,7 +45,7 @@ public class MeasurementSchedulerTests
             PublicationQueued.TrySetResult();
             return tcs.Task;
         }
-        public async Task Finish(MeasurementScheduler scheduler)
+        public async Task Finish(PixelQueryScheduler scheduler)
         {
             await Work.Dequeue()();
             await PublicationQueued.Task.WaitAsync(TimeSpan.FromSeconds(3));
@@ -55,7 +56,7 @@ public class MeasurementSchedulerTests
             await scheduler.Completion;
         }
     }
-    private sealed class Client(Runtime runtime, int kind = 0) : IFrameMeasurement
+    private sealed class Client(Runtime runtime, int kind = 0) : IFrameQueryClient
     {
         public readonly Guid Id = Guid.NewGuid();
         public long Version;
@@ -116,7 +117,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
         { QueryOptions = new() { PixelRate = 20, LineRate = 10, RegionRate = 5, MaxResultAge = TimeSpan.FromSeconds(5) } };
         var pixel = new Client(runtime); var line = new Client(runtime, 1); var region = new Client(runtime, 2);
         using var p = scheduler.Register(pixel); using var l = scheduler.Register(line); using var r = scheduler.Register(region);
@@ -141,7 +142,7 @@ public class MeasurementSchedulerTests
     public async Task GeometryChangeAndReRegistrationRejectInFlightResults()
     {
         var runtime = new Runtime(); using var frame = Frame(new(runtime));
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var changed = new Client(runtime); var removed = new Client(runtime); var disabled = new Client(runtime);
         using var a = scheduler.Register(changed); var old = scheduler.Register(removed); using var d = scheduler.Register(disabled);
         runtime.Tick!(); changed.Version++; disabled.Enabled = false; old.Dispose(); old.Dispose();
@@ -157,7 +158,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var pixel = new Client(runtime); var region = new Client(runtime, 2);
         using var p = scheduler.Register(pixel); using var r = scheduler.Register(region);
         runtime.Tick!(); runtime.Now = TimeSpan.FromMilliseconds(101); await runtime.Finish(scheduler);
@@ -175,7 +176,7 @@ public class MeasurementSchedulerTests
     public async Task PublicationFailureDoesNotBlockOtherSubscribers()
     {
         var runtime = new Runtime(); using var frame = Frame(new(runtime));
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var bad = new Client(runtime) { ThrowOnPublish = true }; var good = new Client(runtime);
         using var b = scheduler.Register(bad); using var g = scheduler.Register(good);
         runtime.Tick!(); await runtime.Finish(scheduler);
@@ -187,7 +188,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); int released = 0;
         var frame = Frame(new(runtime), () => released++);
-        var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var client = new Client(runtime); using var subscription = scheduler.Register(client);
         runtime.Tick!(); scheduler.Dispose(); scheduler.Dispose(); frame.Dispose();
         Assert.Null(runtime.Tick); Assert.Equal(0, released);
@@ -200,7 +201,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); int released = 0;
         var frame = Frame(new(runtime), () => released++);
-        var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var client = new Client(runtime); using var subscription = scheduler.Register(client);
         runtime.Tick!(); await runtime.Work.Dequeue()();
         await runtime.PublicationQueued.Task.WaitAsync(TimeSpan.FromSeconds(3));
@@ -219,7 +220,7 @@ public class MeasurementSchedulerTests
         using var old = Frame(new(runtime));
         using var resized = ImageFrame.Copy(new(3, 1, 3, FramePixelFormat.Gray8), new byte[] { 1, 2, 3 }).Transfer();
         var current = old;
-        using var scheduler = new MeasurementScheduler(() => current.Acquire(), NullLogger.Instance, runtime);
+        using var scheduler = new PixelQueryScheduler(() => current.Acquire(), NullLogger.Instance, runtime);
         var client = new Client(runtime); using var subscription = scheduler.Register(client);
         runtime.Tick!(); current = resized;
         await runtime.Finish(scheduler); Assert.Equal(0, client.Published);
@@ -232,7 +233,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
         { QueryOptions = new() { PixelRate = rate } };
         string? text = null;
         var hud = new PixelInfo.PixelInfoState(value => text = value);
@@ -266,7 +267,7 @@ public class MeasurementSchedulerTests
     {
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
-        using var scheduler = new MeasurementScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
         { QueryOptions = new() { PixelRate = 2 } };
         string? text = null;
         var hud = new PixelInfo.PixelInfoState(value => text = value);
@@ -305,7 +306,7 @@ public class MeasurementSchedulerTests
         using var frame = Frame(new(runtime));
         using var resized = ImageFrame.Copy(new(3, 1, 3, FramePixelFormat.Gray8), new byte[] { 1, 2, 3 }).Transfer();
         FrameLease? current = frame;
-        using var scheduler = new MeasurementScheduler(() => current?.Acquire(), NullLogger.Instance, runtime);
+        using var scheduler = new PixelQueryScheduler(() => current?.Acquire(), NullLogger.Instance, runtime);
         string? text = null;
         var hud = new PixelInfo.PixelInfoState(value => text = value);
         hud.Enable(); hud.Move(0, 0);
