@@ -51,9 +51,9 @@ public class MeasurementInteractionTests
 
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
-        var method = new RectMeasure();
-        method.OnClick(new(2, 2), viewer.MeasurementContext);
-        method.OnClick(new(6, 6), viewer.MeasurementContext);
+        var method = new RectTool(viewer.MeasurementContext);
+        method.OnClick(new(2, 2));
+        method.OnClick(new(6, 6));
         var shape = Overlay(viewer).Canvas.Children.OfType<Rectangle>().Last();
         return viewer.MeasurementContext.Find(shape)!;
     }
@@ -135,7 +135,7 @@ public class MeasurementInteractionTests
             overlay.EnterEditMode(invalid);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.Empty(viewer.Interaction.Editor.Handles);
-            var tool = new PointMeasure(); tool.OnClick(new(3, 4), viewer.MeasurementContext);
+            var tool = new PointTool(viewer.MeasurementContext); tool.OnClick(new(3, 4));
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
             overlay.EnterEditMode(point);
             Assert.Equal(InteractionMode.Editing, viewer.Interaction.Mode);
@@ -253,7 +253,7 @@ public class MeasurementInteractionTests
             var editor = new EditManager(overlay, measure.Context);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(image, overlay, editor, measure, layers, capture);
-            var tool = new RectMeasure(); tool.OnClick(new(2, 2), measure.Context); tool.OnClick(new(6, 6), measure.Context);
+            var tool = new RectTool(measure.Context); tool.OnClick(new(2, 2)); tool.OnClick(new(6, 6));
             var shape = overlay.Canvas.Children.OfType<Rectangle>().Single();
             coordinator.StartEditing(shape);
             Assert.Equal(action != "failed", coordinator.BeginDrag(new(2, 2)));

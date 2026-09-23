@@ -385,18 +385,18 @@ public class DrawingTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            foreach (Interfaces.IMeasureMethod method in new Interfaces.IMeasureMethod[] {
-                new MeasureMethods.PointMeasure(), new MeasureMethods.LineMeasure(), new MeasureMethods.RectMeasure() })
+            foreach (Measurements.IMeasureTool method in new Measurements.IMeasureTool[] {
+                new MeasureMethods.PointTool(viewer.MeasurementContext), new MeasureMethods.LineTool(viewer.MeasurementContext), new MeasureMethods.RectTool(viewer.MeasurementContext) })
             {
-                bool done = method.OnClick(new(10, 10), viewer.MeasurementContext);
+                bool done = method.OnClick(new(10, 10));
                 if (!done)
                 {
-                    method.OnMouseMove(new(50, 50), viewer.MeasurementContext);
+                    method.OnMouseMove(new(50, 50));
                     Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
-                    method.Cancel(viewer.MeasurementContext);
+                    method.Cancel();
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-                    Assert.False(method.OnClick(new(10, 10), viewer.MeasurementContext));
-                    Assert.True(method.OnClick(new(50, 50), viewer.MeasurementContext));
+                    Assert.False(method.OnClick(new(10, 10)));
+                    Assert.True(method.OnClick(new(50, 50)));
                 }
                 Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
                 viewer.Layers.Measurements.Clear();

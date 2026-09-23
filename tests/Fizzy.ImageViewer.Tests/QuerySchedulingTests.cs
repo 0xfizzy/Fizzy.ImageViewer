@@ -19,9 +19,9 @@ public class QuerySchedulingTests
         ScottPlot.WPF.WpfPlot? plot=null;
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
-            var method=new MeasureMethods.LineStrengthMeasure();
-            method.OnClick(new(0,0),viewer.MeasurementContext);
-            method.OnClick(new(1,0),viewer.MeasurementContext);
+            var method=new MeasureMethods.LineStrengthTool(viewer.MeasurementContext);
+            method.OnClick(new(0,0));
+            method.OnClick(new(1,0));
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
                 .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is ScottPlot.WPF.WpfPlot);
             plot=(ScottPlot.WPF.WpfPlot)window.Content;

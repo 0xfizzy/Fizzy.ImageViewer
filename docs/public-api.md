@@ -13,7 +13,7 @@ but there is no protected window or supported raw-window access.
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
 | Drawing | `Layers`, `ViewerLayers`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
-| Measurements | tool IDs, built-in tools, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
+| Measurements | tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasureMethod`, `IMeasureToolContext`, `IMeasurementScope` |
 
 ## Threads and window lifetime
@@ -57,6 +57,9 @@ See [measurement contracts](measurements.md). Arbitrary custom control-point edi
 are not a public extension point. Built-in editing remains supported.
 
 ## Internal implementation
+
+Built-in measurement tool implementations are internal; use
+`StartMeasure(MeasureToolIds.Point)` (or another built-in ID) to activate them.
 
 `ViewerWindow`, `MenuManager`, WPF image/overlay/HUD layer controls, control-point visuals, all shape
 editors and their registry, `MeasurementItem`, `MeasurementGeometry`, scheduling and

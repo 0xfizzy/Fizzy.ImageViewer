@@ -102,6 +102,13 @@ case-sensitive; blank IDs or display names are rejected. `StartMeasure` throws
 measurement layer is hidden. `UnregisterMeasureMethod(id)` returns whether an entry
 was removed. Call `CancelMeasure()` to end the active interaction session.
 
+Built-in tool classes are internal and receive their internal context at construction.
+The manager executes all tools through one internal protocol and registry; a small
+adapter supplies the public context to custom tool callbacks. Built-ins are started
+only by their tool IDs, rather than by constructing or inheriting tool classes.
+Custom scopes do not participate in built-in completion/removal events, model editing
+or the internal query scheduler.
+
 The public extension boundary consists of `IMeasureMethod` and the `IMeasureToolContext` capability facade.
 Custom tools should use `IMeasureToolContext.CreateScope()` to obtain an
 `IMeasurementScope`. Register visuals with `AddShape`, disposable resources with

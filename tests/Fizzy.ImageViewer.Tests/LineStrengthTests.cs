@@ -15,11 +15,11 @@ public class LineStrengthTests
     private static Window[] Windows() => PresentationSource.CurrentSources.OfType<HwndSource>()
         .Select(source => source.RootVisual).OfType<Window>().ToArray();
 
-    private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthMeasure method, OverlayLayer overlay)
+    private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthTool method, OverlayLayer overlay)
     {
         var before = Windows();
-        Assert.False(method.OnClick(new(0, 0), viewer.MeasurementContext));
-        Assert.True(method.OnClick(new(1, 0), viewer.MeasurementContext));
+        Assert.False(method.OnClick(new(0, 0)));
+        Assert.True(method.OnClick(new(1, 0)));
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
 
@@ -32,7 +32,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthMeasure();
+            var method = new LineStrengthTool(viewer.MeasurementContext);
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             int removed = 0, closed = 0;
@@ -60,7 +60,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthMeasure();
+            var method = new LineStrengthTool(viewer.MeasurementContext);
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             viewer.MeasurementContext.Shutdown();
@@ -79,7 +79,7 @@ public class LineStrengthTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthMeasure();
+            var method = new LineStrengthTool(viewer.MeasurementContext);
             var first = Draw(viewer, method, overlay); var second = Draw(viewer, method, overlay);
             first.Window.Closed += (_, _) => closed++;
             second.Window.Closed += (_, _) => closed++;

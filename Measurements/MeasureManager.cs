@@ -9,9 +9,9 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Tool registry and measurement session execution, independent of input state.</summary>
 internal sealed class MeasureManager : IDisposable
 {
-    internal sealed record Registration(string Id, string DisplayName, IMeasureMethod Method);
+    internal sealed record Registration(string Id, string DisplayName, IMeasureTool Tool);
     private readonly Dictionary<string, Registration> _methods = new(StringComparer.Ordinal);
-    private IMeasureMethod? _active;
+    private IMeasureTool? _active;
     private bool _disposed;
     internal long SessionVersion { get; private set; }
     public Registration[] RegisteredMethods => _methods.Values.ToArray();
@@ -21,6 +21,12 @@ internal sealed class MeasureManager : IDisposable
     public Task Completion => Context.Completion;
     internal MeasureManager(OverlayLayer output, Func<FrameLease?> acquire, ILogger logger) => Context = new(output, acquire, logger);
     public void RegisterMethod(IMeasureMethod method)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(method);
+        RegisterTool(new CustomMeasureTool(method, Context));
+    }
+    internal void RegisterTool(IMeasureTool method)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(method);
@@ -41,19 +47,19 @@ internal sealed class MeasureManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!_methods.TryGetValue(name, out var method)) return false;
-        Cancel(); _active = method.Method; ActiveId = name; return true;
+        Cancel(); _active = method.Tool; ActiveId = name; return true;
     }
     internal bool Click(Point point)
     {
         if (_active == null) return true;
         var version = SessionVersion;
-        if (!_active.OnClick(point, Context)) return false;
+        if (!_active.OnClick(point)) return false;
         // A completion subscriber can restart even the same registered tool instance.
         if (version != SessionVersion) return false;
         _active = null; ActiveId = null; Context.CancelUncompletedScopes(); return true;
     }
-    internal void Move(Point point) => _active?.OnMouseMove(point, Context);
-    internal void Cancel() { SessionVersion++; var method = _active; _active = null; ActiveId = null; try { method?.Cancel(Context); } finally { Context.CancelUncompletedScopes(); } }
+    internal void Move(Point point) => _active?.OnMouseMove(point);
+    internal void Cancel() { SessionVersion++; var method = _active; _active = null; ActiveId = null; try { method?.Cancel(); } finally { Context.CancelUncompletedScopes(); } }
     internal void NotifyFrameCommitted(FrameInfo info) => Context.NotifyFrameCommitted(info);
     public void Dispose()
     {

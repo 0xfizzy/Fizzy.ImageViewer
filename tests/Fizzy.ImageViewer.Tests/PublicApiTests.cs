@@ -1,7 +1,6 @@
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interfaces;
-using Fizzy.ImageViewer.MeasureMethods;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;
@@ -60,7 +59,10 @@ public class PublicApiTests
     {
         var exported = typeof(Viewer).Assembly.GetExportedTypes();
         Assert.DoesNotContain(exported, t => t.Name is "ViewerWindow" or "MenuManager" || t.Namespace == "Fizzy.ImageViewer.Editing"
-            || t.Name is "ImageLayer" or "HudLayer" or "OverlayLayer" or "MeasurementItem" or "MeasurementGeometry");
+            || t.Name is "ImageLayer" or "HudLayer" or "OverlayLayer" or "MeasurementItem" or "MeasurementGeometry"
+            or "PointMeasure" or "LineMeasure" or "RectMeasure" or "LineStrengthMeasure"
+            or "PointTool" or "LineTool" or "RectTool" or "LineStrengthTool"
+            or "IMeasureTool" or "CustomMeasureTool" or "IMeasurementContext");
         var contract = typeof(IViewerAPI).GetMethods().Select(m => m.ToString()).ToHashSet();
         contract.UnionWith(typeof(IAsyncDisposable).GetMethods().Select(m => m.ToString()));
         foreach (var method in typeof(Viewer).GetMethods(System.Reflection.BindingFlags.Public |
@@ -79,13 +81,14 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, e) => removed.Add(e);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var tool = new LineMeasure();
-            tool.OnClick(new(1, 2), viewer.MeasurementContext);
+            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
-            tool.Cancel(viewer.MeasurementContext);
+            viewer.CancelMeasure();
             Assert.Empty(removed);
-            tool.OnClick(new(1, 2), viewer.MeasurementContext);
-            tool.OnClick(new(5, 6), viewer.MeasurementContext);
+            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.Interaction.ImageDown(1, 2);
+            viewer.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
             var item = viewer.WindowForTests.Layer1.Canvas.Children.OfType<System.Windows.Shapes.Line>()
                 .Select(s => viewer.MeasurementContext.Find(s)).Single(i => i != null)!;
@@ -110,10 +113,10 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, _) => removals++;
         EventHandler<MeasurementEventArgs> remove = (_, e) => e.Handle.Dispose();
         viewer.MeasurementCompleted += remove;
-        await viewer.UiDispatcher.InvokeAsync(() => new PointMeasure().OnClick(new(2, 3), viewer.MeasurementContext));
+        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);
         viewer.MeasurementCompleted -= remove;
-        await viewer.UiDispatcher.InvokeAsync(() => new PointMeasure().OnClick(new(4, 5), viewer.MeasurementContext));
+        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(4, 5); });
         await viewer.DisposeAsync();
         Assert.Equal(2, removals);
     }

@@ -79,10 +79,10 @@ public partial class Viewer
     private void RegisterBuiltInFeatures(ViewerWindow win, MeasureManager measureMgr, MenuManager menuMgr)
     {
         // 注册测量方法
-        measureMgr.RegisterMethod(new LineMeasure());
-        measureMgr.RegisterMethod(new PointMeasure());
-        measureMgr.RegisterMethod(new RectMeasure());
-        measureMgr.RegisterMethod(new LineStrengthMeasure());
+        measureMgr.RegisterTool(new LineTool(measureMgr.Context));
+        measureMgr.RegisterTool(new PointTool(measureMgr.Context));
+        measureMgr.RegisterTool(new RectTool(measureMgr.Context));
+        measureMgr.RegisterTool(new LineStrengthTool(measureMgr.Context));
 
         // 菜单注册 - 使用简化的 lambda API
         // Edit menu item (positioned before Delete)
