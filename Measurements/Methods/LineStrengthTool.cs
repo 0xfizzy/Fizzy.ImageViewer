@@ -9,22 +9,22 @@ internal sealed class LineStrengthTool(IMeasurementContext context) : LineTool(c
     public override string DisplayName => "Line strength";
     private protected override MeasurementItem CreateItem(IMeasurementContext context, Point start) => new LineStrengthItem(context, start);
 
-    private sealed class LineStrengthItem : MeasurementItem
+    private sealed class LineStrengthItem : MeasurementItem, IFrameQueryClient
     {
         private QueryRequest? _cached;
         private (long Version, Frames.FrameDescriptor Descriptor)? _cachedGeometry;
-        private Imaging.LineProfile _profile = new();
+        private QuerySubscription? _subscription;
         private LineProfilePlotView? _plotView;
         public LineStrengthItem(IMeasurementContext context, Point start)
             : base(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(context.Style), Shapes.CreateLabel(start, "", 5, 0, context.Style)) { }
         protected override void OnComplete()
         {
             _plotView = new LineProfilePlotView();
-            OwnWindow(_plotView.Window);
+            _plotView.Window.Closed += PlotClosed;
             _plotView.Window.Show();
-            Subscribe();
+            if (!IsDisposed) _subscription = Context.Register(this);
         }
-        public override QueryRequest? Capture(Frames.FrameDescriptor descriptor)
+        public QueryRequest? Capture(Frames.FrameDescriptor descriptor)
         {
             if (IsDisposed || !IsComplete) return null;
             var geometry = (Geometry.Version, descriptor);
@@ -33,17 +33,28 @@ internal sealed class LineStrengthTool(IMeasurementContext context) : LineTool(c
             var profile = new Imaging.LineProfile();
             var points = profile.Prepare(descriptor, Geometry.Start.X, Geometry.Start.Y, Geometry.End.X, Geometry.End.Y);
             return _cached = new LineProfileQueryRequest(new(Id, Geometry.Version), points, samples =>
-            { profile.Apply(samples); _profile = profile; Result = profile; Publish(); });
+            { if (IsDisposed) return; profile.Apply(samples); _plotView?.ShowProfile(profile); });
         }
-        public override void ClearResult()
+        protected override void OnGeometryChanged() => ClearResult();
+        public void ClearResult()
         {
-            base.ClearResult();
-            if (ResultWindow != null) _plotView?.Clear();
+            UpdateText();
+            _plotView?.Clear();
         }
-        private void Publish()
+        private void PlotClosed(object? sender, EventArgs args) => Dispose();
+        protected override void OnDisposing()
         {
-            if (IsDisposed || ResultWindow == null) return;
-            _plotView!.ShowProfile(_profile);
+            try { _subscription?.Dispose(); }
+            finally
+            {
+                var plot = _plotView; _plotView = null;
+                _cached = null; _cachedGeometry = null;
+                if (plot != null)
+                {
+                    plot.Window.Closed -= PlotClosed;
+                    plot.Window.Close();
+                }
+            }
         }
     }
 }

@@ -16,6 +16,33 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class LineStrengthTests
 {
+    private sealed class FailingResourceMeasurement(IMeasurementContext context)
+        : MeasurementItem(context, MeasurementGeometry.Point(new()), Shapes.CreatePoint(new()), Shapes.CreateLabel(new()))
+    {
+        protected override void OnDisposing() => throw new InvalidOperationException("resource cleanup failure");
+    }
+
+    [Fact]
+    public async Task ResourceFailureStillDetachesMeasurementAndAllowsRepeatedDisposal()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var overlay = viewer.WindowForTests.MeasurementOverlay;
+            var item = new FailingResourceMeasurement(viewer.MeasurementContext);
+            item.Complete();
+            int removed = 0;
+            viewer.MeasurementRemoved += (_, _) => removed++;
+            Assert.Throws<InvalidOperationException>(item.Dispose);
+            Assert.True(item.IsDisposed);
+            Assert.Null(viewer.MeasurementContext.Find(item.PrimaryVisual));
+            Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
+            Assert.Equal(1, removed);
+            item.Dispose();
+            Assert.Equal(1, removed);
+        });
+    }
+
     private static Window[] Windows() => PresentationSource.CurrentSources.OfType<HwndSource>()
         .Select(source => source.RootVisual).OfType<Window>().ToArray();
 
@@ -115,15 +142,14 @@ public class LineStrengthTests
             var pair = Draw(viewer, new LineStrengthTool(viewer.MeasurementContext), overlay);
             var item = viewer.MeasurementContext.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
-            var request = Assert.IsType<LineProfileQueryRequest>(item.Capture(descriptor));
+            var request = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             request.Publish([new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
             var plot = (ScottPlot.WPF.WpfPlot)pair.Window.Content;
             Assert.True(plot.Plot.GetPlottables<ScottPlot.Plottables.Scatter>().First().IsVisible);
 
             item.UpdateGeometry(MeasurementGeometry.Line(new(0, 0), new(2, 0)));
-            Assert.Null(item.Result);
             Assert.All(plot.Plot.GetPlottables<ScottPlot.Plottables.Scatter>(), curve => Assert.False(curve.IsVisible));
-            var updated = Assert.IsType<LineProfileQueryRequest>(item.Capture(descriptor));
+            var updated = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             Assert.NotEqual(request.Identity, updated.Identity);
             updated.Publish(Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), updated.Coordinates.Length).ToArray());
             var red = plot.Plot.GetPlottables<ScottPlot.Plottables.Scatter>().First();

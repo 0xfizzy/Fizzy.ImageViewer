@@ -13,7 +13,9 @@ pass `IMeasureToolContext.Style` to the optional `style` parameter of `Shapes.Cr
 omitting it uses immutable defaults. Shape helpers also snapshot supplied brushes.
 
 Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primary
-visual, label, result, query subscription and optional plot window. A context-owned
+visual and label. ROI and line-profile measurements implement query clients and own
+their subscriptions; the line-profile measurement alone owns its plot window.
+Plain points and lengths have no query or window state. A context-owned
 registry maps visuals to their owner using private attached metadata.
 Previews are owned items too; completing a preview enables its queries, and
 cancelling disposes it. Internal shape metadata contains only presentation state. `Tag` remains caller-owned.
@@ -35,8 +37,8 @@ subsequent editing does not change an already captured export request. Editing
 WPF properties directly is not a supported way to change built-in measurements.
 
 Deletion, clear, plot-window closure and viewer closure converge on idempotent
-item disposal: unsubscribe, detach/close the window, remove the label and primary
-visual, then discard results. Removing a visual notifies observers **after** it is
+item disposal: release specialized resources, then remove the label and primary
+visual even if a resource fails to close. Removing a visual notifies observers **after** it is
 removed, making repeated and reentrant removal harmless. Closing the viewer first
 stops interaction, cancels queries and disposes items, then clears layers and
 releases its frames. `DisposeAsync` waits for in-flight queries to release their own
@@ -110,7 +112,7 @@ interaction session. Session and descriptor changes still reject old work. Its
 completion-based 10 Hz cap and 300 ms display retention do not alter other tools'
 rates or geometry validation. See [pixel query contracts](frame-pipeline.md).
 
-A result retains the source frame ID. A newer frame with the same descriptor does
+The scheduler tracks the source frame ID of published results. A newer frame with the same descriptor does
 not by itself reject an in-flight result: it may publish within `MaxResultAge`.
 This bounded-age policy prevents starvation when video arrives faster than queries
 finish. Changed descriptors and expired results are rejected. A result from an

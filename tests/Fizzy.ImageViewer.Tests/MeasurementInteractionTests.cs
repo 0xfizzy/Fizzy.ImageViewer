@@ -89,7 +89,7 @@ public class MeasurementInteractionTests
             Assert.Equal(expected.Start, OverlayShapeData.Get(item.Label)!.AnchorPoint);
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
-            var request = Assert.IsType<RegionStatisticsQueryRequest>(item.Capture(frame!.Descriptor));
+            var request = Assert.IsType<RegionStatisticsQueryRequest>(((IFrameQueryClient)item).Capture(frame!.Descriptor));
             Assert.Equal(item.Geometry.ToRegion(frame.Descriptor), request.Region);
             Assert.Equal(item.Geometry.Version, request.Identity.GeometryVersion);
             viewer.FreezeMenuRegion(); frozen = viewer.AcquireMenuRegionSnapshot();

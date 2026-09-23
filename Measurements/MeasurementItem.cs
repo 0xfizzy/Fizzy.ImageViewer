@@ -1,27 +1,20 @@
-using Fizzy.ImageViewer.Imaging.Queries;
 using System.Windows;
 using System.Windows.Controls;
 using Fizzy.ImageViewer.Enums;
-using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Measurements;
 
-/// <summary>UI-thread owner of one measurement, including its query and optional result window.</summary>
-internal class MeasurementItem : IFrameQueryClient, IDisposable
+/// <summary>UI-thread owner of measurement geometry and visuals. Specialized measurements own their resources.</summary>
+internal class MeasurementItem : IDisposable
 {
     protected readonly IMeasurementContext Context;
     private readonly MeasurementDisplayAdapter _display;
-    private QuerySubscription? _subscription;
-    private Window? _window;
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }
     public UIElement PrimaryVisual { get; }
     public TextBlock Label { get; }
     public bool IsDisposed { get; private set; }
     public bool IsComplete { get; private set; }
-    public object? Result { get; protected set; }
-    public long? ResultFrameId { get; private set; }
-    protected Window? ResultWindow => _window;
     public IEnumerable<UIElement> Visuals => [PrimaryVisual, Label];
 
     public MeasurementItem(IMeasurementContext context, MeasurementGeometry geometry, UIElement primary, TextBlock label)
@@ -40,7 +33,7 @@ internal class MeasurementItem : IFrameQueryClient, IDisposable
         if (geometry.Start == Geometry.Start && geometry.End == Geometry.End) return;
         Geometry = geometry.WithVersion(Geometry.Version + 1);
         _display.Apply(Geometry);
-        ClearResult();
+        OnGeometryChanged();
     }
 
     public void Complete()
@@ -54,26 +47,9 @@ internal class MeasurementItem : IFrameQueryClient, IDisposable
     }
     protected virtual void OnComplete() { }
     internal bool CompletionNotified { get; set; }
-    protected void Subscribe() => _subscription ??= Context.Register(this);
-    protected void OwnWindow(Window window)
-    {
-        _window = window;
-        window.Closed += WindowClosed;
-    }
-    private void WindowClosed(object? sender, EventArgs args)
-    {
-        if (_window != null) _window.Closed -= WindowClosed;
-        _window = null;
-        Dispose();
-    }
-    public virtual QueryRequest? Capture(FrameDescriptor descriptor) => null;
-    public void ResultPublished(long frameId) => ResultFrameId = frameId;
-    public virtual void ClearResult()
-    {
-        Result = null; ResultFrameId = null;
-        if (!IsDisposed) UpdateText();
-    }
-    protected virtual void UpdateText() => Label.Text = Geometry.Kind switch
+    protected virtual void OnGeometryChanged() => UpdateText();
+    protected virtual void OnDisposing() { }
+    protected void UpdateText() => Label.Text = Geometry.Kind switch
     {
         ShapeType.Line => $"{(Geometry.End - Geometry.Start).Length:F1} px",
         ShapeType.Point => $"X:{Geometry.X:F2}\nY:{Geometry.Y:F2}",
@@ -83,15 +59,8 @@ internal class MeasurementItem : IFrameQueryClient, IDisposable
     {
         if (IsDisposed) return;
         IsDisposed = true;
-        _subscription?.Dispose(); _subscription = null;
-        var window = _window; _window = null;
-        if (window != null) window.Closed -= WindowClosed;
-        // Every step is attempted even when an external WPF event handler throws.
-        try { window?.Close(); }
-        finally
-        {
-            try { Context.Detach(this); }
-            finally { Result = null; ResultFrameId = null; }
-        }
+        // Visual detachment must still run when a specialized resource fails to close.
+        try { OnDisposing(); }
+        finally { Context.Detach(this); }
     }
 }
