@@ -1,8 +1,9 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Editing;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Managers;
+using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.MeasureMethods;
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Snapshots;

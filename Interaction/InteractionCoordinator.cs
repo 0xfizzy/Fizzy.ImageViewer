@@ -1,9 +1,11 @@
+using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Input;
 
-namespace Fizzy.ImageViewer.Managers;
+namespace Fizzy.ImageViewer.Interaction;
 
 internal enum InteractionMode { Idle, Editing, Measuring }
 

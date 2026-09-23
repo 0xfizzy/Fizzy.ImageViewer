@@ -4,7 +4,7 @@ using Fizzy.ImageViewer.Frames;
 using Microsoft.Extensions.Logging;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Managers;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Tool registry and measurement session execution, independent of input state.</summary>
 internal sealed class MeasureManager : IDisposable

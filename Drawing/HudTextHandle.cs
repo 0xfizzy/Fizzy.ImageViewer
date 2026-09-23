@@ -1,6 +1,6 @@
 using System.Windows.Media;
 
-namespace Fizzy.ImageViewer.Interfaces;
+namespace Fizzy.ImageViewer.Drawing;
 
 public sealed class HudTextHandle : IDisposable
 {

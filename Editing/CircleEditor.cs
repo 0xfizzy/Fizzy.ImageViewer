@@ -64,12 +64,4 @@ internal class CircleEditor : IShapeEditor
         }
     }
 
-    public string GetMeasurementText(UIElement shape)
-    {
-        if (shape is not Path path || path.Data is not EllipseGeometry ellipse)
-            return string.Empty;
-
-        return $"R = {ellipse.RadiusX:F1} px";
-    }
-
 }

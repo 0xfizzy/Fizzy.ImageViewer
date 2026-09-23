@@ -1,7 +1,9 @@
+using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Interfaces;
-using Fizzy.ImageViewer.Managers;
+using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.MeasureMethods;
-using Fizzy.ImageViewer.MenuItems;
+using Fizzy.ImageViewer.Menus;
 using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer;
@@ -84,7 +86,7 @@ public partial class Viewer
 
         // 菜单注册 - 使用简化的 lambda API
         // Edit menu item (positioned before Delete)
-        menuMgr.Register(new MenuItems.EditMenuItem(() =>
+        menuMgr.Register(new Menus.EditMenuItem(() =>
         {
             var shape = menuMgr.GetMenuTargetShape();
             if (shape != null)

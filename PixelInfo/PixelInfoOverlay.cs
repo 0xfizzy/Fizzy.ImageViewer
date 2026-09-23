@@ -43,8 +43,6 @@ public sealed class PixelInfoOverlay : IFrameMeasurement, IDisposable
         _subscription?.Dispose();
         _subscription = null;
     }
-
-    public void RequestUpdate() { }
     private void Move(double x, double y) => _state.Move(x, y);
     private void Leave(object sender, MouseEventArgs e) => _state.Leave();
     MeasurementPolicy IFrameMeasurement.Policy => _state.Policy;

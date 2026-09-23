@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Interfaces;
 using System;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.MenuItems;
+namespace Fizzy.ImageViewer.Menus;
 
 /// <summary>
 /// 通用菜单项，支持 lambda 回调。

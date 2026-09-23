@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Editing;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Managers;
+namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
 internal sealed class EditManager(OverlayLayer overlay, MeasureContext context, ShapeEditorRegistry? registry = null)

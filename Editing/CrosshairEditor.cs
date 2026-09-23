@@ -33,12 +33,4 @@ internal class CrosshairEditor : IShapeEditor
         }
     }
 
-    public string GetMeasurementText(UIElement shape)
-    {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
-            return string.Empty;
-
-        return $"({data.AnchorPoint.X:F1}, {data.AnchorPoint.Y:F1})";
-    }
-
 }

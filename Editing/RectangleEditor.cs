@@ -79,12 +79,4 @@ internal class RectangleEditor : IShapeEditor
         }
     }
 
-    public string GetMeasurementText(UIElement shape)
-    {
-        if (shape is not Rectangle rect)
-            return string.Empty;
-
-        return $"{rect.Width:F1} x {rect.Height:F1} px";
-    }
-
 }

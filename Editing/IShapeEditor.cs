@@ -22,9 +22,4 @@ internal interface IShapeEditor
     /// <param name="newPosition">New position in image coordinates</param>
     void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition);
 
-    /// <summary>
-    /// Get current measurement text (e.g., "123.4 px" for line length).
-    /// </summary>
-    string GetMeasurementText(UIElement shape);
-
 }

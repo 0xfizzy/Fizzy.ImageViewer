@@ -1,5 +1,6 @@
 using Fizzy.ImageViewer.Internal;
 using Fizzy.ImageViewer.Enums;
+using Fizzy.ImageViewer.Drawing;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,14 +31,14 @@ public partial class Viewer
 
     /// <summary>Clears all business layers, including measurements, without clearing the HUD.</summary>
     public void ClearShapes() => Layers.Clear();
-    private readonly Dictionary<Interfaces.HudTextHandle, TextBlock> _hudTexts = [];
+    private readonly Dictionary<Drawing.HudTextHandle, TextBlock> _hudTexts = [];
 
     /// <summary>Creates HUD text with fixed layout. Update text and color through the returned handle.</summary>
-    public Interfaces.HudTextHandle DrawHudText(string text, Brush brush,
+    public Drawing.HudTextHandle DrawHudText(string text, Brush brush,
         Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft, double fontSize = 14)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var frozen = Interfaces.HudTextHandle.SnapshotBrush(brush);
+        var frozen = Drawing.HudTextHandle.SnapshotBrush(brush);
         if (!double.IsFinite(fontSize) || fontSize <= 0) throw new ArgumentOutOfRangeException(nameof(fontSize));
         if (anchor is { } point && (!double.IsFinite(point.X) || !double.IsFinite(point.Y))) throw new ArgumentOutOfRangeException(nameof(anchor));
         if (!Enum.IsDefined(alignment)) throw new ArgumentOutOfRangeException(nameof(alignment));
@@ -45,8 +46,8 @@ public partial class Viewer
         {
             var tb = anchor.HasValue ? _window.Layer2.AddTextAt(text, frozen, fontSize, anchor.Value, alignment)
                 : _window.Layer2.AddText(text, frozen, fontSize);
-            Interfaces.HudTextHandle? handle = null;
-            handle = new Interfaces.HudTextHandle((nextText, nextBrush) => InvokeAlive(() =>
+            Drawing.HudTextHandle? handle = null;
+            handle = new Drawing.HudTextHandle((nextText, nextBrush) => InvokeAlive(() =>
             {
                 ObjectDisposedException.ThrowIf(handle!.IsDisposed, handle);
                 _window.Layer2.UpdateText(tb, nextText, nextBrush);
@@ -56,7 +57,7 @@ public partial class Viewer
         });
     }
 
-    private void RemoveHud(Interfaces.HudTextHandle handle)
+    private void RemoveHud(Drawing.HudTextHandle handle)
     {
         if (_lifetime.IsStopping) return;
         try { _window.Dispatcher.Invoke(() =>

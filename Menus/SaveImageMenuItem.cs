@@ -4,7 +4,7 @@ using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Snapshots;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.MenuItems;
+namespace Fizzy.ImageViewer.Menus;
 
 public sealed class SaveImageMenuItem(Viewer viewer, bool raw, bool region = false) : IMenuItem
 {

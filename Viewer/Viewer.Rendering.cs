@@ -30,7 +30,6 @@ public partial class Viewer
         Notify(() => _measureManager?.NotifyFrameCommitted(frame.Info));
         foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
             Notify(() => handler(frame.Info));
-        Notify(() => _pixelInfoOverlay?.RequestUpdate());
     }
 
     private void Notify(Action action)

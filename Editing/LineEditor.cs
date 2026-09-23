@@ -37,13 +37,4 @@ internal class LineEditor : IShapeEditor
         }
     }
 
-    public string GetMeasurementText(UIElement shape)
-    {
-        if (shape is not Line line)
-            return string.Empty;
-
-        double dist = Math.Sqrt(Math.Pow(line.X2 - line.X1, 2) + Math.Pow(line.Y2 - line.Y1, 2));
-        return $"{dist:F1} px";
-    }
-
 }

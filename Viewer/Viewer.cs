@@ -1,6 +1,8 @@
+using Fizzy.ImageViewer.Menus;
+using Fizzy.ImageViewer.Measurements;
 using Microsoft.Extensions.Logging;
 using Fizzy.ImageViewer.Interfaces;
-using Fizzy.ImageViewer.Managers;
+using Fizzy.ImageViewer.Interaction;
 using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer;

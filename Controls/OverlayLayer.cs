@@ -4,7 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Fizzy.ImageViewer.Enums;
-using Fizzy.ImageViewer.Managers;
+using Fizzy.ImageViewer.Interaction;
 
 namespace Fizzy.ImageViewer.Controls;
 

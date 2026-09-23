@@ -1,3 +1,4 @@
+using WpfMenuItem = System.Windows.Controls.MenuItem;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Interfaces;
 using System;
@@ -5,7 +6,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Fizzy.ImageViewer.Managers
+namespace Fizzy.ImageViewer.Menus
 {
     internal sealed class MenuManager
     {
@@ -85,7 +86,7 @@ namespace Fizzy.ImageViewer.Managers
                 }
                 pendingSeparator = false; // 无论是否添加分隔符，都重置标志
 
-                var menuItem = new MenuItem { Header = item.Header };
+                var menuItem = new WpfMenuItem { Header = item.Header };
 
                 if (item is ICheckableMenuItem checkable)
                 {
