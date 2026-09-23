@@ -10,6 +10,7 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 dotnet build tools/FrameBenchmark/FrameBenchmark.csproj -c Release
 dotnet build tools/DrawingBenchmark/DrawingBenchmark.csproj -c Release
 dotnet build tools/ResizeBenchmark/ResizeBenchmark.csproj -c Release
+dotnet build tools/LineProfileBenchmark/LineProfileBenchmark.csproj -c Release
 dotnet pack Fizzy.ImageViewer.csproj -c Release -o artifacts
 ```
 
@@ -117,3 +118,16 @@ point fill selection and editing after metadata changes. Menu tests cover visibi
 check state, separator normalization and captured targets across closure/reopening.
 Measurement resource failure tests verify visual detachment and idempotent disposal
 even when specialized cleanup throws.
+
+## Line-profile allocations
+
+```powershell
+dotnet run --project tools/LineProfileBenchmark -c Release
+```
+
+The STA benchmark warms buffers, then reports managed bytes and time per update
+for 1024/4096 samples in gray/RGB. It separates data updates, changed/unchanged
+WPF drawing commands and offscreen `RenderTargetBitmap` rendering. One red sample
+changes per update; RGB changes rebuild all channels to preserve shared scaling.
+Drawing measurements include the harness drawing context; they exclude sampling,
+window composition and native allocations. They do not establish a zero-GC frame pipeline.

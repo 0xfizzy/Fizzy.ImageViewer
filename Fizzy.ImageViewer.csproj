@@ -24,8 +24,6 @@
   <ItemGroup>
     <PackageReference Include="BitMiracle.LibTiff.NET" Version="2.4.660" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
-    <PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
-    <PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.0" NoWarn="NU1701" />
     <None Include="README.md" Pack="true" PackagePath="/" />
     <None Include="assets/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>

@@ -35,5 +35,7 @@ jobs:
         run: dotnet build tools/DrawingBenchmark/DrawingBenchmark.csproj -c Release --no-restore
       - name: Build resize benchmark
         run: dotnet build tools/ResizeBenchmark/ResizeBenchmark.csproj -c Release --no-restore
+      - name: Build line-profile benchmark
+        run: dotnet build tools/LineProfileBenchmark/LineProfileBenchmark.csproj -c Release
       - name: Pack
         run: dotnet pack Fizzy.ImageViewer.csproj -c Release --no-restore -o artifacts/ci

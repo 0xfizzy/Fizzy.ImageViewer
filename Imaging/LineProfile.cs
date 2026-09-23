@@ -43,7 +43,7 @@ internal sealed class LineProfile
         }
         return coordinates;
     }
-    public void Apply(PixelSample[] samples)
+    public void Apply(ReadOnlySpan<PixelSample> samples)
     {
         for(int i=0;i<samples.Length;i++) { var p=samples[i]; IsGray=p.IsGrayscale; Red[i]=p.IsGrayscale?p.Gray:p.R; Green[i]=p.G; Blue[i]=p.B; }
         Count=samples.Length;

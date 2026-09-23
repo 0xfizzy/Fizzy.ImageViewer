@@ -218,3 +218,18 @@ measurement items own their subscription handles; the pixel HUD is a separate
 subscriber owned by the viewer.
 
 
+
+## Line-profile rendering
+
+The X axis represents sample index and the Y axis pixel value. Both show numeric
+ticks without axis titles. Horizontal/vertical dashed grids use lighter minor lines.
+Curves use muted RGB colors and rounded joins without smoothing the samples. Tick spacing
+adapts to the window size; axis drawings are cached until size, range or DPI changes.
+The plot uses native WPF drawing with frozen shared pens and cached curve geometry.
+Unchanged samples retain the geometry; data changes and resizing rebuild it.
+Within each physical pixel column, rendering retains each finite run's endpoints
+and minimum/maximum in sample order. Non-finite samples remain gaps. This bounds
+dense curve detail by display resolution without changing raw measurement samples.
+Sample buffers grow geometrically and remain owned by their plot. Query publication
+uses read-only spans into the batch result; callbacks consume them synchronously.
+WPF geometry serialization and frame queries still allocate when data changes.

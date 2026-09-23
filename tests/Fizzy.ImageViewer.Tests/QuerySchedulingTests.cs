@@ -18,15 +18,15 @@ public class QuerySchedulingTests
         await using var viewer=Viewer();
         var source=new ControlledSource();
         System.Windows.Window? window=null;
-        ScottPlot.WPF.WpfPlot? plot=null;
+        Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl? plot=null;
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
             var method=new Measurements.BuiltIn.LineStrengthTool(viewer.MeasurementContext);
             method.OnClick(new(0,0));
             method.OnClick(new(1,0));
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
-                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is ScottPlot.WPF.WpfPlot);
-            plot=(ScottPlot.WPF.WpfPlot)window.Content;
+                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl);
+            plot=(Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl)window.Content;
         });
         await viewer.SubmitFrameAsync(Frame(source,()=>{}));
         try
@@ -39,7 +39,8 @@ public class QuerySchedulingTests
         await viewer.UiDispatcher.InvokeAsync(()=>
         {
             Assert.False(window!.IsVisible);
-            Assert.Empty(plot!.Plot.GetPlottables());
+            Assert.Equal(0, plot!.SampleCount);
+            Assert.Equal(0, plot.ChannelCount);
             var overlay=viewer.Layers.Measurements.Root.Children.OfType<Controls.OverlayLayer>().Single();
             Assert.Empty(overlay.Canvas.Children.Cast<System.Windows.UIElement>());
         });

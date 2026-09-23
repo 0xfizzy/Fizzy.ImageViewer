@@ -112,6 +112,31 @@ public class PixelQuerySchedulerTests
         return frame;
     }
 
+    private sealed class SliceClient(QueryRequest request) : IFrameQueryClient
+    {
+        public QueryRequest Capture(FrameDescriptor descriptor) => request;
+        public void ClearResult() { }
+    }
+
+    [Fact]
+    public async Task MergedSamplesPublishOnlyEachRequestsSlice()
+    {
+        var runtime = new Runtime();
+        using var frame = ImageFrame.Copy(new(3, 1, 3, FramePixelFormat.Gray8), new byte[] { 11, 22, 33 }).Transfer();
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        double[]? pixelValues = null, lineValues = null;
+        var pixel = new SliceClient(new PixelQueryRequest(new(Guid.NewGuid(), 0), [new(2, 0)],
+            samples => pixelValues = samples.ToArray().Select(p => p.Gray).ToArray()));
+        var line = new SliceClient(new LineProfileQueryRequest(new(Guid.NewGuid(), 0), [new(0, 0), new(1, 0)],
+            samples => lineValues = samples.ToArray().Select(p => p.Gray).ToArray()));
+        using var a = scheduler.Register(pixel);
+        using var b = scheduler.Register(line);
+        runtime.Tick!();
+        await runtime.Finish(scheduler);
+        Assert.Equal(new double[] { 33 }, pixelValues);
+        Assert.Equal(new double[] { 11, 22 }, lineValues);
+    }
+
     [Fact]
     public async Task BatchesTypedRequestsAndHonorsIndependentRatesWithoutSleeping()
     {

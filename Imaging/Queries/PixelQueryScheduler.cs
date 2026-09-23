@@ -28,7 +28,7 @@ internal sealed class PixelQueryScheduler : IDisposable
         public QueryIdentity? PublishedIdentity;
     }
     // A batch captures the frame identity and descriptor together with its owned lease.
-    private sealed record Entry(IFrameQueryClient Item, QueryRequest Request, State State);
+    private readonly record struct Entry(IFrameQueryClient Item, QueryRequest Request, State State);
     public PixelQueryOptions QueryOptions { get => _options; set { value.Validate(); _options = value; } }
     public PixelQueryMetrics QueryMetrics => new(Interlocked.Read(ref _batches), Interlocked.Read(ref _expired), Volatile.Read(ref _duration));
     public Task Completion { get; private set; } = Task.CompletedTask;
@@ -49,10 +49,10 @@ internal sealed class PixelQueryScheduler : IDisposable
 
     internal void Tick()
     {
-        if (_disposed) return;
+        if (_disposed || _states.Count == 0) return;
         using var current = _acquire();
         var now = _runtime.Now;
-        var due = new List<Entry>();
+        List<Entry>? due = null;
         foreach (var pair in _states.ToArray())
         {
             var item = pair.Key; var state = pair.Value;
@@ -66,9 +66,9 @@ internal sealed class PixelQueryScheduler : IDisposable
                 }
                 var request = item.Capture(current.Descriptor);
                 if (request == null) { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.NoTarget); continue; }
-                if (state.Identity != request.Identity || !Equals(state.Descriptor, current.Descriptor))
+                if (state.Identity != request.Identity || state.Descriptor != current.Descriptor)
                 {
-                    bool descriptorChanged = !Equals(state.Descriptor, current.Descriptor);
+                    bool descriptorChanged = state.Descriptor != current.Descriptor;
                     state.Valid = false; state.Identity = request.Identity; state.Descriptor = current.Descriptor;
                     if (!item.Policy.AllowMovingResult) state.Due = TimeSpan.Zero;
                     if (descriptorChanged) state.HasResult = false;
@@ -77,11 +77,12 @@ internal sealed class PixelQueryScheduler : IDisposable
                 bool needsUpdate = !state.Valid || state.Frame != current.Info.FrameId || state.PublishedIdentity != request.Identity;
                 if (state.HasResult && needsUpdate && now - state.Started > (item.Policy.DisplayAge ?? _options.MaxResultAge))
                 { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.Expired); }
-                if (now >= state.Due && needsUpdate) due.Add(new(item, request, state));
+                if (Completion.IsCompleted && now >= state.Due && needsUpdate)
+                    (due ??= []).Add(new(item, request, state));
             }
             catch (Exception ex) { state.Valid = false; _logger.LogWarning(ex, "Pixel query capture failed"); }
         }
-        if (current == null || !Completion.IsCompleted || due.Count == 0) return;
+        if (current == null || !Completion.IsCompleted || due == null) return;
         due.Sort((a, b) => a.State.Due.CompareTo(b.State.Due));
         foreach (var entry in due)
         {
@@ -106,7 +107,29 @@ internal sealed class PixelQueryScheduler : IDisposable
 
     private async Task<QueryResult[]> ExecuteBatchAsync(FrameLease frame, List<Entry> entries)
     {
-        var coordinates = entries.SelectMany(e => Coordinates(e.Request)).ToArray();
+        // A single query already owns an immutable coordinate array. Reuse it;
+        // for mixed batches copy once, without LINQ iterators or intermediate arrays.
+        PixelCoordinate[] coordinates = [];
+        int coordinateCount = 0, coordinateRequests = 0;
+        foreach (var entry in entries)
+        {
+            var points = Coordinates(entry.Request);
+            if (points.Length == 0) continue;
+            coordinates = points;
+            coordinateCount += points.Length;
+            coordinateRequests++;
+        }
+        if (coordinateRequests > 1)
+        {
+            coordinates = new PixelCoordinate[coordinateCount];
+            int destination = 0;
+            foreach (var entry in entries)
+            {
+                var points = Coordinates(entry.Request);
+                points.CopyTo(coordinates, destination);
+                destination += points.Length;
+            }
+        }
         PixelSample[]? samples = [];
         try
         {
@@ -130,7 +153,7 @@ internal sealed class PixelQueryScheduler : IDisposable
             else
             {
                 var count = Coordinates(request).Length;
-                output[i] = samples == null ? new FailedQueryResult() : new SamplesResult(samples.AsSpan(offset, count).ToArray());
+                output[i] = samples == null ? new FailedQueryResult() : new SamplesResult(samples.AsMemory(offset, count));
                 offset += count;
             }
         }
@@ -169,7 +192,7 @@ internal sealed class PixelQueryScheduler : IDisposable
                     continue;
                 }
                 var latest = entry.Item.Capture(current.Descriptor);
-                if (latest == null || !Equals(current.Descriptor, frame.Descriptor)) continue;
+                if (latest == null || current.Descriptor != frame.Descriptor) continue;
                 bool sameSession = latest.Identity.ClientId == entry.Request.Identity.ClientId &&
                     latest.Identity.SessionVersion == entry.Request.Identity.SessionVersion;
                 if (!sameSession || (!entry.Item.Policy.AllowMovingResult && latest.Identity != entry.Request.Identity)) continue;
@@ -180,8 +203,8 @@ internal sealed class PixelQueryScheduler : IDisposable
                 // FrameId here would starve every query slower than the frame rate.
                 switch (entry.Request, results[i])
                 {
-                    case (PixelQueryRequest p, SamplesResult s): p.Publish(s.Samples); break;
-                    case (LineProfileQueryRequest l, SamplesResult s): l.Publish(s.Samples); break;
+                    case (PixelQueryRequest p, SamplesResult s): p.Publish(s.Samples.Span); break;
+                    case (LineProfileQueryRequest l, SamplesResult s): l.Publish(s.Samples.Span); break;
                     case (RegionStatisticsQueryRequest r, StatisticsResult s): r.Publish(s.Statistics); break;
                     default: throw new InvalidOperationException("Mismatched query result.");
                 }

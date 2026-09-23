@@ -13,11 +13,12 @@ internal readonly record struct QueryIdentity(Guid ClientId, long GeometryVersio
 internal enum ResultInvalidation { CoordinatesChanged, DescriptorChanged, NoTarget, NoFrame, Expired, Failed }
 internal readonly record struct QueryPolicy(bool AllowMovingResult = false, double? MaximumRate = null, TimeSpan? DisplayAge = null);
 internal abstract record QueryRequest(QueryIdentity Identity);
-internal sealed record PixelQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
-internal sealed record LineProfileQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, Action<PixelSample[]> Publish) : QueryRequest(Identity);
+internal delegate void PublishSamples(ReadOnlySpan<PixelSample> samples);
+internal sealed record PixelQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, PublishSamples Publish) : QueryRequest(Identity);
+internal sealed record LineProfileQueryRequest(QueryIdentity Identity, PixelCoordinate[] Coordinates, PublishSamples Publish) : QueryRequest(Identity);
 internal sealed record RegionStatisticsQueryRequest(QueryIdentity Identity, PixelRegion Region, Action<RegionStatistics> Publish) : QueryRequest(Identity);
 internal abstract record QueryResult;
-internal sealed record SamplesResult(PixelSample[] Samples) : QueryResult;
+internal sealed record SamplesResult(ReadOnlyMemory<PixelSample> Samples) : QueryResult;
 internal sealed record StatisticsResult(RegionStatistics Statistics) : QueryResult;
 internal sealed record FailedQueryResult : QueryResult;
 

@@ -3,3 +3,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("FrameBenchmark")]
 [assembly: InternalsVisibleTo("DrawingBenchmark")]
 [assembly: InternalsVisibleTo("ResizeBenchmark")]
+[assembly: InternalsVisibleTo("LineProfileBenchmark")]
