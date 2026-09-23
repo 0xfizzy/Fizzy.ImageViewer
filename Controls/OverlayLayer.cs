@@ -17,8 +17,6 @@ internal class OverlayLayer : UserControl
     internal event Action<UIElement>? VisualRemoving;
     internal event Action<UIElement>? VisualAdded;
     public event Action<UIElement>? ShapeRemoved;
-    public event Action<UIElement>? ShapeEditing;
-    public event Action<UIElement>? ShapeEdited;
 
     internal OverlayLayer()
     {
@@ -33,8 +31,6 @@ internal class OverlayLayer : UserControl
         foreach (var visual in visuals) { _selectionVisuals.Add(visual); ApplySelectionStyle(visual, true); }
         if (primary != null) _canvas.Focus();
     }
-    internal void NotifyEditing(UIElement shape) => ShapeEditing?.Invoke(shape);
-    internal void NotifyEdited(UIElement shape) => ShapeEdited?.Invoke(shape);
     private static void ApplySelectionStyle(UIElement element, bool selected)
     {
         if (element is not FrameworkElement { Tag: OverlayShapeData data }) return;

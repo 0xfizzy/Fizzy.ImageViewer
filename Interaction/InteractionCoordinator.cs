@@ -77,7 +77,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void StartMeasurement(string name)
     {
         if (_clearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
-        if (_disposed || !_measure.HasMethod(name) || !_layers.Measurements.IsVisible) return;
+        if (_disposed || !_measure.HasTool(name) || !_layers.Measurements.IsVisible) return;
         var version = _measure.SessionVersion;
         try
         {

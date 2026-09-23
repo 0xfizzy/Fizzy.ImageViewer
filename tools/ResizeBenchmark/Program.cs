@@ -129,7 +129,7 @@ static object Stats(IEnumerable<double> values) {
         over33 = a.Count(x => x > 33.4) };
 }
 record Case(string Name, int Width, int Count, bool Stream, bool Update, bool NoScale = false);
-sealed class TimedPresenter : IImagePresenter {
+sealed class TimedPresenter : ICpuImagePresenter {
     readonly WriteableBitmapPresenter inner = new();
     public ConcurrentQueue<double> Samples { get; } = new();
     public ImageSource Present(DisplayBuffer pixels) {

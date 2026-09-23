@@ -99,7 +99,8 @@ namespace Fizzy.ImageViewer
             style = (style ?? ShapeStyle.Default).Snapshot();
             return new()
             {
-                Width = 0, Height = 0,
+                Width = 0,
+                Height = 0,
                 Stroke = style.RegionBrush,
                 StrokeThickness = 1.0,
                 StrokeDashArray = new DoubleCollection { 4, 2 },

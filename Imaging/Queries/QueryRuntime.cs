@@ -26,4 +26,3 @@ internal sealed class DispatcherQueryRuntime(Dispatcher dispatcher) : IQueryRunt
     public Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken token) => Task.Run(action, token);
     public Task PublishAsync(Action action, CancellationToken token) => dispatcher.InvokeAsync(action, DispatcherPriority.Background, token).Task;
 }
-

@@ -1,4 +1,4 @@
-using Fizzy.ImageViewer.Constants;
+using Fizzy.ImageViewer.Interaction;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -70,11 +70,6 @@ namespace Fizzy.ImageViewer.Controls
         /// 鼠标在图像上移动时触发。参数为图像坐标 (x, y)。
         /// </summary>
         public event Action<double, double>? ImageMouseMove;
-
-        /// <summary>
-        /// 鼠标在图像上释放时触发。参数为图像坐标 (x, y)。
-        /// </summary>
-        public event Action<double, double>? ImageMouseUp;
 
         public ImageLayer()
         {
@@ -154,15 +149,6 @@ namespace Fizzy.ImageViewer.Controls
             handler(posImage.X, posImage.Y);
         }
 
-        private void OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                FitImageToContainer();
-                e.Handled = true;
-            }
-        }
-
         private void OnMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Middle)
@@ -198,17 +184,7 @@ namespace Fizzy.ImageViewer.Controls
             {
                 EndDrag();
             }
-            else if (e.ChangedButton == MouseButton.Left)
-            {
-                // Fire ImageMouseUp event for left button
-                var handler = ImageMouseUp;
-                if (handler != null)
-                {
-                    var posContainer = e.GetPosition(Container);
-                    var posImage = ContainerToImage(posContainer);
-                    handler(posImage.X, posImage.Y);
-                }
-            }
+
         }
 
         private void EndDrag()

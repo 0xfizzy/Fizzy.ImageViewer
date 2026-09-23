@@ -5,7 +5,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private readonly Internal.ViewerLifetime _lifetime = new();
+    private readonly ViewerLifetime _lifetime = new();
     private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _closed;
 
@@ -64,6 +64,9 @@ public partial class Viewer
                 catch (TaskCanceledException) { }
             }
             await Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _queryScheduler?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+            // The stop signal is set in the STA's finally block, just before it returns.
+            // Join off-thread so DisposeAsync also guarantees actual thread termination.
+            await Task.Run(_windowThread.Join).ConfigureAwait(false);
             _lifetime.Complete();
             if (_window?.ClosingError is { } error) _disposeCompletion.TrySetException(error);
             else _disposeCompletion.TrySetResult();

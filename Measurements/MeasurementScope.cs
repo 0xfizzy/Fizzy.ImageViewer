@@ -21,6 +21,16 @@ internal sealed class MeasurementScope : IMeasurementScope
         catch { if (_shapes.Count > index) _shapes.RemoveAt(index); throw; }
     }
     public void AddResource(IDisposable resource) { EnsureAlive(); ArgumentNullException.ThrowIfNull(resource); _resources.Add(resource); }
+    public void UpdateAnchor(UIElement shape, Point anchor)
+    {
+        EnsureAlive();
+        ArgumentNullException.ThrowIfNull(shape);
+        if (!_shapes.Contains(shape) || shape is not FrameworkElement { Tag: OverlayShapeData })
+            throw new ArgumentException("The visual must be created by Shapes and owned by this scope.", nameof(shape));
+        if (!double.IsFinite(anchor.X) || !double.IsFinite(anchor.Y))
+            throw new ArgumentOutOfRangeException(nameof(anchor));
+        _context.UpdateAnchor(shape, anchor);
+    }
     public void OnDispose(Action callback) { EnsureAlive(); ArgumentNullException.ThrowIfNull(callback); _callbacks.Add(callback); }
     public void Complete() { EnsureAlive(); IsComplete = true; }
     private void EnsureAlive() { _context.VerifyAccess(); ObjectDisposedException.ThrowIf(_disposed, this); }

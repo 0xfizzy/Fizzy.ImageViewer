@@ -15,9 +15,9 @@ internal sealed class MeasureManager : IDisposable
     private IMeasureTool? _active;
     private bool _disposed;
     internal long SessionVersion { get; private set; }
-    public Registration[] RegisteredMethods => _methods.Values.ToArray();
+    public Registration[] RegisteredTools => _methods.Values.ToArray();
     public string? ActiveId { get; private set; }
-    public bool HasSelection => _active != null;
+    public bool IsMeasuring => _active != null;
     public MeasureContext Context { get; }
     internal MeasureManager(OverlayLayer output, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger) => Context = new(output, acquire, scheduler, logger);
     public void RegisterMethod(IMeasureMethod method)
@@ -42,7 +42,7 @@ internal sealed class MeasureManager : IDisposable
         if (ActiveId == id) Cancel();
         return true;
     }
-    internal bool HasMethod(string name) => _methods.ContainsKey(name);
+    internal bool HasTool(string name) => _methods.ContainsKey(name);
     internal bool Start(string name) => Start(name, out _);
     // Publish ownership before callbacks, including when cancellation throws.
     internal bool Start(string name, out long version)

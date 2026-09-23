@@ -7,10 +7,10 @@ using System.Windows.Shapes;
 namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>
-/// Editor for Crosshair shapes (Path with GeometryGroup).
+/// Editor for point and crosshair anchors.
 /// Control points: [0] = center position
 /// </summary>
-internal class CrosshairEditor : IShapeEditor
+internal sealed class AnchorEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {
@@ -20,7 +20,7 @@ internal class CrosshairEditor : IShapeEditor
         return new[] { data.AnchorPoint };
     }
 
-    public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
+    public Action<Point> CreateDrag(UIElement shape, int pointIndex) => newPosition =>
     {
         if (shape is not FrameworkElement fe || fe.Tag is not OverlayShapeData data)
             return;
@@ -31,6 +31,6 @@ internal class CrosshairEditor : IShapeEditor
             Canvas.SetLeft(fe, newPosition.X);
             Canvas.SetTop(fe, newPosition.Y);
         }
-    }
+    };
 
 }

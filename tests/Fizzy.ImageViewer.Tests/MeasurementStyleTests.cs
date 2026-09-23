@@ -32,7 +32,7 @@ public class MeasurementStyleTests
             viewer.StartMeasure(MeasureToolIds.Length);
             viewer.Interaction.ImageDown(1, 1);
             viewer.Interaction.ImageDown(4, 4);
-            return viewer.WindowForTests.Layer1.Canvas.Children.OfType<Line>().Last();
+            return viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<Line>().Last();
         }
         await first.UiDispatcher.InvokeAsync(() =>
         {
@@ -76,7 +76,7 @@ public class MeasurementStyleTests
         {
             viewer.StartMeasure("styled");
             viewer.Interaction.ImageDown(3, 4);
-            var shape = Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.OfType<System.Windows.Shapes.Path>());
+            var shape = Assert.Single(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
             Assert.Same(Brushes.Purple, shape.Stroke);
             viewer.ClearShapes();
         });

@@ -60,8 +60,8 @@ public partial class Viewer
     /// </summary>
     public string? Label
     {
-        get => InvokeAlive(() => _window.Layer2.Label);
-        set => InvokeAlive(() => _window.Layer2.Label = value);
+        get => InvokeAlive(() => _window.HudLayer.Label);
+        set => InvokeAlive(() => _window.HudLayer.Label = value);
     }
 
     /// <summary>
@@ -96,6 +96,6 @@ public partial class Viewer
 
     public void FitImageToContainer()
     {
-        InvokeAlive(() => _window.Layer0.FitImageToContainer());
+        InvokeAlive(() => _window.ImageLayer.FitImageToContainer());
     }
 }

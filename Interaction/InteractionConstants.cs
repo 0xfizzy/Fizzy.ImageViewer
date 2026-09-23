@@ -1,4 +1,4 @@
-namespace Fizzy.ImageViewer.Constants;
+namespace Fizzy.ImageViewer.Interaction;
 
 /// <summary>
 /// 交互相关的常量配置。

@@ -17,9 +17,7 @@ internal static class ControlPointHandle
     /// Create a control point handle at the specified position.
     /// </summary>
     /// <param name="position">Position in image coordinates</param>
-    /// <param name="parentShape">The shape this control point belongs to</param>
-    /// <param name="pointIndex">Index of this control point</param>
-    public static Path CreateHandle(Point position, UIElement parentShape, int pointIndex)
+    public static Path CreateHandle(Point position)
     {
         var geometry = new EllipseGeometry(new Point(0, 0), HandleRadius, HandleRadius);
 

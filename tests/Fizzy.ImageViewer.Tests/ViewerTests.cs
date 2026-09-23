@@ -18,7 +18,7 @@ public class ViewerCollection { }
 public class ViewerTests
 {
     private static ImageFrame Frame(byte value, Action? release = null) => ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { value }, release ?? (() => { }));
-    private static Viewer Create(IImagePresenter? presenter = null) => new(NullLogger<Viewer>.Instance, presenter ?? new WriteableBitmapPresenter(), false);
+    private static Viewer Create(ICpuImagePresenter? presenter = null) => new(NullLogger<Viewer>.Instance, presenter ?? new WriteableBitmapPresenter(), false);
 
     [Fact]
     public async Task SnapshotUsesCommittedRangeWhileRedrawIsWaiting()
@@ -310,7 +310,7 @@ public class ViewerTests
         public void ClearResult() { }        public void Dispose() => Disposed = true;
     }
 
-    private sealed class ObservingPresenter : IImagePresenter
+    private sealed class ObservingPresenter : ICpuImagePresenter
     {
         private readonly WriteableBitmapPresenter _inner = new();
         private int _presentations;
@@ -332,7 +332,7 @@ public class ViewerTests
         }
     }
 
-    private sealed class BlockingPresenter : IImagePresenter
+    private sealed class BlockingPresenter : ICpuImagePresenter
     {
         private readonly WriteableBitmapPresenter _inner = new();
         public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -345,7 +345,7 @@ public class ViewerTests
         }
         public void Dispose() { Release.Set(); _inner.Dispose(); }
     }
-    private sealed class FailingPresenter : IImagePresenter
+    private sealed class FailingPresenter : ICpuImagePresenter
     {
         private readonly WriteableBitmapPresenter _inner = new();
         public bool Fail;

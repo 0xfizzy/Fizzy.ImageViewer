@@ -85,7 +85,7 @@ public class PublicApiTests
             viewer.Interaction.ImageDown(1, 2);
             viewer.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
-            var item = viewer.WindowForTests.Layer1.Canvas.Children.OfType<System.Windows.Shapes.Line>()
+            var item = viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Line>()
                 .Select(s => viewer.MeasurementContext.Find(s)).Single(i => i != null)!;
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });

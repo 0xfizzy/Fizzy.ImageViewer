@@ -379,6 +379,7 @@ Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void AddR
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void AddShape(System.Windows.UIElement shape)
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void Complete()
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void OnDispose(System.Action callback)
+Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void UpdateAnchor(System.Windows.UIElement shape, System.Windows.Point anchor)
 Fizzy.ImageViewer.Interfaces.IMenuItem: abstract Fizzy.ImageViewer.Enums.MenuItemType Type { public get; }
 Fizzy.ImageViewer.Interfaces.IMenuItem: abstract System.String Header { public get; }
 Fizzy.ImageViewer.Interfaces.IMenuItem: public abstract System.Void Execute(System.Object sender, System.Windows.RoutedEventArgs e)
@@ -417,7 +418,7 @@ Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void Minimize()
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void RegisterMeasureMethod(Fizzy.ImageViewer.Interfaces.IMeasureMethod method)
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void RegisterMenu(Fizzy.ImageViewer.Interfaces.IMenuItem menuItem)
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void Show()
-Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void StartMeasure(System.String methodName)
+Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract System.Void StartMeasure(System.String toolId)
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract event System.EventHandler<Fizzy.ImageViewer.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.Interfaces.IViewerAPI: public abstract event System.EventHandler<Fizzy.ImageViewer.MeasurementEventArgs>? MeasurementRemoved
@@ -511,7 +512,7 @@ Fizzy.ImageViewer.Viewer: public System.Void Minimize()
 Fizzy.ImageViewer.Viewer: public System.Void RegisterMeasureMethod(Fizzy.ImageViewer.Interfaces.IMeasureMethod method)
 Fizzy.ImageViewer.Viewer: public System.Void RegisterMenu(Fizzy.ImageViewer.Interfaces.IMenuItem menuItem)
 Fizzy.ImageViewer.Viewer: public System.Void Show()
-Fizzy.ImageViewer.Viewer: public System.Void StartMeasure(System.String methodName)
+Fizzy.ImageViewer.Viewer: public System.Void StartMeasure(System.String toolId)
 Fizzy.ImageViewer.Viewer: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.Viewer> logger, System.Double left = NaN, System.Double top = NaN, System.Double width = NaN, System.Double height = NaN)
 Fizzy.ImageViewer.Viewer: public event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.MeasurementEventArgs>? MeasurementCompleted

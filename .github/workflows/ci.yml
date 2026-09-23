@@ -23,6 +23,8 @@ jobs:
         run: dotnet restore tools/FrameBenchmark/FrameBenchmark.csproj
       - name: Restore drawing benchmark
         run: dotnet restore tools/DrawingBenchmark/DrawingBenchmark.csproj
+      - name: Restore resize benchmark
+        run: dotnet restore tools/ResizeBenchmark/ResizeBenchmark.csproj
       - name: Build library
         run: dotnet build Fizzy.ImageViewer.csproj -c Release --no-restore
       - name: Test library
@@ -31,5 +33,7 @@ jobs:
         run: dotnet build tools/FrameBenchmark/FrameBenchmark.csproj -c Release --no-restore
       - name: Build drawing benchmark
         run: dotnet build tools/DrawingBenchmark/DrawingBenchmark.csproj -c Release --no-restore
+      - name: Build resize benchmark
+        run: dotnet build tools/ResizeBenchmark/ResizeBenchmark.csproj -c Release --no-restore
       - name: Pack
         run: dotnet pack Fizzy.ImageViewer.csproj -c Release --no-restore -o artifacts/ci

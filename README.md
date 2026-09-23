@@ -87,6 +87,8 @@ See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 
 ## Build
 
+See [architecture and ownership](docs/architecture.md) before changing module boundaries.
+
 ```powershell
 dotnet build -c Release
 dotnet pack -c Release -o ./artifacts

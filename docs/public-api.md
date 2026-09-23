@@ -70,7 +70,7 @@ Built-in measurement tool implementations are internal; use
 `StartMeasure(MeasureToolIds.Point)` (or another built-in ID) to activate them.
 
 `ViewerWindow`, `MenuManager`, WPF image/overlay/HUD layer controls, control-point visuals, all shape
-editors and their registry, `MeasurementItem`, `MeasurementGeometry`, scheduling and
+editors and their factory, `MeasurementItem`, `MeasurementGeometry`, scheduling and
 rendering internals are not public contracts. `DrawingElement` is a closed family of
 supported drawing descriptions, not a custom-renderer base class. Public shape helpers
 used by custom measurement tools remain available; consumers must not parse their WPF

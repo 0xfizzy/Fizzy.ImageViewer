@@ -119,7 +119,7 @@ public class MeasurementInteractionTests
             Canvas.SetLeft(rectangle, 2); Canvas.SetTop(rectangle, 2);
             var editor = new RectangleEditor();
             var opposite = editor.GetControlPoints(rectangle)[(index + 2) % 4];
-            editor.UpdateControlPoint(rectangle, index, new(x, y));
+            editor.CreateDrag(rectangle, index)(new(x, y));
             Assert.Equal(Math.Abs(x - opposite.X), rectangle.Width);
             Assert.Equal(Math.Abs(y - opposite.Y), rectangle.Height);
         });

@@ -1,6 +1,5 @@
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Internal;
 using Fizzy.ImageViewer.Snapshots;
 using Xunit;
 

@@ -29,7 +29,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
         : this(logger, null, true, left, top, width, height) { }
 
-    internal Viewer(ILogger<Viewer> logger, Rendering.IImagePresenter? presenter, bool showWindow,
+    internal Viewer(ILogger<Viewer> logger, Rendering.ICpuImagePresenter? presenter, bool showWindow,
         double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
         Action<Viewer>? initialize = null)
     {

@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Drawing;
 public sealed class ViewerLayers
 {
     private readonly Dispatcher _dispatcher;
-    private readonly Internal.ViewerLifetime _lifetime;
+    private readonly ViewerLifetime _lifetime;
     private readonly List<DrawingLayer> _layers = [];
     private volatile bool _closed;
     private bool _redrawPending, _clearing;
@@ -21,9 +21,9 @@ public sealed class ViewerLayers
     public DrawingLayer Markers { get; }
     public DrawingLayer Measurements { get; }
     public IReadOnlyList<DrawingLayer> Items => Invoke(() => (IReadOnlyList<DrawingLayer>)_layers.ToArray());
-    internal ViewerLayers(Transform transform, Internal.ViewerLifetime? lifetime = null)
+    internal ViewerLayers(Transform transform, ViewerLifetime? lifetime = null)
     {
-        _lifetime = lifetime ?? new Internal.ViewerLifetime();
+        _lifetime = lifetime ?? new ViewerLifetime();
         _dispatcher = Root.Dispatcher; Transform = transform;
         Markers = Add("Markers", 0, true);
         Measurements = Add("Measurements", 1000, true, hitTest: true);

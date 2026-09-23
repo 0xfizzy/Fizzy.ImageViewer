@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Internal;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Drawing;
 using System;
@@ -44,13 +43,13 @@ public partial class Viewer
         if (!Enum.IsDefined(alignment)) throw new ArgumentOutOfRangeException(nameof(alignment));
         return InvokeAlive(() =>
         {
-            var tb = anchor.HasValue ? _window.Layer2.AddTextAt(text, frozen, fontSize, anchor.Value, alignment)
-                : _window.Layer2.AddText(text, frozen, fontSize);
+            var tb = anchor.HasValue ? _window.HudLayer.AddTextAt(text, frozen, fontSize, anchor.Value, alignment)
+                : _window.HudLayer.AddText(text, frozen, fontSize);
             Drawing.HudTextHandle? handle = null;
             handle = new Drawing.HudTextHandle((nextText, nextBrush) => InvokeAlive(() =>
             {
                 ObjectDisposedException.ThrowIf(handle!.IsDisposed, handle);
-                _window.Layer2.UpdateText(tb, nextText, nextBrush);
+                _window.HudLayer.UpdateText(tb, nextText, nextBrush);
             }), () => RemoveHud(handle!));
             _hudTexts.Add(handle, tb);
             return handle;
@@ -62,7 +61,7 @@ public partial class Viewer
         if (_lifetime.IsStopping) return;
         try { _window.Dispatcher.Invoke(() =>
         {
-            if (_hudTexts.Remove(handle, out var text)) _window.Layer2.RemoveText(text);
+            if (_hudTexts.Remove(handle, out var text)) _window.HudLayer.RemoveText(text);
         }); }
         catch (TaskCanceledException) when (_closed) { }
         catch (InvalidOperationException) when (_closed) { }
@@ -73,7 +72,7 @@ public partial class Viewer
         foreach (var (handle, text) in _hudTexts)
         {
             handle.Invalidate();
-            _window.Layer2.RemoveText(text);
+            _window.HudLayer.RemoveText(text);
         }
         _hudTexts.Clear();
     }

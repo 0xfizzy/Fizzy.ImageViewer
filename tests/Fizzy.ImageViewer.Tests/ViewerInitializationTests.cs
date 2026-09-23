@@ -10,7 +10,16 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class ViewerInitializationTests
 {
-    private sealed class Presenter(bool failDispose = false) : IImagePresenter
+    [Fact]
+    public async Task NormalShutdownWaitsForActualStaExit()
+    {
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
+        await viewer.DisposeAsync();
+        Assert.False(sta.IsAlive);
+    }
+
+    private sealed class Presenter(bool failDispose = false) : ICpuImagePresenter
     {
         public int Disposals;
         public ApartmentState Apartment;

@@ -129,7 +129,7 @@ public interface IViewerAPI : IAsyncDisposable
     /// <summary>
     /// 程序化启动已注册的测量工具。
     /// </summary>
-    void StartMeasure(string methodName);
+    void StartMeasure(string toolId);
 
     /// <summary>
     /// 取消当前进行中的测量。

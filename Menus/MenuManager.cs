@@ -14,7 +14,7 @@ namespace Fizzy.ImageViewer.Menus
         private readonly List<Func<IEnumerable<IMenuItem>>> _registeredItems = [];
         private UIElement? _menuTargetShape;
 
-        public Func<bool> CheckHasSelection { get; set; } = () => false;
+        public Func<bool> IsMeasuring { get; set; } = () => false;
         public Func<bool> CheckHasSelectedShape { get; set; } = () => false;
         public Func<UIElement?> GetSelectedShape { get; set; } = () => null;
 
@@ -52,7 +52,7 @@ namespace Fizzy.ImageViewer.Menus
             OnMenuOpening?.Invoke();
 
             _contextMenu.Items.Clear();
-            bool isMeasuring = CheckHasSelection();
+            bool isMeasuring = IsMeasuring();
             bool hasSelectedShape = CheckHasSelectedShape();
             _menuTargetShape = GetSelectedShape();
 

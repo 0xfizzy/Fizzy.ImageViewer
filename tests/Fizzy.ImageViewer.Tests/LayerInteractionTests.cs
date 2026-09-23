@@ -47,7 +47,7 @@ public class LayerInteractionTests
             Assert.Equal(1, tool.Cancellations);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.False(viewer.Layers.InputSuppressed);
-            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children);
+            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children);
         });
     }
 
@@ -71,7 +71,7 @@ public class LayerInteractionTests
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.ClearShapes));
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([]));
             Assert.Equal(1, tool.Cancellations);
-            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children);
+            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
         });
     }

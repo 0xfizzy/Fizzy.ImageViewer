@@ -14,12 +14,6 @@ internal interface IShapeEditor
     /// </summary>
     IReadOnlyList<Point> GetControlPoints(UIElement shape);
 
-    /// <summary>
-    /// Update shape geometry when a control point moves.
-    /// </summary>
-    /// <param name="shape">The shape being edited</param>
-    /// <param name="pointIndex">Index of the control point being moved</param>
-    /// <param name="newPosition">New position in image coordinates</param>
-    void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition);
-
+    /// <summary>Captures the drag-start geometry and returns the update operation.</summary>
+    Action<Point> CreateDrag(UIElement shape, int pointIndex);
 }

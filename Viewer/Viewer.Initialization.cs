@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private void InitializeWindow(Rendering.IImagePresenter? presenter, out Thread thread, out ViewerWindow window,
+    private void InitializeWindow(Rendering.ICpuImagePresenter? presenter, out Thread thread, out ViewerWindow window,
         double left, double top, double width, double height, Action<Viewer>? initialize)
     {
         var tcs = new TaskCompletionSource<ViewerWindow>();
@@ -24,23 +24,23 @@ public partial class Viewer
             {
                 win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
                 _window = win;
-                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.Layer0,
+                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageLayer,
                     presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
-                _pipeline = new Internal.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
+                _pipeline = new Frames.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
                 _menuSession = new Snapshots.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
                 win.Closed += OnWindowClosed;
 
                 // 在 UI 线程创建 Managers
                 _queryScheduler = new(AcquireCurrentFrameForMeasurement, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                var measureMgr = _measureManager = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _queryScheduler, _logger);
+                var measureMgr = _measureManager = new MeasureManager(win.MeasurementOverlay, AcquireCurrentFrameForMeasurement, _queryScheduler, _logger);
                 measureMgr.Context.ItemCompleted += item => NotifyMeasurement(MeasurementCompleted, item);
                 measureMgr.Context.ItemRemoved += item => NotifyMeasurement(MeasurementRemoved, item);
 
-                var editMgr = new EditManager(win.Layer1, measureMgr.Context);
-                var interaction = new InteractionCoordinator(win.Layer0, win.Layer1, editMgr, measureMgr, win.Layers);
+                var editMgr = new EditManager(win.MeasurementOverlay, measureMgr.Context);
+                var interaction = new InteractionCoordinator(win.ImageLayer, win.MeasurementOverlay, editMgr, measureMgr, win.Layers);
                 var menuMgr = new MenuManager(win)
                 {
-                    CheckHasSelection = () => measureMgr.HasSelection,
+                    IsMeasuring = () => measureMgr.IsMeasuring,
                     CheckHasSelectedShape = () => interaction.SelectedShape != null,
                     GetSelectedShape = () => interaction.SelectedShape
                 };
@@ -66,6 +66,7 @@ public partial class Viewer
             catch (Exception ex)
             {
                 failure = ex;
+                if (tcs.Task.IsCompletedSuccessfully) _logger.LogError(ex, "Viewer dispatcher failed");
             }
             finally
             {
@@ -119,10 +120,10 @@ public partial class Viewer
         menuMgr.Register(SeparatorMenuItem.Instance);
 
         // 测量工具菜单
-        menuMgr.RegisterMeasureTools(() => measureMgr.RegisteredMethods.Select(entry =>
+        menuMgr.RegisterMeasureTools(() => measureMgr.RegisteredTools.Select(entry =>
             (IMenuItem)new MenuItem(entry.DisplayName, () =>
             {
-                if (measureMgr.HasMethod(entry.Id) && win.Layers.Measurements.IsVisible)
+                if (measureMgr.HasTool(entry.Id) && win.Layers.Measurements.IsVisible)
                     _interaction?.StartMeasurement(entry.Id);
             }, Enums.MenuItemType.MeasureTool)).ToArray());
 

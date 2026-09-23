@@ -111,7 +111,7 @@ public class LineStrengthTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.WindowForTests.Layer1;
+            var overlay = viewer.WindowForTests.MeasurementOverlay;
             var pair = Draw(viewer, new LineStrengthTool(viewer.MeasurementContext), overlay);
             var item = viewer.MeasurementContext.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);

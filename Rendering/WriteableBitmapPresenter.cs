@@ -6,7 +6,7 @@ using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Rendering;
 
-internal sealed class WriteableBitmapPresenter : IImagePresenter
+internal sealed class WriteableBitmapPresenter : ICpuImagePresenter
 {
     private WriteableBitmap? _front, _back;
     public ImageSource Present(DisplayBuffer pixels)

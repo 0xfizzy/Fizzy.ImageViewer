@@ -11,6 +11,60 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementScopeTests
 {
+    [Fact]
+    public async Task ScopeMovesOnlyOwnedAnchorsAndRetainsZoomPolicy()
+    {
+        await using var viewer = Create();
+        IMeasurementScope? owner = null;
+        System.Windows.Controls.TextBlock? label = null;
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            owner = viewer.MeasurementContext.CreateScope();
+            label = Shapes.CreateLabel(new(1, 2), "preview", 8, 12);
+            owner.AddShape(label);
+            var overlay = viewer.WindowForTests.MeasurementOverlay;
+            overlay.UpdateScale(2);
+            owner.UpdateAnchor(label, new(3, 4));
+            Assert.Equal(7, System.Windows.Controls.Canvas.GetLeft(label));
+            Assert.Equal(10, System.Windows.Controls.Canvas.GetTop(label));
+            overlay.UpdateScale(4);
+            Assert.Equal(5, System.Windows.Controls.Canvas.GetLeft(label));
+            Assert.Equal(7, System.Windows.Controls.Canvas.GetTop(label));
+            var other = viewer.MeasurementContext.CreateScope();
+            Assert.Throws<ArgumentException>(() => other.UpdateAnchor(label, new()));
+            Assert.Throws<ArgumentOutOfRangeException>(() => owner.UpdateAnchor(label, new(double.NaN, 1)));
+            Assert.Equal(5, System.Windows.Controls.Canvas.GetLeft(label));
+        });
+        await Task.Run(() => Assert.Throws<InvalidOperationException>(() => owner!.UpdateAnchor(label!, new())));
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            owner!.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => owner.UpdateAnchor(label!, new()));
+        });
+    }
+
+    [Theory]
+    [InlineData(ShapeType.Point)]
+    [InlineData(ShapeType.Crosshair)]
+    public async Task AnchorEditorMovesSupportedShapesWithoutChangingTheirGeometry(ShapeType kind)
+    {
+        await using var viewer = Create();
+        await viewer.UiDispatcher.InvokeAsync(() =>
+        {
+            var shape = kind == ShapeType.Point ? Shapes.CreatePoint(new(1, 2)) : Shapes.CreateCrosshair(new(1, 2));
+            var geometry = shape.Data;
+            viewer.MeasurementContext.CreateScope().AddShape(shape);
+            using var session = ShapeEditorFactory.Create(shape, null);
+            Assert.NotNull(session);
+            session.BeginDrag(0); session.UpdateDrag(new(5, 6)); session.EndDrag();
+            viewer.WindowForTests.MeasurementOverlay.UpdateScale(2);
+            Assert.Equal(new Point(5, 6), Assert.Single(session.Points));
+            Assert.Equal(5, System.Windows.Controls.Canvas.GetLeft(shape));
+            Assert.Equal(6, System.Windows.Controls.Canvas.GetTop(shape));
+            Assert.Same(geometry, shape.Data);
+        });
+    }
+
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     private sealed class Resource(Action dispose) : IDisposable { public void Dispose() => dispose(); }
     private sealed class Tool : IMeasureMethod
@@ -45,7 +99,7 @@ public class MeasurementScopeTests
             viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(4, 5);
             Assert.Throws<InvalidOperationException>(() => viewer.CancelMeasure());
             Assert.Equal(1, tool.Disposals);
-            Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+            Assert.Single(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
             viewer.ClearShapes();
             Assert.Equal(2, tool.Disposals);
         });
@@ -68,7 +122,7 @@ public class MeasurementScopeTests
             Assert.Throws<AggregateException>(() => ctx.RemoveShape(label));
             a.Dispose();
             Assert.Equal(1, disposed);
-            Assert.Same(survivor, Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>()));
+            Assert.Same(survivor, Assert.Single(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>()));
         });
     }
 
@@ -78,7 +132,7 @@ public class MeasurementScopeTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var ctx = viewer.MeasurementContext; var overlay = viewer.WindowForTests.Layer1;
+            var ctx = viewer.MeasurementContext; var overlay = viewer.WindowForTests.MeasurementOverlay;
             var a = ctx.CreateScope(); var b = ctx.CreateScope(); var shape = Shapes.CreatePoint(new());
             a.AddShape(shape);
             Assert.Throws<ArgumentException>(() => b.AddShape(shape));
@@ -107,7 +161,7 @@ public class MeasurementScopeTests
             viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(1, 2);
             Assert.Throws<InvalidOperationException>(() => viewer.ClearShapes());
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
-            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -128,7 +182,7 @@ public class MeasurementScopeTests
                 else viewer.UnregisterMeasureMethod(tool.Id);
             });
             Assert.Equal(1, tool.Disposals);
-            Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+            Assert.Single(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -146,20 +200,18 @@ public class MeasurementScopeTests
     }
 
     [Fact]
-    public async Task RegistrySupportsRemovalAndRectangleDragKeepsOriginalOppositeCorner()
+    public async Task EditorFactoryRejectsUnsupportedShapesAndRetainsOppositeCorner()
     {
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var registry = ShapeEditorRegistry.CreateDefault();
             var rectangle = Shapes.CreateRectangle(); rectangle.Width = 4; rectangle.Height = 4;
             System.Windows.Controls.Canvas.SetLeft(rectangle, 2); System.Windows.Controls.Canvas.SetTop(rectangle, 2);
-            using var session = registry.Create(rectangle, null);
+            using var session = ShapeEditorFactory.Create(rectangle, null);
             Assert.NotNull(session); session.BeginDrag(0); session.UpdateDrag(new(8, 9)); session.UpdateDrag(new(10, 11));
             Assert.Equal(4, rectangle.Width); Assert.Equal(5, rectangle.Height);
             Assert.Equal(6, System.Windows.Controls.Canvas.GetLeft(rectangle));
-            Assert.True(registry.Unregister(ShapeType.Rectangle));
-            Assert.Null(registry.Create(rectangle, null));
+            Assert.Null(ShapeEditorFactory.Create(new System.Windows.Controls.Border(), null));
         });
     }
 
@@ -169,7 +221,7 @@ public class MeasurementScopeTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.WindowForTests.Layer1;
+            var overlay = viewer.WindowForTests.MeasurementOverlay;
             var shape = Shapes.CreatePoint(new()); viewer.MeasurementContext.AttachVisualInternal(shape);
             viewer.Interaction.Dispose();
             viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(shape); viewer.Interaction.DeleteSelected();

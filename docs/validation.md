@@ -9,6 +9,7 @@ dotnet build Fizzy.ImageViewer.csproj -c Release
 dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release
 dotnet build tools/FrameBenchmark/FrameBenchmark.csproj -c Release
 dotnet build tools/DrawingBenchmark/DrawingBenchmark.csproj -c Release
+dotnet build tools/ResizeBenchmark/ResizeBenchmark.csproj -c Release
 dotnet pack Fizzy.ImageViewer.csproj -c Release -o artifacts
 ```
 
@@ -48,8 +49,8 @@ the consumer repository. This library does not require a specific GPU runtime or
 ## Measurement ownership and interaction
 
 `MeasurementScopeTests` cover custom-tool cleanup, cancellation exceptions,
-visual ownership, reentrant registration/disposal, viewer closure, editor registry
-removal and the absence of standalone overlay interaction.
+visual ownership, reentrant registration/disposal, viewer closure, unsupported editors,
+rectangle drag sessions and the absence of standalone overlay interaction.
 
 `MeasurementReentryTests` cover session replacement from click, move, cancellation,
 tool switching and entry into editing, with and without callback exceptions. They
@@ -99,3 +100,13 @@ exercise serialized export reads, cancellation while queued, read failures, and 
 release independently of a window or a native GPU surface.
 `FramePresentationTests` verify that GPU preparation performs no pixel reads and rejects
 CPU display mapping; they do not bind a native surface or validate real CPU/GPU switching.
+
+## Architectural boundaries
+
+`MeasurementStyleTests` exercise independent STA viewers, brush snapshots and per-item
+selection colors. `ViewerInitializationTests` inject startup/cleanup failures and verify
+frame/scope/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
+cover routed selection input, one cancellation per layer operation and complete bulk cleanup
+after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
+context. The public API baseline test detects exported type/member changes; its update
+procedure is documented in [public API](public-api.md).

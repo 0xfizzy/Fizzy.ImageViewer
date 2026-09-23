@@ -152,7 +152,7 @@ visual disposes its entire scope. Clear and viewer closure dispose all scopes.
 `IMeasurementScope.Dispose()` explicitly cancels/removes a scope and is idempotent.
 
 Scopes own resources, not their calculation logic. The scheduler, measurement
-models, editor registry and typed query protocol remain internal. `Tag` contains
+models, editor factory and typed query protocol remain internal. `Tag` contains
 only display metadata. All scope operations run on the viewer STA. Cleanup callbacks
 run before disposable resources, followed by visual removal. Cleanup continues after
 failures; explicit disposal reports an aggregate exception, while framework cleanup
@@ -161,6 +161,10 @@ Creating scopes during bulk cleanup is rejected. Register each visual with one o
 through `IMeasurementScope.AddShape`. Scope registration is the public tool path for
 owning visuals, subscriptions and windows; internal visual attachment is not an
 extension contract.
+Use `scope.UpdateAnchor(shape, point)` to move an owned `Shapes.Create*` visual during
+preview. Coordinates are in image space; fixed-size and label-offset zoom policies are
+preserved. The operation requires the viewer STA and rejects foreign visuals, disposed
+scopes and non-finite coordinates. No access to internal Tag metadata is needed.
 `FrameCommitted` remains a notification, not a query execution callback.
 
 For example, this tool owns a marker and a frame notification subscription:
@@ -196,11 +200,11 @@ public sealed class CustomPoint : IMeasureMethod
 }
 ```
 
-`OverlayLayer` and `ViewerWindow.Layer1` are internal. Public access uses
+`OverlayLayer` and `ViewerWindow.MeasurementOverlay` are internal. Public access uses
 `Viewer.Layers`, drawing handles, and measurement scopes.
 The overlay does not offer standalone selection, deletion or editing; the
-coordinator owns all interaction. Internal editor factories are registered by shape
-key and create disposable editing sessions. Rectangle sessions retain the original
+coordinator owns all interaction. The internal editor factory selects supported shape
+types and creates disposable editing sessions. Rectangle sessions retain the original
 opposite corner throughout a drag; built-in measurement sessions update model
 geometry and invalidate query results before projecting visuals.
 

@@ -1,6 +1,6 @@
 using System.Windows.Threading;
 
-namespace Fizzy.ImageViewer.Internal;
+namespace Fizzy.ImageViewer;
 
 internal sealed class ViewerLifetime
 {

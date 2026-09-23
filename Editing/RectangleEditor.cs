@@ -13,8 +13,9 @@ namespace Fizzy.ImageViewer.Editing;
 /// </summary>
 internal class RectangleEditor : IShapeEditor
 {
-    internal static Action<Point> CreateDrag(UIElement shape, int index, IReadOnlyList<Point> points)
+    public Action<Point> CreateDrag(UIElement shape, int index)
     {
+        var points = GetControlPoints(shape);
         var rectangle = (Rectangle)shape;
         var opposite = points[(index + 2) % 4];
         return point =>
@@ -42,42 +43,6 @@ internal class RectangleEditor : IShapeEditor
             new Point(right, bottom),   // 2: bottom-right
             new Point(left, bottom)     // 3: bottom-left
         };
-    }
-
-    public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
-    {
-        if (shape is not Rectangle rect) return;
-
-        double left = Canvas.GetLeft(rect);
-        double top = Canvas.GetTop(rect);
-        double right = left + rect.Width;
-        double bottom = top + rect.Height;
-
-        switch (pointIndex)
-        {
-            case 0: left = newPosition.X; top = newPosition.Y; break;
-            case 1: right = newPosition.X; top = newPosition.Y; break;
-            case 2: right = newPosition.X; bottom = newPosition.Y; break;
-            case 3: left = newPosition.X; bottom = newPosition.Y; break;
-            default: return;
-        }
-
-        // Normalize before writing any WPF property. This keeps the geometry
-        // valid even when a handle crosses its opposite corner.
-        var x = Math.Min(left, right);
-        var y = Math.Min(top, bottom);
-        var width = Math.Abs(right - left);
-        var height = Math.Abs(bottom - top);
-        Canvas.SetLeft(rect, x);
-        Canvas.SetTop(rect, y);
-        rect.Width = width;
-        rect.Height = height;
-
-        // Update anchor point in tag data
-        if (rect.Tag is OverlayShapeData data)
-        {
-            data.AnchorPoint = new Point(Canvas.GetLeft(rect), Canvas.GetTop(rect));
-        }
     }
 
 }

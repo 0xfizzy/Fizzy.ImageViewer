@@ -8,7 +8,7 @@ using System.Windows.Threading;
 namespace Fizzy.ImageViewer.Rendering;
 
 /// <summary>Prepares pixels off STA; owns presentation resources exclusively on the viewer STA.</summary>
-internal sealed class FramePresentation(Dispatcher dispatcher, ImageLayer layer, IImagePresenter presenter, ILogger logger) : IDisposable
+internal sealed class FramePresentation(Dispatcher dispatcher, ImageLayer layer, ICpuImagePresenter presenter, ILogger logger) : IDisposable
 {
     private D3DImagePresenter? _d3dPresenter;
     private bool _disposed;

@@ -77,7 +77,7 @@ public class MeasureToolProtocolTests
             using var manager = new MeasureManager(new Controls.OverlayLayer(), () => null, queries, NullLogger.Instance);
             var original = new Probe(); manager.RegisterMethod(original);
             original.Id = "changed"; original.DisplayName = "Changed";
-            var entry = Assert.Single(manager.RegisteredMethods);
+            var entry = Assert.Single(manager.RegisteredTools);
             Assert.Equal("custom", entry.Id); Assert.Equal("Custom", entry.DisplayName);
         });
     }
@@ -97,19 +97,19 @@ public class MeasureToolProtocolTests
             viewer.MeasurementRemoved += (_, _) => removed++;
             viewer.StartMeasure(id);
             viewer.CancelMeasure();
-            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
             viewer.StartMeasure(id); viewer.Interaction.ImageDown(1, 1);
             if (id != MeasureToolIds.Point)
             {
                 viewer.Interaction.ImageMove(4, 4); viewer.CancelMeasure();
                 Assert.Equal(0, completed); Assert.Equal(0, removed);
-                Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+                Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
                 viewer.StartMeasure(id); viewer.Interaction.ImageDown(1, 1); viewer.Interaction.ImageDown(4, 4);
             }
             Assert.Equal(1, completed);
             viewer.ClearShapes();
             Assert.Equal(1, removed);
-            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
     }
 

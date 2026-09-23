@@ -32,7 +32,7 @@ internal class CircleEditor : IShapeEditor
         return new[] { absoluteCenter, circumferencePoint };
     }
 
-    public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
+    public Action<Point> CreateDrag(UIElement shape, int pointIndex) => newPosition =>
     {
         if (shape is not Path path || path.Data is not EllipseGeometry ellipse)
             return;
@@ -62,6 +62,6 @@ internal class CircleEditor : IShapeEditor
             ellipse.RadiusX = newRadius;
             ellipse.RadiusY = newRadius;
         }
-    }
+    };
 
 }

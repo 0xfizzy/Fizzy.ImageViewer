@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Imaging;
 
 namespace Fizzy.ImageViewer.Rendering;
 
-internal interface IImagePresenter : IDisposable
+internal interface ICpuImagePresenter : IDisposable
 {
     ImageSource Present(DisplayBuffer pixels);
 }

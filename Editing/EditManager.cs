@@ -1,14 +1,12 @@
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
-using Fizzy.ImageViewer.Editing;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
-internal sealed class EditManager(OverlayLayer overlay, MeasureContext context, ShapeEditorRegistry? registry = null)
+internal sealed class EditManager(OverlayLayer overlay, MeasureContext context)
 {
-    private readonly ShapeEditorRegistry _registry = registry ?? ShapeEditorRegistry.CreateDefault();
     private ShapeEditSession? _session;
     private int _dragIndex = -1;
     private readonly List<UIElement> _handles = [];
@@ -19,13 +17,13 @@ internal sealed class EditManager(OverlayLayer overlay, MeasureContext context, 
 
     internal bool CanEdit(UIElement shape)
     {
-        using var session = _registry.Create(shape, context.Find(shape));
+        using var session = ShapeEditorFactory.Create(shape, context.Find(shape));
         return session != null;
     }
     internal bool StartEditing(UIElement shape)
     {
         if (EditingShape == shape) return true;
-        var session = _registry.Create(shape, context.Find(shape));
+        var session = ShapeEditorFactory.Create(shape, context.Find(shape));
         if (session == null) return false;
         StopEditing();
         EditingShape = shape; _session = session;
@@ -34,7 +32,7 @@ internal sealed class EditManager(OverlayLayer overlay, MeasureContext context, 
             var points = session.Points;
             for (int i = 0; i < points.Count; i++)
             {
-                var handle = ControlPointHandle.CreateHandle(points[i], shape, i);
+                var handle = ControlPointHandle.CreateHandle(points[i]);
                 _handles.Add(handle); overlay.AddShape(handle);
                 System.Windows.Controls.Panel.SetZIndex(handle, 1000);
             }
@@ -58,13 +56,10 @@ internal sealed class EditManager(OverlayLayer overlay, MeasureContext context, 
         _session.UpdateDrag(point);
         var points = _session.Points;
         for (int i = 0; i < _handles.Count; i++) overlay.UpdateAnchor(_handles[i], points[i]);
-        overlay.NotifyEditing(EditingShape);
     }
     internal void EndDrag()
     {
-        bool dragged = IsDragging;
         _dragIndex = -1; _session?.EndDrag();
-        if (dragged && EditingShape != null) overlay.NotifyEdited(EditingShape);
     }
     internal void StopEditing()
     {

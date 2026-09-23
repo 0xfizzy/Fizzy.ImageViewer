@@ -20,7 +20,7 @@ internal class LineEditor : IShapeEditor
         return new[] { new Point(line.X1, line.Y1), new Point(line.X2, line.Y2) };
     }
 
-    public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
+    public Action<Point> CreateDrag(UIElement shape, int pointIndex) => newPosition =>
     {
         if (shape is not Line line) return;
 
@@ -35,6 +35,6 @@ internal class LineEditor : IShapeEditor
                 line.Y2 = newPosition.Y;
                 break;
         }
-    }
+    };
 
 }

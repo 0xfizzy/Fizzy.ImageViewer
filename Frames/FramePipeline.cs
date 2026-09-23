@@ -4,7 +4,7 @@ using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging;
 using System.Windows.Threading;
 
-namespace Fizzy.ImageViewer.Internal;
+namespace Fizzy.ImageViewer.Frames;
 
 /// <summary>Owns submission and display state. Commits, freeze and stop run on the viewer STA.</summary>
 internal sealed class FramePipeline

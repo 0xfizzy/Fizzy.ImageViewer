@@ -8,6 +8,8 @@ namespace Fizzy.ImageViewer.Interfaces;
 public interface IMeasurementScope : IDisposable
 {
     void AddShape(UIElement shape);
+    /// <summary>Moves an owned Shapes.Create* visual in image coordinates, preserving its zoom policy.</summary>
+    void UpdateAnchor(UIElement shape, Point anchor);
     void AddResource(IDisposable resource);
     void OnDispose(Action callback);
     void Complete();

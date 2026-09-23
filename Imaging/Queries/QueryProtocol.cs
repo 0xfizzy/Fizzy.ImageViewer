@@ -29,4 +29,3 @@ internal interface IFrameQueryClient
     void InvalidateResult(ResultInvalidation reason) => ClearResult();
     void ResultPublished(long frameId) { }
 }
-

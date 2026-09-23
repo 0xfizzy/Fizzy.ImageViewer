@@ -1,7 +1,7 @@
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 
-namespace Fizzy.ImageViewer.Internal;
+namespace Fizzy.ImageViewer.Frames;
 
 /// <summary>Owns one frame lease together with its atomically captured display settings.</summary>
 internal sealed class CommittedFrameLease(FrameLease frame, GrayDisplayRange? range, long version) : IDisposable

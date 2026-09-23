@@ -8,14 +8,14 @@ namespace Fizzy.ImageViewer
     internal class ViewerWindow : Window
     {
         // 公开图层供 Manager 使用
-        public ImageLayer Layer0 { get; }
-        internal OverlayLayer Layer1 { get; }
-        public HudLayer Layer2 { get; }
+        public ImageLayer ImageLayer { get; }
+        internal OverlayLayer MeasurementOverlay { get; }
+        public HudLayer HudLayer { get; }
         public Drawing.ViewerLayers Layers { get; }
 
-        public ViewerWindow(string title) : this(title, new Internal.ViewerLifetime()) { }
+        public ViewerWindow(string title) : this(title, new ViewerLifetime()) { }
 
-        internal ViewerWindow(string title, Internal.ViewerLifetime lifetime)
+        internal ViewerWindow(string title, ViewerLifetime lifetime)
         {
             // === Window 属性 ===
             Title = title;
@@ -25,26 +25,26 @@ namespace Fizzy.ImageViewer
             WindowStartupLocation = WindowStartupLocation.Manual;
 
             // === 实例化图层 ===
-            Layer0 = new ImageLayer();
-            Layers = new Drawing.ViewerLayers(Layer0.TransformGroup, lifetime);
-            Layer1 = new OverlayLayer();
-            Layers.Measurements.Root.Children.Add(Layer1);
-            Layer2 = new HudLayer();
+            ImageLayer = new ImageLayer();
+            Layers = new Drawing.ViewerLayers(ImageLayer.TransformGroup, lifetime);
+            MeasurementOverlay = new OverlayLayer();
+            Layers.Measurements.Root.Children.Add(MeasurementOverlay);
+            HudLayer = new HudLayer();
 
-            Layer1.BindTransform(Layer0.TransformGroup);
+            MeasurementOverlay.BindTransform(ImageLayer.TransformGroup);
 
-            Layer0.ScaleChanged += scale =>
+            ImageLayer.ScaleChanged += scale =>
             {
-                Layer1.UpdateScale(scale);
+                MeasurementOverlay.UpdateScale(scale);
                 Layers.UpdateScale(scale);
             };
 
             var grid = new Grid();
 
             // 叠加顺序很重要：0在底，2在顶
-            grid.Children.Add(Layer0);
+            grid.Children.Add(ImageLayer);
             grid.Children.Add(Layers.Root);
-            grid.Children.Add(Layer2);
+            grid.Children.Add(HudLayer);
 
             Content = grid;
         }

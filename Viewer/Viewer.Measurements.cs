@@ -28,14 +28,14 @@ public partial class Viewer
         return _measureManager.UnregisterMethod(toolId);
     });
 
-    public void StartMeasure(string methodName)
+    public void StartMeasure(string toolId)
     {
         InvokeAlive(() =>
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(methodName);
-            if (!_measureManager!.HasMethod(methodName)) throw new KeyNotFoundException($"Unknown measurement tool '{methodName}'.");
+            ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
+            if (!_measureManager!.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
             if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
-            _interaction!.StartMeasurement(methodName);
+            _interaction!.StartMeasurement(toolId);
         });
     }
 
