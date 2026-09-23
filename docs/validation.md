@@ -125,6 +125,11 @@ and actual thread exit even when presenter disposal throws.
 Style tests cover caller-owned `Tag` data, per-visual zoom dimensions,
 point fill selection and editing after metadata changes. Menu tests cover visibility,
 check state, separator normalization and captured targets across closure/reopening.
+Menu lifetime tests cover independent registrations, cross-thread and reentrant revocation,
+retained click invalidation, delayed cleanup after Closed, failed-opening unfreeze, and
+binding cleanup on shutdown and initialization failure. Initialization checkpoints include
+fully composed menus. Edit tests retain model writeback and drag-start corner behavior
+without an editor factory or forwarding wrapper.
 Measurement resource failure tests verify visual detachment and idempotent disposal
 even when specialized cleanup throws.
 

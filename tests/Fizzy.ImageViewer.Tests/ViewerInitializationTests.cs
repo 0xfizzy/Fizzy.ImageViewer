@@ -83,6 +83,7 @@ public class ViewerInitializationTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
     public async Task PartialCompositionFailurePreservesExceptionAndReleasesPresenterOnSta(int stage)
     {
         var presenter = new Presenter(failDispose: true);

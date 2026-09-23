@@ -117,7 +117,7 @@ public class MeasurementInteractionTests
         {
             var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (Rectangle)item.PrimaryVisual;
-            using var editor = ShapeEditorFactory.Create(rectangle, item)!;
+            using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
             editor.BeginDrag(index); editor.Update(new(x, y));
             Assert.Equal(Math.Abs(x - opposite.X), rectangle.Width);

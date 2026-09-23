@@ -144,9 +144,10 @@ public interface IViewerAPI : IAsyncDisposable
     // === 扩展 ===
 
     /// <summary>
-    /// 注册自定义菜单项。
+    /// 注册自定义菜单项；释放返回句柄撤销本次注册，不释放菜单对象。
+    /// 句柄可从任意线程重复释放，查看器关闭后释放仍然安全。
     /// </summary>
-    void RegisterMenu(IMenuItem menuItem);
+    IDisposable RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
     /// 注册自定义测量方法。工具回调中通过 IMeasurementToolContext.CreateMeasurement 创建模型驱动测量并托管资源，

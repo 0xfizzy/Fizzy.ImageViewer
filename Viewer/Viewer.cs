@@ -15,7 +15,7 @@ namespace Fizzy.ImageViewer;
 /// </summary>
 public sealed partial class Viewer : IViewerAPI, IAsyncDisposable
 {
-    private readonly ViewerRuntime _runtime;
+    private readonly ViewerHost _host;
     private readonly ILogger _logger;
 
     /// <summary>Creates a viewer on its own STA. Use showWindow: false to configure and
@@ -34,8 +34,8 @@ public sealed partial class Viewer : IViewerAPI, IAsyncDisposable
         ValidateWindowArgument(width, nameof(width), dimension: true);
         ValidateWindowArgument(height, nameof(height), dimension: true);
         _logger = logger;
-        _runtime = new ViewerRuntime(this, logger, showWindow);
-        _runtime.Start(presenter, left, top, width, height, initialize, checkpoint);
+        _host = new ViewerHost(this, logger, showWindow);
+        _host.Start(presenter, left, top, width, height, initialize, checkpoint);
     }
 
     private static void ValidateWindowArgument(double value, string name, bool dimension = false)
@@ -44,13 +44,13 @@ public sealed partial class Viewer : IViewerAPI, IAsyncDisposable
             throw new ArgumentOutOfRangeException(name);
     }
 
-    internal Dispatcher UiDispatcher => _runtime.Window.Dispatcher;
-    internal ViewerWindow WindowForTests => _runtime.Window;
-    internal InteractionCoordinator Interaction => _runtime.Interaction;
-    internal MeasurementContext MeasurementContext => _runtime.Measurements;
+    internal Dispatcher UiDispatcher => _host.Window.Dispatcher;
+    internal ViewerWindow WindowForTests => _host.Window;
+    internal InteractionCoordinator Interaction => _host.Interaction;
+    internal MeasurementContext MeasurementContext => _host.Measurements;
 
-    public void RegisterMenu(IMenuItem menuItem)
-    {
-        InvokeAlive(() => _runtime.Menus.Register(menuItem));
-    }
+    /// <summary>Registers a menu item until its handle is disposed or the viewer closes.
+    /// Handle disposal marshals to the viewer STA and is idempotent after closure.</summary>
+    public IDisposable RegisterMenu(IMenuItem menuItem)
+        => InvokeAlive(() => _host.Menus.Register(menuItem));
 }

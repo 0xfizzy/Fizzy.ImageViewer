@@ -6,7 +6,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    public Drawing.ViewerLayers Layers => _runtime.Window.Layers;
+    public Drawing.ViewerLayers Layers => _host.Window.Layers;
 
     /// <summary>Draws a non-interactive single-element batch in the Markers layer.</summary>
     public IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0) =>
@@ -29,5 +29,5 @@ public partial class Viewer
     /// <summary>Creates HUD text with fixed layout.</summary>
     public HudTextHandle DrawHudText(string text, Brush brush,
         Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft, double fontSize = 14)
-        => _runtime.Hud.Add(text, brush, anchor, alignment, fontSize);
+        => _host.Hud.Add(text, brush, anchor, alignment, fontSize);
 }

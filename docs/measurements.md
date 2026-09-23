@@ -44,8 +44,10 @@ leases, including sources that do not immediately honor cancellation.
 
 The internal coordinator owns the selected item/shape, Idle/Editing/Measuring mode,
 active measurement tool and session version. The tool registry only stores registrations.
-The edit manager owns its session and control-point visuals and borrows a measurement
-lookup delegate. ViewerInputBinding translates WPF input and applies pointer effects
+The edit manager directly owns a MeasurementEditSession and control-point visuals and borrows
+a measurement lookup delegate. The session retains drag-start geometry and writes changes
+through the measurement model; capability checks do not allocate a session.
+ViewerInputBinding translates WPF input and applies pointer effects
 without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
 It holds no coordinator or measurement-owner reference. The coordinator receives

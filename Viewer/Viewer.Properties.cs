@@ -6,8 +6,8 @@ public partial class Viewer
 {
     public bool CanUserClose
     {
-        get => InvokeAlive(() => _runtime.Window.CanUserClose);
-        set => InvokeAlive(() => _runtime.Window.CanUserClose = value);
+        get => InvokeAlive(() => _host.Window.CanUserClose);
+        set => InvokeAlive(() => _host.Window.CanUserClose = value);
     }
 
     /// <summary>
@@ -15,8 +15,8 @@ public partial class Viewer
     /// </summary>
     public double Width
     {
-        get => InvokeAlive(() => _runtime.Window.Width);
-        set => InvokeAlive(() => _runtime.Window.Width = value);
+        get => InvokeAlive(() => _host.Window.Width);
+        set => InvokeAlive(() => _host.Window.Width = value);
     }
 
     /// <summary>
@@ -24,8 +24,8 @@ public partial class Viewer
     /// </summary>
     public double Height
     {
-        get => InvokeAlive(() => _runtime.Window.Height);
-        set => InvokeAlive(() => _runtime.Window.Height = value);
+        get => InvokeAlive(() => _host.Window.Height);
+        set => InvokeAlive(() => _host.Window.Height = value);
     }
 
     /// <summary>
@@ -33,8 +33,8 @@ public partial class Viewer
     /// </summary>
     public double Left
     {
-        get => InvokeAlive(() => _runtime.Window.Left);
-        set => InvokeAlive(() => _runtime.Window.Left = value);
+        get => InvokeAlive(() => _host.Window.Left);
+        set => InvokeAlive(() => _host.Window.Left = value);
     }
 
     /// <summary>
@@ -42,8 +42,8 @@ public partial class Viewer
     /// </summary>
     public double Top
     {
-        get => InvokeAlive(() => _runtime.Window.Top);
-        set => InvokeAlive(() => _runtime.Window.Top = value);
+        get => InvokeAlive(() => _host.Window.Top);
+        set => InvokeAlive(() => _host.Window.Top = value);
     }
 
     /// <summary>
@@ -51,8 +51,8 @@ public partial class Viewer
     /// </summary>
     public string Title
     {
-        get => InvokeAlive(() => _runtime.Window.Title);
-        set => InvokeAlive(() => _runtime.Window.Title = value);
+        get => InvokeAlive(() => _host.Window.Title);
+        set => InvokeAlive(() => _host.Window.Title = value);
     }
 
     /// <summary>
@@ -60,8 +60,8 @@ public partial class Viewer
     /// </summary>
     public string? Label
     {
-        get => InvokeAlive(() => _runtime.Window.HudLayer.Label);
-        set => InvokeAlive(() => _runtime.Window.HudLayer.Label = value);
+        get => InvokeAlive(() => _host.Window.HudLayer.Label);
+        set => InvokeAlive(() => _host.Window.HudLayer.Label = value);
     }
 
     /// <summary>
@@ -69,33 +69,33 @@ public partial class Viewer
     /// </summary>
     public bool Borderless
     {
-        get => InvokeAlive(() => _runtime.Window.Borderless);
-        set => InvokeAlive(() => _runtime.Window.Borderless = value);
+        get => InvokeAlive(() => _host.Window.Borderless);
+        set => InvokeAlive(() => _host.Window.Borderless = value);
     }
 
     /// <inheritdoc />
     public void Show() => InvokeAlive(() =>
     {
-        if (_runtime.Window.WindowState == WindowState.Minimized)
-            _runtime.Window.WindowState = WindowState.Normal;
-        _runtime.Window.Show();
-        _runtime.Window.Activate();   // raise above any maximized/foreground window
+        if (_host.Window.WindowState == WindowState.Minimized)
+            _host.Window.WindowState = WindowState.Normal;
+        _host.Window.Show();
+        _host.Window.Activate();   // raise above any maximized/foreground window
     });
 
     /// <inheritdoc />
-    public void Hide() => InvokeAlive(() => _runtime.Window.Hide());
+    public void Hide() => InvokeAlive(() => _host.Window.Hide());
 
     /// <inheritdoc />
-    public void Minimize() => InvokeAlive(() => _runtime.Window.WindowState = WindowState.Minimized);
+    public void Minimize() => InvokeAlive(() => _host.Window.WindowState = WindowState.Minimized);
 
     /// <inheritdoc />
-    public bool IsVisible => InvokeAlive(() => _runtime.Window.IsVisible);
+    public bool IsVisible => InvokeAlive(() => _host.Window.IsVisible);
 
     /// <inheritdoc />
-    public bool IsMinimized => InvokeAlive(() => _runtime.Window.WindowState == WindowState.Minimized);
+    public bool IsMinimized => InvokeAlive(() => _host.Window.WindowState == WindowState.Minimized);
 
     public void FitImageToContainer()
     {
-        InvokeAlive(() => _runtime.Window.ImageLayer.FitImageToContainer());
+        InvokeAlive(() => _host.Window.ImageLayer.FitImageToContainer());
     }
 }

@@ -46,7 +46,7 @@ public class MeasurementOwnershipTests
                 ? MeasurementGeometry.Point(new(1, 2)) : MeasurementGeometry.Crosshair(new(1, 2)));
             var shape = (System.Windows.Shapes.Path)item.PrimaryVisual;
             var geometry = shape.Data;
-            using var target = ShapeEditorFactory.Create(shape, item)!;
+            using var target = new MeasurementEditSession(item);
             target.BeginDrag(0); target.Update(new(5, 6)); target.EndDrag();
             viewer.WindowForTests.MeasurementOverlay.UpdateScale(2);
             Assert.Equal(new Point(5, 6), item.Geometry.Start);
@@ -188,18 +188,18 @@ public class MeasurementOwnershipTests
     }
 
     [Fact]
-    public async Task EditorFactoryRejectsUnsupportedShapesAndRetainsOppositeCorner()
+    public async Task EditingRejectsUnsupportedShapesAndRetainsOppositeCorner()
     {
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (System.Windows.Shapes.Rectangle)item.PrimaryVisual;
-            using var session = ShapeEditorFactory.Create(rectangle, item);
+            using var session = new MeasurementEditSession(item);
             Assert.NotNull(session); session.BeginDrag(0); session.Update(new(8, 9)); session.Update(new(10, 11));
             Assert.Equal(4, rectangle.Width); Assert.Equal(5, rectangle.Height);
             Assert.Equal(6, System.Windows.Controls.Canvas.GetLeft(rectangle));
-            Assert.Null(ShapeEditorFactory.Create(new System.Windows.Controls.Border(), null));
+            Assert.False(viewer.Interaction.Editor.CanEdit(new System.Windows.Controls.Border()));
         });
     }
 

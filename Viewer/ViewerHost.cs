@@ -10,10 +10,10 @@ using Fizzy.ImageViewer.PixelInfo;
 
 namespace Fizzy.ImageViewer;
 
-internal enum ViewerInitializationStage { WindowCreated, PipelineCreated, MeasurementsCreated }
+internal enum ViewerInitializationStage { WindowCreated, PipelineCreated, MeasurementsCreated, MenusCreated }
 
 /// <summary>Owns the viewer STA, component composition and shutdown.</summary>
-internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindow)
+internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 {
     private readonly Viewer _owner = owner;
     private readonly ILogger _logger = logger;
@@ -26,6 +26,7 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
     private MeasurementContext _context = null!;
     private InteractionCoordinator _interaction = null!;
     private MenuManager _menuManager = null!;
+    private ViewerMenuController? _menuController;
     private Imaging.Queries.PixelQueryScheduler _queryScheduler = null!;
     private Snapshots.MenuSnapshotSession _menuSession = null!;
     private readonly Snapshots.SnapshotCapture _snapshotCapture = new();
@@ -50,10 +51,7 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
     internal Snapshots.SnapshotCapture Snapshots => _snapshotCapture;
     internal HudTextCollection Hud => _hud;
     private Frames.FrameLease? TryAcquireCurrentFrame() => _pipeline.TryAcquireCurrentFrame();
-    private void Unfreeze() => _menuSession.Close();
-    internal void FreezeMenuRegion() => _menuSession.Open(descriptor =>
-        _interaction?.SelectedMeasurement is { IsComplete: true, Geometry.Kind: ShapeType.Rectangle } item
-            ? item.Geometry.ToRegion(descriptor) : null);
+    internal ViewerMenuController MenuController => _menuController!;
     internal void Start(Rendering.ICpuImagePresenter? presenter,
         double left, double top, double width, double height, Action<Viewer>? initialize, Action<ViewerInitializationStage>? checkpoint)
     {
@@ -86,8 +84,16 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
                 var editMgr = new EditManager(win.MeasurementOverlay, _context.Find);
                 _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageLayer, win.MeasurementOverlay),
                     win.MeasurementOverlay, editMgr, _tools, _context, win.Layers);
-                _menuManager = new MenuManager(win);
-                RegisterBuiltInFeatures(win, _menuManager);
+                _tools.RegisterTool(new LineTool());
+                _tools.RegisterTool(new PointTool());
+                _tools.RegisterTool(new RectTool());
+                _tools.RegisterTool(new LineStrengthTool());
+                _pixelInfoOverlay = new PixelInfoOverlay(win.ImageLayer, win.HudLayer, _queryScheduler);
+                _pixelInfoOverlay.Enable();
+                _menuManager = new MenuManager(win, _lifetime);
+                _menuController = new ViewerMenuController(_menuManager, _interaction, _tools, win.Layers,
+                    _menuSession, _snapshotCapture, _pixelInfoOverlay);
+                checkpoint?.Invoke(ViewerInitializationStage.MenusCreated);
 
                 // Set window position before showing (if provided)
                 if (!double.IsNaN(left)) win.Left = left;
@@ -134,33 +140,6 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
         }
     }
 
-    /// <summary>
-    /// 注册内置的测量方法和菜单项。
-    /// </summary>
-    private void RegisterBuiltInFeatures(ViewerWindow win, MenuManager menuMgr)
-    {
-        // 注册测量方法
-        _tools.RegisterTool(new LineTool());
-        _tools.RegisterTool(new PointTool());
-        _tools.RegisterTool(new RectTool());
-        _tools.RegisterTool(new LineStrengthTool());
-
-        menuMgr.Register(CreateInteractionMenu);
-        menuMgr.Register(SeparatorMenuItem.Instance);
-        menuMgr.Register(new MenuItem("Clear All Shapes", () => { win.Layers.Clear(); }));
-        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, false));
-        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, true));
-        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, false, true));
-        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, true, true));
-        menuMgr.Register(SeparatorMenuItem.Instance);
-
-        // 初始化像素信息叠加层
-        InitializePixelInfoOverlay(win, menuMgr);
-
-        // 连接菜单打开/关闭事件到帧冻结/解冻
-        menuMgr.OnMenuOpening = FreezeMenuRegion;
-        menuMgr.OnMenuClosing = Unfreeze;
-    }
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         try
@@ -177,6 +156,8 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
         if (_closed) return;
         _lifetime.BeginDisposal();
         _closed = true;
+        Cleanup(() => _menuController?.Dispose());
+        Cleanup(() => _menuManager?.Dispose());
         Cleanup(() => _pipeline?.StopOnUiThread());
         Cleanup(() => _menuSession?.Dispose());
 
@@ -227,35 +208,4 @@ internal sealed class ViewerRuntime(Viewer owner, ILogger logger, bool showWindo
         return new ValueTask(_disposeCompletion.Task);
     }
 
-    // Capture interaction once per opening. Menu rendering knows no measurement policy.
-    private IEnumerable<IMenuItem> CreateInteractionMenu()
-    {
-        var interaction = _interaction;
-        var measuring = interaction.Mode == InteractionMode.Measuring;
-        var selected = interaction.SelectedShape;
-        if (measuring)
-        {
-            yield return new MenuItem("Cancel Measurement", interaction.Cancel);
-            yield break;
-        }
-        if (selected != null)
-        {
-            yield return new MenuItem("Edit", () => interaction.StartEditing(selected));
-            yield return new MenuItem("Delete", () => interaction.Delete(selected));
-            yield return SeparatorMenuItem.Instance;
-        }
-        foreach (var tool in _tools.RegisteredTools)
-            yield return new MenuItem(tool.DisplayName, () =>
-            {
-                if (_tools.HasTool(tool.Id) && _window.Layers.Measurements.IsVisible)
-                    interaction.StartMeasurement(tool.Id);
-            });
-    }
-    private void InitializePixelInfoOverlay(ViewerWindow win, Menus.MenuManager menuMgr)
-    {
-        _pixelInfoOverlay = new PixelInfoOverlay(win.ImageLayer, win.HudLayer, _queryScheduler);
-        _pixelInfoOverlay.Enable();
-        menuMgr.Register(new Menus.CheckableMenuItem("Pixel Info", () => _pixelInfoOverlay.IsEnabled,
-            () => { if (_pixelInfoOverlay.IsEnabled) _pixelInfoOverlay.Disable(); else _pixelInfoOverlay.Enable(); }));
-    }
 }

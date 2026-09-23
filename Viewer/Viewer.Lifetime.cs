@@ -20,8 +20,8 @@ public partial class Viewer
     public ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
-        return _runtime.BeginDisposal();
+        return _host.BeginDisposal();
     }
-    private T InvokeAlive<T>(Func<T> action) => _runtime.Lifetime.Invoke(_runtime.Window.Dispatcher, action);
+    private T InvokeAlive<T>(Func<T> action) => _host.Lifetime.Invoke(_host.Window.Dispatcher, action);
     private void InvokeAlive(Action action) => InvokeAlive(() => { action(); return true; });
 }

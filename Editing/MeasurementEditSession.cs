@@ -3,7 +3,8 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Editing;
 
-internal sealed class MeasurementShapeEditTarget(MeasurementItem item) : IShapeEditTarget
+/// <summary>Owns the drag-start geometry and writes edits through the measurement model.</summary>
+internal sealed class MeasurementEditSession(MeasurementItem item) : IDisposable
 {
     private Action<Point>? _drag;
     public IReadOnlyList<Point> Points => item.Geometry.ControlPoints;

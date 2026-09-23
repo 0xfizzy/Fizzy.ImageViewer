@@ -86,8 +86,8 @@ precedence over the interrupted session. Once disposal begins, `StartMeasurement
 Built-in measurement tool implementations are internal; use
 `StartMeasurement(MeasurementToolIds.Point)` (or another built-in ID) to activate them.
 
-`ViewerWindow`, `MenuManager`, WPF image/overlay/HUD layer controls, control-point visuals, all shape
-editors and their factory, `MeasurementItem`, scheduling and
+`ViewerHost`, `ViewerWindow`, `MenuManager`, `ViewerMenuController`, WPF image/overlay/HUD
+layer controls, control-point visuals, measurement edit sessions, `MeasurementItem`, scheduling and
 rendering internals are not public contracts. `DrawingElement` is a closed family of
 supported drawing descriptions, not a custom-renderer base class. Public shape helpers
 remain available as drawing helpers; consumers must not parse their WPF
@@ -100,6 +100,33 @@ Menu visibility is determined by `IMenuItem.IsVisible`, evaluated on each openin
 Action-based helpers accept an optional visibility predicate. Use `SeparatorMenuItem`
 for separators; the renderer removes leading, repeated and trailing separators.
 Built-in interaction actions capture their target when the menu opens.
+
+## Menu registration lifetime
+
+`RegisterMenu(IMenuItem)` returns an `IDisposable` registration handle. Dispose it from
+any thread to revoke only that registration; disposal is idempotent and safe after viewer
+closure. Registering the same object twice creates independent registrations. Ignoring the
+handle keeps the registration alive until the viewer closes. The viewer never disposes the
+caller-owned menu object itself.
+
+Revocation prevents new callbacks from an already open menu and disables its current item;
+the next opening omits it. An executing callback is allowed to finish, including when it
+revokes itself. Visibility/check callbacks run on the viewer STA and may change registrations;
+registrations added while building the menu appear on the next opening. Do not block these
+callbacks on another thread that is waiting for a viewer operation.
+
+Normal menu closure preserves the pending click until input drains. Explicit revocation or
+viewer shutdown invalidates it immediately. If menu construction fails after freezing a
+frame, the viewer resumes submissions and removes partial bindings before propagating the
+failure. Viewer shutdown releases registrations, callbacks and WPF menu bindings.
+
+```csharp
+using var registration = viewer.RegisterMenu(
+    new Fizzy.ImageViewer.Menus.MenuItem("Inspect target", InspectTarget));
+// Keep the registration for the lifetime of this feature.
+```
+
+## API baseline
 
 `tests/Fizzy.ImageViewer.Tests/PublicApi.txt` is the reviewed exported API baseline,
 including types, public/protected members, nullability and default arguments. API tests

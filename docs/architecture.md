@@ -8,7 +8,7 @@ public facade, drawing handles and measurement handles.
 
 | Directory | Responsibility |
 | --- | --- |
-| Viewer | Public facade, runtime composition, window and lifetime |
+| Viewer | Public facade, host composition, window and lifetime |
 | Frames | Immutable storage, leases, frame submission queue and committed state |
 | Rendering | CPU preparation/presentation and D3D surface presentation |
 | Imaging | Original-pixel access, regions, query results and display conversion |
@@ -16,10 +16,10 @@ public facade, drawing handles and measurement handles.
 | Drawing | Batch layers, drawing descriptions, styles, HUD handles and shape helpers |
 | Measurements | Tool protocols, registry, geometry and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
-| Editing | Supported shape editors and individual drag sessions |
+| Editing | Measurement edit sessions and control-point interaction |
 | Controls | WPF display surfaces and coordinate transforms |
 | Snapshots | Captured frame/region ownership and encoding |
-| Menus | Menu contracts, menu construction and built-in save actions |
+| Menus | Registration ownership, WPF bindings, viewer menu policy and save actions |
 
 Files belong to their feature, including interfaces and enums. Public and internal namespaces follow feature ownership; only the Viewer facade
 and its lifetime/composition helpers live in the root namespace. Built-in tools and
@@ -33,9 +33,9 @@ idempotent cleanup before awaiting the viewer's disposal completion.
 ## Ownership and direction
 
 Viewer exposes the complete public facade and raises public notifications. Its
-ViewerRuntime owns the STA, window, frame pipeline, presentation resources, shared pixel
+ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
 query scheduler, measurement context, tool registry, interaction coordinator and HUD.
-The facade assigns the runtime before starting its STA. Startup failure uses the same
+The facade assigns the host before starting its STA. Startup failure uses the same
 idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
 Disposal waits for outstanding frame and query work and the actual STA exit.
 ViewerLifetime provides the shared stopping gate. HudTextCollection owns HUD text
@@ -51,15 +51,25 @@ visibility, hit testing, batches and clear notifications; the window mounts the 
 measurement overlay into its layer.
 
 Measurement context owns one set of model-driven items and their visual ownership mappings,
-and borrows query scheduling. The runtime creates and closes it independently of the
+and borrows query scheduling. The host creates and closes it independently of the
 tool registry. The edit manager receives only a measurement lookup delegate.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and
 query runtime are internal imaging capabilities, not public measurement extension points.
 The query runtime controls time, worker execution and UI publication for deterministic tests.
 
-All measurement editing uses a model target for the supported geometries. Point and crosshair
-share anchor editing. A drag session owns its initial geometry and release boundary;
-there is no dynamic editor registration contract.
+EditManager directly owns a MeasurementEditSession and its control-point visuals.
+The session captures drag-start geometry and writes through MeasurementItem; geometry
+operations live in MeasurementGeometry. Capability checks do not create sessions.
+There is no editor factory or dynamic editor registration contract.
+
+MenuManager owns registrations and WPF click bindings. Each registration has an
+independent disposable handle; revocation disables current bindings and releases their
+targets. Normal menu closure retains bindings until input drains because WPF can deliver
+Closed before Click. A new opening invalidates the previous bindings and delayed cleanup.
+ViewerMenuController supplies built-in menu policy and captures interaction/ROI targets,
+borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession
+alone owns frozen frame/ROI leases. ViewerHost detaches menu policy and disposes menu
+bindings before stopping the pipeline and disposing snapshot and interaction resources.
 
 ## Invariants when extending the library
 

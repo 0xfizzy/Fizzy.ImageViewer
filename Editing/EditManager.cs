@@ -7,7 +7,7 @@ namespace Fizzy.ImageViewer.Editing;
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
 internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, MeasurementItem?> findMeasurement)
 {
-    private IShapeEditTarget? _session;
+    private MeasurementEditSession? _session;
     private int _dragIndex = -1;
     private readonly List<UIElement> _handles = [];
     public UIElement? EditingShape { get; private set; }
@@ -15,17 +15,15 @@ internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, Measurem
     public bool IsDragging => _dragIndex >= 0;
     internal IReadOnlyList<UIElement> Handles => _handles;
 
-    internal bool CanEdit(UIElement shape)
-    {
-        using var session = ShapeEditorFactory.Create(shape, findMeasurement(shape));
-        return session != null;
-    }
+    internal bool CanEdit(UIElement shape) => findMeasurement(shape) is { IsDisposed: false };
     internal bool StartEditing(UIElement shape)
     {
         if (EditingShape == shape) return true;
-        var session = ShapeEditorFactory.Create(shape, findMeasurement(shape));
-        if (session == null) return false;
+        if (findMeasurement(shape) is not { IsDisposed: false } item) return false;
         StopEditing();
+        // Removing old handles may re-enter user code and remove the requested item.
+        if (item.IsDisposed) return false;
+        var session = new MeasurementEditSession(item);
         EditingShape = shape; _session = session;
         try
         {
