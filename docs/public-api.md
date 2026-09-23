@@ -53,6 +53,11 @@ and isolated. Notifications do not promise pixel-query results are already avail
 
 Custom measurement tools own visuals and resources exclusively through
 `IMeasurementScope`; scope operations and tool callbacks use the viewer STA.
+During normal operation, a session started synchronously from a tool callback or
+completion subscriber takes precedence over the interrupted session. Tool callback
+exceptions propagate without cancelling a newer session; notification subscriber
+exceptions are logged and isolated. Once disposal begins, `StartMeasure` throws
+`ObjectDisposedException`.
 See [measurement contracts](measurements.md). Arbitrary custom control-point editors
 are not a public extension point. Built-in editing remains supported.
 

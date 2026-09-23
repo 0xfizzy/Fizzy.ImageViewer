@@ -175,7 +175,7 @@ removal and closure release subscriptions and drawing resources.
 `DrawText` create single-element batches in `Markers`, without default selection
 or editing. Use `Layers.<layer>.AddBatch(...)` for bulk drawing and layer selection.
 For editable measurement shapes, continue using measurement tools and
-`MeasureContext.CreateScope().AddShape(...)`. Keep the returned scope and call
+`IMeasureToolContext.CreateScope().AddShape(...)`. Keep the returned scope and call
 `Complete()` when creation finishes. Scopes own related visuals and registered
 resources until deletion, clear or viewer closure. Measurement shapes remain
 individual WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles

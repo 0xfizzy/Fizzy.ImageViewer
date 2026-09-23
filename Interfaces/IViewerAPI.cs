@@ -146,7 +146,7 @@ public interface IViewerAPI : IAsyncDisposable
     void RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
-    /// 注册自定义测量方法。工具回调中通过 MeasureContext.CreateScope 登记视觉元素和资源，
+    /// 注册自定义测量方法。工具回调中通过 IMeasureToolContext.CreateScope 登记视觉元素和资源，
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
     /// 调度器、内部测量模型及逐帧查询注册不是公共扩展接口。
     /// </summary>

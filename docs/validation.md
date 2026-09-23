@@ -51,6 +51,17 @@ the consumer repository. This library does not require a specific GPU runtime or
 visual ownership, reentrant registration/disposal, viewer closure, editor registry
 removal and the absence of standalone overlay interaction.
 
+`MeasurementReentryTests` cover session replacement from click, move, cancellation,
+tool switching and entry into editing, with and without callback exceptions. They
+check active tool, interaction mode, cursor, input suppression and preview ownership,
+including restart during scope disposal and rejection of new sessions during closure.
+`MeasurementInteractionTests` also cover restarting the same built-in tool from a
+completion subscriber. Run the focused suite with:
+
+```powershell
+dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release --filter FullyQualifiedName~MeasurementReentryTests
+```
+
 `MeasurementSchedulerTests` use a manual clock and execution/publication queues for
 batching, independent rates, expiration, failed queries, stale geometry,
 re-registration and cancellation ownership. `MeasurementInteractionTests` cover
@@ -60,6 +71,15 @@ and `QuerySchedulingTests` cover plot-window ownership and slow in-flight querie
 on real STA dispatchers. See [measurement contracts](measurements.md).
 Mouse capture state transitions use an injected capture boundary. Actual pointer
 capture and dragging on an interactive desktop still require manual validation.
+
+For interactive validation, cancel a preview with Escape, start consecutive
+measurements from a completion callback, and switch between point, line and ROI
+tools. Confirm that the pen cursor and suppressed marker input belong only to the
+active measurement session. Hide the measurement layer during a preview and check
+that the preview is removed and normal input returns; show it again and start a new
+measurement. Close the viewer during a preview and with a completed line-profile
+window open, then confirm both windows close and `DisposeAsync` completes. These
+checks use synthetic frames and do not require camera or motion hardware.
 
 Pixel HUD cases in `MeasurementSchedulerTests` cover the completion-based 10 Hz
 cap, lower configured rates, moving results, 300 ms retention, failures, expiration,

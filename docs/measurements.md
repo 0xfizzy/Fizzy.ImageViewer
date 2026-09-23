@@ -58,13 +58,19 @@ During normal operation, a session started synchronously inside a tool callback
 or completion notification takes precedence, even when it uses the same tool.
 Returning or throwing from the old callback does not cancel that session or
 restore its input state. This also applies when cancellation interrupts an outer
-start request: the callback's session wins. Callback exceptions still propagate
-according to the existing interaction rules. Cancellation captures the old preview
-scopes before invoking the tool and cleans only that snapshot; scopes created by
-the new session survive. Scope disposal during session cleanup may itself start a
-new session. Full clear still rejects scope creation during bulk cleanup.
-Once viewer shutdown begins, new sessions are rejected and all resources are
-released; public viewer calls during shutdown throw `ObjectDisposedException`.
+start request: the callback's session wins. Exceptions from tool callbacks propagate
+to their caller; cleanup restores idle only if that operation still owns the session.
+Completion/removal notification subscribers are instead isolated: their exceptions
+are logged and later subscribers still run.
+
+Cancellation captures the unfinished scopes before invoking the tool and cleans
+only that snapshot; scopes created by the new session survive. Normal completion
+captures unfinished scopes after `OnClick` returns, provided no newer session has
+replaced it. Scope disposal during session cleanup may itself start a new session.
+Cleanup attempts every captured scope and logs disposal failures. Bulk scope cleanup
+during clear rejects new scope creation.
+Once viewer shutdown begins, `StartMeasure` throws `ObjectDisposedException`;
+shutdown cleans both completed and unfinished scopes and waits for owned queries.
 
 ## Query execution
 
@@ -138,8 +144,9 @@ run before disposable resources, followed by visual removal. Cleanup continues a
 failures; explicit disposal reports an aggregate exception, while framework cleanup
 logs failures and continues. Visual observer failures are logged during scope cleanup.
 Creating scopes during bulk cleanup is rejected. Register each visual with one owner
-and do not pre-add it through the removed raw context shape API. Scope registration is the only public tool path; raw context shape attachment is an internal
-low-level compatibility API without ownership of external subscriptions or windows.
+through `IMeasurementScope.AddShape`. Scope registration is the public tool path for
+owning visuals, subscriptions and windows; internal visual attachment is not an
+extension contract.
 `FrameCommitted` remains a notification, not a query execution callback.
 
 For example, this tool owns a marker and a frame notification subscription:
