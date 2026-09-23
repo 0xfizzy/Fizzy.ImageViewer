@@ -102,7 +102,7 @@ public class MeasurementInteractionTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = Overlay(viewer); var invalid = new TextBlock();
-            viewer.MeasurementContext.AddShape(invalid);
+            viewer.MeasurementContext.AttachVisualInternal(invalid);
             overlay.EnterEditMode(invalid);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.Empty(viewer.Interaction.Editor.Handles);
@@ -246,3 +246,4 @@ public class MeasurementInteractionTests
         });
     }
 }
+

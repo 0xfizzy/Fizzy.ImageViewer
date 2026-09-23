@@ -11,12 +11,12 @@ namespace Fizzy.ImageViewer.Interfaces
         // 当用户点击画布时触发
         // point: 图片像素坐标
         // isFinished: 方法是否完成测量
-        bool OnClick(Point point, MeasureContext ctx);
+        bool OnClick(Point point, IMeasureToolContext ctx);
 
         // 当鼠标移动时触发 (用于动态绘制预览形状)
-        void OnMouseMove(Point point, MeasureContext ctx);
+        void OnMouseMove(Point point, IMeasureToolContext ctx);
 
         // 强制取消当前测量
-        void Cancel(MeasureContext ctx);
+        void Cancel(IMeasureToolContext ctx);
     }
 }

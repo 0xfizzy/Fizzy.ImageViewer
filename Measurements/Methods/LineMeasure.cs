@@ -9,9 +9,9 @@ public class LineMeasure : IMeasureMethod
     public virtual string DisplayName => "Length";
     private Point _start;
     private MeasurementItem? _item;
-    private protected virtual MeasurementItem CreateItem(MeasureContext context, Point start) =>
-        new(context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0));
-    public bool OnClick(Point point, MeasureContext context)
+    private protected virtual MeasurementItem CreateItem(IMeasureToolContext context, Point start) =>
+        new((MeasureContext)context, MeasurementGeometry.Line(start, start), Shapes.CreateLine(), Shapes.CreateLabel(start, "", 5, 0));
+    public bool OnClick(Point point, IMeasureToolContext context)
     {
         if (_item == null || _item.IsDisposed)
         { _start = point; _item = CreateItem(context, point); return false; }
@@ -20,9 +20,10 @@ public class LineMeasure : IMeasureMethod
         try { item.Complete(); } catch { item.Dispose(); throw; }
         return true;
     }
-    public void OnMouseMove(Point point, MeasureContext context)
+    public void OnMouseMove(Point point, IMeasureToolContext context)
     {
         if (_item is { IsDisposed: false }) _item.UpdateGeometry(MeasurementGeometry.Line(_start, point));
     }
-    public void Cancel(MeasureContext context) { var item = _item; _item = null; item?.Dispose(); }
+    public void Cancel(IMeasureToolContext context) { var item = _item; _item = null; item?.Dispose(); }
 }
+

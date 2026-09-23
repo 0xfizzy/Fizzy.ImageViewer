@@ -18,10 +18,10 @@ public class RectangleEditor : IShapeEditor
         var opposite = points[(index + 2) % 4];
         return point =>
         {
-            var geometry = MeasurementGeometry.Rectangle(opposite, point);
-            rectangle.Width = geometry.Width; rectangle.Height = geometry.Height;
-            Canvas.SetLeft(rectangle, geometry.X); Canvas.SetTop(rectangle, geometry.Y);
-            if (rectangle.Tag is OverlayTagData data) data.AnchorPoint = geometry.Start;
+            var (start, end) = GeometryOperations.NormalizeRectangle(opposite, point);
+            rectangle.Width = end.X - start.X; rectangle.Height = end.Y - start.Y;
+            Canvas.SetLeft(rectangle, start.X); Canvas.SetTop(rectangle, start.Y);
+            if (rectangle.Tag is OverlayTagData data) data.AnchorPoint = start;
         };
     }
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)

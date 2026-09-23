@@ -19,7 +19,7 @@ public class MeasurementScopeTests
         public string DisplayName => "Custom";
         public int Disposals;
         public bool Finish;
-        public bool OnClick(Point point, MeasureContext context)
+        public bool OnClick(Point point, IMeasureToolContext context)
         {
             var scope = context.CreateScope();
             scope.AddShape(Shapes.CreatePoint(point));
@@ -27,9 +27,9 @@ public class MeasurementScopeTests
             if (Finish) scope.Complete();
             return Finish;
         }
-        public void OnMouseMove(Point point, MeasureContext context) { }
+        public void OnMouseMove(Point point, IMeasureToolContext context) { }
         // Intentionally does not release anything: the manager must provide the guarantee.
-        public void Cancel(MeasureContext context) => throw new InvalidOperationException("Plugin cancel failed");
+        public void Cancel(IMeasureToolContext context) => throw new InvalidOperationException("Plugin cancel failed");
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public class MeasurementScopeTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.MeasurementOverlay;
-            var shape = Shapes.CreatePoint(new()); viewer.MeasurementContext.AddShape(shape);
+            var shape = Shapes.CreatePoint(new()); viewer.MeasurementContext.AttachVisualInternal(shape);
             viewer.Interaction.Dispose(); Assert.Null(overlay.Coordinator);
             overlay.Select(shape); overlay.EnterEditMode(shape); overlay.DeleteSelected();
             Assert.Null(overlay.SelectedShape); Assert.False(viewer.Interaction.Editor.IsEditing);
@@ -178,3 +178,6 @@ public class MeasurementScopeTests
         });
     }
 }
+
+
+

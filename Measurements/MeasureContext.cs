@@ -8,7 +8,7 @@ using Fizzy.ImageViewer.Interfaces;
 namespace Fizzy.ImageViewer;
 
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
-public sealed class MeasureContext : IDisposable
+internal sealed class MeasureContext : IMeasureToolContext
 {
     private readonly OverlayLayer _layer;
     private readonly Func<FrameLease?> _acquire;
@@ -19,9 +19,9 @@ public sealed class MeasureContext : IDisposable
     private readonly Dictionary<UIElement, MeasurementScope> _scopeVisuals = [];
     private bool _cleaningScopes;
     private bool _disposed;
-    public PixelQueryOptions QueryOptions { get => _scheduler.QueryOptions; set => _scheduler.QueryOptions = value; }
-    public PixelQueryMetrics QueryMetrics => _scheduler.QueryMetrics;
-    public Task Completion => _scheduler.Completion;
+    internal PixelQueryOptions QueryOptions { get => _scheduler.QueryOptions; set => _scheduler.QueryOptions = value; }
+    internal PixelQueryMetrics QueryMetrics => _scheduler.QueryMetrics;
+    internal Task Completion => _scheduler.Completion;
     public event Action<FrameInfo>? FrameCommitted;
     internal event Action<MeasurementItem>? ItemRemoving;
 
@@ -41,7 +41,7 @@ public sealed class MeasureContext : IDisposable
         var scope = new MeasurementScope(this); _scopes.Add(scope); return scope;
     }
     internal void VerifyAccess() => _layer.Dispatcher.VerifyAccess();
-    public void AddShape(UIElement shape) { ObjectDisposedException.ThrowIf(_disposed, this); _layer.AddShape(shape); }
+    internal void AttachVisualInternal(UIElement shape) { ObjectDisposedException.ThrowIf(_disposed, this); _layer.AddShape(shape); }
     public void RemoveShape(UIElement shape)
     {
         if (_scopeVisuals.TryGetValue(shape, out var scope)) { scope.Dispose(); return; }
@@ -60,7 +60,7 @@ public sealed class MeasureContext : IDisposable
             foreach (var visual in item.Visuals)
             {
                 if (item.IsDisposed) break;
-                AddShape(visual);
+                AttachVisualInternal(visual);
             }
         }
         catch { item.Dispose(); throw; }
@@ -99,7 +99,7 @@ public sealed class MeasureContext : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_scopeVisuals.ContainsKey(shape) || _items.ContainsKey(shape) || _layer.Canvas.Children.Contains(shape)) throw new ArgumentException("Shape is already registered.", nameof(shape));
         _scopeVisuals.Add(shape, scope);
-        try { AddShape(shape); } catch { _scopeVisuals.Remove(shape); _layer.RemoveVisual(shape); throw; }
+        try { AttachVisualInternal(shape); } catch { _scopeVisuals.Remove(shape); _layer.RemoveVisual(shape); throw; }
     }
     internal void DetachScope(MeasurementScope scope, IReadOnlyCollection<UIElement> shapes)
     {
@@ -113,7 +113,7 @@ public sealed class MeasureContext : IDisposable
         foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
             try { handler(info); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
     }
-    public void Dispose()
+    internal void Shutdown()
     {
         if (_disposed) return;
         _disposed = true;

@@ -102,15 +102,15 @@ case-sensitive; blank IDs or display names are rejected. `StartMeasure` throws
 measurement layer is hidden. `UnregisterMeasureMethod(id)` returns whether an entry
 was removed. Call `CancelMeasure()` to end the active interaction session.
 
-The public extension boundary consists of `IMeasureMethod` and the `MeasureContext` capability facade.
-Custom tools should use `MeasureContext.CreateScope()` to obtain an
+The public extension boundary consists of `IMeasureMethod` and the `IMeasureToolContext` capability facade.
+Custom tools should use `IMeasureToolContext.CreateScope()` to obtain an
 `IMeasurementScope`. Register visuals with `AddShape`, disposable resources with
 `AddResource`, and cleanup callbacks with `OnDispose`. Call `Complete()` before
 returning `true` from `OnClick` to retain a result; incomplete scopes are released
 when creation finishes or is cancelled (including tool changes and layer hiding).
 Completed scopes survive cancellation and tool unregistration. Removing any owned
 visual disposes its entire scope. Clear and viewer closure dispose all scopes.
-`Dispose()` also explicitly cancels/removes a scope and is idempotent.
+`IMeasurementScope.Dispose()` explicitly cancels/removes a scope and is idempotent.
 
 Scopes own resources, not their calculation logic. The scheduler, measurement
 models, editor registry and typed query protocol remain internal. `Tag` contains
@@ -119,7 +119,7 @@ run before disposable resources, followed by visual removal. Cleanup continues a
 failures; explicit disposal reports an aggregate exception, while framework cleanup
 logs failures and continues. Visual observer failures are logged during scope cleanup.
 Creating scopes during bulk cleanup is rejected. Register each visual with one owner
-and do not pre-add it through `MeasureContext.AddShape`. Raw `AddShape` remains a
+and do not pre-add it through the removed raw context shape API. Scope registration is the only public tool path; raw context shape attachment is an internal
 low-level compatibility API without ownership of external subscriptions or windows.
 `FrameCommitted` remains a notification, not a query execution callback.
 
@@ -134,7 +134,7 @@ public sealed class CustomPoint : IMeasureMethod
 {
     public string Id => "custom-point";
     public string DisplayName => "Custom point";
-    public bool OnClick(Point point, MeasureContext context)
+    public bool OnClick(Point point, IMeasureToolContext context)
     {
         var scope = context.CreateScope();
         try
@@ -151,8 +151,8 @@ public sealed class CustomPoint : IMeasureMethod
         }
         catch { scope.Dispose(); throw; }
     }
-    public void OnMouseMove(Point point, MeasureContext context) { }
-    public void Cancel(MeasureContext context) { } // Framework releases incomplete scopes.
+    public void OnMouseMove(Point point, IMeasureToolContext context) { }
+    public void Cancel(IMeasureToolContext context) { } // Framework releases incomplete scopes.
 }
 ```
 
@@ -167,3 +167,5 @@ geometry and invalidate query results before projecting visuals.
 The scheduler revokes subscriptions but does not dispose subscribers. Built-in
 measurement items own their subscription handles; the pixel HUD is a separate
 subscriber owned by the viewer.
+
+

@@ -1,6 +1,7 @@
 using System.Windows;
 using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Imaging;
+using Fizzy.ImageViewer.Editing;
 
 namespace Fizzy.ImageViewer;
 
@@ -25,9 +26,11 @@ internal sealed record MeasurementGeometry
         Kind = kind; Start = start; End = end; Version = version;
     }
 
-    public static MeasurementGeometry Rectangle(Point a, Point b, long version = 0) => new(
-        ShapeType.Rectangle, new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y)),
-        new(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y)), version);
+    public static MeasurementGeometry Rectangle(Point a, Point b, long version = 0)
+    {
+        var (start, end) = GeometryOperations.NormalizeRectangle(a, b);
+        return new(ShapeType.Rectangle, start, end, version);
+    }
     public static MeasurementGeometry Line(Point start, Point end, long version = 0) => new(ShapeType.Line, start, end, version);
     public static MeasurementGeometry Point(Point point, long version = 0) => new(ShapeType.Point, point, point, version);
 
@@ -37,7 +40,7 @@ internal sealed record MeasurementGeometry
 
     public IReadOnlyList<Point> ControlPoints => Kind switch
     {
-        ShapeType.Rectangle => [Start, new(End.X, Start.Y), End, new(Start.X, End.Y)],
+        ShapeType.Rectangle => GeometryOperations.RectangleControlPoints(Start, End),
         ShapeType.Line => [Start, End],
         _ => [Start]
     };

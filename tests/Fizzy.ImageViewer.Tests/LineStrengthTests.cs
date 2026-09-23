@@ -63,8 +63,8 @@ public class LineStrengthTests
             var method = new LineStrengthMeasure();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
-            viewer.MeasurementContext.Dispose();
-            viewer.MeasurementContext.Dispose();
+            viewer.MeasurementContext.Shutdown();
+            viewer.MeasurementContext.Shutdown();
             Assert.False(first.Window.IsVisible);
             Assert.False(second.Window.IsVisible);
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -89,3 +89,4 @@ public class LineStrengthTests
         Assert.Equal(2, closed); Assert.Equal(4, removed);
     }
 }
+

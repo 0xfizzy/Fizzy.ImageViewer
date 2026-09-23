@@ -321,7 +321,7 @@ public class DrawingTests
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             foreach (var shape in new UIElement[] { Shapes.CreatePoint(new(30, 30)), Shapes.CreateLine(), Shapes.CreateRectangle() })
             {
-                viewer.MeasurementContext.AddShape(shape);
+                viewer.MeasurementContext.AttachVisualInternal(shape);
                 overlay.Select(shape); overlay.EnterEditMode();
                 var data = (OverlayTagData)((FrameworkElement)shape).Tag;
                 Assert.NotEmpty(viewer.Interaction.Editor.Handles);
@@ -336,7 +336,7 @@ public class DrawingTests
             }
             var line = Shapes.CreateLine(); var label = Shapes.CreateLabel(new(1, 1), "length");
             new MeasurementItem(viewer.MeasurementContext, MeasurementGeometry.Line(new(0,0), new(1,1)), line, label).Complete();
-            viewer.MeasurementContext.AddShape(line); viewer.MeasurementContext.AddShape(label);
+            viewer.MeasurementContext.AttachVisualInternal(line); viewer.MeasurementContext.AttachVisualInternal(label);
             overlay.Select(line); overlay.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
@@ -396,3 +396,4 @@ public class DrawingTests
         });
     }
 }
+

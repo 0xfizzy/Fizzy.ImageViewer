@@ -55,6 +55,6 @@ internal sealed class MeasureManager : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        try { Cancel(); } finally { Context.Dispose(); }
+        try { Cancel(); } finally { Context.Shutdown(); }
     }
 }

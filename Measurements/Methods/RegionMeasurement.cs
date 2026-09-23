@@ -1,12 +1,13 @@
 using Fizzy.ImageViewer.Frames;
 using System.Windows;
+using Fizzy.ImageViewer.Interfaces;
 
 namespace Fizzy.ImageViewer.MeasureMethods;
 
 internal sealed class RegionMeasurement : MeasurementItem
 {
-    public RegionMeasurement(MeasureContext context, Point start)
-        : base(context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "等待数据", 5, 0)) { }
+    public RegionMeasurement(IMeasureToolContext context, Point start)
+        : base((MeasureContext)context, MeasurementGeometry.Rectangle(start, start), Shapes.CreateRectangle(), Shapes.CreateLabel(start, "等待数据", 5, 0)) { }
     public override void Complete() { base.Complete(); Subscribe(); }
     public override QueryRequest? Capture(FrameDescriptor descriptor)
     {
@@ -22,3 +23,4 @@ internal sealed class RegionMeasurement : MeasurementItem
         });
     }
 }
+
