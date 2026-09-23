@@ -29,15 +29,15 @@ public partial class Viewer
         if (_closed) return;
         _lifetime.BeginDisposal();
         _closed = true;
-        Cleanup(_pipeline.StopOnUiThread);
-        Cleanup(_menuSession.Dispose);
+        Cleanup(() => _pipeline?.StopOnUiThread());
+        Cleanup(() => _menuSession?.Dispose());
 
         Cleanup(() => _interaction?.Dispose());
         Cleanup(() => _pixelInfoOverlay?.Disable());
         Cleanup(() => _measureManager?.Dispose());
-        Cleanup(() => _window.Layers.Close());
+        Cleanup(() => _window?.Layers.Close());
         Cleanup(CloseHud);
-        Cleanup(_presentation.Dispose);
+        Cleanup(() => _presentation?.Dispose());
         FrameCommitted = null;
         MeasurementCompleted = null;
         MeasurementRemoved = null;
@@ -54,7 +54,7 @@ public partial class Viewer
     {
         try
         {
-            if (!_closed && !_window.Dispatcher.HasShutdownStarted)
+            if (!_closed && _window != null && !_window.Dispatcher.HasShutdownStarted)
             {
                 try
                 {
@@ -62,9 +62,9 @@ public partial class Viewer
                 }
                 catch (TaskCanceledException) { }
             }
-            await Task.WhenAll(_pipeline.Completion, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+            await Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _measureManager?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
             _lifetime.Complete();
-            if (_window.ClosingError is { } error) _disposeCompletion.TrySetException(error);
+            if (_window?.ClosingError is { } error) _disposeCompletion.TrySetException(error);
             else _disposeCompletion.TrySetResult();
         }
         catch (Exception ex) { _disposeCompletion.TrySetException(ex); }

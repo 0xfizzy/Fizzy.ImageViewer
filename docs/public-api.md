@@ -26,6 +26,9 @@ WPF visibility (a shown minimized window is still visible); `IsMinimized` is ind
 Minimizing an already hidden window does not implicitly show it.
 
 `DisposeAsync` closes the window and waits for owned background work and the STA to stop.
+Construction validates window bounds before starting the STA. If initialization fails,
+all created resources are released on their owning thread and background work is drained
+before the original exception is rethrown.
 `Closed` is a window notification, not a substitute for awaiting disposal. There is no
 separate public `Close` method. Event callbacks run on the viewer STA; do not block them
 waiting for shutdown or for work that needs that dispatcher.

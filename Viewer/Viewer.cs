@@ -30,11 +30,23 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
         : this(logger, null, true, left, top, width, height) { }
 
     internal Viewer(ILogger<Viewer> logger, Rendering.IImagePresenter? presenter, bool showWindow,
-        double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
+        double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
+        Action<Viewer>? initialize = null)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ValidateWindowArgument(left, nameof(left));
+        ValidateWindowArgument(top, nameof(top));
+        ValidateWindowArgument(width, nameof(width), dimension: true);
+        ValidateWindowArgument(height, nameof(height), dimension: true);
         _logger = logger;
         _showWindow = showWindow;
-        InitializeWindow(presenter, out _windowThread, out _window, left, top, width, height);
+        InitializeWindow(presenter, out _windowThread, out _window, left, top, width, height, initialize);
+    }
+
+    private static void ValidateWindowArgument(double value, string name, bool dimension = false)
+    {
+        if (!double.IsNaN(value) && (!double.IsFinite(value) || (dimension && value < 0)))
+            throw new ArgumentOutOfRangeException(name);
     }
 
     private readonly bool _showWindow;

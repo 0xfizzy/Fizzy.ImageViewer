@@ -5,20 +5,24 @@ using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements.Methods;
 using Fizzy.ImageViewer.Menus;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    private void InitializeWindow(Rendering.IImagePresenter? presenter, out Thread thread, out ViewerWindow window, double left, double top, double width, double height)
+    private void InitializeWindow(Rendering.IImagePresenter? presenter, out Thread thread, out ViewerWindow window,
+        double left, double top, double width, double height, Action<Viewer>? initialize)
     {
         var tcs = new TaskCompletionSource<ViewerWindow>();
 
         thread = new Thread(() =>
         {
+            ViewerWindow? win = null;
+            Exception? failure = null;
             try
             {
-                var win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
+                win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
                 _window = win;
                 _presentation = new Rendering.FramePresentation(win.Dispatcher, win.Layer0,
                     presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
@@ -27,7 +31,7 @@ public partial class Viewer
                 win.Closed += OnWindowClosed;
 
                 // 在 UI 线程创建 Managers
-                var measureMgr = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _logger);
+                var measureMgr = _measureManager = new MeasureManager(win.Layer1, AcquireCurrentFrameForMeasurement, _logger);
                 measureMgr.Context.ItemCompleted += item => NotifyMeasurement(MeasurementCompleted, item);
                 measureMgr.Context.ItemRemoved += item => NotifyMeasurement(MeasurementRemoved, item);
 
@@ -41,12 +45,10 @@ public partial class Viewer
                 };
 
                 // 内置功能注册需要访问测量和交互管理器。
-                _measureManager = measureMgr;
                 _interaction = interaction;
                 RegisterBuiltInFeatures(win, measureMgr, menuMgr);
 
                 // 发布初始化完成的管理器，随后才通知构造线程。
-                _measureManager = measureMgr;
                 _menuManager = menuMgr;
 
                 // Set window position before showing (if provided)
@@ -55,22 +57,42 @@ public partial class Viewer
                 if (!double.IsNaN(width)) win.Width = width;
                 if (!double.IsNaN(height)) win.Height = height;
 
+                initialize?.Invoke(this);
                 if (_showWindow) win.Show();
                 tcs.SetResult(win);
                 Dispatcher.Run();
             }
             catch (Exception ex)
             {
-                tcs.TrySetException(ex);
+                failure = ex;
             }
-            finally { _windowStopped.TrySetResult(); }
+            finally
+            {
+                // Partial startup and normal closure share the same resource owners.
+                if (win != null) win.Closed -= OnWindowClosed;
+                CleanupOnWindowClosed();
+                if (_presentation == null) Cleanup(() => presenter?.Dispose());
+                if (win != null) Cleanup(win.CloseProgrammatically);
+                Cleanup(Dispatcher.CurrentDispatcher.InvokeShutdown);
+                _windowStopped.TrySetResult();
+                _ = DisposeAsync();
+                if (failure != null) tcs.TrySetException(failure);
+            }
         });
 
         thread.SetApartmentState(ApartmentState.STA);
         thread.IsBackground = true;
         thread.Start();
 
-        window = tcs.Task.Result;
+        try { window = tcs.Task.GetAwaiter().GetResult(); }
+        catch
+        {
+            thread.Join();
+            // Cancellation can still be releasing frame/query leases off the STA.
+            try { _disposeCompletion.Task.GetAwaiter().GetResult(); }
+            catch (Exception cleanupError) { _logger.LogWarning(cleanupError, "Startup cleanup failed"); }
+            throw;
+        }
     }
 
     /// <summary>
