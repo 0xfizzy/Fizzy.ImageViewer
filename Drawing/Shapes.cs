@@ -19,7 +19,7 @@ namespace Fizzy.ImageViewer.Drawing
                 Stroke = style.NormalBrush,
                 StrokeThickness = BaseStrokeThickness
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Line) { OriginalBrush = style.NormalBrush, SelectedBrush = style.SelectedBrush });
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Line) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -37,12 +37,11 @@ namespace Fizzy.ImageViewer.Drawing
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
             };
             OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.AnchoredLabel, ShapeType.Text)
-                {
-                    AnchorPoint = anchor,
-                    ScreenOffset = new Vector(offsetX, offsetY),
-                    OriginalBrush = style.NormalBrush,
-                    SelectedBrush = style.SelectedBrush
-                });
+            {
+                AnchorPoint = anchor,
+                ScreenOffset = new Vector(offsetX, offsetY),
+                SelectedBrush = style.SelectedBrush
+            });
             return visual;
         }
 
@@ -60,11 +59,10 @@ namespace Fizzy.ImageViewer.Drawing
                 Data = geometry
             };
             OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
-                {
-                    AnchorPoint = position,
-                    OriginalBrush = style.PointBrush,
-                    SelectedBrush = style.SelectedBrush
-                });
+            {
+                AnchorPoint = position,
+                SelectedBrush = style.SelectedBrush
+            });
             return path;
         }
 
@@ -84,11 +82,10 @@ namespace Fizzy.ImageViewer.Drawing
                 Data = geometry
             };
             OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Crosshair)
-                {
-                    AnchorPoint = position,
-                    OriginalBrush = style.NormalBrush,
-                    SelectedBrush = style.SelectedBrush
-                });
+            {
+                AnchorPoint = position,
+                SelectedBrush = style.SelectedBrush
+            });
             return path;
         }
 
@@ -104,7 +101,7 @@ namespace Fizzy.ImageViewer.Drawing
                 StrokeThickness = 1.0,
                 StrokeDashArray = new DoubleCollection { 4, 2 }
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { OriginalBrush = style.RegionBrush, SelectedBrush = style.SelectedBrush });
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -121,11 +118,10 @@ namespace Fizzy.ImageViewer.Drawing
                 Data = geometry
             };
             OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Circle)
-                {
-                    AnchorPoint = center,
-                    OriginalBrush = style.NormalBrush,
-                    SelectedBrush = style.SelectedBrush
-                });
+            {
+                AnchorPoint = center,
+                SelectedBrush = style.SelectedBrush
+            });
 
             Canvas.SetLeft(path, center.X);
             Canvas.SetTop(path, center.Y);

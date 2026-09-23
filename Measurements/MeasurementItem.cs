@@ -53,7 +53,7 @@ internal class MeasurementItem : IDisposable
     {
         ShapeType.Line => $"{(Geometry.End - Geometry.Start).Length:F1} px",
         ShapeType.Point => $"X:{Geometry.X:F2}\nY:{Geometry.Y:F2}",
-        _ => "等待数据"
+        _ => "Waiting for data"
     };
     public void Dispose()
     {

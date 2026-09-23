@@ -110,3 +110,10 @@ cover routed selection input, one cancellation per layer operation and complete 
 after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
 context. The public API baseline test detects exported type/member changes; its update
 procedure is documented in [public API](public-api.md).
+
+Initialization tests also verify that rollback and window closure bypass overridden
+disposal methods. Style tests cover caller-owned `Tag` data, per-visual zoom dimensions,
+point fill selection and editing after metadata changes. Menu tests cover visibility,
+check state, separator normalization and captured targets across closure/reopening.
+Measurement resource failure tests verify visual detachment and idempotent disposal
+even when specialized cleanup throws.

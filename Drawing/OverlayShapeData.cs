@@ -39,6 +39,6 @@ internal sealed class OverlayShapeData(OverlayScaleMode mode, ShapeType type)
     internal Point AnchorPoint { get; set; }
     internal Vector ScreenOffset { get; set; }
     internal ScaleTransform? CachedScaleTransform { get; set; }
-    internal Brush? OriginalBrush { get; set; }
+    internal Brush? OriginalBrush { get; private set; }
     internal Brush SelectedBrush { get; init; } = Brushes.Yellow;
 }

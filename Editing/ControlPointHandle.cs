@@ -22,10 +22,9 @@ internal static class ControlPointHandle
         var geometry = new EllipseGeometry(new Point(0, 0), HandleRadius, HandleRadius);
 
         // Use FixedSize mode so handle stays constant size during zoom
-        var tagData = new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
+        var data = new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
         {
-            AnchorPoint = position,
-            OriginalBrush = HandleBrush
+            AnchorPoint = position
         };
 
         var path = new Path
@@ -37,7 +36,7 @@ internal static class ControlPointHandle
             Cursor = System.Windows.Input.Cursors.Hand
         };
 
-        OverlayShapeData.Attach(path, tagData);
+        OverlayShapeData.Attach(path, data);
         return path;
     }
 }
