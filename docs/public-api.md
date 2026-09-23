@@ -82,6 +82,10 @@ visual trees or cached transform metadata to observe built-in measurement result
 The pixel HUD controller, built-in save-menu item and shape metadata/cache are internal.
 Custom menus use `IMenuItem` or the action-based menu helpers; custom measurement visuals
 use `Shapes.Create*` and scopes. Built-in save actions receive snapshot services directly.
+Menu visibility is determined by `IMenuItem.IsVisible`, evaluated on each opening.
+Action-based helpers accept an optional visibility predicate. Use `SeparatorMenuItem`
+for separators; the renderer removes leading, repeated and trailing separators.
+Built-in interaction actions capture their target when the menu opens.
 
 `tests/Fizzy.ImageViewer.Tests/PublicApi.txt` is the reviewed exported API baseline,
 including types, public/protected members, nullability and default arguments. API tests

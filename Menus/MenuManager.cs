@@ -1,5 +1,4 @@
 using WpfMenuItem = System.Windows.Controls.MenuItem;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,12 +11,6 @@ namespace Fizzy.ImageViewer.Menus
     {
         private readonly ContextMenu _contextMenu;
         private readonly List<Func<IEnumerable<IMenuItem>>> _registeredItems = [];
-        private UIElement? _menuTargetShape;
-
-        public Func<bool> IsMeasuring { get; set; } = () => false;
-        public Func<bool> CheckHasSelectedShape { get; set; } = () => false;
-        public Func<UIElement?> GetSelectedShape { get; set; } = () => null;
-
         /// <summary>
         /// 菜单打开时的回调，用于冻结帧更新。
         /// </summary>
@@ -42,42 +35,26 @@ namespace Fizzy.ImageViewer.Menus
             _registeredItems.Add(() => [item]);
         }
 
-        internal void RegisterMeasureTools(Func<IEnumerable<IMenuItem>> provider) => _registeredItems.Add(provider);
+        internal void Register(Func<IEnumerable<IMenuItem>> provider) => _registeredItems.Add(provider);
         internal IMenuItem[] SnapshotItems() => _registeredItems.SelectMany(provider => provider()).ToArray();
-
-        public UIElement? GetMenuTargetShape() => _menuTargetShape;
 
         private void OnContextMenuOpened(object sender, RoutedEventArgs e)
         {
             OnMenuOpening?.Invoke();
 
             _contextMenu.Items.Clear();
-            bool isMeasuring = IsMeasuring();
-            bool hasSelectedShape = CheckHasSelectedShape();
-            _menuTargetShape = GetSelectedShape();
-
             bool pendingSeparator = false;
             int visibleCount = 0;
 
             foreach (var item in SnapshotItems())
             {
-                bool isVisible = item.Type switch
-                {
-                    MenuItemType.General => true,
-                    MenuItemType.MeasureTool => !isMeasuring,
-                    MenuItemType.ContextAction => isMeasuring,
-                    MenuItemType.SelectionAction => hasSelectedShape && !isMeasuring,
-                    MenuItemType.Separator => false, // 特殊处理
-                    _ => false
-                };
-
-                if (item.Type == MenuItemType.Separator)
+                if (item is SeparatorMenuItem)
                 {
                     pendingSeparator = true;
                     continue;
                 }
 
-                if (!isVisible || !item.IsVisible) continue;
+                if (!item.IsVisible) continue;
 
                 // 只在已有可见项后才添加分隔符
                 if (pendingSeparator && visibleCount > 0)

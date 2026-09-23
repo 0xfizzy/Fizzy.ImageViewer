@@ -135,12 +135,6 @@ Fizzy.ImageViewer.Enums.AnchorAlignment: public const Fizzy.ImageViewer.Enums.An
 Fizzy.ImageViewer.Enums.AnchorAlignment: public const Fizzy.ImageViewer.Enums.AnchorAlignment TopCenter = 1
 Fizzy.ImageViewer.Enums.AnchorAlignment: public const Fizzy.ImageViewer.Enums.AnchorAlignment TopLeft = 0
 Fizzy.ImageViewer.Enums.AnchorAlignment: public const Fizzy.ImageViewer.Enums.AnchorAlignment TopRight = 2
-Fizzy.ImageViewer.Enums.MenuItemType: public System.Int32 value__
-Fizzy.ImageViewer.Enums.MenuItemType: public const Fizzy.ImageViewer.Enums.MenuItemType ContextAction = 2
-Fizzy.ImageViewer.Enums.MenuItemType: public const Fizzy.ImageViewer.Enums.MenuItemType General = 0
-Fizzy.ImageViewer.Enums.MenuItemType: public const Fizzy.ImageViewer.Enums.MenuItemType MeasureTool = 1
-Fizzy.ImageViewer.Enums.MenuItemType: public const Fizzy.ImageViewer.Enums.MenuItemType SelectionAction = 3
-Fizzy.ImageViewer.Enums.MenuItemType: public const Fizzy.ImageViewer.Enums.MenuItemType Separator = 4
 Fizzy.ImageViewer.Enums.OverlayScaleMode: public System.Int32 value__
 Fizzy.ImageViewer.Enums.OverlayScaleMode: public const Fizzy.ImageViewer.Enums.OverlayScaleMode AnchoredLabel = 3
 Fizzy.ImageViewer.Enums.OverlayScaleMode: public const Fizzy.ImageViewer.Enums.OverlayScaleMode FixedSize = 2
@@ -380,7 +374,6 @@ Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void AddS
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void Complete()
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void OnDispose(System.Action callback)
 Fizzy.ImageViewer.Interfaces.IMeasurementScope: public abstract System.Void UpdateAnchor(System.Windows.UIElement shape, System.Windows.Point anchor)
-Fizzy.ImageViewer.Interfaces.IMenuItem: abstract Fizzy.ImageViewer.Enums.MenuItemType Type { public get; }
 Fizzy.ImageViewer.Interfaces.IMenuItem: abstract System.String Header { public get; }
 Fizzy.ImageViewer.Interfaces.IMenuItem: public abstract System.Void Execute(System.Object sender, System.Windows.RoutedEventArgs e)
 Fizzy.ImageViewer.Interfaces.IMenuItem: virtual System.Boolean IsVisible { public get; }
@@ -442,16 +435,15 @@ Fizzy.ImageViewer.MeasurementSnapshot: public static System.Boolean op_Inequalit
 Fizzy.ImageViewer.MeasurementSnapshot: public virtual System.Boolean Equals(System.Object? obj)
 Fizzy.ImageViewer.MeasurementSnapshot: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.MeasurementSnapshot: public virtual System.String ToString()
-Fizzy.ImageViewer.Menus.CheckableMenuItem: Fizzy.ImageViewer.Enums.MenuItemType Type { public get; }
 Fizzy.ImageViewer.Menus.CheckableMenuItem: System.Boolean IsChecked { public get; }
+Fizzy.ImageViewer.Menus.CheckableMenuItem: System.Boolean IsVisible { public get; }
 Fizzy.ImageViewer.Menus.CheckableMenuItem: System.String Header { public get; }
 Fizzy.ImageViewer.Menus.CheckableMenuItem: public System.Void Execute(System.Object sender, System.Windows.RoutedEventArgs e)
-Fizzy.ImageViewer.Menus.CheckableMenuItem: public ctor(System.String header, System.Func<System.Boolean> isChecked, System.Action action, Fizzy.ImageViewer.Enums.MenuItemType type = General)
-Fizzy.ImageViewer.Menus.MenuItem: Fizzy.ImageViewer.Enums.MenuItemType Type { public get; }
+Fizzy.ImageViewer.Menus.CheckableMenuItem: public ctor(System.String header, System.Func<System.Boolean> isChecked, System.Action action, System.Func<System.Boolean>? isVisible = null)
+Fizzy.ImageViewer.Menus.MenuItem: System.Boolean IsVisible { public get; }
 Fizzy.ImageViewer.Menus.MenuItem: System.String Header { public get; }
 Fizzy.ImageViewer.Menus.MenuItem: public System.Void Execute(System.Object sender, System.Windows.RoutedEventArgs e)
-Fizzy.ImageViewer.Menus.MenuItem: public ctor(System.String header, System.Action action, Fizzy.ImageViewer.Enums.MenuItemType type = General)
-Fizzy.ImageViewer.Menus.SeparatorMenuItem: Fizzy.ImageViewer.Enums.MenuItemType Type { public get; }
+Fizzy.ImageViewer.Menus.MenuItem: public ctor(System.String header, System.Action action, System.Func<System.Boolean>? isVisible = null)
 Fizzy.ImageViewer.Menus.SeparatorMenuItem: System.String Header { public get; }
 Fizzy.ImageViewer.Menus.SeparatorMenuItem: public System.Void Execute(System.Object sender, System.Windows.RoutedEventArgs e)
 Fizzy.ImageViewer.Menus.SeparatorMenuItem: public static readonly Fizzy.ImageViewer.Menus.SeparatorMenuItem Instance
@@ -522,7 +514,6 @@ Fizzy.ImageViewer.Viewer: public virtual System.Threading.Tasks.ValueTask Dispos
 abstract class Fizzy.ImageViewer.Drawing.DrawingElement : System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
 class Fizzy.ImageViewer.Viewer : Fizzy.ImageViewer.Interfaces.IViewerAPI, System.IAsyncDisposable
 enum Fizzy.ImageViewer.Enums.AnchorAlignment : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
-enum Fizzy.ImageViewer.Enums.MenuItemType : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Enums.OverlayScaleMode : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Enums.ShapeType : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
 enum Fizzy.ImageViewer.Frames.FramePixelFormat : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable

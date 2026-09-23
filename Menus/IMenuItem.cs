@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Enums;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Interfaces
@@ -7,7 +6,6 @@ namespace Fizzy.ImageViewer.Interfaces
     {
         string Header { get; }
         bool IsVisible => true;
-        MenuItemType Type { get; }
         void Execute(object sender, RoutedEventArgs e);
     }
 }

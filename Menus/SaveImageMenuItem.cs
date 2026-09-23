@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Snapshots;
 using System.Windows;
@@ -10,7 +9,6 @@ internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCap
 {
     public bool IsVisible => !region || session.HasRegion;
     public string Header => region ? (raw ? "Export Region Raw TIFF..." : "Save Region Display Image As...") : raw ? "Export Raw TIFF..." : "Save Display Image As...";
-    public MenuItemType Type => region ? MenuItemType.SelectionAction : MenuItemType.General;
     public async void Execute(object sender, RoutedEventArgs e)
     {
         if (!session.TryBeginSave()) return;

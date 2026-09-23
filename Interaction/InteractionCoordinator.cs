@@ -133,10 +133,10 @@ internal sealed class InteractionCoordinator : IDisposable
         _input.Container.Cursor = Cursors.Cross;
         _layers.SuppressInput(false);
     }
-    internal void DeleteSelected()
+    internal void DeleteSelected() => Delete(SelectedShape);
+    internal void Delete(UIElement? selected)
     {
         if (_disposed) return;
-        var selected = SelectedShape;
         ClearSelection();
         if (selected != null) _measure.Context.RemoveShape(selected);
     }

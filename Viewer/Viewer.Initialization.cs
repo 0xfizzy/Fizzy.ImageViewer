@@ -38,12 +38,7 @@ public partial class Viewer
 
                 var editMgr = new EditManager(win.MeasurementOverlay, measureMgr.Context);
                 var interaction = new InteractionCoordinator(win.ImageLayer, win.MeasurementOverlay, editMgr, measureMgr, win.Layers);
-                var menuMgr = new MenuManager(win)
-                {
-                    IsMeasuring = () => measureMgr.IsMeasuring,
-                    CheckHasSelectedShape = () => interaction.SelectedShape != null,
-                    GetSelectedShape = () => interaction.SelectedShape
-                };
+                var menuMgr = new MenuManager(win);
 
                 // 内置功能注册需要访问测量和交互管理器。
                 _interaction = interaction;
@@ -108,26 +103,7 @@ public partial class Viewer
         measureMgr.RegisterTool(new RectTool(measureMgr.Context));
         measureMgr.RegisterTool(new LineStrengthTool(measureMgr.Context));
 
-        // 菜单注册 - 使用简化的 lambda API
-        // Edit menu item (positioned before Delete)
-        menuMgr.Register(new MenuItem("Edit", () =>
-        {
-            var shape = menuMgr.GetMenuTargetShape();
-            if (shape != null)
-                _interaction?.StartEditing(shape);
-        }, Enums.MenuItemType.SelectionAction));
-        menuMgr.Register(new MenuItem("Delete", _interaction!.DeleteSelected, Enums.MenuItemType.SelectionAction));
-        menuMgr.Register(SeparatorMenuItem.Instance);
-
-        // 测量工具菜单
-        menuMgr.RegisterMeasureTools(() => measureMgr.RegisteredTools.Select(entry =>
-            (IMenuItem)new MenuItem(entry.DisplayName, () =>
-            {
-                if (measureMgr.HasTool(entry.Id) && win.Layers.Measurements.IsVisible)
-                    _interaction?.StartMeasurement(entry.Id);
-            }, Enums.MenuItemType.MeasureTool)).ToArray());
-
-        menuMgr.Register(new MenuItem("Cancel Measurement", () => _interaction?.Cancel(), Enums.MenuItemType.ContextAction));
+        menuMgr.Register(CreateInteractionMenu);
         menuMgr.Register(SeparatorMenuItem.Instance);
         menuMgr.Register(new MenuItem("Clear All Shapes", () => { win.Layers.Clear(); }));
         menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, false));
