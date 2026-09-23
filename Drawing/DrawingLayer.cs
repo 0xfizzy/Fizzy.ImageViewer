@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Fizzy.ImageViewer.Controls;
 
 namespace Fizzy.ImageViewer.Drawing;
 
@@ -11,24 +10,24 @@ public sealed class DrawingLayer
     internal ViewerLayers Owner { get; }
     internal Grid Root { get; } = new() { Background = null };
     internal BatchVisualHost Host { get; } = new();
-    private readonly OverlayLayer? _measurements;
     private readonly List<DrawingBatchHandle> _batches = [];
     private bool _visible = true, _hitTest;
     private int _zIndex;
-    private bool _removed;
+    private bool _removed, _clearing;
+    internal event Action? Clearing;
+    internal event Action? InputPolicyChanged;
     public string Name { get; }
     internal bool IsBuiltIn { get; }
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
     public event EventHandler<BatchClickedEventArgs>? BatchClicked;
 
-    internal DrawingLayer(ViewerLayers owner, string name, int zIndex, bool builtIn, OverlayLayer? measurements = null)
+    internal DrawingLayer(ViewerLayers owner, string name, int zIndex, bool builtIn, bool hitTest = false)
     {
-        Owner = owner; Name = name; _zIndex = zIndex; IsBuiltIn = builtIn; _measurements = measurements;
-        _hitTest = measurements != null;
+        Owner = owner; Name = name; _zIndex = zIndex; IsBuiltIn = builtIn;
+        _hitTest = hitTest;
         Host.RenderTransform = owner.Transform;
         Host.DpiChanged = () => { if (!_removed) Redraw(scaleOnly: false); };
         Root.Children.Add(Host);
-        if (measurements != null) Root.Children.Add(measurements);
         Panel.SetZIndex(Root, zIndex);
         Host.MouseDown += (_, e) =>
         {
@@ -46,12 +45,12 @@ public sealed class DrawingLayer
     public bool IsVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _visible; });
-        set => Owner.Invoke(() => { EnsureAlive(); _visible = value; Root.Visibility = value ? Visibility.Visible : Visibility.Hidden; if (!value && _measurements != null) { Owner.CancelMeasurement?.Invoke(); _measurements.ClearSelection(); } });
+        set => Owner.Invoke(() => { EnsureAlive(); _visible = value; Root.Visibility = value ? Visibility.Visible : Visibility.Hidden; InputPolicyChanged?.Invoke(); });
     }
     public bool IsHitTestVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _hitTest; });
-        set => Owner.Invoke(() => { EnsureAlive(); _hitTest = value; if (!value && _measurements != null) { Owner.CancelMeasurement?.Invoke(); _measurements.ClearSelection(); } ApplyHitTest(); });
+        set => Owner.Invoke(() => { EnsureAlive(); _hitTest = value; ApplyHitTest(); InputPolicyChanged?.Invoke(); });
     }
     public int ZIndex
     {
@@ -63,7 +62,6 @@ public sealed class DrawingLayer
     {
         bool enabled = _hitTest && !Owner.InputSuppressed;
         Root.IsHitTestVisible = enabled;
-        _measurements?.SetHitTestEnabled(enabled);
     }
     public DrawingBatchHandle AddBatch(IEnumerable<DrawingElement> elements)
     {
@@ -83,17 +81,18 @@ public sealed class DrawingLayer
         var hit = VisualTreeHelper.HitTest(Host, imagePoint)?.VisualHit;
         return _batches.FirstOrDefault(b => ReferenceEquals(b.Visual, hit));
     }
-    public void Clear() => Owner.Invoke(() =>
-    {
-        EnsureAlive();
-        try { if (_measurements != null) Owner.CancelMeasurement?.Invoke(); }
-        finally { ClearCore(); }
-    });
+    public void Clear() => Owner.Invoke(() => { EnsureAlive(); ClearCore(); });
     internal void ClearCore()
     {
-        _measurements?.Clear();
-        foreach (var batch in _batches) batch.Invalidate();
-        _batches.Clear(); Host.Clear();
+        if (_clearing) return;
+        _clearing = true;
+        try { Clearing?.Invoke(); }
+        finally
+        {
+            foreach (var batch in _batches) batch.Invalidate();
+            _batches.Clear(); Host.Clear();
+            _clearing = false;
+        }
     }
     internal void Remove(DrawingBatchHandle handle)
     {
@@ -108,6 +107,6 @@ public sealed class DrawingLayer
     }
     internal void Detach()
     {
-        ClearCore(); _removed = true; BatchClicked = null;
+        ClearCore(); _removed = true; BatchClicked = null; Clearing = null; InputPolicyChanged = null;
     }
 }

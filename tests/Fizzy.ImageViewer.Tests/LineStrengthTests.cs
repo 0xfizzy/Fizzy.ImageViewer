@@ -151,7 +151,7 @@ public class LineStrengthTests
             overlay.ShapeRemoved += shape => { if (ReferenceEquals(shape, first.Line)) removed++; };
             first.Window.Closed += (_, _) => closed++;
             if (closeWindow) first.Window.Close();
-            else { overlay.Select(first.Line); overlay.EnterEditMode(); overlay.DeleteSelected(); }
+            else { viewer.Interaction.Select(first.Line); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!); viewer.Interaction.DeleteSelected(); }
             viewer.MeasurementContext.RemoveShape(first.Line);
             Assert.Equal(1, removed);
             Assert.Equal(1, closed);

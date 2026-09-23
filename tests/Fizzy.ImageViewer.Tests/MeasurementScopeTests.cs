@@ -45,7 +45,7 @@ public class MeasurementScopeTests
             viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(4, 5);
             Assert.Throws<InvalidOperationException>(() => viewer.CancelMeasure());
             Assert.Equal(1, tool.Disposals);
-            Assert.Single(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
             viewer.ClearShapes();
             Assert.Equal(2, tool.Disposals);
         });
@@ -68,7 +68,7 @@ public class MeasurementScopeTests
             Assert.Throws<AggregateException>(() => ctx.RemoveShape(label));
             a.Dispose();
             Assert.Equal(1, disposed);
-            Assert.Same(survivor, Assert.Single(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>()));
+            Assert.Same(survivor, Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>()));
         });
     }
 
@@ -78,16 +78,16 @@ public class MeasurementScopeTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var ctx = viewer.MeasurementContext; var overlay = viewer.Layers.MeasurementOverlay;
+            var ctx = viewer.MeasurementContext; var overlay = viewer.WindowForTests.Layer1;
             var a = ctx.CreateScope(); var b = ctx.CreateScope(); var shape = Shapes.CreatePoint(new());
             a.AddShape(shape);
             Assert.Throws<ArgumentException>(() => b.AddShape(shape));
             b.Dispose(); Assert.Single(overlay.Canvas.Children.Cast<UIElement>());
             a.Dispose();
             var c = ctx.CreateScope();
-            void Added(UIElement element, IDisposable handle) => c.Dispose();
-            overlay.ShapeAdded += Added;
-            try { c.AddShape(Shapes.CreatePoint(new())); } finally { overlay.ShapeAdded -= Added; }
+            void Added(UIElement element) => c.Dispose();
+            overlay.VisualAdded += Added;
+            try { c.AddShape(Shapes.CreatePoint(new())); } finally { overlay.VisualAdded -= Added; }
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }
@@ -107,7 +107,7 @@ public class MeasurementScopeTests
             viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(1, 2);
             Assert.Throws<InvalidOperationException>(() => viewer.ClearShapes());
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
-            Assert.Empty(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -128,7 +128,7 @@ public class MeasurementScopeTests
                 else viewer.UnregisterMeasureMethod(tool.Id);
             });
             Assert.Equal(1, tool.Disposals);
-            Assert.Single(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Single(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -169,11 +169,11 @@ public class MeasurementScopeTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.MeasurementOverlay;
+            var overlay = viewer.WindowForTests.Layer1;
             var shape = Shapes.CreatePoint(new()); viewer.MeasurementContext.AttachVisualInternal(shape);
-            viewer.Interaction.Dispose(); Assert.Null(overlay.Coordinator);
-            overlay.Select(shape); overlay.EnterEditMode(shape); overlay.DeleteSelected();
-            Assert.Null(overlay.SelectedShape); Assert.False(viewer.Interaction.Editor.IsEditing);
+            viewer.Interaction.Dispose();
+            viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(shape); viewer.Interaction.DeleteSelected();
+            Assert.Null(viewer.Interaction.SelectedShape); Assert.False(viewer.Interaction.Editor.IsEditing);
             Assert.Single(overlay.Canvas.Children.Cast<UIElement>());
         });
     }

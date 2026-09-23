@@ -30,14 +30,16 @@ public class MeasurementReentryTests
     private sealed class Harness : IDisposable
     {
         internal readonly ImageLayer Input = new();
+        internal readonly OverlayLayer Overlay = new();
         internal readonly ViewerLayers Layers;
         internal readonly MeasureManager Manager;
         internal readonly InteractionCoordinator Coordinator;
         internal Harness()
         {
             Layers = new(Input.TransformGroup);
-            Manager = new(Layers.MeasurementOverlay, () => null, NullLogger.Instance);
-            Coordinator = new(Input, Layers.MeasurementOverlay, new EditManager(Layers.MeasurementOverlay, Manager.Context), Manager, Layers);
+            Layers.Measurements.Root.Children.Add(Overlay);
+            Manager = new(Overlay, () => null, NullLogger.Instance);
+            Coordinator = new(Input, Overlay, new EditManager(Overlay, Manager.Context), Manager, Layers);
         }
         internal void AssertActive(string id)
         {
@@ -162,7 +164,7 @@ public class MeasurementReentryTests
             if (throws) Assert.Throws<InvalidOperationException>(h.Coordinator.Dispose); else h.Coordinator.Dispose();
             h.Coordinator.Dispose();
             Assert.Null(h.Manager.ActiveId); Assert.Equal(InteractionMode.Idle, h.Coordinator.Mode);
-            Assert.False(h.Layers.InputSuppressed); Assert.Null(h.Layers.MeasurementOverlay.Coordinator); Assert.Equal(1, released);
+            Assert.False(h.Layers.InputSuppressed); Assert.Equal(1, released);
         });
     }
 

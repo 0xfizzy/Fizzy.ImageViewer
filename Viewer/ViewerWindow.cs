@@ -27,7 +27,8 @@ namespace Fizzy.ImageViewer
             // === 实例化图层 ===
             Layer0 = new ImageLayer();
             Layers = new Drawing.ViewerLayers(Layer0.TransformGroup, lifetime);
-            Layer1 = Layers.MeasurementOverlay;
+            Layer1 = new OverlayLayer();
+            Layers.Measurements.Root.Children.Add(Layer1);
             Layer2 = new HudLayer();
 
             Layer1.BindTransform(Layer0.TransformGroup);
@@ -36,12 +37,6 @@ namespace Fizzy.ImageViewer
             {
                 Layer1.UpdateScale(scale);
                 Layers.UpdateScale(scale);
-            };
-
-            // 点击图像空白处（未命中 overlay 形状）时取消选中
-            Layer0.ImageMouseDown += (_, _) =>
-            {
-                Layer1.ClearSelection();
             };
 
             var grid = new Grid();

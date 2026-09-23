@@ -40,8 +40,8 @@ public partial class Viewer
                 var menuMgr = new MenuManager(win)
                 {
                     CheckHasSelection = () => measureMgr.HasSelection,
-                    CheckHasSelectedShape = () => win.Layer1.SelectedShape != null,
-                    GetSelectedShape = () => win.Layer1.SelectedShape
+                    CheckHasSelectedShape = () => interaction.SelectedShape != null,
+                    GetSelectedShape = () => interaction.SelectedShape
                 };
 
                 // 内置功能注册需要访问测量和交互管理器。
@@ -114,7 +114,7 @@ public partial class Viewer
             if (shape != null)
                 _interaction?.StartEditing(shape);
         }));
-        menuMgr.Register(new MenuItem("Delete", win.Layer1.DeleteSelected, Enums.MenuItemType.SelectionAction));
+        menuMgr.Register(new MenuItem("Delete", _interaction!.DeleteSelected, Enums.MenuItemType.SelectionAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
 
         // 测量工具菜单

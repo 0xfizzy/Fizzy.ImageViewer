@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Fizzy.ImageViewer.Controls;
+using System.Runtime.ExceptionServices;
 
 namespace Fizzy.ImageViewer.Drawing;
 
@@ -13,28 +13,24 @@ public sealed class ViewerLayers
     private readonly Internal.ViewerLifetime _lifetime;
     private readonly List<DrawingLayer> _layers = [];
     private volatile bool _closed;
-    private bool _redrawPending;
+    private bool _redrawPending, _clearing;
     internal Grid Root { get; } = new() { Background = null };
     internal Transform Transform { get; }
     internal double Scale { get; private set; } = 1;
     internal bool InputSuppressed { get; private set; }
-    internal Action? CancelMeasurement { get; set; }
     public DrawingLayer Markers { get; }
     public DrawingLayer Measurements { get; }
-    internal OverlayLayer MeasurementOverlay { get; }
     public IReadOnlyList<DrawingLayer> Items => Invoke(() => (IReadOnlyList<DrawingLayer>)_layers.ToArray());
     internal ViewerLayers(Transform transform, Internal.ViewerLifetime? lifetime = null)
     {
         _lifetime = lifetime ?? new Internal.ViewerLifetime();
-        var measurements = MeasurementOverlay = new OverlayLayer();
-        measurements.BindTransform(transform);
-        _dispatcher = measurements.Dispatcher; Transform = transform;
+        _dispatcher = Root.Dispatcher; Transform = transform;
         Markers = Add("Markers", 0, true);
-        Measurements = Add("Measurements", 1000, true, measurements);
+        Measurements = Add("Measurements", 1000, true, hitTest: true);
     }
-    private DrawingLayer Add(string name, int zIndex, bool builtIn, OverlayLayer? measurements = null)
+    private DrawingLayer Add(string name, int zIndex, bool builtIn, bool hitTest = false)
     {
-        var layer = new DrawingLayer(this, name, zIndex, builtIn, measurements);
+        var layer = new DrawingLayer(this, name, zIndex, builtIn, hitTest);
         _layers.Add(layer); Root.Children.Add(layer.Root); return layer;
     }
     public DrawingLayer CreateLayer(string name) => Invoke(() =>
@@ -52,10 +48,19 @@ public sealed class ViewerLayers
     });
     public void Clear() => Invoke(() =>
     {
-        // New layers created by callbacks survive; removed layers have already been cleared.
-        var layers = _layers.ToArray();
-        try { CancelMeasurement?.Invoke(); }
-        finally { foreach (var layer in layers) if (_layers.Contains(layer)) layer.ClearCore(); }
+        if (_clearing) return;
+        _clearing = true;
+        List<Exception> errors = [];
+        try
+        {
+            // New layers created by callbacks survive; removed layers are already cleared.
+            foreach (var layer in _layers.ToArray())
+                if (_layers.Contains(layer))
+                    try { layer.ClearCore(); } catch (Exception error) { errors.Add(error); }
+        }
+        finally { _clearing = false; }
+        if (errors.Count == 1) ExceptionDispatchInfo.Capture(errors[0]).Throw();
+        if (errors.Count > 1) throw new AggregateException("Layer cleanup failed.", errors);
     });
     internal void SuppressInput(bool suppressed)
     {
@@ -95,7 +100,6 @@ public sealed class ViewerLayers
     {
         if (_closed) return;
         CompositionTarget.Rendering -= OnRendering; _redrawPending = false;
-        CancelMeasurement = null;
         foreach (var layer in _layers) layer.Detach();
         Root.Children.Clear(); _closed = true;
     }

@@ -95,19 +95,19 @@ public class MeasureToolProtocolTests
             viewer.MeasurementRemoved += (_, _) => removed++;
             viewer.StartMeasure(id);
             viewer.CancelMeasure();
-            Assert.Empty(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
             viewer.StartMeasure(id); viewer.Interaction.ImageDown(1, 1);
             if (id != MeasureToolIds.Point)
             {
                 viewer.Interaction.ImageMove(4, 4); viewer.CancelMeasure();
                 Assert.Equal(0, completed); Assert.Equal(0, removed);
-                Assert.Empty(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+                Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
                 viewer.StartMeasure(id); viewer.Interaction.ImageDown(1, 1); viewer.Interaction.ImageDown(4, 4);
             }
             Assert.Equal(1, completed);
             viewer.ClearShapes();
             Assert.Equal(1, removed);
-            Assert.Empty(viewer.Layers.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.WindowForTests.Layer1.Canvas.Children.Cast<UIElement>());
         });
     }
 

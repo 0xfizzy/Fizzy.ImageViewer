@@ -45,6 +45,12 @@ The internal coordinator owns the selected item/shape and Idle, Editing and
 Measuring modes. The edit manager owns its session and control-point visuals;
 the measure manager owns the tool registry and current creation session.
 The overlay only performs display, hit testing and selection styling.
+It holds no coordinator or measurement-owner reference. The coordinator subscribes to
+input and generic drawing-layer lifecycle notifications; the window composes the
+measurement overlay into its drawing layer. A clear cancels the active session once,
+cleans measurement owners, and invalidates batches even if cancellation fails.
+Bulk clearing rejects new measurement/editing sessions and scope creation from cleanup
+callbacks; reentrant clears are idempotent, and other layers are still cleared after a failure.
 
 Starting a valid measurement ends editing; starting valid editing cancels a
 measurement. Invalid edit requests do not replace the current session. Escape

@@ -360,22 +360,22 @@ public class DrawingTests
             foreach (var shape in new UIElement[] { Shapes.CreatePoint(new(30, 30)), Shapes.CreateLine(), Shapes.CreateRectangle() })
             {
                 viewer.MeasurementContext.AttachVisualInternal(shape);
-                overlay.Select(shape); overlay.EnterEditMode();
+                viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!);
                 var data = (OverlayTagData)((FrameworkElement)shape).Tag;
                 Assert.NotEmpty(viewer.Interaction.Editor.Handles);
                 var editor = viewer.Interaction.Editor;
                 Assert.True(editor.BeginDrag(data.AnchorPoint, 1));
                 editor.UpdateDrag(new(40, 40)); editor.EndDrag();
 
-                overlay.DeleteSelected();
-                Assert.Null(overlay.SelectedShape);
+                viewer.Interaction.DeleteSelected();
+                Assert.Null(viewer.Interaction.SelectedShape);
                 Assert.Empty(viewer.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
             var line = Shapes.CreateLine(); var label = Shapes.CreateLabel(new(1, 1), "length");
             new MeasurementItem(viewer.MeasurementContext, MeasurementGeometry.Line(new(0,0), new(1,1)), line, label).Complete();
             viewer.MeasurementContext.AttachVisualInternal(line); viewer.MeasurementContext.AttachVisualInternal(label);
-            overlay.Select(line); overlay.DeleteSelected();
+            viewer.Interaction.Select(line); viewer.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }

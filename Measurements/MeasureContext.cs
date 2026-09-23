@@ -37,8 +37,6 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
     {
         _layer = layer; _acquire = acquire; _logger = logger;
         _scheduler = new(acquire, logger, new DispatcherMeasurementRuntime(layer.Dispatcher));
-        layer.RemoveRequested = RemoveShape;
-        layer.ClearRequested = ClearMeasurements;
     }
     public FrameLease? AcquireCurrentFrame() => _acquire();
     /// <summary>Creates a preview owner on the viewer STA. Call Complete to retain it after the tool ends.</summary>
@@ -90,9 +88,16 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
     }
     internal void ClearMeasurements()
     {
-        CleanupScopes();
-        foreach (var item in _items.Values.Distinct().ToArray())
-            try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
+        if (_cleaningScopes) return;
+        _cleaningScopes = true;
+        try
+        {
+            CleanupScopes();
+            foreach (var item in _items.Values.Distinct().ToArray())
+                try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
+            _layer.ClearVisuals();
+        }
+        finally { _cleaningScopes = false; }
     }
     internal MeasurementScope[] CaptureUncompletedScopes()
         => _scopes.Where(s => !s.IsComplete).ToArray();

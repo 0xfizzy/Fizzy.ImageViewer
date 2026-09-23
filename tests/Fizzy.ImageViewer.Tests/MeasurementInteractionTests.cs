@@ -72,7 +72,7 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer);
             var overlay = Overlay(viewer);
-            overlay.EnterEditMode(item.PrimaryVisual);
+            viewer.Interaction.StartEditing(item.PrimaryVisual);
             var editor = viewer.Interaction.Editor;
             var initial = item.Geometry;
             Assert.True(editor.BeginDrag(initial.ControlPoints[index], 1));
@@ -132,21 +132,21 @@ public class MeasurementInteractionTests
         {
             var overlay = Overlay(viewer); var invalid = new TextBlock();
             viewer.MeasurementContext.AttachVisualInternal(invalid);
-            overlay.EnterEditMode(invalid);
+            viewer.Interaction.StartEditing(invalid);
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.Empty(viewer.Interaction.Editor.Handles);
             var tool = new PointTool(viewer.MeasurementContext); tool.OnClick(new(3, 4));
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
-            overlay.EnterEditMode(point);
+            viewer.Interaction.StartEditing(point);
             Assert.Equal(InteractionMode.Editing, viewer.Interaction.Mode);
-            overlay.EnterEditMode(invalid);
+            viewer.Interaction.StartEditing(invalid);
             Assert.Same(point, viewer.Interaction.Editor.EditingShape);
             var editor = viewer.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(3, 4), 1)); editor.UpdateDrag(new(7, 8)); editor.EndDrag();
             var item = viewer.MeasurementContext.Find(point)!;
             Assert.Equal(new Point(7, 8), item.Geometry.Start);
             Assert.Equal($"X:{7:F2}\nY:{8:F2}", item.Label.Text);
-            overlay.DeleteSelected(); Assert.True(item.IsDisposed);
+            viewer.Interaction.DeleteSelected(); Assert.True(item.IsDisposed);
             Assert.Empty(editor.Handles); Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
         });
     }
@@ -165,13 +165,13 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             viewer.Layers.Markers.IsHitTestVisible = false;
-            overlay.EnterEditMode(item.PrimaryVisual);
+            viewer.Interaction.StartEditing(item.PrimaryVisual);
             Assert.True(viewer.Interaction.Editor.BeginDrag(item.Geometry.Start, 1));
             viewer.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
             {
                 case "measure": viewer.StartMeasure("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Interaction.Mode); break;
-                case "delete": overlay.DeleteSelected(); break;
+                case "delete": viewer.Interaction.DeleteSelected(); break;
                 case "clear": viewer.ClearShapes(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
                 case "disable": viewer.Layers.Measurements.IsHitTestVisible = false; break;
@@ -248,7 +248,8 @@ public class MeasurementInteractionTests
             // No physical mouse/foreground-window dependency in the state-machine test.
             var image = new ImageLayer();
             var layers = new Drawing.ViewerLayers(image.TransformGroup);
-            var overlay = layers.MeasurementOverlay;
+            var overlay = new OverlayLayer();
+            layers.Measurements.Root.Children.Add(overlay);
             using var measure = new MeasureManager(overlay, () => null, NullLogger.Instance);
             var editor = new EditManager(overlay, measure.Context);
             var capture = new FakeCapture { Succeeds = action != "failed" };

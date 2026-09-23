@@ -32,7 +32,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly MeasureManager _measure;
     private readonly ViewerLayers _layers;
     private readonly IMouseCapture _capture;
-    private bool _disposed;
+    private bool _disposed, _clearing;
     public InteractionMode Mode { get; private set; }
     public UIElement? SelectedShape { get; private set; }
     public MeasurementItem? SelectedMeasurement => _measure.Context.Find(SelectedShape);
@@ -43,12 +43,13 @@ internal sealed class InteractionCoordinator : IDisposable
         _input = input; _overlay = overlay; _edit = edit; _measure = measure; _layers = layers;
         _capture = capture ?? new OverlayMouseCapture(overlay);
         input.Container.Focusable = true;
-        overlay.Coordinator = this;
-        layers.CancelMeasurement = Cancel;
+        layers.Measurements.Clearing += ClearMeasurements;
+        layers.Measurements.InputPolicyChanged += InputPolicyChanged;
         overlay.VisualRemoving += VisualRemoving;
         measure.Context.ItemRemoving += ItemRemoving;
         input.ImageMouseDown += ImageDown; input.ImageMouseMove += ImageMove;
         input.Container.PreviewKeyDown += KeyDown;
+        overlay.Canvas.KeyDown += KeyDown;
         overlay.Canvas.MouseLeftButtonDown += MouseDown;
         overlay.Canvas.MouseMove += MouseMove;
         overlay.Canvas.MouseLeftButtonUp += MouseUp;
@@ -56,6 +57,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal bool Hit(UIElement shape)
     {
+        if (_disposed) return false;
         if (Mode == InteractionMode.Editing) return false;
         if (Mode == InteractionMode.Measuring) return true;
         Select(shape); return true;
@@ -74,6 +76,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void StartMeasurement(string name)
     {
+        if (_clearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
         if (_disposed || !_measure.HasMethod(name) || !_layers.Measurements.IsVisible) return;
         var version = _measure.SessionVersion;
         try
@@ -90,6 +93,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void StartEditing(UIElement shape)
     {
+        if (_clearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
         if (_disposed || !_overlay.Canvas.Children.Contains(shape) || !_edit.CanEdit(shape) ||
             !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
         if (!CancelCore()) return;
@@ -131,6 +135,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void DeleteSelected()
     {
+        if (_disposed) return;
         var selected = SelectedShape;
         ClearSelection();
         if (selected != null) _measure.Context.RemoveShape(selected);
@@ -145,6 +150,8 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void ImageDown(double x, double y)
     {
+        if (_disposed) return;
+        if (Mode == InteractionMode.Idle) { ClearSelection(); return; }
         if (Mode != InteractionMode.Measuring) return;
         var version = _measure.SessionVersion;
         try { if (_measure.Click(new(x, y)) && version == _measure.SessionVersion) { Mode = InteractionMode.Idle; RestoreInput(); } }
@@ -164,7 +171,28 @@ internal sealed class InteractionCoordinator : IDisposable
     private Point ImagePoint(MouseEventArgs e) => _input.ContainerToImage(e.GetPosition(_input.Container));
     private void MouseDown(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = BeginDrag(ImagePoint(e));
+        if (Mode != InteractionMode.Editing && e.OriginalSource is FrameworkElement { Tag: OverlayTagData } shape)
+            e.Handled = Hit(shape);
+        else e.Handled = BeginDrag(ImagePoint(e));
+    }
+
+    private void InputPolicyChanged()
+    {
+        if (_layers.Measurements.IsVisible && _layers.Measurements.IsHitTestVisible) return;
+        try { Cancel(); }
+        finally { ClearSelection(); }
+    }
+
+    private void ClearMeasurements()
+    {
+        if (_clearing) return;
+        _clearing = true;
+        try { Cancel(); }
+        finally
+        {
+            try { ClearSelection(); _measure.Context.ClearMeasurements(); }
+            finally { _clearing = false; }
+        }
     }
     internal bool BeginDrag(Point point)
     {
@@ -202,11 +230,12 @@ internal sealed class InteractionCoordinator : IDisposable
             _overlay.VisualRemoving -= VisualRemoving; _measure.Context.ItemRemoving -= ItemRemoving;
             _input.ImageMouseDown -= ImageDown; _input.ImageMouseMove -= ImageMove;
             _input.Container.PreviewKeyDown -= KeyDown;
+            _overlay.Canvas.KeyDown -= KeyDown;
             _overlay.Canvas.MouseLeftButtonDown -= MouseDown;
             _overlay.Canvas.MouseMove -= MouseMove; _overlay.Canvas.MouseLeftButtonUp -= MouseUp;
             _overlay.Canvas.LostMouseCapture -= LostCapture;
-            _layers.CancelMeasurement = null;
-            _overlay.Coordinator = null;
+            _layers.Measurements.Clearing -= ClearMeasurements;
+            _layers.Measurements.InputPolicyChanged -= InputPolicyChanged;
         }
     }
 }

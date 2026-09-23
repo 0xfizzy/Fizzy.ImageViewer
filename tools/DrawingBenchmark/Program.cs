@@ -48,7 +48,9 @@ internal static class Program
         layers.Close();
 
         var legacyLayers = new ViewerLayers(Transform.Identity);
-        var legacy = legacyLayers.MeasurementOverlay;
+        var legacy = new OverlayLayer();
+        legacy.BindTransform(legacyLayers.Transform);
+        legacyLayers.Measurements.Root.Children.Add(legacy);
         void AddLegacy()
         {
             foreach (CircleElement circle in data)
@@ -59,7 +61,7 @@ internal static class Program
             }
         }
         create = Time(() => { AddLegacy(); Layout(legacy); });
-        replace = Time(() => { legacy.Clear(); AddLegacy(); Layout(legacy); });
+        replace = Time(() => { legacy.ClearVisuals(); AddLegacy(); Layout(legacy); });
         scale = Time(() => { legacy.UpdateScale(2); Layout(legacy); });
         if (print) Console.WriteLine($"{count},legacy,{create:F3},{replace:F3},{scale:F3},{legacy.Canvas.Children.Count}");
         legacyLayers.Close();

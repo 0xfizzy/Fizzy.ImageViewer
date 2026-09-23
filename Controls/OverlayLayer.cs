@@ -1,10 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Fizzy.ImageViewer.Enums;
-using Fizzy.ImageViewer.Interaction;
 
 namespace Fizzy.ImageViewer.Controls;
 
@@ -16,12 +14,8 @@ internal class OverlayLayer : UserControl
     private UIElement? _selectedShape;
     private readonly List<UIElement> _selectionVisuals = [];
     internal Canvas Canvas => _canvas;
-    internal InteractionCoordinator? Coordinator { get; set; }
-    internal Action<UIElement>? RemoveRequested { get; set; }
-    internal Action? ClearRequested { get; set; }
     internal event Action<UIElement>? VisualRemoving;
-    public UIElement? SelectedShape => Coordinator?.SelectedShape;
-    public event Action<UIElement, IDisposable>? ShapeAdded;
+    internal event Action<UIElement>? VisualAdded;
     public event Action<UIElement>? ShapeRemoved;
     public event Action<UIElement>? ShapeEditing;
     public event Action<UIElement>? ShapeEdited;
@@ -30,29 +24,8 @@ internal class OverlayLayer : UserControl
     {
         _canvas = new Canvas { ClipToBounds = false, IsHitTestVisible = true, Background = null, Focusable = true };
         Content = _canvas;
-        _canvas.MouseLeftButtonDown += (_, e) =>
-        {
-            if (e.OriginalSource is FrameworkElement fe && fe != _canvas && fe.Tag is OverlayTagData)
-            {
-                if (Coordinator != null) e.Handled = Coordinator.Hit(fe);
-            }
-        };
-        _canvas.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Delete && SelectedShape != null) { DeleteSelected(); e.Handled = true; }
-            if (e.Key == Key.Escape && Coordinator != null) { Coordinator.Cancel(); e.Handled = true; }
-        };
     }
     public void BindTransform(Transform transform) => _canvas.RenderTransform = transform;
-    public void SetHitTestEnabled(bool enabled) => _canvas.IsHitTestVisible = enabled;
-    public void Select(UIElement shape)
-    {
-        Coordinator?.Select(shape);
-    }
-    public void ClearSelection()
-    {
-        Coordinator?.ClearSelection();
-    }
     internal void SetSelection(UIElement? primary, IEnumerable<UIElement> visuals)
     {
         foreach (var visual in _selectionVisuals) ApplySelectionStyle(visual, false);
@@ -60,13 +33,6 @@ internal class OverlayLayer : UserControl
         foreach (var visual in visuals) { _selectionVisuals.Add(visual); ApplySelectionStyle(visual, true); }
         if (primary != null) _canvas.Focus();
     }
-    public void DeleteSelected()
-    {
-        Coordinator?.DeleteSelected();
-    }
-    public void EnterEditMode() { if (SelectedShape is { } shape) Coordinator?.StartEditing(shape); }
-    public void EnterEditMode(UIElement shape) => Coordinator?.StartEditing(shape);
-    public void ExitEditMode() => Coordinator?.StopEditing();
     internal void NotifyEditing(UIElement shape) => ShapeEditing?.Invoke(shape);
     internal void NotifyEdited(UIElement shape) => ShapeEdited?.Invoke(shape);
     private static void ApplySelectionStyle(UIElement element, bool selected)
@@ -80,17 +46,7 @@ internal class OverlayLayer : UserControl
     {
         if (_canvas.Children.Contains(shape)) return;
         ApplyScaleToShape(shape, _currentScale); _canvas.Children.Add(shape);
-        var handler = ShapeAdded;
-        if (handler != null)
-        {
-            var handle = new Internal.DrawingHandle(() => Dispatcher.InvokeAsync(() => RemoveShape(shape)));
-            handler(shape, handle);
-        }
-    }
-    internal void RemoveShape(UIElement shape)
-    {
-        if (RemoveRequested != null) RemoveRequested(shape);
-        else RemoveVisual(shape);
+        VisualAdded?.Invoke(shape);
     }
     internal void RemoveVisual(UIElement shape)
     {
@@ -104,14 +60,10 @@ internal class OverlayLayer : UserControl
             ShapeRemoved?.Invoke(shape);
         }
     }
-    internal void Clear()
+    internal void ClearVisuals()
     {
-        try { Coordinator?.Cancel(); }
-        finally
-        {
-            ClearSelection(); ClearRequested?.Invoke();
-            foreach (var shape in _canvas.Children.Cast<UIElement>().ToArray()) RemoveVisual(shape);
-        }
+        SetSelection(null, []);
+        foreach (var shape in _canvas.Children.Cast<UIElement>().ToArray()) RemoveVisual(shape);
     }
     internal void UpdateAnchor(UIElement element, Point newAnchor)
     {
