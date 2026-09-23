@@ -1,7 +1,7 @@
 using System.Windows;
 using Fizzy.ImageViewer.Imaging;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
 /// <summary>UI-thread presentation of line samples. MeasurementItem owns the window lifetime.</summary>
 internal sealed class LineProfilePlotView

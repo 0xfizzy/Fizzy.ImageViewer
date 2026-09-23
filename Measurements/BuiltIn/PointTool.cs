@@ -1,10 +1,12 @@
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
-internal sealed class PointTool(IMeasurementContext context) : IMeasureTool
+internal sealed class PointTool(IMeasurementContext context) : IMeasurementToolHandler
 {
-    public string Id => MeasureToolIds.Point;
+    public string Id => MeasurementToolIds.Point;
     public string DisplayName => "Point";
     public bool OnClick(Point point)
     {

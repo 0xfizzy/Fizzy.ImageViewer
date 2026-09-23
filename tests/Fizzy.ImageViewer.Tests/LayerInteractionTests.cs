@@ -1,5 +1,5 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,16 +13,16 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class LayerInteractionTests
 {
-    private sealed class Tool : IMeasureMethod
+    private sealed class Tool : IMeasurementTool
     {
         public string Id => "cancellation";
         public string DisplayName => Id;
         public int Cancellations;
-        public Action<IMeasureToolContext>? Cancelled;
-        public bool OnClick(Point point, IMeasureToolContext context)
+        public Action<IMeasurementToolContext>? Cancelled;
+        public bool OnClick(Point point, IMeasurementToolContext context)
         { context.CreateScope().AddShape(Shapes.CreatePoint(point)); return false; }
-        public void OnMouseMove(Point point, IMeasureToolContext context) { }
-        public void Cancel(IMeasureToolContext context) { Cancellations++; Cancelled?.Invoke(context); }
+        public void OnMouseMove(Point point, IMeasurementToolContext context) { }
+        public void Cancel(IMeasurementToolContext context) { Cancellations++; Cancelled?.Invoke(context); }
     }
 
     [Theory]
@@ -35,8 +35,8 @@ public class LayerInteractionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var tool = new Tool(); viewer.RegisterMeasureMethod(tool);
-            viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(2, 3);
+            var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
+            viewer.StartMeasurement(tool.Id); viewer.Interaction.ImageDown(2, 3);
             switch (operation)
             {
                 case "all": viewer.Layers.Clear(); break;
@@ -57,15 +57,15 @@ public class LayerInteractionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            var tool = new Tool(); viewer.RegisterMeasureMethod(tool);
+            var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
             var failure = new InvalidOperationException("cancel failed");
             tool.Cancelled = context =>
             {
-                Assert.Throws<InvalidOperationException>(() => viewer.StartMeasure(tool.Id));
+                Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
                 viewer.ClearShapes(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
-            viewer.StartMeasure(tool.Id); viewer.Interaction.ImageDown(2, 3);
+            viewer.StartMeasurement(tool.Id); viewer.Interaction.ImageDown(2, 3);
             var layer = viewer.Layers.CreateLayer("after measurements");
             using var batch = layer.AddBatch([new CircleElement(new(), 2, Brushes.Red)]);
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.ClearShapes));

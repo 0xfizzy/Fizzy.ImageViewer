@@ -1,7 +1,7 @@
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
-using Fizzy.ImageViewer.Enums;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Immutable image-coordinate snapshot of a completed built-in measurement.
 /// Point uses Start; line uses Start/End; rectangle uses normalized opposite corners.</summary>

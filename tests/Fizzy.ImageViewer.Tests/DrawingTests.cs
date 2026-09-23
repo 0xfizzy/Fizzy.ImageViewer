@@ -1,7 +1,6 @@
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;
@@ -37,7 +36,7 @@ public class DrawingTests
                 replacement = viewer.Layers.CreateLayer("replacement");
                 replacementBatch = replacement.AddBatch([Circle()]);
             };
-            viewer.StartMeasure(MeasureToolIds.Point);
+            viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Interaction.ImageDown(1, 1);
             viewer.ClearShapes();
             Assert.Equal(1, removed);
@@ -265,7 +264,7 @@ public class DrawingTests
         var enabled = viewer.Layers.CreateLayer("enabled"); enabled.IsHitTestVisible = true;
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasure("Length");
+            viewer.StartMeasurement("Length");
             Assert.True(viewer.Layers.InputSuppressed);
             Assert.False(enabled.Root.IsHitTestVisible);
             Assert.True(enabled.IsHitTestVisible);
@@ -273,7 +272,7 @@ public class DrawingTests
             var during = viewer.Layers.CreateLayer("during"); during.IsHitTestVisible = true;
             Assert.False(during.Root.IsHitTestVisible);
             viewer.Layers.Measurements.IsHitTestVisible = false;
-            viewer.CancelMeasure();
+            viewer.CancelMeasurement();
             Assert.False(viewer.Layers.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.True(during.Root.IsHitTestVisible);
@@ -281,14 +280,14 @@ public class DrawingTests
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Root);
             var image = parent.Children.OfType<ImageLayer>().Single();
-            viewer.StartMeasure("Point");
+            viewer.StartMeasurement("Point");
             image.Container.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(
                 System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
                 { RoutedEvent = UIElement.MouseLeftButtonDownEvent });
             Assert.False(viewer.Layers.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
-            viewer.StartMeasure("Length");
+            viewer.StartMeasurement("Length");
             viewer.Layers.Measurements.Clear();
             Assert.False(viewer.Layers.InputSuppressed);
         });
@@ -386,8 +385,8 @@ public class DrawingTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            foreach (Measurements.IMeasureTool method in new Measurements.IMeasureTool[] {
-                new Measurements.Methods.PointTool(viewer.MeasurementContext), new Measurements.Methods.LineTool(viewer.MeasurementContext), new Measurements.Methods.RectTool(viewer.MeasurementContext) })
+            foreach (Measurements.IMeasurementToolHandler method in new Measurements.IMeasurementToolHandler[] {
+                new Measurements.BuiltIn.PointTool(viewer.MeasurementContext), new Measurements.BuiltIn.LineTool(viewer.MeasurementContext), new Measurements.BuiltIn.RectTool(viewer.MeasurementContext) })
             {
                 bool done = method.OnClick(new(10, 10));
                 if (!done)

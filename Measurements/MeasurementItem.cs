@@ -1,6 +1,6 @@
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Controls;
-using Fizzy.ImageViewer.Enums;
 
 namespace Fizzy.ImageViewer.Measurements;
 

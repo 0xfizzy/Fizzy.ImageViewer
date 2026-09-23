@@ -21,8 +21,9 @@ public facade, drawing handles and measurement scopes.
 | Snapshots | Captured frame/region ownership and encoding |
 | Menus | Menu contracts, menu construction and built-in save actions |
 
-Files belong to their feature, including interfaces and enums. Public namespaces
-describe caller-facing API groups; internal namespaces follow component ownership.
+Files belong to their feature, including interfaces and enums. Public and internal namespaces follow feature ownership; only the Viewer facade
+and its lifetime/composition helpers live in the root namespace. Built-in tools and
+their measurement presentation live together under Measurements/BuiltIn.
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.
 Viewer partial files organize one facade; they are not independently owned services.
 

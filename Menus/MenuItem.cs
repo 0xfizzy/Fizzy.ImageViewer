@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Interfaces;
 using System;
 using System.Windows;
 

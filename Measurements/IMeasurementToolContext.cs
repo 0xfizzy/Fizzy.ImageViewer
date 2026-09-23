@@ -1,8 +1,8 @@
 using Fizzy.ImageViewer.Frames;
 
-namespace Fizzy.ImageViewer.Interfaces;
+namespace Fizzy.ImageViewer.Measurements;
 
-public interface IMeasureToolContext
+public interface IMeasurementToolContext
 {
     Drawing.ShapeStyle Style { get; }
     FrameLease? AcquireCurrentFrame();

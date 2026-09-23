@@ -1,5 +1,4 @@
 using WpfMenuItem = System.Windows.Controls.MenuItem;
-using Fizzy.ImageViewer.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Windows;

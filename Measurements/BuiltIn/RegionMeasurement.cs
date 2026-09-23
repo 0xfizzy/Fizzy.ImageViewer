@@ -1,8 +1,9 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Frames;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
 internal sealed class RegionMeasurement : MeasurementItem, IFrameQueryClient
 {

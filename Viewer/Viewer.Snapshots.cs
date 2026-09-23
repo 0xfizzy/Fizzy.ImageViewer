@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Snapshots;
 
@@ -13,7 +14,7 @@ public partial class Viewer
     internal void Freeze() => _menuSession.Open();
     internal void Unfreeze() => _menuSession.Close();
     internal void FreezeMenuRegion() => _menuSession.Open(descriptor =>
-        _interaction?.SelectedMeasurement is { IsComplete: true, Geometry.Kind: Enums.ShapeType.Rectangle } item
+        _interaction?.SelectedMeasurement is { IsComplete: true, Geometry.Kind: Drawing.ShapeType.Rectangle } item
             ? item.Geometry.ToRegion(descriptor) : null);
 
     public Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotKind kind, CancellationToken ct = default)

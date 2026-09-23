@@ -1,4 +1,4 @@
-namespace Fizzy.ImageViewer.Enums;
+namespace Fizzy.ImageViewer.Drawing;
 
 /// <summary>
 /// 指定锚点在 HUD 文本元素上的对齐位置（九宫格）。

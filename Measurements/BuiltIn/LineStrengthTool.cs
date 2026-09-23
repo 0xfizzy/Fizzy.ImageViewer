@@ -1,11 +1,13 @@
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
 internal sealed class LineStrengthTool(IMeasurementContext context) : LineTool(context)
 {
-    public override string Id => MeasureToolIds.LineStrength;
+    public override string Id => MeasurementToolIds.LineStrength;
     public override string DisplayName => "Line strength";
     private protected override MeasurementItem CreateItem(IMeasurementContext context, Point start) => new LineStrengthItem(context, start);
 

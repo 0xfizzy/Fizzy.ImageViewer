@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Menus;
 
 namespace Fizzy.ImageViewer;

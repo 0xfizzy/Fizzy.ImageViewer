@@ -1,9 +1,10 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Measurements.Methods;
+using Fizzy.ImageViewer.Measurements.BuiltIn;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;

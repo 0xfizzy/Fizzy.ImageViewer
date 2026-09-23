@@ -1,10 +1,12 @@
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
-internal class LineTool(IMeasurementContext context) : IMeasureTool
+internal class LineTool(IMeasurementContext context) : IMeasurementToolHandler
 {
-    public virtual string Id => MeasureToolIds.Length;
+    public virtual string Id => MeasurementToolIds.Length;
     public virtual string DisplayName => "Length";
     private Point _start;
     private MeasurementItem? _item;

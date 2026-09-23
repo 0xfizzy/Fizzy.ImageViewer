@@ -14,7 +14,11 @@ but there is no protected window or supported raw-window access.
 | Drawing | `Layers`, `ViewerLayers`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
-| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasureMethod`, `IMeasureToolContext`, `IMeasurementScope` |
+| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurementScope` |
+
+The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, helpers
+and enums belong to `.Drawing`; measurement tools, scopes and notifications belong
+to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
 ## Threads and window lifetime
 
@@ -62,7 +66,7 @@ Custom measurement tools own visuals and resources exclusively through
 During normal operation, a session started synchronously from a tool callback or
 completion subscriber takes precedence over the interrupted session. Tool callback
 exceptions propagate without cancelling a newer session; notification subscriber
-exceptions are logged and isolated. Once disposal begins, `StartMeasure` throws
+exceptions are logged and isolated. Once disposal begins, `StartMeasurement` throws
 `ObjectDisposedException`.
 See [measurement contracts](measurements.md). Arbitrary custom control-point editors
 are not a public extension point. Built-in editing remains supported.
@@ -70,7 +74,7 @@ are not a public extension point. Built-in editing remains supported.
 ## Internal implementation
 
 Built-in measurement tool implementations are internal; use
-`StartMeasure(MeasureToolIds.Point)` (or another built-in ID) to activate them.
+`StartMeasurement(MeasurementToolIds.Point)` (or another built-in ID) to activate them.
 
 `ViewerWindow`, `MenuManager`, WPF image/overlay/HUD layer controls, control-point visuals, all shape
 editors and their factory, `MeasurementItem`, `MeasurementGeometry`, scheduling and

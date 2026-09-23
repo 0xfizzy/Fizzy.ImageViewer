@@ -1,7 +1,7 @@
+using Fizzy.ImageViewer.Drawing;
+using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;
@@ -76,12 +76,12 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, e) => removed.Add(e);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.StartMeasurement(MeasurementToolIds.Length);
             viewer.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
-            viewer.CancelMeasure();
+            viewer.CancelMeasurement();
             Assert.Empty(removed);
-            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.StartMeasurement(MeasurementToolIds.Length);
             viewer.Interaction.ImageDown(1, 2);
             viewer.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
@@ -108,10 +108,10 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, _) => removals++;
         EventHandler<MeasurementEventArgs> remove = (_, e) => e.Handle.Dispose();
         viewer.MeasurementCompleted += remove;
-        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(2, 3); });
+        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);
         viewer.MeasurementCompleted -= remove;
-        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(4, 5); });
+        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(4, 5); });
         await viewer.DisposeAsync();
         Assert.Equal(2, removals);
     }

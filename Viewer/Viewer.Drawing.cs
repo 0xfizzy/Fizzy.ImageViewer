@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Drawing;
 using System;
 using System.Windows;

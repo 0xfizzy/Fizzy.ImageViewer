@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging;
@@ -75,7 +74,7 @@ internal sealed class FramePipeline
         lock (_frameGate) { _lifetime.ThrowIfStopping(); return _currentFrame?.Acquire(); }
     }
 
-    internal FrameLease? AcquireCurrentFrameForMeasurement()
+    internal FrameLease? TryAcquireCurrentFrame()
     {
         lock (_frameGate) return _lifetime.IsStopping ? null : _currentFrame?.Acquire();
     }

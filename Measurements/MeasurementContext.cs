@@ -4,12 +4,11 @@ using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
 using System.Windows;
-using Fizzy.ImageViewer.Interfaces;
 
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Capability facade for measurement tools. Scheduling and ownership stay internal.</summary>
-internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
+internal sealed class MeasurementContext : IMeasurementToolContext, IMeasurementContext
 {
     public Drawing.ShapeStyle Style { get; internal set; } = Drawing.ShapeStyle.Default;
     private readonly OverlayLayer _layer;
@@ -31,7 +30,7 @@ internal sealed class MeasureContext : IMeasureToolContext, IMeasurementContext
         ItemCompleted?.Invoke(item);
     }
 
-    internal MeasureContext(OverlayLayer layer, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
+    internal MeasurementContext(OverlayLayer layer, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
     {
         _layer = layer; _acquire = acquire; _logger = logger;
         _scheduler = scheduler;

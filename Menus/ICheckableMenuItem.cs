@@ -1,4 +1,4 @@
-namespace Fizzy.ImageViewer.Interfaces;
+namespace Fizzy.ImageViewer.Menus;
 
 /// <summary>
 /// 可勾选的菜单项接口。

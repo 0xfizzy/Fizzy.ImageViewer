@@ -1,7 +1,7 @@
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Fizzy.ImageViewer.Enums;
 
 namespace Fizzy.ImageViewer.Editing;
 

@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Snapshots;
 using System.Windows;
 

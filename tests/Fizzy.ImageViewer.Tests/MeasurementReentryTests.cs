@@ -2,7 +2,6 @@ using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Editing;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Rendering;
@@ -16,16 +15,16 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementReentryTests
 {
-    private sealed class Tool(string id) : IMeasureMethod
+    private sealed class Tool(string id) : IMeasurementTool
     {
         public string Id => id;
         public string DisplayName => id;
-        public Func<IMeasureToolContext, bool>? Click;
-        public Action<IMeasureToolContext>? Move, Cancelled;
+        public Func<IMeasurementToolContext, bool>? Click;
+        public Action<IMeasurementToolContext>? Move, Cancelled;
         public int Clicks;
-        public bool OnClick(Point point, IMeasureToolContext context) { Clicks++; return Click?.Invoke(context) ?? false; }
-        public void OnMouseMove(Point point, IMeasureToolContext context) => Move?.Invoke(context);
-        public void Cancel(IMeasureToolContext context) => Cancelled?.Invoke(context);
+        public bool OnClick(Point point, IMeasurementToolContext context) { Clicks++; return Click?.Invoke(context) ?? false; }
+        public void OnMouseMove(Point point, IMeasurementToolContext context) => Move?.Invoke(context);
+        public void Cancel(IMeasurementToolContext context) => Cancelled?.Invoke(context);
     }
 
     private sealed class Harness : IDisposable
@@ -34,7 +33,7 @@ public class MeasurementReentryTests
         internal readonly OverlayLayer Overlay = new();
         internal readonly ViewerLayers Layers;
         internal readonly PixelQueryScheduler Queries;
-        internal readonly MeasureManager Manager;
+        internal readonly MeasurementManager Manager;
         internal readonly InteractionCoordinator Coordinator;
         internal Harness()
         {
@@ -72,11 +71,11 @@ public class MeasurementReentryTests
         {
             using var h = new Harness();
             var old = new Tool("old"); var next = new Tool("next"); var outer = new Tool("outer");
-            h.Manager.RegisterMethod(old); h.Manager.RegisterMethod(next); h.Manager.RegisterMethod(outer);
+            h.Manager.RegisterTool(old); h.Manager.RegisterTool(next); h.Manager.RegisterTool(outer);
             var oldReleased = 0; var nextReleased = 0;
             next.Click = ctx => { var scope = ctx.CreateScope(); scope.AddShape(Shapes.CreatePoint(new())); scope.OnDispose(() => nextReleased++); return false; };
             var failure = new InvalidOperationException("old callback");
-            void Restart(IMeasureToolContext _)
+            void Restart(IMeasurementToolContext _)
             {
                 h.Coordinator.StartMeasurement(next.Id);
                 h.Coordinator.ImageDown(1, 1);
@@ -113,7 +112,7 @@ public class MeasurementReentryTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            using var h = new Harness(); var tool = new Tool("old"); h.Manager.RegisterMethod(tool);
+            using var h = new Harness(); var tool = new Tool("old"); h.Manager.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
             var released = 0; h.Manager.Context.CreateScope().OnDispose(() => released++);
             var failure = new InvalidOperationException("failure");
@@ -135,7 +134,7 @@ public class MeasurementReentryTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            using var h = new Harness(); var tool = new Tool("same"); h.Manager.RegisterMethod(tool);
+            using var h = new Harness(); var tool = new Tool("same"); h.Manager.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
             var released = 0;
             var old = h.Manager.Context.CreateScope();
@@ -160,7 +159,7 @@ public class MeasurementReentryTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             using var h = new Harness(); var tool = new Tool("old"); var next = new Tool("next");
-            h.Manager.RegisterMethod(tool); h.Manager.RegisterMethod(next);
+            h.Manager.RegisterTool(tool); h.Manager.RegisterTool(next);
             h.Coordinator.StartMeasurement(tool.Id);
             var released = 0; h.Manager.Context.CreateScope().OnDispose(() => released++);
             tool.Cancelled = _ => { h.Coordinator.StartMeasurement(next.Id); if (throws) throw new InvalidOperationException(); };
@@ -179,8 +178,8 @@ public class MeasurementReentryTests
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
             var tool = new Tool("closing");
-            tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.StartMeasure(tool.Id)); rejected = true; throw new InvalidOperationException(); };
-            viewer.RegisterMeasureMethod(tool); viewer.StartMeasure(tool.Id);
+            tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.StartMeasurement(tool.Id)); rejected = true; throw new InvalidOperationException(); };
+            viewer.RegisterMeasurementTool(tool); viewer.StartMeasurement(tool.Id);
             var completed = viewer.MeasurementContext.CreateScope(); completed.OnDispose(() => released++); completed.Complete();
             viewer.MeasurementContext.CreateScope().OnDispose(() => released++);
         });

@@ -5,7 +5,7 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
-internal sealed class EditManager(OverlayLayer overlay, MeasureContext context)
+internal sealed class EditManager(OverlayLayer overlay, MeasurementContext context)
 {
     private ShapeEditSession? _session;
     private int _dragIndex = -1;

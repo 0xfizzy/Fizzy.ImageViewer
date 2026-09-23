@@ -29,7 +29,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly ImageLayer _input;
     private readonly OverlayLayer _overlay;
     private readonly EditManager _edit;
-    private readonly MeasureManager _measure;
+    private readonly MeasurementManager _measure;
     private readonly ViewerLayers _layers;
     private readonly IMouseCapture _capture;
     private bool _disposed, _clearing;
@@ -38,7 +38,7 @@ internal sealed class InteractionCoordinator : IDisposable
     public MeasurementItem? SelectedMeasurement => _measure.Context.Find(SelectedShape);
     internal EditManager Editor => _edit;
 
-    internal InteractionCoordinator(ImageLayer input, OverlayLayer overlay, EditManager edit, MeasureManager measure, ViewerLayers layers, IMouseCapture? capture = null)
+    internal InteractionCoordinator(ImageLayer input, OverlayLayer overlay, EditManager edit, MeasurementManager measure, ViewerLayers layers, IMouseCapture? capture = null)
     {
         _input = input; _overlay = overlay; _edit = edit; _measure = measure; _layers = layers;
         _capture = capture ?? new OverlayMouseCapture(overlay);

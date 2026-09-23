@@ -1,7 +1,6 @@
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Measurements;
 using Microsoft.Extensions.Logging;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Interaction;
 using System.Windows.Threading;
 
@@ -23,7 +22,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     // === Managers ===
     // 使用 volatile 保证跨线程可见性，因为这些字段在 UI 线程初始化，但可能在其他线程读取
     private volatile MenuManager? _menuManager;
-    private volatile MeasureManager? _measureManager;
+    private volatile MeasurementManager? _measureManager;
     private volatile InteractionCoordinator? _interaction;
 
     public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN)
@@ -54,7 +53,7 @@ public partial class Viewer : IViewerAPI, IAsyncDisposable
     internal Dispatcher UiDispatcher => _window.Dispatcher;
     internal ViewerWindow WindowForTests => _window;
     internal InteractionCoordinator Interaction => _interaction!;
-    internal MeasureContext MeasurementContext => _measureManager!.Context;
+    internal MeasurementContext MeasurementContext => _measureManager!.Context;
 
     public void RegisterMenu(IMenuItem menuItem)
     {

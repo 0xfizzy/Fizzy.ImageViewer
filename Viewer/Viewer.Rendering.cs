@@ -15,7 +15,7 @@ public partial class Viewer
         => _pipeline.SubmitAsync(frame, options, ct);
 
     public FrameLease? AcquireCurrentFrame() => _pipeline.AcquireCurrentFrame();
-    private FrameLease? AcquireCurrentFrameForMeasurement() => _pipeline.AcquireCurrentFrameForMeasurement();
+    private FrameLease? TryAcquireCurrentFrame() => _pipeline.TryAcquireCurrentFrame();
 
     public GrayDisplayRange? DisplayRange
     {

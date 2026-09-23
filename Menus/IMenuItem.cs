@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Interfaces
+namespace Fizzy.ImageViewer.Menus
 {
     public interface IMenuItem
     {

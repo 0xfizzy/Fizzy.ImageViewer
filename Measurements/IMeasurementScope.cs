@@ -1,7 +1,8 @@
+using Fizzy.ImageViewer.Drawing;
 using System;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Interfaces;
+namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Owns custom measurement resources. All operations run on the viewer STA.
 /// Dispose cancels/removes the scope; Complete retains it until deletion, clear or viewer closure.</summary>

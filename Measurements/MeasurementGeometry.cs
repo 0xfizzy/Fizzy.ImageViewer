@@ -1,5 +1,5 @@
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Geometry;
 

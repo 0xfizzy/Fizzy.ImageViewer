@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -51,8 +53,8 @@ public class MenuTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(1, 1);
-            viewer.StartMeasure(MeasureToolIds.Point); viewer.Interaction.ImageDown(2, 2);
+            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(1, 1);
+            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(2, 2);
             var overlay = viewer.WindowForTests.MeasurementOverlay;
             var shapes = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().ToArray();
             var menu = viewer.WindowForTests.ContextMenu;
@@ -80,7 +82,7 @@ public class MenuTests
             Open(menu);
             Assert.Contains(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             Close(menu);
-            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.StartMeasurement(MeasurementToolIds.Length);
             Open(menu);
             Assert.DoesNotContain(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             var cancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));

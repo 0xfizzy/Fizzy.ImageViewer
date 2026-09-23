@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using Fizzy.ImageViewer.Enums;
 
 namespace Fizzy.ImageViewer.Drawing;
 

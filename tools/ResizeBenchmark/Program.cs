@@ -7,7 +7,6 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;

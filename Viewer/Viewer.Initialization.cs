@@ -1,8 +1,8 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Editing;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Interaction;
-using Fizzy.ImageViewer.Measurements.Methods;
+using Fizzy.ImageViewer.Measurements.BuiltIn;
 using Fizzy.ImageViewer.Menus;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
@@ -31,8 +31,8 @@ public partial class Viewer
                 win.Closed += OnWindowClosed;
 
                 // 在 UI 线程创建 Managers
-                _queryScheduler = new(AcquireCurrentFrameForMeasurement, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                var measureMgr = _measureManager = new MeasureManager(win.MeasurementOverlay, AcquireCurrentFrameForMeasurement, _queryScheduler, _logger);
+                _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
+                var measureMgr = _measureManager = new MeasurementManager(win.MeasurementOverlay, TryAcquireCurrentFrame, _queryScheduler, _logger);
                 measureMgr.Context.ItemCompleted += item => NotifyMeasurement(MeasurementCompleted, item);
                 measureMgr.Context.ItemRemoved += item => NotifyMeasurement(MeasurementRemoved, item);
 
@@ -95,7 +95,7 @@ public partial class Viewer
     /// <summary>
     /// 注册内置的测量方法和菜单项。
     /// </summary>
-    private void RegisterBuiltInFeatures(ViewerWindow win, MeasureManager measureMgr, MenuManager menuMgr)
+    private void RegisterBuiltInFeatures(ViewerWindow win, MeasurementManager measureMgr, MenuManager menuMgr)
     {
         // 注册测量方法
         measureMgr.RegisterTool(new LineTool(measureMgr.Context));

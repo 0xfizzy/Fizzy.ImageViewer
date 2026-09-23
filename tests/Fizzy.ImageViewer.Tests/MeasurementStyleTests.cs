@@ -1,5 +1,5 @@
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Interfaces;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;
@@ -71,7 +71,7 @@ public class MeasurementStyleTests
         });
         static Line CompleteLine(Viewer viewer)
         {
-            viewer.StartMeasure(MeasureToolIds.Length);
+            viewer.StartMeasurement(MeasurementToolIds.Length);
             viewer.Interaction.ImageDown(1, 1);
             viewer.Interaction.ImageDown(4, 4);
             return viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<Line>().Last();
@@ -93,19 +93,19 @@ public class MeasurementStyleTests
         Assert.Throws<ObjectDisposedException>(() => first.MeasurementStyle = new());
     }
 
-    private sealed class StyledTool : IMeasureMethod
+    private sealed class StyledTool : IMeasurementTool
     {
         public string Id => "styled";
         public string DisplayName => "Styled";
-        public bool OnClick(Point point, IMeasureToolContext context)
+        public bool OnClick(Point point, IMeasurementToolContext context)
         {
             var scope = context.CreateScope();
             scope.AddShape(Shapes.CreateCircle(point, 2, context.Style));
             scope.Complete();
             return true;
         }
-        public void OnMouseMove(Point point, IMeasureToolContext context) { }
-        public void Cancel(IMeasureToolContext context) { }
+        public void OnMouseMove(Point point, IMeasurementToolContext context) { }
+        public void Cancel(IMeasurementToolContext context) { }
     }
 
     [Fact]
@@ -113,10 +113,10 @@ public class MeasurementStyleTests
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         viewer.MeasurementStyle = new() { NormalBrush = Brushes.Purple };
-        viewer.RegisterMeasureMethod(new StyledTool());
+        viewer.RegisterMeasurementTool(new StyledTool());
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasure("styled");
+            viewer.StartMeasurement("styled");
             viewer.Interaction.ImageDown(3, 4);
             var shape = Assert.Single(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
             Assert.Same(Brushes.Purple, shape.Stroke);

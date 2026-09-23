@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
@@ -114,7 +116,7 @@ public class ViewerInitializationTests
         Assert.Equal(1, closedWindows);
         Assert.Equal(1, presenter.Disposals);
         Assert.Equal(ApartmentState.STA, presenter.Apartment);
-        Assert.Throws<ObjectDisposedException>(() => partial.StartMeasure(MeasureToolIds.Point));
+        Assert.Throws<ObjectDisposedException>(() => partial.StartMeasurement(MeasurementToolIds.Point));
         await partial.DisposeAsync();
         Assert.Equal(1, presenter.Disposals);
     }

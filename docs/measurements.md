@@ -9,7 +9,7 @@ measurement elements. Batch markers continue to use `DrawingElement` and
 `Viewer.MeasurementStyle` configures newly created measurements independently for each
 viewer. Assignment copies and freezes all brushes on the caller's thread before UI
 dispatch. Existing shapes retain their normal and selected colors. Custom tools can
-pass `IMeasureToolContext.Style` to the optional `style` parameter of `Shapes.Create*`;
+pass `IMeasurementToolContext.Style` to the optional `style` parameter of `Shapes.Create*`;
 omitting it uses immutable defaults. Shape helpers also snapshot supplied brushes.
 
 Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primary
@@ -86,7 +86,7 @@ captures unfinished scopes after `OnClick` returns, provided no newer session ha
 replaced it. Scope disposal during session cleanup may itself start a new session.
 Cleanup attempts every captured scope and logs disposal failures. Bulk scope cleanup
 during clear rejects new scope creation.
-Once viewer shutdown begins, `StartMeasure` throws `ObjectDisposedException`;
+Once viewer shutdown begins, `StartMeasurement` throws `ObjectDisposedException`;
 shutdown cleans both completed and unfinished scopes and waits for owned queries.
 
 ## Query execution
@@ -126,18 +126,18 @@ Stopwatch, Task.Run and Dispatcher publication.
 ## Extension boundary
 
 Measurement tools use a stable, ordinal `Id` for programmatic lookup and a separate
-`DisplayName` for menus. Registration rejects duplicate IDs; `UnregisterMeasureMethod`
+`DisplayName` for menus. Registration rejects duplicate IDs; `UnregisterMeasurementTool`
 removes only the registry entry and cancels an active session for that ID while leaving
 completed measurement items intact. Menus are backed by the same registry and are
 updated for subsequent openings when tools are registered or unregistered.
 
-Use `viewer.StartMeasure(MeasureToolIds.Length)` for built-in tools; the other
+Use `viewer.StartMeasurement(MeasurementToolIds.Length)` for built-in tools; the other
 constants are `Point`, `ROI` and `LineStrength`. Custom tools implement both `Id`
-and `DisplayName`, and are installed with `RegisterMeasureMethod`. IDs are
-case-sensitive; blank IDs or display names are rejected. `StartMeasure` throws
+and `DisplayName`, and are installed with `RegisterMeasurementTool`. IDs are
+case-sensitive; blank IDs or display names are rejected. `StartMeasurement` throws
 `KeyNotFoundException` for an unknown ID and `InvalidOperationException` when the
-measurement layer is hidden. `UnregisterMeasureMethod(id)` returns whether an entry
-was removed. Call `CancelMeasure()` to end the active interaction session.
+measurement layer is hidden. `UnregisterMeasurementTool(id)` returns whether an entry
+was removed. Call `CancelMeasurement()` to end the active interaction session.
 
 Built-in tool classes are internal and receive their internal context at construction.
 The manager executes all tools through one internal protocol and registry; a small
@@ -146,8 +146,8 @@ only by their tool IDs, rather than by constructing or inheriting tool classes.
 Custom scopes do not participate in built-in completion/removal events, model editing
 or the internal query scheduler.
 
-The public extension boundary consists of `IMeasureMethod` and the `IMeasureToolContext` capability facade.
-Custom tools should use `IMeasureToolContext.CreateScope()` to obtain an
+The public extension boundary consists of `IMeasurementTool` and the `IMeasurementToolContext` capability facade.
+Custom tools should use `IMeasurementToolContext.CreateScope()` to obtain an
 `IMeasurementScope`. Register visuals with `AddShape`, disposable resources with
 `AddResource`, and cleanup callbacks with `OnDispose`. Call `Complete()` before
 returning `true` from `OnClick` to retain a result; incomplete scopes are released
@@ -175,14 +175,15 @@ For example, this tool owns a marker and a frame notification subscription:
 
 ```csharp
 using Fizzy.ImageViewer;
-using Fizzy.ImageViewer.Interfaces;
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
-public sealed class CustomPoint : IMeasureMethod
+public sealed class CustomPoint : IMeasurementTool
 {
     public string Id => "custom-point";
     public string DisplayName => "Custom point";
-    public bool OnClick(Point point, IMeasureToolContext context)
+    public bool OnClick(Point point, IMeasurementToolContext context)
     {
         var scope = context.CreateScope();
         try
@@ -199,8 +200,8 @@ public sealed class CustomPoint : IMeasureMethod
         }
         catch { scope.Dispose(); throw; }
     }
-    public void OnMouseMove(Point point, IMeasureToolContext context) { }
-    public void Cancel(IMeasureToolContext context) { } // Framework releases incomplete scopes.
+    public void OnMouseMove(Point point, IMeasurementToolContext context) { }
+    public void Cancel(IMeasurementToolContext context) { } // Framework releases incomplete scopes.
 }
 ```
 

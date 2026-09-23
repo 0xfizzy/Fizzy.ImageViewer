@@ -1,12 +1,13 @@
+using Fizzy.ImageViewer.Menus;
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using Fizzy.ImageViewer.Enums;
 
-namespace Fizzy.ImageViewer.Interfaces;
+namespace Fizzy.ImageViewer;
 
 /// <summary>
 /// 图像查看器的完整 API 接口。
@@ -129,12 +130,12 @@ public interface IViewerAPI : IAsyncDisposable
     /// <summary>
     /// 程序化启动已注册的测量工具。
     /// </summary>
-    void StartMeasure(string toolId);
+    void StartMeasurement(string toolId);
 
     /// <summary>
     /// 取消当前进行中的测量。
     /// </summary>
-    void CancelMeasure();
+    void CancelMeasurement();
     /// <summary>Completed built-in measurements only; raised on the viewer STA, excluding previews.</summary>
     event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
     /// <summary>Removal of completed built-in measurements; raised on the viewer STA, including closure.</summary>
@@ -148,10 +149,10 @@ public interface IViewerAPI : IAsyncDisposable
     void RegisterMenu(IMenuItem menuItem);
 
     /// <summary>
-    /// 注册自定义测量方法。工具回调中通过 IMeasureToolContext.CreateScope 登记视觉元素和资源，
+    /// 注册自定义测量方法。工具回调中通过 IMeasurementToolContext.CreateScope 登记视觉元素和资源，
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
     /// 调度器、内部测量模型及逐帧查询注册不是公共扩展接口。
     /// </summary>
-    void RegisterMeasureMethod(IMeasureMethod method);
-    bool UnregisterMeasureMethod(string toolId);
+    void RegisterMeasurementTool(IMeasurementTool tool);
+    bool UnregisterMeasurementTool(string toolId);
 }

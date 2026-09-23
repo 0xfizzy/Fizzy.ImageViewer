@@ -1,4 +1,4 @@
-using Fizzy.ImageViewer.Interfaces;
+using Fizzy.ImageViewer.Measurements;
 
 namespace Fizzy.ImageViewer;
 
@@ -16,19 +16,19 @@ public partial class Viewer
         }
     }
 
-    public void RegisterMeasureMethod(IMeasureMethod method)
+    public void RegisterMeasurementTool(IMeasurementTool tool)
     {
-        InvokeAlive(() => _measureManager!.RegisterMethod(method));
+        InvokeAlive(() => _measureManager!.RegisterTool(tool));
     }
 
-    public bool UnregisterMeasureMethod(string toolId) => InvokeAlive(() =>
+    public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
         if (_measureManager!.ActiveId == toolId) _interaction!.Cancel();
-        return _measureManager.UnregisterMethod(toolId);
+        return _measureManager.UnregisterTool(toolId);
     });
 
-    public void StartMeasure(string toolId)
+    public void StartMeasurement(string toolId)
     {
         InvokeAlive(() =>
         {
@@ -39,7 +39,7 @@ public partial class Viewer
         });
     }
 
-    public void CancelMeasure()
+    public void CancelMeasurement()
     {
         InvokeAlive(() => _interaction!.Cancel());
     }

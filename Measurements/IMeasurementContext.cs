@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <remarks>All operations, including disposal of returned subscriptions, run on the owning
 /// viewer's UI/STA thread. This protocol does not marshal calls; VerifyAccess checks the caller.
 /// The scheduler samples off the UI thread and publishes results back on it.
-/// External tools use Interfaces.IMeasureToolContext instead.</remarks>
+/// External tools use IMeasurementToolContext instead.</remarks>
 internal interface IMeasurementContext
 {
     Drawing.ShapeStyle Style { get; }

@@ -1,11 +1,11 @@
+using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Editing;
-using Fizzy.ImageViewer.Enums;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interaction;
-using Fizzy.ImageViewer.Measurements.Methods;
+using Fizzy.ImageViewer.Measurements.BuiltIn;
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Snapshots;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,10 +36,10 @@ public class MeasurementInteractionTests
             {
                 completed++;
                 if (completed != 1) return;
-                viewer.StartMeasure(startRectangle ? MeasureToolIds.ROI : MeasureToolIds.Point);
+                viewer.StartMeasurement(startRectangle ? MeasurementToolIds.ROI : MeasurementToolIds.Point);
                 if (startRectangle) viewer.Interaction.ImageDown(2, 2);
             };
-            viewer.StartMeasure(MeasureToolIds.Point);
+            viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Interaction.ImageDown(1, 1);
             Assert.Equal(InteractionMode.Measuring, viewer.Interaction.Mode);
             Assert.True(viewer.Layers.InputSuppressed);
@@ -171,18 +171,18 @@ public class MeasurementInteractionTests
             viewer.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
             {
-                case "measure": viewer.StartMeasure("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Interaction.Mode); break;
+                case "measure": viewer.StartMeasurement("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Interaction.Mode); break;
                 case "delete": viewer.Interaction.DeleteSelected(); break;
                 case "clear": viewer.ClearShapes(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
                 case "disable": viewer.Layers.Measurements.IsHitTestVisible = false; break;
-                default: viewer.CancelMeasure(); break;
+                default: viewer.CancelMeasurement(); break;
             }
             Assert.False(viewer.Interaction.Editor.IsEditing);
             Assert.False(viewer.Interaction.Editor.IsDragging);
             Assert.Empty(viewer.Interaction.Editor.Handles);
             Assert.False(overlay.Canvas.IsMouseCaptured);
-            viewer.CancelMeasure();
+            viewer.CancelMeasurement();
             Assert.Equal(InteractionMode.Idle, viewer.Interaction.Mode);
             Assert.False(viewer.Layers.InputSuppressed);
             Assert.False(viewer.Layers.Markers.IsHitTestVisible);
@@ -198,7 +198,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.UiDispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasure("ROI");
+            viewer.StartMeasurement("ROI");
             viewer.Interaction.ImageDown(1, 1); viewer.Interaction.ImageMove(4, 4);
             var overlay = Overlay(viewer);
             Assert.Equal(2, overlay.Canvas.Children.Count);
@@ -252,7 +252,7 @@ public class MeasurementInteractionTests
             var overlay = new OverlayLayer();
             layers.Measurements.Root.Children.Add(overlay);
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
-            using var measure = new MeasureManager(overlay, () => null, queries, NullLogger.Instance);
+            using var measure = new MeasurementManager(overlay, () => null, queries, NullLogger.Instance);
             var editor = new EditManager(overlay, measure.Context);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(image, overlay, editor, measure, layers, capture);

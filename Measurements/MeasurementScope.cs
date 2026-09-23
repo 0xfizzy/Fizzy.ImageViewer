@@ -1,4 +1,4 @@
-using Fizzy.ImageViewer.Interfaces;
+using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;

@@ -1,10 +1,11 @@
+using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Measurements.Methods;
+namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
-internal sealed class RectTool(IMeasurementContext context) : IMeasureTool
+internal sealed class RectTool(IMeasurementContext context) : IMeasurementToolHandler
 {
-    public string Id => MeasureToolIds.ROI;
+    public string Id => MeasurementToolIds.ROI;
     public string DisplayName => "ROI";
     private Point _start;
     private RegionMeasurement? _item;

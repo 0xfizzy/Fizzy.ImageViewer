@@ -1,8 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
-using Fizzy.ImageViewer.Enums;
 
-namespace Fizzy.ImageViewer;
+namespace Fizzy.ImageViewer.Drawing;
 
 /// <summary>Private visual metadata. Geometry ownership stays in measurement items.</summary>
 internal sealed class OverlayShapeData(OverlayScaleMode mode, ShapeType type)
@@ -32,7 +31,7 @@ internal sealed class OverlayShapeData(OverlayScaleMode mode, ShapeType type)
         if (OriginalBrush != null)
         {
             Dictionary<Brush, Brush>? cache = null;
-            OriginalBrush = Drawing.DrawingElement.Copy(OriginalBrush, ref cache);
+            OriginalBrush = DrawingElement.Copy(OriginalBrush, ref cache);
         }
     }
     internal OverlayScaleMode Mode { get; } = mode;

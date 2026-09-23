@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
 
-internal interface IMeasureTool
+internal interface IMeasurementToolHandler
 {
     string Id { get; }
     string DisplayName { get; }

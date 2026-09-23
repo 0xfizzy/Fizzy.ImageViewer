@@ -15,7 +15,6 @@ associated windows. Other measurements remain independent.
 
 ```csharp
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Enums;
 using System.Windows;
 using System.Windows.Media;
 
@@ -24,7 +23,7 @@ using var batch = markers.AddBatch(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-viewer.StartMeasure(MeasureToolIds.Length); // Also: Point, ROI, LineStrength IDs.
+viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, ROI, LineStrength IDs.
 // Measurement results and their editing controls belong to Measurements.
 // Marker visuals do not intercept input by default.
 
@@ -175,7 +174,7 @@ removal and closure release subscriptions and drawing resources.
 `DrawText` create single-element batches in `Markers`, without default selection
 or editing. Use `Layers.<layer>.AddBatch(...)` for bulk drawing and layer selection.
 For editable measurement shapes, continue using measurement tools and
-`IMeasureToolContext.CreateScope().AddShape(...)`. Keep the returned scope and call
+`IMeasurementToolContext.CreateScope().AddShape(...)`. Keep the returned scope and call
 `Complete()` when creation finishes. Scopes own related visuals and registered
 resources until deletion, clear or viewer closure. Measurement shapes remain
 individual WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles

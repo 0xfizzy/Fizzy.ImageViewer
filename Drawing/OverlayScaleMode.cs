@@ -1,4 +1,4 @@
-namespace Fizzy.ImageViewer.Enums
+namespace Fizzy.ImageViewer.Drawing
 {
     public enum OverlayScaleMode
     {
