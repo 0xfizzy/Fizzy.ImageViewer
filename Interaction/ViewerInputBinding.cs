@@ -49,7 +49,7 @@ internal sealed class ViewerInputBinding(ImageLayer input, OverlayLayer overlay,
     private void KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape) { _coordinator!.Cancel(); e.Handled = true; }
-        else if (e.Key == Key.Delete && _coordinator!.SelectedShape != null) { _coordinator.DeleteSelected(); e.Handled = true; }
+        else if (e.Key == Key.Delete && _coordinator!.SelectedMeasurement != null) { _coordinator.DeleteSelected(); e.Handled = true; }
     }
     private Point ImagePoint(MouseEventArgs e) => input.ContainerToImage(e.GetPosition(input.Container));
     private void MouseDown(object sender, MouseButtonEventArgs e)

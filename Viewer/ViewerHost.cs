@@ -28,7 +28,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private MenuManager _menuManager = null!;
     private ViewerMenuController? _menuController;
     private Imaging.Queries.PixelQueryScheduler _queryScheduler = null!;
-    private Snapshots.MenuSnapshotSession _menuSession = null!;
+    private Menus.MenuSnapshotSession _menuSession = null!;
     private readonly Snapshots.SnapshotCapture _snapshotCapture = new();
     private HudTextCollection _hud = null!;
     private PixelInfoOverlay? _pixelInfoOverlay;
@@ -47,7 +47,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     internal InteractionCoordinator Interaction => _interaction;
     internal MenuManager Menus => _menuManager;
     internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
-    internal Snapshots.MenuSnapshotSession MenuSession => _menuSession;
+    internal Menus.MenuSnapshotSession MenuSession => _menuSession;
     internal Snapshots.SnapshotCapture Snapshots => _snapshotCapture;
     internal HudTextCollection Hud => _hud;
     private Frames.FrameLease? TryAcquireCurrentFrame() => _pipeline.TryAcquireCurrentFrame();
@@ -68,10 +68,10 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 checkpoint?.Invoke(ViewerInitializationStage.WindowCreated);
                 _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageLayer,
                     presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
-                _pipeline = new Frames.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, _owner.NotifyFrameCommitted);
+                _pipeline = new Frames.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
                 checkpoint?.Invoke(ViewerInitializationStage.PipelineCreated);
                 _hud = new HudTextCollection(win.HudLayer, _lifetime);
-                _menuSession = new Snapshots.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
+                _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
@@ -81,7 +81,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 _context.ItemRemoved += _owner.NotifyMeasurementRemoved;
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
-                var editMgr = new EditManager(win.MeasurementOverlay, _context.Find);
+                var editMgr = new EditManager(win.MeasurementOverlay);
                 _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageLayer, win.MeasurementOverlay),
                     win.MeasurementOverlay, editMgr, _tools, _context, win.Layers);
                 _tools.RegisterTool(new LineTool());
@@ -138,6 +138,18 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
             catch (Exception cleanupError) { _logger.LogWarning(cleanupError, "Startup cleanup failed"); }
             throw;
         }
+    }
+
+    private void NotifyFrameCommitted(Frames.FrameLease frame, Frames.FrameSubmissionOptions? options)
+    {
+        try
+        {
+            using var borrowed = frame.Acquire();
+            options?.OnCommitted?.Invoke(borrowed);
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }
+        _context?.NotifyFrameCommitted(frame.Info);
+        _owner.NotifyFrameCommitted(frame.Info);
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)

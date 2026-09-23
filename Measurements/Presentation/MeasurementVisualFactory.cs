@@ -1,11 +1,13 @@
+using Fizzy.ImageViewer.Drawing;
+using Fizzy.ImageViewer.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace Fizzy.ImageViewer.Drawing
+namespace Fizzy.ImageViewer.Measurements.Presentation
 {
-    public static class Shapes
+    internal static class MeasurementVisualFactory
     {
         public const double BaseStrokeThickness = 2.0;
         public const double BaseFontSize = 14.0;
@@ -19,7 +21,7 @@ namespace Fizzy.ImageViewer.Drawing
                 Stroke = style.NormalBrush,
                 StrokeThickness = BaseStrokeThickness
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Line) { SelectedBrush = style.SelectedBrush });
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -36,7 +38,7 @@ namespace Fizzy.ImageViewer.Drawing
                 FontSize = BaseFontSize,
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.AnchoredLabel, ShapeType.Text)
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.AnchoredLabel)
             {
                 AnchorPoint = anchor,
                 ScreenOffset = new Vector(offsetX, offsetY),
@@ -58,7 +60,7 @@ namespace Fizzy.ImageViewer.Drawing
                 Fill = style.PointBrush,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, usesFill: true)
             {
                 AnchorPoint = position,
                 SelectedBrush = style.SelectedBrush
@@ -81,7 +83,7 @@ namespace Fizzy.ImageViewer.Drawing
                 StrokeThickness = thickness,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Crosshair)
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize)
             {
                 AnchorPoint = position,
                 SelectedBrush = style.SelectedBrush
@@ -101,7 +103,7 @@ namespace Fizzy.ImageViewer.Drawing
                 StrokeThickness = 1.0,
                 StrokeDashArray = new DoubleCollection { 4, 2 }
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Rectangle) { SelectedBrush = style.SelectedBrush });
+            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -117,7 +119,7 @@ namespace Fizzy.ImageViewer.Drawing
                 StrokeThickness = BaseStrokeThickness,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedStroke, ShapeType.Circle)
+            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedStroke)
             {
                 AnchorPoint = center,
                 SelectedBrush = style.SelectedBrush

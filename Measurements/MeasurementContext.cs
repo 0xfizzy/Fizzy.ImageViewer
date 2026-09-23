@@ -12,6 +12,7 @@ internal sealed class MeasurementContext : IMeasurementToolContext
 {
     public Drawing.ShapeStyle Style { get; internal set; } = Drawing.ShapeStyle.Default;
     private readonly OverlayLayer _layer;
+    internal OverlayLayer Layer => _layer;
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
     private readonly PixelQueryScheduler _scheduler;
@@ -50,13 +51,6 @@ internal sealed class MeasurementContext : IMeasurementToolContext
             try { handler(value); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
     }
     public void VerifyAccess() => _layer.Dispatcher.VerifyAccess();
-    internal void AttachVisualInternal(UIElement shape) { ObjectDisposedException.ThrowIf(_disposed, this); _layer.AddShape(shape); }
-    public void RemoveShape(UIElement shape)
-    {
-        if (_items.TryGetValue(shape, out var item)) item.Dispose();
-        else _layer.RemoveVisual(shape);
-    }
-    public void UpdateAnchor(UIElement shape, Point point) => _layer.UpdateAnchor(shape, point);
     public QuerySubscription Register(IFrameQueryClient item) => _scheduler.Register(item);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _items.TryGetValue(shape, out var item) ? item : null;
     public void Attach(MeasurementItem item)
@@ -68,7 +62,7 @@ internal sealed class MeasurementContext : IMeasurementToolContext
             foreach (var visual in item.Visuals)
             {
                 if (item.IsDisposed) break;
-                AttachVisualInternal(visual);
+                _layer.AddShape(visual);
             }
         }
         catch { item.Dispose(); throw; }

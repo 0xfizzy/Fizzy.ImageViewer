@@ -22,7 +22,7 @@ public class DrawingTests
     public async Task ClearUsesInitialLayersWhenRemovalSubscriberChangesCollection(bool removeLayer)
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var original = viewer.Layers.CreateLayer("original");
             var originalBatch = original.AddBatch([Circle()]);
@@ -37,7 +37,7 @@ public class DrawingTests
                 replacementBatch = replacement.AddBatch([Circle()]);
             };
             viewer.StartMeasurement(MeasurementToolIds.Point);
-            viewer.Interaction.ImageDown(1, 1);
+            viewer.Host.Interaction.ImageDown(1, 1);
             viewer.ClearShapes();
             Assert.Equal(1, removed);
             Assert.NotNull(replacement);
@@ -63,7 +63,7 @@ public class DrawingTests
         await using var viewer = Create();
         var elements = Enumerable.Range(0, count).Select(i => Circle(i % 100 * 10, i / 100 * 10)).ToArray();
         var batch = viewer.Layers.Markers.AddBatch(elements);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Arrange(viewer.Layers);
             Assert.Equal(1, VisualTreeHelper.GetChildrenCount(viewer.Layers.Markers.Host));
@@ -75,7 +75,7 @@ public class DrawingTests
             Assert.Single(batch.Elements);
         });
         batch.Dispose(); batch.Dispose();
-        await viewer.UiDispatcher.InvokeAsync(() => Assert.Equal(0, viewer.Layers.Markers.Host.Count));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Equal(0, viewer.Layers.Markers.Host.Count));
         Assert.Throws<ObjectDisposedException>(() => batch.Replace(elements));
     }
 
@@ -87,7 +87,7 @@ public class DrawingTests
         var elements = new List<DrawingElement> { Circle() with { Stroke = brush, Fill = brush } };
         using var batch = viewer.Layers.Markers.AddBatch(elements);
         brush.Color = Colors.Green; elements.Clear();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var element = Assert.IsType<CircleElement>(Assert.Single(batch.Elements));
             Assert.Equal(Colors.Blue, Assert.IsType<SolidColorBrush>(element.Fill).Color);
@@ -96,16 +96,16 @@ public class DrawingTests
         Assert.Throws<ArgumentOutOfRangeException>(() => batch.Replace([Circle() with { Radius = -1 }]));
         Assert.Throws<ArgumentException>(() => batch.Replace([new LineElement(new(double.NaN, 1), new(), Brushes.Red)]));
         Assert.Throws<ArgumentException>(() => batch.Replace([new TextElement(new(), "x", Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }]));
-        await viewer.UiDispatcher.InvokeAsync(() => Assert.Single(batch.Elements));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Single(batch.Elements));
         batch.Replace([]);
-        await viewer.UiDispatcher.InvokeAsync(() => { Assert.Empty(batch.Elements); Assert.True(batch.Visual.ContentBounds.IsEmpty); Assert.Equal(1, viewer.Layers.Markers.Host.Count); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { Assert.Empty(batch.Elements); Assert.True(batch.Visual.ContentBounds.IsEmpty); Assert.Equal(1, viewer.Layers.Markers.Host.Count); });
     }
 
     [Fact]
     public async Task ReplacementKeepsArrayAndMutableBrushSnapshotsIsolated()
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var brush = new SolidColorBrush(Colors.Blue);
             DrawingElement[] input = [Circle() with { Stroke = brush, Fill = brush }, Circle(60, 60)];
@@ -136,7 +136,7 @@ public class DrawingTests
             Circle(20, 20) with { Thickness = 2 },
             Circle(60, 60) with { Thickness = 8 },
             Circle(100, 100) with { Thickness = 8, ScaleMode = OverlayScaleMode.None }]);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.Layers.UpdateScale(2); viewer.Layers.FlushScale();
             var group = batch.Visual.Drawing;
@@ -151,7 +151,7 @@ public class DrawingTests
     {
         await using var viewer = Create();
         using var batch = viewer.Layers.Markers.AddBatch([Circle()]);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var originalElements = batch.Elements;
             var originalBounds = batch.Visual.ContentBounds;
@@ -177,7 +177,7 @@ public class DrawingTests
     public async Task DirectCommandsMatchDrawingGroupPixels(double scale)
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var translucent = new SolidColorBrush(Color.FromArgb(110, 30, 200, 80));
             translucent.Freeze();
@@ -218,11 +218,11 @@ public class DrawingTests
     public async Task HitTestingUsesDrawingContentAndLayerState()
     {
         await using var viewer = Create();
-        var layers = await viewer.UiDispatcher.InvokeAsync(() => new ViewerLayers(Transform.Identity));
+        var layers = await viewer.Host.Window.Dispatcher.InvokeAsync(() => new ViewerLayers(Transform.Identity));
         var markers = layers.Markers;
         using var a = markers.AddBatch([Circle()]);
         using var b = markers.AddBatch([Circle()]);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Drawing tests") { Width = 800, Height = 600, WindowStyle = unchecked((int)0x80000000) });
             source.RootVisual = layers.Root;
@@ -232,7 +232,7 @@ public class DrawingTests
             markers.IsHitTestVisible = true;
             Assert.Same(b, markers.HitBatch(new(20, 20)));
             BatchClickedEventArgs? clicked = null;
-            markers.BatchClicked += (_, e) => { Assert.True(viewer.UiDispatcher.CheckAccess()); clicked = e; };
+            markers.BatchClicked += (_, e) => { Assert.True(viewer.Host.Window.Dispatcher.CheckAccess()); clicked = e; };
             Assert.True(markers.DispatchClick(new(20, 20), System.Windows.Input.MouseButton.Left));
             Assert.Same(b, clicked!.Batch); Assert.Equal(new Point(20, 20), clicked.ImagePosition);
             Assert.Equal(System.Windows.Input.MouseButton.Left, clicked.Button);
@@ -262,7 +262,7 @@ public class DrawingTests
     {
         await using var viewer = Create();
         var enabled = viewer.Layers.CreateLayer("enabled"); enabled.IsHitTestVisible = true;
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.StartMeasurement("Length");
             Assert.True(viewer.Layers.InputSuppressed);
@@ -305,7 +305,7 @@ public class DrawingTests
             new RectangleElement(new(50, 50, 30, 30), Brushes.Blue, 4),
             new CrosshairElement(new(200, 200), Brushes.Yellow, 7, 3),
             new TextElement(new(30, 30), "Hello", Brushes.White, 24, new(5, 6))]);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var before = scaled.Visual.ContentBounds;
             viewer.Layers.UpdateScale(2); viewer.Layers.UpdateScale(4); viewer.Layers.FlushScale();
@@ -353,28 +353,28 @@ public class DrawingTests
     public async Task MeasurementSelectionEditingAndLinkedRemovalStillWork()
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             foreach (var geometry in new[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
-                var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(geometry);
+                var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(geometry);
                 var shape = item.PrimaryVisual; item.Complete();
-                viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!);
+                viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!);
                 var data = OverlayShapeData.Get(shape)!;
-                Assert.NotEmpty(viewer.Interaction.Editor.Handles);
-                var editor = viewer.Interaction.Editor;
+                Assert.NotEmpty(viewer.Host.Interaction.Editor.Handles);
+                var editor = viewer.Host.Interaction.Editor;
                 Assert.True(editor.BeginDrag(geometry.Start, 1));
                 editor.UpdateDrag(new(40, 40)); editor.EndDrag();
 
-                viewer.Interaction.DeleteSelected();
-                Assert.Null(viewer.Interaction.SelectedShape);
-                Assert.Empty(viewer.Interaction.Editor.Handles);
+                viewer.Host.Interaction.DeleteSelected();
+                Assert.Null(viewer.Host.Interaction.SelectedMeasurement);
+                Assert.Empty(viewer.Host.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
-            var measurement = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
+            var measurement = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
             measurement.Complete(); var line = measurement.PrimaryVisual;
-            viewer.Interaction.Select(line); viewer.Interaction.DeleteSelected();
+            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(line)); viewer.Host.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }
@@ -382,21 +382,21 @@ public class DrawingTests
     public async Task MeasurementPreviewCompletionAndClearReleaseLinkedResults()
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
                 new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LineTool(), new Measurements.BuiltIn.RectTool() })
             {
-                bool done = method.OnClick(new(10, 10), viewer.MeasurementContext);
+                bool done = method.OnClick(new(10, 10), viewer.Host.Measurements);
                 if (!done)
                 {
-                    method.OnMouseMove(new(50, 50), viewer.MeasurementContext);
+                    method.OnMouseMove(new(50, 50), viewer.Host.Measurements);
                     Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
-                    method.Cancel(viewer.MeasurementContext);
+                    method.Cancel(viewer.Host.Measurements);
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-                    Assert.False(method.OnClick(new(10, 10), viewer.MeasurementContext));
-                    Assert.True(method.OnClick(new(50, 50), viewer.MeasurementContext));
+                    Assert.False(method.OnClick(new(10, 10), viewer.Host.Measurements));
+                    Assert.True(method.OnClick(new(50, 50), viewer.Host.Measurements));
                 }
                 Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());
                 viewer.Layers.Measurements.Clear();
@@ -408,7 +408,7 @@ public class DrawingTests
     public async Task DisabledBatchPassesInputToImageAndTracksZoomAndPan()
     {
         await using var viewer = Create();
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var image = new ImageLayer();
             var layers = new ViewerLayers(image.TransformGroup);

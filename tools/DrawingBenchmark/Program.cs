@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
@@ -55,7 +56,7 @@ internal static class Program
         {
             foreach (CircleElement circle in data)
             {
-                var shape = Shapes.CreateCircle(circle.Center, circle.Radius);
+                var shape = MeasurementVisualFactory.CreateCircle(circle.Center, circle.Radius);
                 shape.Stroke = circle.Stroke; shape.Fill = circle.Fill;
                 legacy.AddShape(shape);
             }

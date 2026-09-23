@@ -19,11 +19,11 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
     var data = new byte[stride * height]; new Random(42).NextBytes(data);
     await using var baselineHost = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     WriteableBitmap? baseline = null;
-    await baselineHost.UiDispatcher.InvokeAsync(() => baseline = new WriteableBitmap(width, height, 96, 96,
+    await baselineHost.Host.Window.Dispatcher.InvokeAsync(() => baseline = new WriteableBitmap(width, height, 96, 96,
         format == FramePixelFormat.Gray8 ? PixelFormats.Gray8 : PixelFormats.Bgr24, null));
-    for (int i = 0; i < 3; i++) await baselineHost.UiDispatcher.InvokeAsync(() => baseline!.WritePixels(new Int32Rect(0, 0, width, height), data, stride, 0));
+    for (int i = 0; i < 3; i++) await baselineHost.Host.Window.Dispatcher.InvokeAsync(() => baseline!.WritePixels(new Int32Rect(0, 0, width, height), data, stride, 0));
     var timer = Stopwatch.StartNew();
-    for (int i = 0; i < 20; i++) await baselineHost.UiDispatcher.InvokeAsync(() => baseline!.WritePixels(new Int32Rect(0, 0, width, height), data, stride, 0));
+    for (int i = 0; i < 20; i++) await baselineHost.Host.Window.Dispatcher.InvokeAsync(() => baseline!.WritePixels(new Int32Rect(0, 0, width, height), data, stride, 0));
     double baselineMs = timer.Elapsed.TotalMilliseconds / 20;
     foreach (int fps in new[] { 30, 60 })
     foreach (int count in new[] { 1, 2 })
@@ -35,7 +35,7 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
             foreach (var viewer in viewers)
             {
                 await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(width, height, stride, format), data, () => { }));
-                if (measure) await viewer.UiDispatcher.InvokeAsync(() => viewer.MeasurementContext.Register(new ProfileMeasurement(width, height)));
+                if (measure) await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Measurements.Register(new ProfileMeasurement(width, height)));
             }
             using var process = Process.GetCurrentProcess();
             long allocated = GC.GetTotalAllocatedBytes(true), memory = process.PrivateMemorySize64;

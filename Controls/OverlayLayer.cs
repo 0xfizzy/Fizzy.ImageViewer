@@ -14,7 +14,6 @@ internal class OverlayLayer : UserControl
     private UIElement? _selectedShape;
     private readonly List<UIElement> _selectionVisuals = [];
     internal Canvas Canvas => _canvas;
-    internal event Action<UIElement>? VisualRemoving;
     internal event Action<UIElement>? VisualAdded;
     public event Action<UIElement>? ShapeRemoved;
 
@@ -37,7 +36,7 @@ internal class OverlayLayer : UserControl
         var brush = selected ? data.SelectedBrush : data.OriginalBrush;
         if (element is Shape shape)
         {
-            if (data.ShapeType == ShapeType.Point) shape.Fill = brush;
+            if (data.UsesFill) shape.Fill = brush;
             else shape.Stroke = brush;
         }
         else if (element is TextBlock text) text.Foreground = brush;
@@ -51,14 +50,10 @@ internal class OverlayLayer : UserControl
     internal void RemoveVisual(UIElement shape)
     {
         if (!_canvas.Children.Contains(shape)) return;
-        try { VisualRemoving?.Invoke(shape); }
-        finally
-        {
-            if (ReferenceEquals(_selectedShape, shape)) SetSelection(null, []);
-            // Remove before notifying observers, so re-entrant removal is harmless.
-            _canvas.Children.Remove(shape);
-            ShapeRemoved?.Invoke(shape);
-        }
+        if (ReferenceEquals(_selectedShape, shape)) SetSelection(null, []);
+        // Remove before notifying observers, so re-entrant removal is harmless.
+        _canvas.Children.Remove(shape);
+        ShapeRemoved?.Invoke(shape);
     }
     internal void ClearVisuals()
     {

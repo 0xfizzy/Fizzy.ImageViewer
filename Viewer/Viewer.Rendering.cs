@@ -19,12 +19,10 @@ public partial class Viewer
         set => _host.Pipeline.DisplayRange = value;
     }
 
-    internal void NotifyFrameCommitted(FrameLease frame, FrameSubmissionOptions? options)
+    internal void NotifyFrameCommitted(FrameInfo info)
     {
-        Notify(() => { using var borrowed = frame.Acquire(); options?.OnCommitted?.Invoke(borrowed); });
-        Notify(() => _host.Measurements?.NotifyFrameCommitted(frame.Info));
         foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
-            Notify(() => handler(frame.Info));
+            Notify(() => handler(info));
     }
 
     private void Notify(Action action)

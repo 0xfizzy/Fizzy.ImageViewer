@@ -22,8 +22,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly ViewerLayers _layers;
     private bool _disposed, _clearing;
     public InteractionMode Mode { get; private set; }
-    public UIElement? SelectedShape { get; private set; }
-    public MeasurementItem? SelectedMeasurement => _context.Find(SelectedShape);
+    public MeasurementItem? SelectedMeasurement { get; private set; }
     internal EditManager Editor => _edit;
 
     internal InteractionCoordinator(ViewerInputBinding input, OverlayLayer overlay, EditManager edit,
@@ -32,7 +31,6 @@ internal sealed class InteractionCoordinator : IDisposable
         _input = input; _overlay = overlay; _edit = edit; _tools = tools; _context = context; _layers = layers;
         layers.Measurements.Clearing += ClearMeasurements;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
-        overlay.VisualRemoving += VisualRemoving;
         context.ItemRemoving += ItemRemoving;
         input.Connect(this);
     }
@@ -41,19 +39,22 @@ internal sealed class InteractionCoordinator : IDisposable
         if (_disposed) return false;
         if (Mode == InteractionMode.Editing) return false;
         if (Mode == InteractionMode.Measuring) return true;
-        Select(shape); return true;
-    }
-    internal void Select(UIElement shape)
-    {
-        if (_disposed || Mode == InteractionMode.Measuring || !_overlay.Canvas.Children.Contains(shape)) return;
-        StopEditing();
         var item = _context.Find(shape);
-        SelectedShape = item?.PrimaryVisual ?? shape;
-        _overlay.SetSelection(SelectedShape, item?.Visuals ?? [shape]);
+        if (item == null) return false;
+        Select(item); return true;
+    }
+    internal void Select(MeasurementItem? item)
+    {
+        if (_disposed || Mode == InteractionMode.Measuring || item is null || item.IsDisposed ||
+            !ReferenceEquals(_context.Find(item.PrimaryVisual), item)) return;
+        StopEditing();
+        if (item.IsDisposed) return;
+        SelectedMeasurement = item;
+        _overlay.SetSelection(item.PrimaryVisual, item.Visuals);
     }
     internal void ClearSelection()
     {
-        StopEditing(); SelectedShape = null; _overlay.SetSelection(null, []);
+        StopEditing(); SelectedMeasurement = null; _overlay.SetSelection(null, []);
     }
     internal void StartMeasurement(string name)
     {
@@ -76,16 +77,16 @@ internal sealed class InteractionCoordinator : IDisposable
         }
         catch { if (version == _sessionVersion) Cancel(); throw; }
     }
-    internal void StartEditing(UIElement shape)
+    internal void StartEditing(MeasurementItem? item)
     {
         if (_clearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
-        if (_disposed || !_overlay.Canvas.Children.Contains(shape) || !_edit.CanEdit(shape) ||
+        if (_disposed || item is null || !ReferenceEquals(_context.Find(item.PrimaryVisual), item) || !_edit.CanEdit(item) ||
             !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
         if (!CancelCore()) return;
         var version = _sessionVersion;
-        Select(shape);
+        Select(item);
         if (version != _sessionVersion || _disposed) return;
-        try { if (_edit.StartEditing(SelectedShape!)) Mode = InteractionMode.Editing; }
+        try { if (_edit.StartEditing(item)) Mode = InteractionMode.Editing; }
         catch { if (version == _sessionVersion) Cancel(); throw; }
     }
     internal void StopEditing()
@@ -136,20 +137,17 @@ internal sealed class InteractionCoordinator : IDisposable
         _input.Restore();
         _layers.SuppressInput(false);
     }
-    internal void DeleteSelected() => Delete(SelectedShape);
-    internal void Delete(UIElement? selected)
+    internal void DeleteSelected() => Delete(SelectedMeasurement);
+    internal void Delete(MeasurementItem? selected)
     {
-        if (_disposed) return;
+        if (_disposed || selected is null || selected.IsDisposed ||
+            !ReferenceEquals(_context.Find(selected.PrimaryVisual), selected)) return;
         ClearSelection();
-        if (selected != null) _context.RemoveShape(selected);
+        selected.Dispose();
     }
     private void ItemRemoving(MeasurementItem item)
     {
-        if (ReferenceEquals(SelectedMeasurement, item) || ReferenceEquals(_edit.EditingShape, item.PrimaryVisual)) ClearSelection();
-    }
-    private void VisualRemoving(UIElement visual)
-    {
-        if (ReferenceEquals(SelectedShape, visual) || ReferenceEquals(_edit.EditingShape, visual)) ClearSelection();
+        if (ReferenceEquals(SelectedMeasurement, item) || ReferenceEquals(_edit.EditingMeasurement, item)) ClearSelection();
     }
     internal void ImageDown(double x, double y)
     {
@@ -234,7 +232,6 @@ internal sealed class InteractionCoordinator : IDisposable
             try { ClearSelection(); }
             finally
             {
-                _overlay.VisualRemoving -= VisualRemoving;
                 _context.ItemRemoving -= ItemRemoving;
                 _input.Dispose();
                 _layers.Measurements.Clearing -= ClearMeasurements;

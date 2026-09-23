@@ -43,7 +43,7 @@ public class MeasurementReentryTests
             Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
             Context = new(Overlay, () => null, Queries, NullLogger.Instance);
             Tools = new();
-            Coordinator = new(new ViewerInputBinding(Input, Overlay), Overlay, new EditManager(Overlay, Context.Find), Tools, Context, Layers);
+            Coordinator = new(new ViewerInputBinding(Input, Overlay), Overlay, new EditManager(Overlay), Tools, Context, Layers);
         }
         internal void AssertActive(string id)
         {
@@ -69,7 +69,7 @@ public class MeasurementReentryTests
     public async Task ReentrantSessionOwnsInputAndPreview(string operation, bool throws)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness();
             var old = new Tool("old"); var next = new Tool("next"); var outer = new Tool("outer");
@@ -93,7 +93,7 @@ public class MeasurementReentryTests
                 case "click": old.Click = ctx => { Restart(ctx); return true; }; invoke = () => h.Coordinator.ImageDown(0, 0); break;
                 case "move": old.Move = Restart; invoke = () => h.Coordinator.ImageMove(0, 0); break;
                 case "start": old.Cancelled = Restart; invoke = () => h.Coordinator.StartMeasurement(outer.Id); break;
-                case "edit": old.Cancelled = Restart; invoke = () => h.Coordinator.StartEditing(shape); break;
+                case "edit": old.Cancelled = Restart; invoke = () => h.Coordinator.StartEditing(editable); break;
                 default: old.Cancelled = Restart; invoke = h.Coordinator.Cancel; break;
             }
             if (throws) Assert.Same(failure, Assert.Throws<InvalidOperationException>(invoke)); else invoke();
@@ -113,7 +113,7 @@ public class MeasurementReentryTests
     public async Task FailureWithoutReentryRestoresIdle(string operation)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness(); var tool = new Tool("old"); h.Tools.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
@@ -135,7 +135,7 @@ public class MeasurementReentryTests
     public async Task ScopeCleanupCanStartSessionAndCreatePreview(bool completes)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness(); var tool = new Tool("same"); h.Tools.RegisterTool(tool);
             h.Coordinator.StartMeasurement(tool.Id);
@@ -159,7 +159,7 @@ public class MeasurementReentryTests
     public async Task ClosingCoordinatorRejectsReentryAndStillCleans(bool throws)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness(); var tool = new Tool("old"); var next = new Tool("next");
             h.Tools.RegisterTool(tool); h.Tools.RegisterTool(next);
@@ -178,13 +178,13 @@ public class MeasurementReentryTests
     {
         var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         var rejected = false; var released = 0;
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var tool = new Tool("closing");
             tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.StartMeasurement(tool.Id)); rejected = true; throw new InvalidOperationException(); };
             viewer.RegisterMeasurementTool(tool); viewer.StartMeasurement(tool.Id);
-            var completed = viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new())); completed.OnDispose(() => released++); completed.Complete();
-            viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
+            var completed = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new())); completed.OnDispose(() => released++); completed.Complete();
+            viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
         });
         await viewer.DisposeAsync(); await viewer.DisposeAsync();
         Assert.True(rejected); Assert.Equal(2, released);
@@ -196,7 +196,7 @@ public class MeasurementReentryTests
     public async Task UnregisterPreservesReplacementWithSameId(bool throws)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness();
             var old = new Tool("same");

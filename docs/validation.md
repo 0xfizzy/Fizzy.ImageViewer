@@ -114,7 +114,9 @@ selection colors. `ViewerInitializationTests` inject startup/cleanup failures an
 frame/measurement/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
 cover routed selection input, one cancellation per layer operation and complete bulk cleanup
 after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
-context. The public API baseline test detects exported type/member changes; its update
+context. MeasurementGeometryTests verify normalized bounds, endpoint order, zero extents and invalid
+coordinates/radii. ViewerTests verify submission, measurement and public frame-notification
+order despite callback failures. The public API baseline test detects exported type/member changes; its update
 procedure is documented in [public API](public-api.md).
 
 Initialization tests also verify public hidden creation, configuration and frame submission
@@ -129,7 +131,8 @@ Menu lifetime tests cover independent registrations, cross-thread and reentrant 
 retained click invalidation, delayed cleanup after Closed, failed-opening unfreeze, and
 binding cleanup on shutdown and initialization failure. Initialization checkpoints include
 fully composed menus. Edit tests retain model writeback and drag-start corner behavior
-without an editor factory or forwarding wrapper.
+without an editor factory or forwarding wrapper. Unregistered visuals cannot replace a
+selected measurement or become edit targets; retained menu actions ignore disposed targets.
 Measurement resource failure tests verify visual detachment and idempotent disposal
 even when specialized cleanup throws.
 

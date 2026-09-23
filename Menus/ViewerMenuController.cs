@@ -34,7 +34,7 @@ internal sealed class ViewerMenuController : IDisposable
     }
 
     internal void CaptureTarget() => _session.Open(descriptor =>
-        _interaction.SelectedMeasurement is { IsComplete: true, Geometry.Kind: ShapeType.Rectangle } item
+        _interaction.SelectedMeasurement is { IsComplete: true, Geometry.Kind: MeasurementKind.Rectangle } item
             ? item.Geometry.ToRegion(descriptor) : null);
 
     private void CloseTarget() => _session.Close();
@@ -57,7 +57,7 @@ internal sealed class ViewerMenuController : IDisposable
 
     private IEnumerable<IMenuItem> CreateInteractionItems()
     {
-        var selected = _interaction.SelectedShape;
+        var selected = _interaction.SelectedMeasurement;
         if (_interaction.Mode == InteractionMode.Measuring)
         {
             yield return new MenuItem("Cancel Measurement", _interaction.Cancel);
@@ -65,8 +65,8 @@ internal sealed class ViewerMenuController : IDisposable
         }
         if (selected != null)
         {
-            yield return new MenuItem("Edit", () => _interaction.StartEditing(selected));
-            yield return new MenuItem("Delete", () => _interaction.Delete(selected));
+            yield return new MenuItem("Edit", () => { if (!selected.IsDisposed) _interaction.StartEditing(selected); });
+            yield return new MenuItem("Delete", () => { if (!selected.IsDisposed) _interaction.Delete(selected); });
             yield return SeparatorMenuItem.Instance;
         }
         foreach (var tool in _tools.RegisteredTools)

@@ -33,8 +33,8 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
 {
     var presenter = new TimedPresenter();
     await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true, 80, 80, 900, 650);
-    var dispatcher = viewer.UiDispatcher;
-    var window = viewer.WindowForTests;
+    var dispatcher = viewer.Host.Window.Dispatcher;
+    var window = viewer.Host.Window;
     int height = c.Width * 9 / 16;
     var data = new byte[c.Width * height * 3];
     new Random(42).NextBytes(data);

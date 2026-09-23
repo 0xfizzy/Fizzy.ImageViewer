@@ -1,8 +1,7 @@
-using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Imaging.Queries;
-using Fizzy.ImageViewer.Measurements.BuiltIn;
+using Fizzy.ImageViewer.Measurements.Presentation;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -12,12 +11,11 @@ namespace Fizzy.ImageViewer.Measurements;
 internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
 {
     private readonly MeasurementContext _context;
-    private readonly MeasurementDisplayAdapter _display;
+    private readonly MeasurementPresentation _display;
     private readonly MeasurementOptions _options;
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
     private QuerySubscription? _subscription;
-    private LineProfilePlotView? _plot;
     private QueryRequest? _cached;
     private (long Version, FrameDescriptor Descriptor)? _cacheKey;
     private PixelCoordinate[] _coordinates = [];
@@ -29,8 +27,8 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     public MeasurementGeometry Geometry { get; private set; }
     public long GeometryVersion { get; private set; }
     public MeasurementResult? Result { get; private set; }
-    public UIElement PrimaryVisual { get; }
-    public TextBlock Label { get; }
+    public UIElement PrimaryVisual => _display.PrimaryVisual;
+    public TextBlock Label => _display.Label;
     public bool IsDisposed { get; private set; }
     public bool IsComplete { get; private set; }
     internal bool CompletionNotified { get; set; }
@@ -42,18 +40,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     {
         _context = context; Geometry = geometry; _options = options with { Style = null };
         var style = (options.Style ?? context.Style).Snapshot();
-        PrimaryVisual = geometry.Kind switch
-        {
-            ShapeType.Point => Shapes.CreatePoint(geometry.Start, style),
-            ShapeType.Crosshair => Shapes.CreateCrosshair(geometry.Start, style: style),
-            ShapeType.Line => Shapes.CreateLine(style),
-            ShapeType.Rectangle => Shapes.CreateRectangle(style),
-            ShapeType.Circle => Shapes.CreateCircle(geometry.Start, geometry.Radius, style),
-            _ => throw new ArgumentException("Unsupported geometry.", nameof(geometry))
-        };
-        Label = Shapes.CreateLabel(geometry.Start, "", 5, 0, style);
-        _display = new(context, PrimaryVisual, Label);
-        _display.Apply(geometry); UpdateText();
+        _display = new(context.Layer, geometry, style, Dispose);
     }
     private void EnsureAlive() { _context.VerifyAccess(); ObjectDisposedException.ThrowIf(IsDisposed, this); }
     public void AddResource(IDisposable resource) { EnsureAlive(); ArgumentNullException.ThrowIfNull(resource); _resources.Add(resource); }
@@ -75,30 +62,17 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         IsComplete = true;
         try
         {
-            if (_options.ShowLineProfile)
-            {
-                _plot = new LineProfilePlotView();
-                _plot.Window.Closed += PlotClosed;
-                _plot.Window.Show();
-            }
+            _display.Complete(_options.ShowLineProfile);
             if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _context.Register(this);
             if (!IsDisposed) _context.NotifyCompleted(this);
         }
         catch { Dispose(); throw; }
     }
-    private void PlotClosed(object? sender, EventArgs args) => Dispose();
-    private void UpdateText() => Label.Text = Geometry.Kind switch
-    {
-        ShapeType.Line => $"{(Geometry.End - Geometry.Start).Length:F1} px",
-        ShapeType.Point or ShapeType.Crosshair => $"X:{Geometry.X:F2}\nY:{Geometry.Y:F2}",
-        ShapeType.Circle => $"r={Geometry.Radius:F1} px",
-        _ => $"{Geometry.Width:F1} × {Geometry.Height:F1} px"
-    };
     public void ClearResult()
     {
         var hadResult = Result != null;
         Result = null; _samples = []; _channels = []; _region = null;
-        UpdateText(); _plot?.Clear();
+        _display.ClearResult(Geometry);
         if (hadResult && !IsDisposed) _context.Notify(ResultChanged, (MeasurementResult?)null);
     }
     public QueryRequest? Capture(FrameDescriptor descriptor)
@@ -130,17 +104,9 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     public void ResultPublished(FrameInfo frame)
     {
         if (IsDisposed) return;
-        UpdateText();
         Result = new(Id, GeometryVersion, frame, _options.Query, _coordinates, _samples, _region, _channels);
-        if (_options.Query == MeasurementQuery.Pixel && _samples.Length > 0) Label.Text += $" | {_samples[0]}";
-        else if (_options.Query == MeasurementQuery.RegionStatistics && _region is { } region)
-        {
-            var names = _channels.Length == 1 ? new[] { "Gray" } : new[] { "R", "G", "B", "A" };
-            Label.Text = $"{region.Width} × {region.Height} px | " + string.Join(" | ", _channels.Select((s, i) =>
-                $"{names[i]}: n={s.Count} min={s.Minimum:G7} max={s.Maximum:G7} mean={s.Mean:G7}"));
-        }
-        else if (_options.Query == MeasurementQuery.LineProfile && _profile != null)
-        { _profile.Apply(_samples); _plot?.ShowProfile(_profile); }
+        if (_options.Query == MeasurementQuery.LineProfile) _profile?.Apply(_samples);
+        _display.ShowResult(Geometry, Result, _profile);
         _context.Notify(ResultChanged, Result);
     }
     public void Dispose()
@@ -151,8 +117,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         Release(() => _subscription?.Dispose()); _subscription = null;
         foreach (var callback in _callbacks) Release(callback);
         foreach (var resource in _resources) Release(resource.Dispose);
-        var plot = _plot; _plot = null;
-        if (plot != null) Release(() => { plot.Window.Closed -= PlotClosed; plot.Window.Close(); });
+        Release(_display.Dispose);
         Release(() => _context.Detach(this));
         _callbacks.Clear(); _resources.Clear(); _cached = null; _profile = null;
         Result = null; _samples = []; _channels = []; _coordinates = [];

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
@@ -22,7 +23,7 @@ internal static class ControlPointHandle
         var geometry = new EllipseGeometry(new Point(0, 0), HandleRadius, HandleRadius);
 
         // Use FixedSize mode so handle stays constant size during zoom
-        var data = new OverlayShapeData(OverlayScaleMode.FixedSize, ShapeType.Point)
+        var data = new OverlayShapeData(OverlayScaleMode.FixedSize, usesFill: true)
         {
             AnchorPoint = position
         };

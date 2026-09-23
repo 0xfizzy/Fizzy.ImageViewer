@@ -14,8 +14,8 @@ public class FramePresentationTests
     public async Task GpuPreparationDoesNotReadPixelsAndRejectsDisplayMapping()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, null, false);
-        var presentation = await viewer.UiDispatcher.InvokeAsync(() =>
-            new FramePresentation(viewer.UiDispatcher, new ImageLayer(), new WriteableBitmapPresenter(), NullLogger.Instance));
+        var presentation = await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+            new FramePresentation(viewer.Host.Window.Dispatcher, new ImageLayer(), new WriteableBitmapPresenter(), NullLogger.Instance));
         var source = new UnexpectedReadSource();
         int released = 0;
         using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 4, FramePixelFormat.Bgra32),
@@ -34,7 +34,7 @@ public class FramePresentationTests
             });
             Assert.Equal(0, source.Reads);
         }
-        finally { await viewer.UiDispatcher.InvokeAsync(presentation.Dispose); }
+        finally { await viewer.Host.Window.Dispatcher.InvokeAsync(presentation.Dispose); }
         frame.Dispose();
         Assert.Equal(0, released);
         lease.Dispose();

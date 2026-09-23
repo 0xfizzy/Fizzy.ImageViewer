@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
@@ -6,7 +5,7 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Immutable geometry snapshot of any completed measurement.</summary>
 public sealed record MeasurementSnapshot(Guid Id, MeasurementGeometry Geometry, long GeometryVersion)
 {
-    public ShapeType Kind => Geometry.Kind;
+    public MeasurementKind Kind => Geometry.Kind;
     public Point Start => Geometry.Start;
     public Point End => Geometry.End;
 }

@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Geometry;
@@ -8,16 +7,18 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Immutable image-space geometry. Rectangles are always normalized.</summary>
 public sealed record MeasurementGeometry
 {
-    public ShapeType Kind { get; }
+    public MeasurementKind Kind { get; }
     public Point Start { get; }
     public Point End { get; }
     public double Radius { get; private init; }
     public double X => Start.X;
     public double Y => Start.Y;
-    public double Width => End.X - Start.X;
-    public double Height => End.Y - Start.Y;
+    /// <summary>Normalized image-space bounds; point and crosshair have zero extent.</summary>
+    public Rect Bounds => Kind == MeasurementKind.Circle
+        ? new Rect(Start.X - Radius, Start.Y - Radius, Radius * 2, Radius * 2)
+        : new Rect(Start, End);
 
-    private MeasurementGeometry(ShapeType kind, Point start, Point end)
+    private MeasurementGeometry(MeasurementKind kind, Point start, Point end)
     {
         if (!double.IsFinite(start.X) || !double.IsFinite(start.Y) ||
             !double.IsFinite(end.X) || !double.IsFinite(end.Y) ||
@@ -29,41 +30,41 @@ public sealed record MeasurementGeometry
     public static MeasurementGeometry Rectangle(Point a, Point b)
     {
         var (start, end) = GeometryOperations.NormalizeRectangle(a, b);
-        return new(ShapeType.Rectangle, start, end);
+        return new(MeasurementKind.Rectangle, start, end);
     }
-    public static MeasurementGeometry Line(Point start, Point end) => new(ShapeType.Line, start, end);
-    public static MeasurementGeometry Point(Point point) => new(ShapeType.Point, point, point);
+    public static MeasurementGeometry Line(Point start, Point end) => new(MeasurementKind.Line, start, end);
+    public static MeasurementGeometry Point(Point point) => new(MeasurementKind.Point, point, point);
 
-    public static MeasurementGeometry Crosshair(Point point) => new(ShapeType.Crosshair, point, point);
+    public static MeasurementGeometry Crosshair(Point point) => new(MeasurementKind.Crosshair, point, point);
     public static MeasurementGeometry Circle(Point center, double radius)
     {
         if (!double.IsFinite(radius) || radius < 0 || !double.IsFinite(center.X + radius) || !double.IsFinite(center.Y + radius) ||
             !double.IsFinite(center.X - radius) || !double.IsFinite(center.Y - radius) || !double.IsFinite(radius * 2))
             throw new ArgumentOutOfRangeException(nameof(radius));
-        return new(ShapeType.Circle, center, center) { Radius = radius };
+        return new(MeasurementKind.Circle, center, center) { Radius = radius };
     }
 
-    internal PixelRegion ToRegion(Frames.FrameDescriptor descriptor) => Kind == ShapeType.Rectangle
-        ? PixelRegion.Clip(X, Y, Width, Height, descriptor) : throw new InvalidOperationException("Not a region.");
+    internal PixelRegion ToRegion(Frames.FrameDescriptor descriptor) => Kind == MeasurementKind.Rectangle
+        ? PixelRegion.Clip(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height, descriptor) : throw new InvalidOperationException("Not a region.");
 
     internal IReadOnlyList<Point> ControlPoints => Kind switch
     {
-        ShapeType.Rectangle => GeometryOperations.RectangleControlPoints(Start, End),
-        ShapeType.Line => [Start, End],
-        ShapeType.Circle => [Start, new(Start.X + Radius, Start.Y)],
+        MeasurementKind.Rectangle => GeometryOperations.RectangleControlPoints(Start, End),
+        MeasurementKind.Line => [Start, End],
+        MeasurementKind.Circle => [Start, new(Start.X + Radius, Start.Y)],
         _ => [Start]
     };
 
     // Use the drag-start snapshot so crossing an opposite corner never changes the fixed anchor.
     internal MeasurementGeometry MoveControlPoint(int index, Point point) => Kind switch
     {
-        ShapeType.Rectangle when index is >= 0 and < 4 => Rectangle(ControlPoints[(index + 2) % 4], point),
-        ShapeType.Line when index == 0 => Line(point, End),
-        ShapeType.Line when index == 1 => Line(Start, point),
-        ShapeType.Point when index == 0 => Point(point),
-        ShapeType.Crosshair when index == 0 => Crosshair(point),
-        ShapeType.Circle when index == 0 => Circle(point, Radius),
-        ShapeType.Circle when index == 1 => Circle(Start, (point - Start).Length),
+        MeasurementKind.Rectangle when index is >= 0 and < 4 => Rectangle(ControlPoints[(index + 2) % 4], point),
+        MeasurementKind.Line when index == 0 => Line(point, End),
+        MeasurementKind.Line when index == 1 => Line(Start, point),
+        MeasurementKind.Point when index == 0 => Point(point),
+        MeasurementKind.Crosshair when index == 0 => Crosshair(point),
+        MeasurementKind.Circle when index == 0 => Circle(point, Radius),
+        MeasurementKind.Circle when index == 1 => Circle(Start, (point - Start).Length),
         _ => throw new ArgumentOutOfRangeException(nameof(index))
     };
 }

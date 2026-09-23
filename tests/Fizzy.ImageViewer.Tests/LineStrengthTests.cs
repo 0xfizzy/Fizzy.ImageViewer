@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
@@ -34,7 +35,7 @@ public class LineStrengthTests
     public async Task RepeatedProfileUpdatesDoNotAllocateAfterWarmup()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var plot = new LineProfilePlotView.LineProfilePlotControl();
             var profile = Profile(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255));
@@ -50,7 +51,7 @@ public class LineStrengthTests
     public async Task RenderCachesGeometryAndKeepsNonFiniteGaps()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var plot = new LineProfilePlotView.LineProfilePlotControl();
             var profile = Profile(new(FramePixelFormat.Gray8, 1, 0, 0, 0, 255),
@@ -91,17 +92,17 @@ public class LineStrengthTests
     public async Task ResourceFailureStillDetachesMeasurementAndAllowsRepeatedDisposal()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.WindowForTests.MeasurementOverlay;
-            var item = (MeasurementItem)viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var overlay = viewer.Host.Window.MeasurementOverlay;
+            var item = (MeasurementItem)viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new()));
             item.OnDispose(() => throw new InvalidOperationException("resource cleanup failure"));
             item.Complete();
             int removed = 0;
             viewer.MeasurementRemoved += (_, _) => removed++;
             Assert.Throws<AggregateException>(item.Dispose);
             Assert.True(item.IsDisposed);
-            Assert.Null(viewer.MeasurementContext.Find(item.PrimaryVisual));
+            Assert.Null(viewer.Host.Measurements.Find(item.PrimaryVisual));
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.Equal(1, removed);
             item.Dispose();
@@ -115,9 +116,9 @@ public class LineStrengthTests
     private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthTool method, OverlayLayer overlay)
     {
         var before = Windows();
-        Assert.False(method.OnClick(new(0, 0), viewer.MeasurementContext));
+        Assert.False(method.OnClick(new(0, 0), viewer.Host.Measurements));
         Assert.Empty(Windows().Except(before));
-        Assert.True(method.OnClick(new(1, 0), viewer.MeasurementContext));
+        Assert.True(method.OnClick(new(1, 0), viewer.Host.Measurements));
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
 
@@ -133,7 +134,7 @@ public class LineStrengthTests
     public async Task PlotReusesCapacityWhenProfilesShrinkAndSwitchChannels()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var view = new LineProfilePlotView();
             try
@@ -182,7 +183,7 @@ public class LineStrengthTests
     public async Task PlotCopiesOnlyActiveSamplesFromRetainedProfileCapacity()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var view = new LineProfilePlotView();
             try
@@ -209,7 +210,7 @@ public class LineStrengthTests
     public async Task PlotUsesGapsWithoutChangingRawNonFiniteSamples()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var view = new LineProfilePlotView();
             try
@@ -233,11 +234,11 @@ public class LineStrengthTests
     public async Task EditingCompletedLineClearsPlotAndPublishesNewGeometry()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.WindowForTests.MeasurementOverlay;
+            var overlay = viewer.Host.Window.MeasurementOverlay;
             var pair = Draw(viewer, new LineStrengthTool(), overlay);
-            var item = viewer.MeasurementContext.Find(pair.Line)!;
+            var item = viewer.Host.Measurements.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
             request.Publish([new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
@@ -268,7 +269,7 @@ public class LineStrengthTests
     public async Task ClosingEitherSideRemovesOnlyItsPairOnce(bool closeWindow)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             var method = new LineStrengthTool();
@@ -278,8 +279,8 @@ public class LineStrengthTests
             overlay.ShapeRemoved += shape => { if (ReferenceEquals(shape, first.Line)) removed++; };
             first.Window.Closed += (_, _) => closed++;
             if (closeWindow) first.Window.Close();
-            else { viewer.Interaction.Select(first.Line); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!); viewer.Interaction.DeleteSelected(); }
-            viewer.MeasurementContext.RemoveShape(first.Line);
+            else { viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(first.Line)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!); viewer.Host.Interaction.DeleteSelected(); }
+            viewer.Host.Measurements.Find(first.Line)?.Dispose();
             Assert.Equal(1, removed);
             Assert.Equal(1, closed);
             Assert.False(first.Window.IsVisible);
@@ -296,14 +297,14 @@ public class LineStrengthTests
     public async Task ContextDisposalClosesAllWindowsAndRemovesShapes()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             var method = new LineStrengthTool();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
-            viewer.MeasurementContext.Shutdown();
-            viewer.MeasurementContext.Shutdown();
+            viewer.Host.Measurements.Shutdown();
+            viewer.Host.Measurements.Shutdown();
             Assert.False(first.Window.IsVisible);
             Assert.False(second.Window.IsVisible);
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -315,7 +316,7 @@ public class LineStrengthTests
     {
         var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         int closed = 0, removed = 0;
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
             var method = new LineStrengthTool();

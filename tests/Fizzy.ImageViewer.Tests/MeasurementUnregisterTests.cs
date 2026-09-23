@@ -22,12 +22,12 @@ public sealed class MeasurementUnregisterTests
     public async Task UnregisterReentrantCancellationLeavesInteractionIdle()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.RegisterMeasurementTool(new Tool(viewer));
             viewer.StartMeasurement("reentrant");
             Assert.Throws<KeyNotFoundException>(() => viewer.UnregisterMeasurementTool("reentrant"));
-            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Interaction.Mode);
+            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.False(viewer.Layers.InputSuppressed);
         });
     }

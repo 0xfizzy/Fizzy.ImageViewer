@@ -32,8 +32,8 @@ public class ViewerInitializationTests
     {
         var presenter = new Presenter();
         var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
-        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
-        await viewer.UiDispatcher.InvokeAsync(viewer.WindowForTests.CloseProgrammatically);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Window.CloseProgrammatically);
         await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         Assert.False(sta.IsAlive);
         Assert.Equal(1, presenter.Disposals);
@@ -43,7 +43,7 @@ public class ViewerInitializationTests
     public async Task NormalShutdownWaitsForActualStaExit()
     {
         var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
         await viewer.DisposeAsync();
         Assert.False(sta.IsAlive);
     }
@@ -70,7 +70,7 @@ public class ViewerInitializationTests
     public async Task NeverShownViewerClosesAndStopsSta()
     {
         var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
-        var sta = await viewer.UiDispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
         var closed = 0;
         viewer.Closed += (_, _) => closed++;
         await viewer.DisposeAsync();
@@ -146,9 +146,9 @@ public class ViewerInitializationTests
             {
                 partial = viewer;
                 sta = Thread.CurrentThread;
-                viewer.WindowForTests.Closed += (_, _) => closedWindows++;
-                viewer.WindowForTests.Closing += (_, e) => e.Cancel = true;
-                var scope = viewer.MeasurementContext.CreateMeasurement(MeasurementGeometry.Point(new()));
+                viewer.Host.Window.Closed += (_, _) => closedWindows++;
+                viewer.Host.Window.Closing += (_, e) => e.Cancel = true;
+                var scope = viewer.Host.Measurements.CreateMeasurement(MeasurementGeometry.Point(new()));
 
                 scope.OnDispose(() => releasedScopes++);
                 scope.Complete();
@@ -158,7 +158,7 @@ public class ViewerInitializationTests
             }));
         Assert.Same(failure, observed);
         Assert.False(sta!.IsAlive);
-        Assert.True(partial!.UiDispatcher.HasShutdownFinished);
+        Assert.True(partial!.Host.Window.Dispatcher.HasShutdownFinished);
         Assert.Equal(1, releasedScopes);
         Assert.Equal(1, releasedFrames);
         Assert.Equal(1, closedWindows);

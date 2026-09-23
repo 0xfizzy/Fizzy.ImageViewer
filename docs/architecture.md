@@ -13,18 +13,21 @@ public facade, drawing handles and measurement handles.
 | Rendering | CPU preparation/presentation and D3D surface presentation |
 | Imaging | Original-pixel access, regions, query results and display conversion |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
-| Drawing | Batch layers, drawing descriptions, styles, HUD handles and shape helpers |
+| Drawing | Batch layers, drawing descriptions, styles and HUD handles |
 | Measurements | Tool protocols, registry, geometry and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
 | Editing | Measurement edit sessions and control-point interaction |
-| Controls | WPF display surfaces and coordinate transforms |
+| Controls | WPF display surfaces, visual metadata and coordinate transforms |
 | Snapshots | Captured frame/region ownership and encoding |
 | Menus | Registration ownership, WPF bindings, viewer menu policy and save actions |
 
-Files belong to their feature, including interfaces and enums. Public and internal namespaces follow feature ownership; only the Viewer facade
-and its lifetime/composition helpers live in the root namespace. Built-in tools and
-their measurement presentation live together under Measurements/BuiltIn.
+Files belong to their feature, including interfaces and enums. Public and internal namespaces
+follow feature ownership; only the Viewer facade and its lifetime/composition helpers live
+in the root namespace. Built-in tools live under Measurements/BuiltIn.
+Measurements/Presentation owns visual creation, geometry projection, labels and line-profile windows.
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.
+Integration tests access composed internals through Viewer.Host; component tests construct
+their owners directly. Viewer has no menu-freeze or snapshot-target forwarding methods.
 Viewer partial files organize one facade; they are not independently owned services.
 The facade is sealed. Application adapters own a Viewer instance, create it hidden
 when setup must precede display, and converge closure and disposal on their own
@@ -32,7 +35,9 @@ idempotent cleanup before awaiting the viewer's disposal completion.
 
 ## Ownership and direction
 
-Viewer exposes the complete public facade and raises public notifications. Its
+Viewer exposes the complete public facade and raises public notifications. Host composes
+internal frame notifications in submission-callback, measurement-context, public-event order;
+subscriber failures are isolated at each boundary.
 ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
 query scheduler, measurement context, tool registry, interaction coordinator and HUD.
 The facade assigns the host before starting its STA. Startup failure uses the same
@@ -43,16 +48,20 @@ visuals and invalidates their handles on shutdown.
 
 ViewerInputBinding translates WPF events and coordinates, and applies cursor, focus
 and capture effects. It holds no session state. The interaction coordinator alone owns
-the active tool, session version, mode and selection, and decides editing and measurement
+the active tool, session version, mode and selected measurement, and decides editing and measurement
 transitions. MeasurementToolRegistry only stores registrations. All tools receive the same public
 measurement context when the coordinator executes their callbacks. Display controls do not call controllers
 through stored references. Generic drawing layers manage
 visibility, hit testing, batches and clear notifications; the window mounts the WPF
 measurement overlay into its layer.
 
+MeasurementItem owns model state, queries and disposal; MeasurementPresentation owns its WPF
+visuals, labels and optional plot. Plot closure requests item disposal, and active disposal
+detaches that callback before closing the plot.
 Measurement context owns one set of model-driven items and their visual ownership mappings,
 and borrows query scheduling. The host creates and closes it independently of the
-tool registry. The edit manager receives only a measurement lookup delegate.
+tool registry. Hit testing resolves a visual to its registered measurement before selection.
+The edit manager receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and
 query runtime are internal imaging capabilities, not public measurement extension points.
 The query runtime controls time, worker execution and UI publication for deterministic tests.
@@ -67,9 +76,9 @@ independent disposable handle; revocation disables current bindings and releases
 targets. Normal menu closure retains bindings until input drains because WPF can deliver
 Closed before Click. A new opening invalidates the previous bindings and delayed cleanup.
 ViewerMenuController supplies built-in menu policy and captures interaction/ROI targets,
-borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession
-alone owns frozen frame/ROI leases. ViewerHost detaches menu policy and disposes menu
-bindings before stopping the pipeline and disposing snapshot and interaction resources.
+borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession in Menus
+alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.
+ViewerHost detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.
 
 ## Invariants when extending the library
 

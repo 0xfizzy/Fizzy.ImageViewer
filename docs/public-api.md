@@ -16,8 +16,8 @@ application adapters own an instance and use its public API. Raw-window access i
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
-The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, helpers
-and enums belong to `.Drawing`; measurement tools, models and notifications belong
+The root namespace contains `Viewer` and `IViewerAPI`. Drawing descriptions, styles
+and drawing enums belong to `.Drawing`; measurement tools, models and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
 ## Threads and window lifetime
@@ -71,7 +71,10 @@ observe `ResultChanged` for immutable query results or invalidation. `Complete` 
 a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
 and measurement operations use the viewer STA. Only event removal handles marshal disposal.
 
-Geometry is a closed family: point, crosshair, line, rectangle and circle. Query options
+Geometry is a closed family identified by `MeasurementKind`: point, crosshair, line,
+rectangle and circle. `MeasurementGeometry.Bounds` is the normalized image-space bounding
+rectangle. Lines retain their endpoint order; circles use diameter bounds; points and
+crosshairs have zero extent, excluding their screen-space marker size. Query options
 compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
 combinations fail on creation. The framework owns primary visuals, labels and control points.
 Arbitrary WPF attachment, geometry implementations and query algorithms are not extension
@@ -89,9 +92,9 @@ Built-in measurement tool implementations are internal; use
 `ViewerHost`, `ViewerWindow`, `MenuManager`, `ViewerMenuController`, WPF image/overlay/HUD
 layer controls, control-point visuals, measurement edit sessions, `MeasurementItem`, scheduling and
 rendering internals are not public contracts. `DrawingElement` is a closed family of
-supported drawing descriptions, not a custom-renderer base class. Public shape helpers
-remain available as drawing helpers; consumers must not parse their WPF
-visual trees or cached transform metadata to observe built-in measurement results.
+supported drawing descriptions, not a custom-renderer base class. WPF shape factories and
+visual metadata are internal. Use drawing descriptions and batch handles for markers, and measurement models for editable geometry and query results;
+consumers must not parse WPF visual trees to observe measurement state.
 
 The pixel HUD controller, built-in save-menu item and shape metadata/cache are internal.
 Custom menus use `IMenuItem` or the action-based menu helpers; custom measurements

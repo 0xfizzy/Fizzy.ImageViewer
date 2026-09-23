@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
 using System.Windows.Threading;
 
-namespace Fizzy.ImageViewer.Snapshots;
+namespace Fizzy.ImageViewer.Menus;
 
 /// <summary>Owns a menu target until input drains; callers acquire independent save targets.</summary>
 internal sealed class MenuSnapshotSession(FramePipeline pipeline, ViewerLifetime lifetime,

@@ -5,26 +5,26 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
-internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, MeasurementItem?> findMeasurement)
+internal sealed class EditManager(OverlayLayer overlay)
 {
     private MeasurementEditSession? _session;
     private int _dragIndex = -1;
     private readonly List<UIElement> _handles = [];
-    public UIElement? EditingShape { get; private set; }
-    public bool IsEditing => EditingShape != null;
+    public MeasurementItem? EditingMeasurement { get; private set; }
+    public bool IsEditing => EditingMeasurement != null;
     public bool IsDragging => _dragIndex >= 0;
     internal IReadOnlyList<UIElement> Handles => _handles;
 
-    internal bool CanEdit(UIElement shape) => findMeasurement(shape) is { IsDisposed: false };
-    internal bool StartEditing(UIElement shape)
+    internal bool CanEdit(MeasurementItem? item) => item is { IsDisposed: false };
+    internal bool StartEditing(MeasurementItem? item)
     {
-        if (EditingShape == shape) return true;
-        if (findMeasurement(shape) is not { IsDisposed: false } item) return false;
+        if (item is null || !CanEdit(item)) return false;
+        if (EditingMeasurement == item) return true;
         StopEditing();
         // Removing old handles may re-enter user code and remove the requested item.
         if (item.IsDisposed) return false;
         var session = new MeasurementEditSession(item);
-        EditingShape = shape; _session = session;
+        EditingMeasurement = item; _session = session;
         try
         {
             var points = session.Points;
@@ -40,7 +40,7 @@ internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, Measurem
     }
     internal bool BeginDrag(Point point, double scale)
     {
-        if (EditingShape == null || _session == null) return false;
+        if (EditingMeasurement == null || _session == null) return false;
         var points = _session.Points;
         var nearest = Enumerable.Range(0, points.Count).MinBy(i => (point - points[i]).LengthSquared);
         if ((point - points[nearest]).Length * scale >= 10) return false;
@@ -49,7 +49,7 @@ internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, Measurem
     }
     internal void UpdateDrag(Point point)
     {
-        if (!IsDragging || EditingShape == null || _session == null) return;
+        if (!IsDragging || EditingMeasurement == null || _session == null) return;
         if (!double.IsFinite(point.X) || !double.IsFinite(point.Y)) return;
         var session = _session;
         session.Update(point);
@@ -64,7 +64,7 @@ internal sealed class EditManager(OverlayLayer overlay, Func<UIElement, Measurem
     internal void StopEditing()
     {
         _dragIndex = -1; _session?.EndDrag();
-        EditingShape = null;
+        EditingMeasurement = null;
         var session = _session; _session = null;
         var handles = _handles.ToArray(); _handles.Clear();
         try { foreach (var handle in handles) overlay.RemoveVisual(handle); }

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Media;

@@ -15,9 +15,9 @@ public sealed record MeasurementOptions
         bool valid = Query switch
         {
             MeasurementQuery.None => true,
-            MeasurementQuery.Pixel => geometry.Kind is ShapeType.Point or ShapeType.Crosshair,
-            MeasurementQuery.LineProfile => geometry.Kind == ShapeType.Line,
-            MeasurementQuery.RegionStatistics => geometry.Kind == ShapeType.Rectangle,
+            MeasurementQuery.Pixel => geometry.Kind is MeasurementKind.Point or MeasurementKind.Crosshair,
+            MeasurementQuery.LineProfile => geometry.Kind == MeasurementKind.Line,
+            MeasurementQuery.RegionStatistics => geometry.Kind == MeasurementKind.Rectangle,
             _ => false
         };
         if (!valid || (ShowLineProfile && Query != MeasurementQuery.LineProfile))

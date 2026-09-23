@@ -20,7 +20,8 @@ creation disposes unfinished measurements. `Tag` remains caller-owned presentati
 Visuals attach once and are not replaced on completion.
 
 Geometry uses source-image coordinates. A rectangle stores normalized opposite
-corners. Editing updates the model first; the display adapter projects it to WPF.
+corners. Editing updates the model first; MeasurementPresentation projects it to WPF and owns
+label formatting and the optional plot window.
 Every actual geometry change increments `IMeasurement.GeometryVersion` and clears results.
 An equal geometry update is a no-op. Geometry kind cannot change after creation.
 During a rectangle drag, the opposite corner comes from the drag-start snapshot,
@@ -42,11 +43,12 @@ leases, including sources that do not immediately honor cancellation.
 
 ## Interaction
 
-The internal coordinator owns the selected item/shape, Idle/Editing/Measuring mode,
+The internal coordinator owns the selected measurement, Idle/Editing/Measuring mode,
 active measurement tool and session version. The tool registry only stores registrations.
-The edit manager directly owns a MeasurementEditSession and control-point visuals and borrows
-a measurement lookup delegate. The session retains drag-start geometry and writes changes
-through the measurement model; capability checks do not allocate a session.
+The edit manager receives a MeasurementItem directly and owns its MeasurementEditSession
+and control-point visuals. Hit testing resolves visuals through the context before selection;
+unregistered visuals cannot become measurement interaction targets. The session retains
+drag-start geometry and writes changes through the measurement model; capability checks do not allocate a session.
 ViewerInputBinding translates WPF input and applies pointer effects
 without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
@@ -149,6 +151,9 @@ Returning `true` does not implicitly complete unfinished measurements.
 Create geometry with `MeasurementGeometry.Point`, `Crosshair`, `Line`, `Rectangle` or
 `Circle`. Point and crosshair use `Start`; lines use `Start`/`End`; rectangles normalize
 opposite corners. Circles use `Start` as center and `Radius`; `End` equals the center.
+Kinds use the measurement-specific `MeasurementKind` enum. `Bounds` returns normalized
+image-space bounds: endpoint bounds for lines and rectangles, diameter bounds for circles,
+and zero extent for points and crosshairs. Line endpoints retain their original order.
 Coordinates and extents must be finite; circle radii must be nonnegative.
 
 The framework creates the shape, label and supported control points. Use
@@ -194,9 +199,9 @@ The scheduler and query protocol remain internal.
 
 Tool callbacks, measurement operations and notifications use the viewer STA. Use
 `AddResource` and `OnDispose` to bind external resources and event subscriptions to the
-measurement. Unregistering a tool retains completed measurements. Removing its primary
-visual or label removes the entire measurement. Hiding cancels previews but retains
-completed items; clear and viewer closure dispose all items.
+measurement. Unregistering a tool retains completed measurements. Selection and deletion
+target the measurement owner, which removes both its primary visual and label. Hiding cancels
+previews but retains completed items; clear and viewer closure dispose all items.
 
 Disposal revokes queries, executes cleanup callbacks, disposes resources, closes the plot
 and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates

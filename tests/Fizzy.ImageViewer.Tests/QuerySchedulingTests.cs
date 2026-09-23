@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
@@ -18,25 +19,25 @@ public class QuerySchedulingTests
         await using var viewer=Viewer();
         var source=new ControlledSource();
         System.Windows.Window? window=null;
-        Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl? plot=null;
-        await viewer.UiDispatcher.InvokeAsync(()=>
+        Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl? plot=null;
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
             var method=new Measurements.BuiltIn.LineStrengthTool();
-            method.OnClick(new(0,0), viewer.MeasurementContext);
-            method.OnClick(new(1,0), viewer.MeasurementContext);
+            method.OnClick(new(0,0), viewer.Host.Measurements);
+            method.OnClick(new(1,0), viewer.Host.Measurements);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
-                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl);
-            plot=(Measurements.BuiltIn.LineProfilePlotView.LineProfilePlotControl)window.Content;
+                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl);
+            plot=(Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl)window.Content;
         });
         await viewer.SubmitFrameAsync(Frame(source,()=>{}));
         try
         {
             await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-            await viewer.UiDispatcher.InvokeAsync(()=>window!.Close());
+            await viewer.Host.Window.Dispatcher.InvokeAsync(()=>window!.Close());
         }
         finally { source.Release.TrySetResult(); }
-        await viewer.QueryScheduler.Completion.WaitAsync(TimeSpan.FromSeconds(3));
-        await viewer.UiDispatcher.InvokeAsync(()=>
+        await viewer.Host.Queries.Completion.WaitAsync(TimeSpan.FromSeconds(3));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
             Assert.False(window!.IsVisible);
             Assert.Equal(0, plot!.SampleCount);
@@ -52,10 +53,10 @@ public class QuerySchedulingTests
         var source=new ControlledSource();int released=0;
         var a=new Client();var b=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.UiDispatcher.InvokeAsync(()=>{viewer.MeasurementContext.Register(a);viewer.MeasurementContext.Register(b);});
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>{viewer.Host.Measurements.Register(a);viewer.Host.Measurements.Register(b);});
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(2,source.PointCount);Assert.NotEqual(ApartmentState.STA,source.Apartment);
-        await viewer.UiDispatcher.InvokeAsync(()=>a.Revision++).Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>a.Revision++).Task.WaitAsync(TimeSpan.FromSeconds(1));
         var commit=await viewer.SubmitFrameAsync(ImageFrame.Copy(new(2,1,2,FramePixelFormat.Gray8),new byte[]{9,10}));
         Assert.Equal(FrameSubmitStatus.Committed,commit.Status);Assert.Equal(0,released);
         source.Release.SetResult();
@@ -69,7 +70,7 @@ public class QuerySchedulingTests
         var viewer=Viewer();viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromMilliseconds(5)};
         var source=new ControlledSource();int released=0;var item=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.UiDispatcher.InvokeAsync(()=>viewer.MeasurementContext.Register(item));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Measurements.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));await Task.Delay(25);
         // Raising the rate threshold does not retroactively accept this result.
         source.Release.SetResult();
@@ -80,7 +81,7 @@ public class QuerySchedulingTests
 
         viewer=Viewer();source=new ControlledSource();released=0;item=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.UiDispatcher.InvokeAsync(()=>viewer.MeasurementContext.Register(item));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Measurements.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         var close=viewer.DisposeAsync().AsTask();await Task.Delay(20);Assert.False(close.IsCompleted);Assert.Equal(0,released);
         source.Release.SetResult();await close.WaitAsync(TimeSpan.FromSeconds(3));Assert.Equal(1,released);Assert.Empty(item.Values);
@@ -93,9 +94,9 @@ public class QuerySchedulingTests
         var source=new ControlledSource();source.Release.SetResult();
         var pixel=new Client();var region=new UnsupportedRegion();
         await viewer.SubmitFrameAsync(Frame(source,()=>{}));
-        await viewer.UiDispatcher.InvokeAsync(()=> {
-            viewer.MeasurementContext.Register(pixel);
-            viewer.MeasurementContext.Register(region);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=> {
+            viewer.Host.Measurements.Register(pixel);
+            viewer.Host.Measurements.Register(region);
         });
         await pixel.Published.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(42,pixel.Values[0]);

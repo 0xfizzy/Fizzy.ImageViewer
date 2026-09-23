@@ -179,7 +179,9 @@ For editable measurement shapes, continue using measurement tools and
 The measurement owns its framework-generated visual, label, query and registered
 resources until deletion, clear or viewer closure. Measurement shapes remain individual
 WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles or measurement
-models for public access. See [measurement contracts](measurements.md).
+models for public access. WPF shape factories and their positioning metadata are internal;
+standalone WPF elements cannot be attached through the public drawing API.
+See [measurement contracts](measurements.md).
 
 `ClearShapes()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing

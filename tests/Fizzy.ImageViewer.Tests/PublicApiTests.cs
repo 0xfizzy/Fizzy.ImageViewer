@@ -74,19 +74,19 @@ public class PublicApiTests
         viewer.MeasurementCompleted += (_, _) => throw new Exception("isolated subscriber");
         viewer.MeasurementCompleted += (_, e) => completed.Add(e);
         viewer.MeasurementRemoved += (_, e) => removed.Add(e);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.StartMeasurement(MeasurementToolIds.Length);
-            viewer.Interaction.ImageDown(1, 2);
+            viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
             viewer.CancelMeasurement();
             Assert.Empty(removed);
             viewer.StartMeasurement(MeasurementToolIds.Length);
-            viewer.Interaction.ImageDown(1, 2);
-            viewer.Interaction.ImageDown(5, 6);
+            viewer.Host.Interaction.ImageDown(1, 2);
+            viewer.Host.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
-            var item = viewer.WindowForTests.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Line>()
-                .Select(s => viewer.MeasurementContext.Find(s)).Single(i => i != null)!;
+            var item = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Line>()
+                .Select(s => viewer.Host.Measurements.Find(s)).Single(i => i != null)!;
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });
         Assert.Equal(new Point(5, 6), completed[0].Snapshot.End);
@@ -108,10 +108,10 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, _) => removals++;
         EventHandler<MeasurementEventArgs> remove = (_, e) => e.Handle.Dispose();
         viewer.MeasurementCompleted += remove;
-        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(2, 3); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);
         viewer.MeasurementCompleted -= remove;
-        await viewer.UiDispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Interaction.ImageDown(4, 5); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(4, 5); });
         await viewer.DisposeAsync();
         Assert.Equal(2, removals);
     }

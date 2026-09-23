@@ -57,7 +57,7 @@ public class MeasurementToolProtocolTests
     public async Task RegistryValidatesBothKindsOfToolsAndSnapshotsMetadata()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.Throws<ArgumentNullException>(() => viewer.RegisterMeasurementTool(null!));
             Assert.Throws<ArgumentException>(() => viewer.RegisterMeasurementTool(new Probe { Id = " " }));
@@ -67,7 +67,7 @@ public class MeasurementToolProtocolTests
             viewer.RegisterMeasurementTool(method);
             Assert.Throws<ArgumentException>(() => viewer.RegisterMeasurementTool(new Probe { Id = "point" }));
             method.Id = "changed"; method.DisplayName = "Changed";
-            viewer.StartMeasurement("point"); viewer.Interaction.ImageDown(1, 2);
+            viewer.StartMeasurement("point"); viewer.Host.Interaction.ImageDown(1, 2);
             Assert.NotNull(method.Context);
             Assert.Throws<KeyNotFoundException>(() => viewer.StartMeasurement("changed"));
             Assert.True(viewer.UnregisterMeasurementTool("point"));
@@ -88,26 +88,26 @@ public class MeasurementToolProtocolTests
     public async Task BuiltInsCancelPreviewsAndCompleteThroughUnifiedExecution(string id)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             int completed = 0, removed = 0;
             viewer.MeasurementCompleted += (_, _) => completed++;
             viewer.MeasurementRemoved += (_, _) => removed++;
             viewer.StartMeasurement(id);
             viewer.CancelMeasurement();
-            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
-            viewer.StartMeasurement(id); viewer.Interaction.ImageDown(1, 1);
+            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            viewer.StartMeasurement(id); viewer.Host.Interaction.ImageDown(1, 1);
             if (id != MeasurementToolIds.Point)
             {
-                viewer.Interaction.ImageMove(4, 4); viewer.CancelMeasurement();
+                viewer.Host.Interaction.ImageMove(4, 4); viewer.CancelMeasurement();
                 Assert.Equal(0, completed); Assert.Equal(0, removed);
-                Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
-                viewer.StartMeasurement(id); viewer.Interaction.ImageDown(1, 1); viewer.Interaction.ImageDown(4, 4);
+                Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+                viewer.StartMeasurement(id); viewer.Host.Interaction.ImageDown(1, 1); viewer.Host.Interaction.ImageDown(4, 4);
             }
             Assert.Equal(1, completed);
             viewer.ClearShapes();
             Assert.Equal(1, removed);
-            Assert.Empty(viewer.WindowForTests.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -143,20 +143,20 @@ public class MeasurementToolProtocolTests
         var tool = new FrameTool { Finish = finish };
         ImageFrame Frame() => ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 });
         await viewer.SubmitFrameAsync(Frame());
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.RegisterMeasurementTool(tool); viewer.StartMeasurement(tool.Id); viewer.Interaction.ImageDown(0, 0);
+            viewer.RegisterMeasurementTool(tool); viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(0, 0);
             Assert.Equal(42, tool.Pixel);
         });
         await viewer.SubmitFrameAsync(Frame());
-        await viewer.UiDispatcher.InvokeAsync(() =>
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.Equal(1, tool.Notifications);
             viewer.UnregisterMeasurementTool(tool.Id);
             Assert.Equal(finish ? 0 : 1, tool.Released);
         });
         await viewer.SubmitFrameAsync(Frame());
-        await viewer.UiDispatcher.InvokeAsync(() => Assert.Equal(finish ? 2 : 1, tool.Notifications));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Equal(finish ? 2 : 1, tool.Notifications));
         await viewer.DisposeAsync();
         Assert.Equal(1, tool.Released);
     }

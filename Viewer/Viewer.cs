@@ -1,8 +1,5 @@
 using Fizzy.ImageViewer.Menus;
-using Fizzy.ImageViewer.Measurements;
 using Microsoft.Extensions.Logging;
-using Fizzy.ImageViewer.Interaction;
-using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer;
 
@@ -44,10 +41,7 @@ public sealed partial class Viewer : IViewerAPI, IAsyncDisposable
             throw new ArgumentOutOfRangeException(name);
     }
 
-    internal Dispatcher UiDispatcher => _host.Window.Dispatcher;
-    internal ViewerWindow WindowForTests => _host.Window;
-    internal InteractionCoordinator Interaction => _host.Interaction;
-    internal MeasurementContext MeasurementContext => _host.Measurements;
+    internal ViewerHost Host => _host;
 
     /// <summary>Registers a menu item until its handle is disposed or the viewer closes.
     /// Handle disposal marshals to the viewer STA and is idempotent after closure.</summary>
