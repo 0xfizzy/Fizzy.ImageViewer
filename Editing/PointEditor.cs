@@ -14,7 +14,7 @@ internal class PointEditor : IShapeEditor
 {
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
     {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
+        if (shape is not FrameworkElement fe || fe.Tag is not OverlayShapeData data)
             return Array.Empty<Point>();
 
         return new[] { data.AnchorPoint };
@@ -22,7 +22,7 @@ internal class PointEditor : IShapeEditor
 
     public void UpdateControlPoint(UIElement shape, int pointIndex, Point newPosition)
     {
-        if (shape is not FrameworkElement fe || fe.Tag is not OverlayTagData data)
+        if (shape is not FrameworkElement fe || fe.Tag is not OverlayShapeData data)
             return;
 
         if (pointIndex == 0)

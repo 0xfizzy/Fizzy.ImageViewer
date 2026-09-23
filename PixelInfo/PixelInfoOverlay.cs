@@ -5,7 +5,7 @@ using System.Windows.Input;
 
 namespace Fizzy.ImageViewer.PixelInfo;
 
-public sealed class PixelInfoOverlay : IDisposable
+internal sealed class PixelInfoOverlay : IDisposable
 {
     private readonly ImageLayer _image;
     private readonly PixelQueryScheduler _scheduler;

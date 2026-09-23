@@ -37,7 +37,7 @@ internal class OverlayLayer : UserControl
     internal void NotifyEdited(UIElement shape) => ShapeEdited?.Invoke(shape);
     private static void ApplySelectionStyle(UIElement element, bool selected)
     {
-        if (element is not FrameworkElement { Tag: OverlayTagData data }) return;
+        if (element is not FrameworkElement { Tag: OverlayShapeData data }) return;
         var brush = selected ? data.SelectedBrush : data.OriginalBrush;
         if (element is Shape shape) shape.Stroke = brush;
         else if (element is TextBlock text) text.Foreground = brush;
@@ -67,9 +67,9 @@ internal class OverlayLayer : UserControl
     }
     internal void UpdateAnchor(UIElement element, Point newAnchor)
     {
-        if (element is FrameworkElement fe && fe.Tag is OverlayTagData data)
+        if (element is FrameworkElement fe && fe.Tag is OverlayShapeData data)
         {
-            data.Transform.AnchorPoint = newAnchor;
+            data.AnchorPoint = newAnchor;
             ApplyScaleToShape(fe, _currentScale);
         }
     }
@@ -87,9 +87,9 @@ internal class OverlayLayer : UserControl
 
     private void ApplyScaleToShape(UIElement shape, double scale)
     {
-        if (shape is not FrameworkElement element || element.Tag is not OverlayTagData data) return;
+        if (shape is not FrameworkElement element || element.Tag is not OverlayShapeData data) return;
 
-        var transform = data.Transform;
+        var transform = data;
 
         switch (transform.Mode)
         {

@@ -6,17 +6,17 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Menus;
 
-public sealed class SaveImageMenuItem(Viewer viewer, bool raw, bool region = false) : IMenuItem
+internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCapture capture, bool raw, bool region = false) : IMenuItem
 {
-    public bool IsVisible => !region || viewer.HasMenuRegion;
+    public bool IsVisible => !region || session.HasRegion;
     public string Header => region ? (raw ? "Export Region Raw TIFF..." : "Save Region Display Image As...") : raw ? "Export Raw TIFF..." : "Save Display Image As...";
     public MenuItemType Type => region ? MenuItemType.SelectionAction : MenuItemType.General;
     public async void Execute(object sender, RoutedEventArgs e)
     {
-        if (!viewer.TryBeginSave()) return;
+        if (!session.TryBeginSave()) return;
         try
         {
-            using var target = (region ? viewer.AcquireMenuRegionSnapshot() : viewer.AcquireMenuSnapshot());
+            using var target = session.AcquireTarget(region);
             if (target == null) { MessageBox.Show("No image to save."); return; }
             var dialog = new SaveFileDialog
             {
@@ -24,11 +24,11 @@ public sealed class SaveImageMenuItem(Viewer viewer, bool raw, bool region = fal
                 FileName = region ? "Region" : "Image"
             };
             if (dialog.ShowDialog() != true) return;
-            using var snapshot = await viewer.CaptureSnapshotAsync(target.Acquire(includeRegion: true), raw ? SnapshotKind.Raw : SnapshotKind.Display, default).ConfigureAwait(false);
+            using var snapshot = await capture.CaptureAsync(target.View.Acquire(), raw ? SnapshotKind.Raw : SnapshotKind.Display, target.Region).ConfigureAwait(false);
             await snapshot.SaveAsync(dialog.FileName, raw ? SnapshotEncoding.Tiff : dialog.FilterIndex switch
             { 1 => SnapshotEncoding.Png, 2 => SnapshotEncoding.Jpeg, _ => SnapshotEncoding.Bmp }).ConfigureAwait(false);
         }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Image save failed"); }
-        finally { viewer.EndSave(); }
+        finally { session.EndSave(); }
     }
 }

@@ -75,3 +75,12 @@ rendering internals are not public contracts. `DrawingElement` is a closed famil
 supported drawing descriptions, not a custom-renderer base class. Public shape helpers
 used by custom measurement tools remain available; consumers must not parse their WPF
 visual trees or cached transform metadata to observe built-in measurement results.
+
+The pixel HUD controller, built-in save-menu item and shape metadata/cache are internal.
+Custom menus use `IMenuItem` or the action-based menu helpers; custom measurement visuals
+use `Shapes.Create*` and scopes. Built-in save actions receive snapshot services directly.
+
+`tests/Fizzy.ImageViewer.Tests/PublicApi.txt` is the reviewed exported API baseline,
+including types, public/protected members, nullability and default arguments. API tests
+write `PublicApi.actual.txt` beside the test assembly. Review intentional differences,
+update consumers and this contract, then copy that output to the baseline before committing.

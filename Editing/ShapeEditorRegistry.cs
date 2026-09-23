@@ -14,7 +14,7 @@ internal sealed class ShapeEditorRegistry
     internal bool Unregister(ShapeType key) => _factories.Remove(key);
     internal ShapeEditSession? Create(UIElement shape, MeasurementItem? item)
     {
-        if (shape is not FrameworkElement { Tag: OverlayTagData data } || !_factories.TryGetValue(data.ShapeType, out var factory)) return null;
+        if (shape is not FrameworkElement { Tag: OverlayShapeData data } || !_factories.TryGetValue(data.ShapeType, out var factory)) return null;
         var session = factory(shape, item);
         var points = session.Points;
         if (points.Count > 0 && points.All(p => double.IsFinite(p.X) && double.IsFinite(p.Y))) return session;

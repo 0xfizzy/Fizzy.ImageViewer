@@ -109,12 +109,12 @@ public partial class Viewer
 
         // 菜单注册 - 使用简化的 lambda API
         // Edit menu item (positioned before Delete)
-        menuMgr.Register(new Menus.EditMenuItem(() =>
+        menuMgr.Register(new MenuItem("Edit", () =>
         {
             var shape = menuMgr.GetMenuTargetShape();
             if (shape != null)
                 _interaction?.StartEditing(shape);
-        }));
+        }, Enums.MenuItemType.SelectionAction));
         menuMgr.Register(new MenuItem("Delete", _interaction!.DeleteSelected, Enums.MenuItemType.SelectionAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
 
@@ -129,10 +129,10 @@ public partial class Viewer
         menuMgr.Register(new MenuItem("Cancel Measurement", () => _interaction?.Cancel(), Enums.MenuItemType.ContextAction));
         menuMgr.Register(SeparatorMenuItem.Instance);
         menuMgr.Register(new MenuItem("Clear All Shapes", () => { win.Layers.Clear(); }));
-        menuMgr.Register(new SaveImageMenuItem(this, false));
-        menuMgr.Register(new SaveImageMenuItem(this, true));
-        menuMgr.Register(new SaveImageMenuItem(this, false, true));
-        menuMgr.Register(new SaveImageMenuItem(this, true, true));
+        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, false));
+        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, true));
+        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, false, true));
+        menuMgr.Register(new SaveImageMenuItem(_menuSession, _snapshotCapture, true, true));
         menuMgr.Register(SeparatorMenuItem.Instance);
 
         // 初始化像素信息叠加层

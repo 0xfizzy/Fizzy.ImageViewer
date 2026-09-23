@@ -22,7 +22,7 @@ internal class RectangleEditor : IShapeEditor
             var (start, end) = GeometryOperations.NormalizeRectangle(opposite, point);
             rectangle.Width = end.X - start.X; rectangle.Height = end.Y - start.Y;
             Canvas.SetLeft(rectangle, start.X); Canvas.SetTop(rectangle, start.Y);
-            if (rectangle.Tag is OverlayTagData data) data.AnchorPoint = start;
+            if (rectangle.Tag is OverlayShapeData data) data.AnchorPoint = start;
         };
     }
     public IReadOnlyList<Point> GetControlPoints(UIElement shape)
@@ -74,7 +74,7 @@ internal class RectangleEditor : IShapeEditor
         rect.Height = height;
 
         // Update anchor point in tag data
-        if (rect.Tag is OverlayTagData data)
+        if (rect.Tag is OverlayShapeData data)
         {
             data.AnchorPoint = new Point(Canvas.GetLeft(rect), Canvas.GetTop(rect));
         }

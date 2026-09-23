@@ -16,7 +16,7 @@ Each internal `MeasurementItem` owns its immutable `MeasurementGeometry`, primar
 visual, label, result, query subscription and optional plot window. A context-owned
 registry maps visuals to their owner without putting business state in `Tag`.
 Previews are owned items too; completing a preview enables its queries, and
-cancelling disposes it. `OverlayTagData` contains only presentation metadata.
+cancelling disposes it. Internal shape metadata contains only presentation state.
 Each visual is added once; completing a preview does not remove and re-add it.
 
 Geometry uses source-image coordinates. A rectangle stores normalized opposite

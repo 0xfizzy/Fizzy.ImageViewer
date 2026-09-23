@@ -3,7 +3,7 @@ namespace Fizzy.ImageViewer.Constants;
 /// <summary>
 /// 交互相关的常量配置。
 /// </summary>
-public static class InteractionConstants
+internal static class InteractionConstants
 {
     /// <summary>
     /// 缩放因子，每次滚轮缩放的倍率。

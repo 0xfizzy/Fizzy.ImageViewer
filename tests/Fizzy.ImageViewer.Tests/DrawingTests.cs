@@ -361,7 +361,7 @@ public class DrawingTests
             {
                 viewer.MeasurementContext.AttachVisualInternal(shape);
                 viewer.Interaction.Select(shape); viewer.Interaction.StartEditing(viewer.Interaction.SelectedShape!);
-                var data = (OverlayTagData)((FrameworkElement)shape).Tag;
+                var data = (OverlayShapeData)((FrameworkElement)shape).Tag;
                 Assert.NotEmpty(viewer.Interaction.Editor.Handles);
                 var editor = viewer.Interaction.Editor;
                 Assert.True(editor.BeginDrag(data.AnchorPoint, 1));

@@ -86,7 +86,7 @@ public class MeasurementInteractionTests
             var rectangle = (Rectangle)item.PrimaryVisual;
             Assert.Equal(expected.Width, rectangle.Width); Assert.Equal(expected.Height, rectangle.Height);
             Assert.Equal(expected.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Y, Canvas.GetTop(rectangle));
-            Assert.Equal(expected.Start, ((OverlayTagData)item.Label.Tag).AnchorPoint);
+            Assert.Equal(expected.Start, ((OverlayShapeData)item.Label.Tag).AnchorPoint);
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
             var request = Assert.IsType<RegionStatisticsQueryRequest>(item.Capture(frame!.Descriptor));

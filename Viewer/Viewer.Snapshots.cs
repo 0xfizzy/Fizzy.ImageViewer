@@ -8,9 +8,6 @@ public partial class Viewer
     private MenuSnapshotSession _menuSession = null!;
     private readonly SnapshotCapture _snapshotCapture = new();
 
-    internal bool HasMenuRegion => _menuSession.HasRegion;
-    internal bool TryBeginSave() => _menuSession.TryBeginSave();
-    internal void EndSave() => _menuSession.EndSave();
     internal MenuSnapshotSession.Target? AcquireMenuSnapshot() => _menuSession.AcquireTarget();
     internal MenuSnapshotSession.Target? AcquireMenuRegionSnapshot() => _menuSession.AcquireTarget(region: true);
     internal void Freeze() => _menuSession.Open();

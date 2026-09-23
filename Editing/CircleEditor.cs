@@ -44,7 +44,7 @@ internal class CircleEditor : IShapeEditor
             Canvas.SetTop(path, newPosition.Y);
 
             // Update anchor point in tag data
-            if (path.Tag is OverlayTagData data)
+            if (path.Tag is OverlayShapeData data)
             {
                 data.AnchorPoint = newPosition;
             }

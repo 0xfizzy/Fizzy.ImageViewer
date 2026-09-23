@@ -56,14 +56,8 @@ public class PublicApiTests
     }
 
     [Fact]
-    public void WindowAndEditingImplementationsAreNotExported()
+    public void ViewerImplementationMatchesItsFacade()
     {
-        var exported = typeof(Viewer).Assembly.GetExportedTypes();
-        Assert.DoesNotContain(exported, t => t.Name is "ViewerWindow" or "MenuManager" || t.Namespace == "Fizzy.ImageViewer.Editing"
-            || t.Name is "ImageLayer" or "HudLayer" or "OverlayLayer" or "MeasurementItem" or "MeasurementGeometry"
-            or "PointMeasure" or "LineMeasure" or "RectMeasure" or "LineStrengthMeasure"
-            or "PointTool" or "LineTool" or "RectTool" or "LineStrengthTool"
-            or "IMeasureTool" or "CustomMeasureTool" or "IMeasurementContext");
         var contract = typeof(IViewerAPI).GetMethods().Select(m => m.ToString()).ToHashSet();
         contract.UnionWith(typeof(IAsyncDisposable).GetMethods().Select(m => m.ToString()));
         foreach (var method in typeof(Viewer).GetMethods(System.Reflection.BindingFlags.Public |

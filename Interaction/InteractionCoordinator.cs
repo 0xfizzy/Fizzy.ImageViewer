@@ -171,7 +171,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private Point ImagePoint(MouseEventArgs e) => _input.ContainerToImage(e.GetPosition(_input.Container));
     private void MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (Mode != InteractionMode.Editing && e.OriginalSource is FrameworkElement { Tag: OverlayTagData } shape)
+        if (Mode != InteractionMode.Editing && e.OriginalSource is FrameworkElement { Tag: OverlayShapeData } shape)
             e.Handled = Hit(shape);
         else e.Handled = BeginDrag(ImagePoint(e));
     }
