@@ -14,7 +14,7 @@ storage, leases and submission contracts.
 | `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
 | `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
 
-`CommittedFrameLease` owns a frame lease plus the range and version captured atomically
+`CommittedViewLease` owns a frame lease plus the range and version captured atomically
 from the last committed display. Crop regions are separate values; export synchronization
 belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
 before showing a file dialog.

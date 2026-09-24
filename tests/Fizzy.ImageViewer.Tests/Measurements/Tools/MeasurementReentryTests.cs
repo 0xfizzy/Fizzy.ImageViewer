@@ -54,8 +54,8 @@ public class MeasurementReentryTests
             Runtime = new(new ViewerLifetime(), Overlay.Dispatcher, Queries, NullLogger.Instance);
             Context = new(Layers.Measurements, Runtime, NullLogger.Instance);
             Tools = new();
-            var binding = new ViewerInputBinding(Input, Overlay, Context);
-            Coordinator = new(binding, new MeasurementEditController(Overlay), Tools, Context, Layers, Runtime, () => null);
+            var binding = new ViewerInputBinding(Input, Overlay, Context, Layers.Collection);
+            Coordinator = new(binding, new MeasurementEditController(Overlay), Tools, Context, Layers.Measurements, Runtime, () => null);
             binding.Connect(Coordinator);
         }
         internal void AssertActive(string id)

@@ -47,6 +47,6 @@ public sealed partial class Viewer : IViewer
 
     /// <summary>Registers a menu item until its handle is disposed or the viewer closes.
     /// Handle disposal marshals to the viewer STA and is idempotent after closure.</summary>
-    public IDisposable RegisterMenu(IMenuItem menuItem)
+    public IDisposable RegisterMenuItem(IMenuItem menuItem)
         => InvokeAlive(() => _host.Menus.Register(menuItem));
 }

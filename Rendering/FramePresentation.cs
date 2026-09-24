@@ -53,10 +53,10 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         layer.SetImage(source, descriptor.Width, descriptor.Height);
     }
 
-    internal void FitToContainer()
+    internal void FitToViewport()
     {
         dispatcher.VerifyAccess();
-        Cleanup(layer.FitImageToContainer);
+        Cleanup(layer.FitToViewport);
     }
 
     public void Dispose()

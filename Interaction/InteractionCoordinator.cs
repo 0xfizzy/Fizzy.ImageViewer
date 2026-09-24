@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
@@ -25,14 +24,14 @@ internal sealed class InteractionCoordinator : IDisposable
     private Activation? _activation;
     private long _sessionVersion;
     internal string? ActiveId => _activation?.Registration.Id;
-    private readonly ViewerLayers _layers;
+    private readonly MeasurementLayer _measurementLayer;
     private bool _disposed;
     public InteractionMode Mode { get; private set; }
     public MeasurementItem? SelectedMeasurement { get; private set; }
     internal MeasurementEditController Editor => _edit;
 
     internal InteractionCoordinator(IInteractionView input, MeasurementEditController edit,
-        MeasurementToolRegistry tools, MeasurementCollection measurements, ViewerLayers layers,
+        MeasurementToolRegistry tools, MeasurementCollection measurements, MeasurementLayer measurementLayer,
         MeasurementRuntime runtime, Func<FrameLease?> acquire)
     {
         _input = input;
@@ -41,9 +40,9 @@ internal sealed class InteractionCoordinator : IDisposable
         _measurements = measurements;
         _runtime = runtime;
         _acquire = acquire;
-        _layers = layers;
-        layers.Measurements.Clearing += CancelForClear;
-        layers.Measurements.InputPolicyChanged += InputPolicyChanged;
+        _measurementLayer = measurementLayer;
+        measurementLayer.Clearing += CancelForClear;
+        measurementLayer.InputPolicyChanged += InputPolicyChanged;
         measurements.ItemRemoving += ItemRemoving;
     }
     private bool Hit(MeasurementItem item)
@@ -70,7 +69,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void StartMeasurement(string toolId)
     {
-        if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
+        if (_measurementLayer.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
         if (!CanInteract) return;
         var registration = _tools.FindRegistration(toolId);
         if (registration == null) return;
@@ -100,14 +99,14 @@ internal sealed class InteractionCoordinator : IDisposable
             }
             activation.Callback = callback;
             Mode = InteractionMode.Measuring;
-            _layers.Collection.SuppressInput(true);
+            _input.SetLayerInputSuppressed(true);
             _input.ShowMeasurementCursor();
         }
         catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
 
-    private bool CanInteract => !_disposed && !_layers.Measurements.IsClearing &&
-        _layers.Measurements.IsVisible && _layers.Measurements.IsHitTestVisible;
+    private bool CanInteract => !_disposed && !_measurementLayer.IsClearing &&
+        _measurementLayer.IsVisible && _measurementLayer.IsHitTestVisible;
     private bool CanActivate(long version, MeasurementToolRegistry.Registration registration)
         => version == _sessionVersion && CanInteract && _tools.Contains(registration);
     private bool IsCurrent(Activation activation)
@@ -130,7 +129,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal void StartEditing(MeasurementItem? item)
     {
-        if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
+        if (_measurementLayer.IsClearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
         if (!CanInteract || item is null || !_measurements.Contains(item) || !_edit.CanEdit(item)) return;
         if (!CancelCore()) return;
         var version = _sessionVersion;
@@ -198,7 +197,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private void RestoreInput()
     {
         _input.Restore();
-        _layers.Collection.SuppressInput(false);
+        _input.SetLayerInputSuppressed(false);
     }
     internal void DeleteSelected() => Delete(SelectedMeasurement);
     internal void Delete(MeasurementItem? selected)
@@ -235,7 +234,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     private void InputPolicyChanged()
     {
-        if (_layers.Measurements.IsVisible && _layers.Measurements.IsHitTestVisible) return;
+        if (_measurementLayer.IsVisible && _measurementLayer.IsHitTestVisible) return;
         try { Cancel(); }
         finally { ClearSelection(); }
     }
@@ -254,7 +253,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal bool BeginDrag(Point point)
     {
         if (Mode != InteractionMode.Editing) return false;
-        if (!_edit.BeginDrag(point, _layers.Collection.Scale)) { StopEditing(); return false; }
+        if (!_edit.BeginDrag(point, _input.ImageScale)) { StopEditing(); return false; }
         if (!_input.Capture()) { _edit.EndDrag(); return false; }
         _input.ShowDragCursor();
         return true;
@@ -291,8 +290,8 @@ internal sealed class InteractionCoordinator : IDisposable
             {
                 _measurements.ItemRemoving -= ItemRemoving;
                 _input.Dispose();
-                _layers.Measurements.Clearing -= CancelForClear;
-                _layers.Measurements.InputPolicyChanged -= InputPolicyChanged;
+                _measurementLayer.Clearing -= CancelForClear;
+                _measurementLayer.InputPolicyChanged -= InputPolicyChanged;
             }
         }
     }

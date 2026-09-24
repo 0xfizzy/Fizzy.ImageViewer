@@ -123,7 +123,7 @@ namespace Fizzy.ImageViewer.Viewport
             Container.LostMouseCapture += (s, e) => _pan.LostCapture();
             Container.IsVisibleChanged += (s, e) => { if (!Container.IsVisible) EndPan(); };
             Container.Unloaded += (s, e) => EndPan();
-            Container.SizeChanged += (s, e) => FitImageToContainer();
+            Container.SizeChanged += (s, e) => FitToViewport();
         }
 
         // === 视口交互 ===
@@ -139,7 +139,7 @@ namespace Fizzy.ImageViewer.Viewport
             // 双击恢复默认缩放和位移
             if (e.ClickCount == 2)
             {
-                FitImageToContainer();
+                FitToViewport();
                 return;
             }
 
@@ -242,7 +242,7 @@ namespace Fizzy.ImageViewer.Viewport
         /// <summary>
         /// 将图像适配到容器大小，居中显示。
         /// </summary>
-        public void FitImageToContainer()
+        public void FitToViewport()
         {
             if (ImageDisplay.Source == null || Container.ActualWidth == 0 || Container.ActualHeight == 0)
                 return;

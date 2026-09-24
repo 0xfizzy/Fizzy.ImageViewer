@@ -15,6 +15,7 @@ application adapters own an instance and use its public API. Raw-window access i
 | Drawing | `Markers`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
 | HUD | `HudLabel`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
 | Measurements | `Measurements` layer, instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
+| Display | `FitToViewport`, `DisplayRange` |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
 
 The root namespace contains `Viewer`, `IViewer` and `IViewerWindow`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
@@ -180,9 +181,11 @@ immutable even when another subscriber updates or disposes the live handle.
 Geometry is a closed family of immutable records: `PointMeasurementGeometry`,
 `CrosshairMeasurementGeometry`, `LineMeasurementGeometry`, `RectangleMeasurementGeometry`
 and `CircleMeasurementGeometry`. The `MeasurementGeometry` factories return these concrete
-types. Pattern-match the geometry to access `Position`, `Start`/`End` or `Center`/`Radius`;
+types. Pattern-match the geometry to access `Position`, line `Start`/`End`,
+rectangle `TopLeft`/`BottomRight`, or `Center`/`Radius`;
 the base exposes only common `Kind` and `Bounds` properties. `MeasurementGeometry.Bounds` is the normalized image-space bounding
-rectangle. Lines retain their endpoint order; circles use diameter bounds; points and
+rectangle. Rectangle corners are normalized regardless of input order.
+Lines retain their endpoint order; circles use diameter bounds; points and
 crosshairs have zero extent, excluding their screen-space marker size. Query options
 compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
 combinations fail on creation. The framework owns primary visuals, labels and control points.
@@ -217,7 +220,7 @@ Built-in interaction actions capture their target when the menu opens.
 
 ## Menu registration lifetime
 
-`RegisterMenu(IMenuItem)` returns an `IDisposable` registration handle. Dispose it from
+`RegisterMenuItem(IMenuItem)` returns an `IDisposable` registration handle. Dispose it from
 any thread to revoke only that registration; disposal is idempotent and safe after viewer
 closure. Registering the same object twice creates independent registrations. Ignoring the
 handle keeps the registration alive until the viewer closes. The viewer never disposes the
@@ -242,7 +245,7 @@ frame, the viewer resumes submissions and removes partial bindings before propag
 failure. Viewer shutdown releases registrations, callbacks and WPF menu bindings.
 
 ```csharp
-using var registration = viewer.RegisterMenu(
+using var registration = viewer.RegisterMenuItem(
     new Fizzy.ImageViewer.Menus.MenuItem("Inspect target", InspectTarget));
 // Keep the registration for the lifetime of this feature.
 ```

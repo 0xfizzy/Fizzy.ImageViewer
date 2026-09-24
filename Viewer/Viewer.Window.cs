@@ -85,8 +85,4 @@ public partial class Viewer
     /// <inheritdoc />
     public bool IsMinimized => InvokeAlive(() => _host.Window.WindowState == WindowState.Minimized);
 
-    public void FitImageToContainer()
-    {
-        InvokeAlive(() => _host.Window.ImageViewport.FitImageToContainer());
-    }
 }

@@ -25,8 +25,8 @@ public class MenuTests
     {
         await using var viewer = Create();
         var item = new DisposableItem();
-        var first = viewer.RegisterMenu(item);
-        var second = viewer.RegisterMenu(item);
+        var first = viewer.RegisterMenuItem(item);
+        var second = viewer.RegisterMenuItem(item);
         WpfMenuItem[] visuals = [];
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -52,7 +52,7 @@ public class MenuTests
         second.Dispose();
         second.Dispose();
         Assert.Equal(0, item.Disposals);
-        Assert.Throws<ObjectDisposedException>(() => viewer.RegisterMenu(item));
+        Assert.Throws<ObjectDisposedException>(() => viewer.RegisterMenuItem(item));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class MenuTests
     private static (IDisposable Handle, WpfMenuItem Visual, WeakReference Item) RegisterCollectibleItem(Viewer viewer)
     {
         var item = new DisposableItem();
-        var handle = viewer.RegisterMenu(item);
+        var handle = viewer.RegisterMenuItem(item);
         var menu = viewer.Host.Window.ContextMenu;
         Open(menu);
         var visual = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, item.Header));
@@ -118,11 +118,11 @@ public class MenuTests
         {
             int calls = 0;
             IDisposable? registration = null;
-            registration = viewer.RegisterMenu(new ActionMenuItem("once", () =>
+            registration = viewer.RegisterMenuItem(new ActionMenuItem("once", () =>
             {
                 calls++;
                 registration!.Dispose();
-                viewer.RegisterMenu(new ActionMenuItem("replacement", () => { }));
+                viewer.RegisterMenuItem(new ActionMenuItem("replacement", () => { }));
             }));
             var menu = viewer.Host.Window.ContextMenu;
             Open(menu);
@@ -168,7 +168,7 @@ public class MenuTests
         WpfMenuItem? old = null;
         ContextMenu? menu = null;
         int calls = 0;
-        viewer.RegisterMenu(new ActionMenuItem("test", () => calls++));
+        viewer.RegisterMenuItem(new ActionMenuItem("test", () => calls++));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             menu = viewer.Host.Window.ContextMenu;
@@ -196,7 +196,7 @@ public class MenuTests
     {
         await using var viewer = Create();
         var failure = new InvalidOperationException("visibility failed");
-        using var registration = viewer.RegisterMenu(new ActionMenuItem("bad", () => { }, () => throw failure));
+        using var registration = viewer.RegisterMenuItem(new ActionMenuItem("bad", () => { }, () => throw failure));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var menu = viewer.Host.Window.ContextMenu;
@@ -246,7 +246,7 @@ public class MenuTests
         Assert.Same(failure, Assert.Throws<InvalidOperationException>(() =>
             new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false, initialize: viewer =>
             {
-                handle = viewer.RegisterMenu(new ActionMenuItem("test", () => { }));
+                handle = viewer.RegisterMenuItem(new ActionMenuItem("test", () => { }));
                 viewer.Host.Window.Closed += (_, _) => detached = viewer.Host.Window.ContextMenu == null;
                 throw failure;
             })));

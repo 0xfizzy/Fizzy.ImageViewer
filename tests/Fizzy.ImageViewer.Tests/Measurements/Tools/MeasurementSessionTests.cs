@@ -13,6 +13,47 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementSessionTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RetainedHandleDoesNotRetainEndedCreationContext(bool complete)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var retained = await viewer.Host.Window.Dispatcher.InvokeAsync(() => CreateRetainedHandle(viewer, complete));
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(retained.Context.IsAlive);
+        Assert.Equal(!complete, retained.Item.IsDisposed);
+        if (complete)
+        {
+            Assert.True(retained.Item.IsComplete);
+            retained.Item.UpdateGeometry(MeasurementGeometry.Point(new(7, 8)));
+            Assert.Equal(MeasurementGeometry.Point(new(7, 8)), retained.Item.Geometry);
+        }
+        retained.Item.Dispose();
+        GC.KeepAlive(retained.Item);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static (IMeasurement Item, WeakReference Context) CreateRetainedHandle(Viewer viewer, bool complete)
+    {
+        IMeasurement? item = null;
+        WeakReference? contextReference = null;
+        viewer.RegisterMeasurementTool(new FactoryTool(context =>
+        {
+            contextReference = new WeakReference(context);
+            item = context.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            if (complete) item.Complete();
+            else item.Dispose();
+            return new TestMeasurementSession(_ => false, _ => { }, () => { });
+        }));
+        viewer.StartMeasurement("factory");
+        viewer.EndInteraction();
+        viewer.UnregisterMeasurementTool("factory");
+        return (item!, contextReference!);
+    }
+
     private sealed class FactoryTool(Func<IMeasurementToolContext, IMeasurementToolSession> factory) : IMeasurementTool
     {
         public string Id => "factory";

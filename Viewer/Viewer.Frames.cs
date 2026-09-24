@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
@@ -12,12 +11,6 @@ public partial class Viewer
         => _host.Pipeline.SubmitAsync(frame, options, ct);
 
     public FrameLease? AcquireCurrentFrame() => _host.Pipeline.AcquireCurrentFrame();
-
-    public GrayDisplayRange? DisplayRange
-    {
-        get => _host.Pipeline.DisplayRange;
-        set => _host.Pipeline.DisplayRange = value;
-    }
 
     internal void NotifyFrameCommitted(FrameInfo info)
     {

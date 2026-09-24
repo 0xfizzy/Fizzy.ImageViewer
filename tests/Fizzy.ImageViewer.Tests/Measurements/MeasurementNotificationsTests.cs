@@ -26,7 +26,7 @@ public class MeasurementNotificationsTests
                         new() { Query = MeasurementQueryKind.RegionStatistics });
                     return MeasurementClickResult.Continue;
                 }
-                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_preview.Geometry).Start, point));
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_preview.Geometry).TopLeft, point));
                 _preview.Complete();
                 return MeasurementClickResult.Finish;
             }

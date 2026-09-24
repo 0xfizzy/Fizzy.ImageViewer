@@ -9,7 +9,7 @@ internal sealed class MeasurementItem : IMeasurement
     private readonly MeasurementCollection _owner;
     private readonly MeasurementRuntime _runtime;
     internal MeasurementPresentation Presentation { get; }
-    internal MeasurementCreationContext Session { get; }
+    private MeasurementCreationContext? _creationContext;
     private readonly MeasurementOptions _options;
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
@@ -49,17 +49,24 @@ internal sealed class MeasurementItem : IMeasurement
         remove => _runtime.InvokeRemoval(() => QueryResultChanged -= value);
     }
 
-    internal MeasurementItem(MeasurementCollection owner, MeasurementRuntime runtime, MeasurementOverlay layer, MeasurementStyle style, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationContext session)
+    internal MeasurementItem(MeasurementCollection owner, MeasurementRuntime runtime, MeasurementOverlay layer, MeasurementStyle style, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationContext creationContext)
     {
         _owner = owner;
         _runtime = runtime;
         Geometry = geometry;
-        Session = session;
-        Origin = session.Origin;
+        _creationContext = creationContext;
+        Origin = creationContext.Origin;
         _options = options with { Style = null };
         QueryClient = new(this, options.Query);
         Presentation = new(layer, geometry, style, () => runtime.RunUiCallback(Dispose));
     }
+    private void ReleaseCreationContext()
+    {
+        var context = _creationContext;
+        _creationContext = null;
+        context?.Release(this);
+    }
+
     private void EnsureAlive()
     {
         _runtime.VerifyAccess();
@@ -103,7 +110,7 @@ internal sealed class MeasurementItem : IMeasurement
         EnsureAlive();
         if (IsComplete) return;
         IsComplete = true;
-        Session.Release(this);
+        ReleaseCreationContext();
         try
         {
             Presentation.Complete(_options.ShowProfileWindow);
@@ -142,7 +149,7 @@ internal sealed class MeasurementItem : IMeasurement
         _runtime.VerifyAccess();
         if (IsDisposed) return;
         _disposed = true;
-        Session.Release(this);
+        ReleaseCreationContext();
         List<Exception> errors = [];
         void Release(Action action) { try { action(); } catch (Exception ex) { errors.Add(ex); } }
         Release(() => _subscription?.Dispose());

@@ -84,12 +84,12 @@ public class MeasurementInteractionTests
             // Continuing beyond the crossing must keep the ORIGINAL opposite corner fixed.
             editor.UpdateDrag(new(x + .25, y + .25));
             var expected = MeasurementGeometry.Rectangle(initial.ControlPoints[(index + 2) % 4], new(x + .25, y + .25));
-            Assert.Equal(expected.Start, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).Start); Assert.Equal(expected.End, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).End);
+            Assert.Equal(expected.TopLeft, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft); Assert.Equal(expected.BottomRight, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).BottomRight);
             Assert.Equal(2, item.GeometryVersion - initialVersion);
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             Assert.Equal(expected.Bounds.Width, rectangle.Width); Assert.Equal(expected.Bounds.Height, rectangle.Height);
-            Assert.Equal(expected.Start.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Start.Y, Canvas.GetTop(rectangle));
-            Assert.Equal(expected.Start, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
+            Assert.Equal(expected.TopLeft.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.TopLeft.Y, Canvas.GetTop(rectangle));
+            Assert.Equal(expected.TopLeft, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
             var request = Assert.IsType<RegionStatisticsQueryRequest>(item.QueryClient.Capture(frame!.Descriptor));
@@ -171,7 +171,7 @@ public class MeasurementInteractionTests
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             viewer.Layers.Markers.IsHitTestVisible = false;
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
-            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).Start, 1));
+            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft, 1));
             viewer.Host.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
             {
@@ -339,6 +339,47 @@ public class MeasurementInteractionTests
     }
 
     [Theory]
+    [InlineData(0.5, 9, true)]
+    [InlineData(2, 9, true)]
+    [InlineData(0.5, 10, false)]
+    [InlineData(2, 10, false)]
+    public async Task DragAdmissionUsesScreenDistanceFromInputAdapter(double scale, double distance, bool admitted)
+    {
+        await using var viewer = Create();
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var image = new ImageViewport();
+            var layers = new Layers.ViewerLayers(image.TransformGroup);
+            var overlay = layers.Measurements.Overlay;
+            using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
+            var runtime = new MeasurementRuntime(new ViewerLifetime(), overlay.Dispatcher, queries, NullLogger.Instance);
+            var measurements = new MeasurementCollection(layers.Measurements, runtime, NullLogger.Instance);
+            var capture = new FakeCapture();
+            var binding = new ViewerInputBinding(image, overlay, measurements, layers.Collection, capture);
+            using var coordinator = new InteractionCoordinator(binding, new MeasurementEditController(overlay),
+                new MeasurementToolRegistry(), measurements, layers.Measurements, runtime, () => null);
+            binding.Connect(coordinator);
+            try
+            {
+                var context = new MeasurementCreationContext(measurements, runtime, () => null);
+                var item = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(100, 100)));
+                item.Complete();
+                context.End();
+                layers.Collection.UpdateScale(scale);
+                coordinator.StartEditing(item);
+                Assert.Equal(admitted, coordinator.BeginDrag(new(100 + distance / scale, 100)));
+                Assert.Equal(admitted, capture.IsCaptured);
+            }
+            finally
+            {
+                coordinator.Dispose();
+                measurements.Shutdown();
+                layers.Collection.Close();
+            }
+        });
+    }
+
+    [Theory]
     [InlineData("cancel")]
     [InlineData("lost")]
     [InlineData("failed")]
@@ -359,8 +400,8 @@ public class MeasurementInteractionTests
             var tools = new MeasurementToolRegistry();
             var editor = new MeasurementEditController(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
-            var binding = new ViewerInputBinding(image, overlay, context, capture);
-            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers, runtime, () => null);
+            var binding = new ViewerInputBinding(image, overlay, context, layers.Collection, capture);
+            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers.Measurements, runtime, () => null);
             binding.Connect(coordinator);
             var tool = new RectangleRoiTool();
             var creation = new MeasurementCreationContext(context, runtime, () => null);

@@ -282,7 +282,7 @@ public class ViewerTests
             layer.SetImage(bitmap, 2, 1);
             layer.Measure(new System.Windows.Size(100, 100));
             layer.Arrange(new System.Windows.Rect(0, 0, 100, 100));
-            layer.UpdateLayout(); layer.FitImageToContainer();
+            layer.UpdateLayout(); layer.FitToViewport();
             Assert.Equal(50, layer.Scaler.ScaleX);
             var point = layer.ImageToContainer(new System.Windows.Point(1, 0));
             Assert.Equal(50, point.X, 6); Assert.Equal(25, point.Y, 6);

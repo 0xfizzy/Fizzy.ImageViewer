@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Snapshots;
@@ -15,7 +16,7 @@ public class SnapshotCaptureTests
         int released = 0, cancelledReleased = 0;
         using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, source, () => Interlocked.Increment(ref released));
-        using var owner = new CommittedFrameLease(frame.Acquire(), null, 7);
+        using var owner = new CommittedViewLease(frame.Acquire(), null, 7);
         frame.Dispose();
         var first = capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw);
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -57,7 +58,7 @@ public class SnapshotCaptureTests
         int released = 0;
         using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, source, () => released++);
-        using var owner = new CommittedFrameLease(frame.Acquire(), null, 0);
+        using var owner = new CommittedViewLease(frame.Acquire(), null, 0);
         frame.Dispose();
         await Assert.ThrowsAsync<InvalidOperationException>(() => capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw));
         using var snapshot = await capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw).WaitAsync(TimeSpan.FromSeconds(5));

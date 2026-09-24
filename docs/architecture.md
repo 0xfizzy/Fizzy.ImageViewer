@@ -56,7 +56,8 @@ at the Measurements level. Test namespaces remain stable so existing filters con
 to work. Test-only helpers live beside their callers; benchmarks remain under tools.
 
 Keep the single library project at the repository root. Viewer partial files organize
-one facade by capability; they are not independently owned services. `IViewer` aggregates
+one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Queries,
+Snapshots and Lifetime. These files are not independently owned services. `IViewer` aggregates
 borrowed capability interfaces placed with their owning features. `IViewerWindow` stays
 with Viewer; display control belongs to Viewport, shared query settings to Imaging.
 `Viewer` implements these interfaces directly, with one shared lifetime; only the aggregate
@@ -93,9 +94,11 @@ visuals and invalidates their handles on shutdown.
 
 ViewerInputBinding resolves WPF event sources through the measurement collection and
 passes measurement identities and image coordinates to the coordinator. It implements
-the small IInteractionView boundary for selection appearance, cursor, focus and capture
-effects without owning tool-session state. ViewerHost connects the input adapter to the
-coordinator; the coordinator depends on these effects rather than concrete WPF visuals
+the small IInteractionView boundary for selection appearance, cursor, focus, capture,
+image scale and temporary layer input suppression without owning tool-session state.
+The adapter borrows LayerCollection; the coordinator borrows MeasurementLayer directly
+for admission policy and lifecycle events, without depending on ViewerLayers or its container.
+ViewerHost connects the input adapter to the coordinator; the coordinator depends on these effects rather than concrete WPF visuals
 or the input adapter. ViewportPan owns middle-button
 pan state in screen coordinates;
 it and measurement editing use MouseCaptureSession for capture admission, loss and
@@ -140,8 +143,9 @@ The same layer gate rejects creation and interaction starts throughout cancellat
 MeasurementLayer exposes no batch creation or batch-click events.
 
 MeasurementItem implements the public IMeasurement handle with STA dispatch and owns
-model state, query subscription and disposal, and directly disposes its presentation
-after deregistration and before removal notification. MeasurementPresentation owns its WPF
+model state, query subscription and disposal. Completion and disposal release its creation-context
+reference before presentation or external callbacks; only immutable Origin survives as session provenance.
+The item directly disposes its presentation after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
 MeasurementQueryDefinition owns the supported query/geometry pairs and request construction. MeasurementQueryClient caches those requests independently of the handle. Each request
@@ -179,6 +183,10 @@ ViewerMenuController supplies built-in menu policy and captures interaction/ROI 
 borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession in Menus
 alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.
 ViewerHost detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.
+
+Rendering owns CommittedViewLease, which retains a frame lease together with atomically
+captured display range and commit version. Menu targets and snapshots consume this committed
+view without owning pipeline state.
 
 ## Pixel format ownership
 

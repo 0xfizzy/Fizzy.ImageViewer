@@ -25,7 +25,10 @@ public class MeasurementGeometryTests
         Assert.Equal(new Rect(2, 3, 6, 6), line.Bounds);
         Assert.Equal(new Point(8, 9), line.Start);
         Assert.Equal(new Point(2, 3), line.End);
-        Assert.Equal(line.Bounds, MeasurementGeometry.Rectangle(line.Start, line.End).Bounds);
+        var rectangle = MeasurementGeometry.Rectangle(line.Start, line.End);
+        Assert.Equal(line.Bounds, rectangle.Bounds);
+        Assert.Equal(new Point(2, 3), rectangle.TopLeft);
+        Assert.Equal(new Point(8, 9), rectangle.BottomRight);
     }
 
     [Fact]

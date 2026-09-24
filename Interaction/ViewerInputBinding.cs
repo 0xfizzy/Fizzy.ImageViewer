@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Viewport;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Fizzy.ImageViewer.Interaction;
 
 /// <summary>Adapts WPF input and pointer effects without owning interaction state.</summary>
-internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay overlay, MeasurementCollection measurements,
+internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay overlay, MeasurementCollection measurements, LayerCollection layers,
     IMouseCapture? capture = null, ILogger? logger = null) : IInteractionView
 {
     private readonly MouseCaptureSession _capture = new(capture ?? new ElementMouseCapture(overlay.Canvas));
@@ -28,6 +29,8 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
         overlay.Canvas.MouseLeftButtonUp += MouseUp;
         overlay.Canvas.LostMouseCapture += LostCapture;
     }
+    public double ImageScale => layers.Scale;
+    public void SetLayerInputSuppressed(bool suppressed) => layers.SuppressInput(suppressed);
     public bool Capture() => _capture.Begin();
     public void EndPan() => input.EndPan();
     public void ShowMeasurementCursor() { input.Container.Cursor = Cursors.Pen; input.Container.Focus(); }

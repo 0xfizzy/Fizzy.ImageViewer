@@ -15,9 +15,9 @@ internal sealed class MenuSnapshotSession(FramePipeline pipeline, ViewerLifetime
     private bool _open, _disposed;
     private int _saving;
 
-    internal sealed class Target(CommittedFrameLease view, PixelRegion? region) : IDisposable
+    internal sealed class Target(CommittedViewLease view, PixelRegion? region) : IDisposable
     {
-        internal CommittedFrameLease View { get; } = view;
+        internal CommittedViewLease View { get; } = view;
         internal PixelRegion? Region { get; } = region;
         internal Target Acquire(bool includeRegion) => new(View.Acquire(), includeRegion ? Region : null);
         public void Dispose() => View.Dispose();

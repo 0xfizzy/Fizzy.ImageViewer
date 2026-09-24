@@ -171,7 +171,7 @@ internal sealed class FramePipeline
             _committedGrayRange = range;
         }
         ReleaseFrame(previous);
-        if (resized) _presentation.FitToContainer();
+        if (resized) _presentation.FitToViewport();
         if (submission != null) _onCommitted(frame, submission.Options);
         return FrameSubmitStatus.Committed;
     }
@@ -187,7 +187,7 @@ internal sealed class FramePipeline
     }
 
     // The frame and display settings are captured under the same gate as publication.
-    internal CommittedFrameLease? AcquireCommittedView()
+    internal CommittedViewLease? AcquireCommittedView()
     {
         lock (_frameGate)
         {
@@ -196,14 +196,14 @@ internal sealed class FramePipeline
         }
     }
 
-    private CommittedFrameLease? AcquireCommittedViewCore() => _currentFrame == null ? null :
+    private CommittedViewLease? AcquireCommittedViewCore() => _currentFrame == null ? null :
         new(_currentFrame.Acquire(), _committedGrayRange, _committedDisplayVersion);
 
-    internal CommittedFrameLease? FreezeAndAcquire()
+    internal CommittedViewLease? FreezeAndAcquire()
     {
         _dispatcher.VerifyAccess();
         Submission? pending;
-        CommittedFrameLease? view;
+        CommittedViewLease? view;
         lock (_frameGate)
         {
             _lifetime.ThrowIfStopping();

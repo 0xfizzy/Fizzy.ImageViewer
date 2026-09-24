@@ -79,7 +79,7 @@ public class UnifiedMeasurementTests
                         new() { Query = MeasurementQueryKind.RegionStatistics });
                     return MeasurementClickResult.Continue;
                 }
-                _item.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_item.Geometry).Start, point));
+                _item.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_item.Geometry).TopLeft, point));
                 _item.Complete();
                 return MeasurementClickResult.Finish;
             }
@@ -122,7 +122,7 @@ public class UnifiedMeasurementTests
             Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(0, 0), 1));
             viewer.Host.Interaction.Editor.UpdateDrag(new(3, 3));
             Assert.Null(item.QueryResult); Assert.DoesNotContain("mean=", item.Presentation.Label.Text); Assert.Equal(1, changes);
-            Assert.Equal(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).Start, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
+            Assert.Equal(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
             Assert.Equal(2.5, result.Channels[0].Mean);
             Assert.Throws<NotSupportedException>(() => ((IList<ChannelStatistics>)result.Channels)[0] = default);
             viewer.Layers.ClearContents(); Assert.Equal(1, removed);

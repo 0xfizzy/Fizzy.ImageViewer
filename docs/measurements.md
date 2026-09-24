@@ -63,8 +63,9 @@ MeasurementEditController receives a MeasurementItem directly and owns its Measu
 and control-point visuals. Hit testing resolves visuals through the collection before selection;
 unregistered visuals cannot become measurement interaction targets. The session retains
 drag-start geometry and writes changes through the measurement model; capability checks do not allocate a session.
-ViewerInputBinding translates WPF input and applies pointer effects
-without storing interaction state.
+ViewerInputBinding translates WPF input, supplies image scale and applies pointer effects
+and temporary layer input suppression through IInteractionView without storing interaction state.
+The coordinator borrows MeasurementLayer for admission and lifecycle notifications.
 The overlay only performs display, hit testing and selection styling.
 It holds no coordinator or measurement-owner reference. The coordinator receives
 translated input and layer lifecycle notifications. MeasurementCollection subscribes to MeasurementLayer content cleanup without exposing the collection to the layer. Clearing first cancels input and selection, then always releases measurement
@@ -193,7 +194,8 @@ A retained context cannot create measurements after its activation ends. For asy
 work, call `context.Finish()` to end only that context's activation after committing the
 items to retain. It dispatches to the viewer STA and returns false for an ended,
 superseded or closed context; it never ends a replacement session. `IMeasurement.Complete()`
-commits one item and does not finish its tool session. Each context, item and event snapshot
+commits one item and releases its reference to the creation context without finishing the
+tool session. Each context, item and event snapshot
 retains `Origin` with the registration's `ToolId` and activation's `SessionId`; multiple
 items from one activation share the origin, while later activations get a new session ID.
 Revoking a registration during cancellation invalidates an outer request to start that

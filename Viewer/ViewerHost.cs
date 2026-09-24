@@ -86,8 +86,8 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editor = new MeasurementEditController(win.MeasurementOverlay);
-                var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, logger: _logger);
-                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers,
+                var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, win.Layers.Collection, logger: _logger);
+                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers.Measurements,
                     _measurementRuntime, TryAcquireCurrentFrame);
                 input.Connect(_interaction);
                 _tools.RegisterTool(new LengthTool());

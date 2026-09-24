@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 
@@ -9,7 +10,7 @@ internal sealed class SnapshotCapture
     private readonly SemaphoreSlim _exportGate = new(1, 1);
 
     /// <summary>Consumes view, including on cancellation or failure.</summary>
-    internal Task<ImageSnapshot> CaptureAsync(CommittedFrameLease view, SnapshotKind kind,
+    internal Task<ImageSnapshot> CaptureAsync(CommittedViewLease view, SnapshotKind kind,
         PixelRegion? region = null, CancellationToken ct = default) => Task.Run(async () =>
     {
         using (view)

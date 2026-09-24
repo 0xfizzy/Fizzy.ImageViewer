@@ -120,7 +120,7 @@ internal sealed class MeasurementPresentation : IDisposable
             case RectangleMeasurementGeometry rectangle when shape is Rectangle visual:
                 visual.Width = rectangle.Bounds.Width;
                 visual.Height = rectangle.Bounds.Height;
-                _layer.UpdateAnchor(visual, rectangle.Start);
+                _layer.UpdateAnchor(visual, rectangle.TopLeft);
                 break;
             case LineMeasurementGeometry line when shape is Line visual:
                 visual.X1 = line.Start.X; visual.Y1 = line.Start.Y;

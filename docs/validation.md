@@ -211,3 +211,7 @@ includes inherited interfaces; the API baseline records each capability and its 
 Boundary tests reserve global layer management for `IViewer`, verify that drawing and
 measurement capabilities share their respective live layer handles, and exercise independent
 layer clearing, measurement cancellation and global clearing through those public contracts.
+
+Measurement session tests verify that retained completed or disposed handles do not retain
+their ended creation contexts. Interaction tests verify control-point admission at different
+image scales through the input adapter, including the screen-space hit boundary.

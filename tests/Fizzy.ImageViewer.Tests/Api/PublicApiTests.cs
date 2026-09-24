@@ -43,7 +43,7 @@ public class PublicApiTests
             _ = queries.QueryMetrics;
             display.DisplayRange = new(0, 255);
             Assert.Equal(display.DisplayRange, viewer.DisplayRange);
-            registration = menus.RegisterMenu(new Fizzy.ImageViewer.Menus.MenuItem("Inspect", () => { }));
+            registration = menus.RegisterMenuItem(new Fizzy.ImageViewer.Menus.MenuItem("Inspect", () => { }));
             window.Show();
             Assert.True(window.IsVisible);
             window.Minimize();
@@ -59,7 +59,7 @@ public class PublicApiTests
             window.Show();
             using var lease = frames.AcquireCurrentFrame();
             Assert.Equal(42, lease!.CpuPixels.Span[0]);
-            display.FitImageToContainer();
+            display.FitToViewport();
             using var snapshot = await snapshots.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind.Raw);
             using var pixels = snapshot.AcquirePixels();
             Assert.Equal(lease.Info.FrameId, snapshot.SourceFrame.FrameId);
