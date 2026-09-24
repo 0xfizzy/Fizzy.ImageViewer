@@ -15,7 +15,8 @@ public facade, drawing handles and measurement handles.
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
 | Layers | Public layer composition and the container for transforms, input and lifetime |
 | Drawing | Drawing elements, marker layers, drawing handles and batch rendering |
-| Measurements | Measurement handles, collection, options, results, notifications, style and query integration |
+| Measurements | Measurement handles, collection, lifecycle, options, snapshots, notifications and style |
+| Measurements/Queries | Measurement query kinds, geometry compatibility, request construction, query clients and results |
 | Measurements/Geometry | Closed immutable geometry family and geometry kinds |
 | Measurements/Tools | Tool contracts, registrations and creation contexts |
 | Measurements/Tools/BuiltIn | Built-in tools and their shared creation session |
@@ -41,7 +42,7 @@ and QueryResult.cs so their alternatives can be read as one protocol. Do not spl
 nested helper types or create a directory for a single type merely to satisfy a pattern.
 
 Subdirectories group established responsibilities, rather than visibility or type kind.
-Measurements/Geometry and Measurements/Tools retain the public Measurements namespace:
+Measurements/Geometry, Measurements/Tools and Measurements/Queries retain the public Measurements namespace:
 source navigation does not require a different consumer namespace for each subgroup.
 Built-in tools use Measurements.BuiltIn; editing and presentation have their own internal
 namespaces. Viewer files use the root namespace; other top-level feature directories use
@@ -49,7 +50,7 @@ their feature namespace. Namespace changes require a separate API decision.
 
 Tests belong to the capability under test, not its historical implementation location.
 Rendering tests cover presentation; Viewport tests cover pan; Imaging/Queries tests cover
-scheduling. Measurement geometry, tool-session and presentation tests use matching
+scheduling. Measurement geometry, query, tool-session and presentation tests use matching
 subdirectories. Tests spanning measurement ownership, notifications or interaction stay
 at the Measurements level. Test namespaces remain stable so existing filters continue
 to work. Test-only helpers live beside their callers; benchmarks remain under tools.
