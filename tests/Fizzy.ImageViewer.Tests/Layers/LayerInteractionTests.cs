@@ -66,13 +66,13 @@ public class LayerInteractionTests
             {
                 Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
                 Assert.Throws<InvalidOperationException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new())));
-                viewer.ClearShapes(); // Reentrant bulk cleanup is idempotent.
+                viewer.Layers.Clear(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             var layer = viewer.Layers.CreateLayer("after measurements");
             using var batch = layer.AddBatch([new CircleElement(new(), 2, Brushes.Red)]);
-            Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.ClearShapes));
+            Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.Clear));
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([]));
             Assert.Equal(1, tool.Cancellations);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);

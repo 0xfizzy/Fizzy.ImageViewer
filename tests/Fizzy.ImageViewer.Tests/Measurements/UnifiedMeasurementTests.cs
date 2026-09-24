@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Imaging.Queries;
@@ -44,11 +44,11 @@ public class UnifiedMeasurementTests
     private sealed class Harness : IDisposable
     {
         public readonly ViewerLayers Layers = new(System.Windows.Media.Transform.Identity);
-        public OverlayLayer Overlay => Layers.Measurements.Overlay;
+        public MeasurementOverlay Overlay => Layers.Measurements.Overlay;
         public readonly FrameLease Frame;
         public readonly Runtime Runtime;
         public readonly PixelQueryScheduler Queries;
-        public readonly MeasurementContext Context;
+        public readonly MeasurementStore Context;
         public Harness(Source? source = null)
         {
             Frame = source == null ? ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()).Transfer()
@@ -122,7 +122,7 @@ public class UnifiedMeasurementTests
             Assert.Equal(item.Geometry.Start, OverlayShapeData.Get(item.Presentation.Label)!.AnchorPoint);
             Assert.Equal(2.5, result.Channels[0].Mean);
             Assert.Throws<NotSupportedException>(() => ((IList<ChannelStatistics>)result.Channels)[0] = default);
-            viewer.ClearShapes(); Assert.Equal(1, removed);
+            viewer.Layers.Clear(); Assert.Equal(1, removed);
         });
     }
     [Theory]
@@ -244,7 +244,7 @@ public class UnifiedMeasurementTests
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
             var item = new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
             item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()))));
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
         });
     }
 }

@@ -13,7 +13,7 @@ namespace Fizzy.ImageViewer;
 /// <summary>
 /// 图像查看器的完整 API 接口。
 /// </summary>
-public interface IViewerAPI : IAsyncDisposable
+public interface IViewer : IAsyncDisposable
 {
     /// <summary>Style for future measurements. Brushes are copied and frozen before UI dispatch.</summary>
     MeasurementStyle MeasurementStyle { get; set; }
@@ -97,7 +97,7 @@ public interface IViewerAPI : IAsyncDisposable
     /// <summary>
     /// 在默认不参与命中测试的 Markers 图层绘制文本标签。
     /// </summary>
-    IDisposable DrawText(Point anchor, string text, Brush brush, int fontSize = 14, Vector offset = default);
+    IDisposable DrawText(Point anchor, string text, Brush brush, double fontSize = 14, Vector offset = default);
 
     /// <summary>
     /// 在默认不参与命中测试的 Markers 图层绘制准星。
@@ -114,10 +114,6 @@ public interface IViewerAPI : IAsyncDisposable
     /// </summary>
     IDisposable DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null);
 
-    /// <summary>
-    /// 取消测量并清空全部业务图层，保留 HUD。
-    /// </summary>
-    void ClearShapes();
 
     /// <summary>
     /// 在 HUD 层创建文本；通过返回句柄的 Update 更新文本和颜色。

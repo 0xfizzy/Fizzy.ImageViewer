@@ -2,10 +2,10 @@ using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Editing;
+namespace Fizzy.ImageViewer.Measurements.Editing;
 
 /// <summary>Executes one editing session; it never changes global input policy.</summary>
-internal sealed class EditManager(OverlayLayer overlay)
+internal sealed class EditManager(MeasurementOverlay overlay)
 {
     private MeasurementEditSession? _session;
     private int _dragIndex = -1;

@@ -7,7 +7,7 @@ using System.Windows.Shapes;
 namespace Fizzy.ImageViewer.Measurements.Presentation;
 
 /// <summary>WPF display, hit testing and selection appearance. Session policy belongs to the coordinator.</summary>
-internal class OverlayLayer : UserControl
+internal class MeasurementOverlay : UserControl
 {
     private readonly Canvas _canvas;
     private double _currentScale = 1;
@@ -17,7 +17,7 @@ internal class OverlayLayer : UserControl
     internal event Action<UIElement>? VisualAdded;
     public event Action<UIElement>? ShapeRemoved;
 
-    internal OverlayLayer()
+    internal MeasurementOverlay()
     {
         _canvas = new Canvas { ClipToBounds = false, IsHitTestVisible = true, Background = null, Focusable = true };
         Content = _canvas;

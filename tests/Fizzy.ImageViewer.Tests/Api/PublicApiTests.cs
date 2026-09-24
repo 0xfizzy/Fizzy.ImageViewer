@@ -20,7 +20,7 @@ public class PublicApiTests
     public async Task InterfaceControlsWindowFromWorkerAndRetainsHiddenContent()
     {
         await using var viewer = Create();
-        IViewerAPI api = viewer;
+        IViewer api = viewer;
         await Task.Run(async () =>
         {
             api.Label = "camera";
@@ -59,7 +59,7 @@ public class PublicApiTests
     [Fact]
     public void ViewerImplementationMatchesItsFacade()
     {
-        var contract = typeof(IViewerAPI).GetMethods().Select(m => m.ToString()).ToHashSet();
+        var contract = typeof(IViewer).GetMethods().Select(m => m.ToString()).ToHashSet();
         contract.UnionWith(typeof(IAsyncDisposable).GetMethods().Select(m => m.ToString()));
         foreach (var method in typeof(Viewer).GetMethods(System.Reflection.BindingFlags.Public |
                      System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
@@ -109,14 +109,14 @@ public class PublicApiTests
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });
         Assert.Equal(new Point(5, 6), completed[0].Snapshot.End);
-        await Task.Run(() => completed[0].Handle.Dispose());
+        await Task.Run(() => completed[0].RemovalHandle.Dispose());
         Assert.Single(removed);
         Assert.Equal(completed[0].Snapshot.Id, removed[0].Snapshot.Id);
         Assert.Equal(new Point(7, 8), removed[0].Snapshot.End);
-        completed[0].Handle.Dispose();
+        completed[0].RemovalHandle.Dispose();
         Assert.Single(removed);
         await viewer.DisposeAsync();
-        completed[0].Handle.Dispose();
+        completed[0].RemovalHandle.Dispose();
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class PublicApiTests
         await using var viewer = Create();
         int removals = 0;
         viewer.MeasurementRemoved += (_, _) => removals++;
-        EventHandler<MeasurementEventArgs> remove = (_, e) => e.Handle.Dispose();
+        EventHandler<MeasurementEventArgs> remove = (_, e) => e.RemovalHandle.Dispose();
         viewer.MeasurementCompleted += remove;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);

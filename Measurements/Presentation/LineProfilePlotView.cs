@@ -12,7 +12,7 @@ internal sealed class LineProfilePlotView
     public Window Window { get; } = new() { Title = "Pixel Values", Width = 600, Height = 400, Topmost = true };
     public LineProfilePlotView() => Window.Content = _plot;
     public void Clear() => _plot.Clear();
-    public void ShowProfile(LineProfile profile) => _plot.SetProfile(profile);
+    public void ShowProfile(IReadOnlyList<PixelSample> samples) => _plot.SetProfile(samples);
 
     internal sealed class LineProfilePlotControl : FrameworkElement
     {
@@ -118,20 +118,22 @@ internal sealed class LineProfilePlotView
             InvalidateVisual();
         }
 
-        public void SetProfile(LineProfile profile)
+        public void SetProfile(IReadOnlyList<PixelSample> samples)
         {
-            bool changed = _count != profile.Count || _gray != profile.IsGray;
-            _count = profile.Count;
-            _gray = profile.IsGray;
+            bool gray = samples.Count > 0 && samples[0].IsGrayscale;
+            bool changed = _count != samples.Count || _gray != gray;
+            _count = samples.Count;
+            _gray = gray;
             for (int channel = 0; channel < 3; channel++)
             {
                 if (_values[channel].Length < _count)
                     _values[channel] = new double[Math.Max(_count, Math.Max(16, _values[channel].Length * 2))];
-                var source = channel == 0 ? profile.Red : channel == 1 ? profile.Green : profile.Blue;
                 var destination = _values[channel];
                 for (int i = 0; i < _count; i++)
                 {
-                    double value = double.IsFinite(source[i]) ? source[i] : double.NaN;
+                    var sample = samples[i];
+                    double raw = channel == 0 ? (_gray ? sample.Gray : sample.R) : channel == 1 ? sample.G : sample.B;
+                    double value = double.IsFinite(raw) ? raw : double.NaN;
                     changed |= !destination[i].Equals(value);
                     destination[i] = value;
                 }

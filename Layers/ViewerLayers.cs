@@ -95,10 +95,8 @@ public sealed class ViewerLayers
     internal void Invoke(Action action) => Invoke(() => { action(); return true; });
     internal void InvokeRemoval(Action action)
     {
-        if (_closed || _lifetime.IsStopping) return;
-        try { _dispatcher.Invoke(() => { if (!_closed) action(); }); }
-        catch (TaskCanceledException) when (_closed) { }
-        catch (InvalidOperationException) when (_closed) { }
+        if (_closed) return;
+        _lifetime.InvokeRemoval(_dispatcher, () => { if (!_closed) action(); });
     }
     internal void Close()
     {

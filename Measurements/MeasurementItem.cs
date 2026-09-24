@@ -8,7 +8,7 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>The single owner for preview, model, presentation, query and external resources.</summary>
 internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
 {
-    private readonly MeasurementContext _context;
+    private readonly MeasurementStore _store;
     internal MeasurementPresentation Presentation { get; }
     internal MeasurementCreationSession Session { get; }
     private readonly MeasurementOptions _options;
@@ -18,7 +18,6 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     private QueryRequest? _cached;
     private (long Version, FrameDescriptor Descriptor)? _cacheKey;
     private PixelCoordinate[] _coordinates = [];
-    private LineProfile? _profile;
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }
     public long GeometryVersion { get; private set; }
@@ -29,18 +28,18 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     public event Action<MeasurementGeometry>? GeometryChanged;
     public event Action<MeasurementResult?>? ResultChanged;
 
-    internal MeasurementItem(MeasurementContext context, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
+    internal MeasurementItem(MeasurementStore store, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
     {
-        _context = context;
+        _store = store;
         Geometry = geometry;
         Session = session;
         _options = options with { Style = null };
-        var style = (options.Style ?? context.Style).Snapshot();
-        Presentation = new(context.Layer, geometry, style, Dispose);
+        var style = (options.Style ?? store.Style).Snapshot();
+        Presentation = new(store.Layer, geometry, style, Dispose);
     }
     private void EnsureAlive()
     {
-        _context.VerifyAccess();
+        _store.VerifyAccess();
         ObjectDisposedException.ThrowIf(IsDisposed, this);
     }
 
@@ -71,8 +70,8 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         Presentation.Apply(geometry);
         ClearResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
-        _context.NotifyChanged(this);
-        if (!IsDisposed && GeometryVersion == version) _context.Notify(GeometryChanged, geometry);
+        _store.NotifyChanged(this);
+        if (!IsDisposed && GeometryVersion == version) _store.Notify(GeometryChanged, geometry);
     }
     public void Complete()
     {
@@ -83,8 +82,8 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         try
         {
             Presentation.Complete(_options.ShowLineProfile);
-            if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _context.Register(this);
-            if (!IsDisposed) _context.NotifyCompleted(this);
+            if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _store.Register(this);
+            if (!IsDisposed) _store.NotifyCompleted(this);
         }
         catch { Dispose(); throw; }
     }
@@ -97,8 +96,8 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         Presentation.ClearResult(Geometry);
         if (hadResult && !IsDisposed)
         {
-            if (notifyChanged) _context.NotifyChanged(this);
-            if (!IsDisposed && Result == null) _context.Notify(ResultChanged, (MeasurementResult?)null);
+            if (notifyChanged) _store.NotifyChanged(this);
+            if (!IsDisposed && Result == null) _store.Notify(ResultChanged, (MeasurementResult?)null);
         }
     }
     public QueryRequest? Capture(FrameDescriptor descriptor)
@@ -122,8 +121,7 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
                 _coordinates = [new((int)x, (int)y)];
                 return _cached = new PixelQueryRequest(identity, _coordinates, PublishSamples);
             case MeasurementQuery.LineProfile:
-                _profile = new LineProfile();
-                _coordinates = _profile.Prepare(descriptor, Geometry.Start.X, Geometry.Start.Y, Geometry.End.X, Geometry.End.Y);
+                _coordinates = LineSampling.GetCoordinates(descriptor, Geometry.Start.X, Geometry.Start.Y, Geometry.End.X, Geometry.End.Y);
                 return _cached = _coordinates.Length == 0 ? null : new LineProfileQueryRequest(identity, _coordinates, PublishSamples);
             default: return null;
         }
@@ -131,7 +129,6 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     private void PublishSamples(FrameInfo frame, ReadOnlySpan<PixelSample> samples)
     {
         if (IsDisposed) return;
-        if (_options.Query == MeasurementQuery.LineProfile) _profile?.Apply(samples);
         PublishResult(new(Id, GeometryVersion, frame, _options.Query, _coordinates, samples.ToArray(), null, []));
     }
 
@@ -139,14 +136,14 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     {
         if (IsDisposed) return;
         Result = result;
-        Presentation.ShowResult(Geometry, result, _profile);
-        _context.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(Result, result)) _context.Notify(ResultChanged, result);
+        Presentation.ShowResult(Geometry, result);
+        _store.NotifyChanged(this);
+        if (!IsDisposed && ReferenceEquals(Result, result)) _store.Notify(ResultChanged, result);
     }
 
     public void Dispose()
     {
-        _context.VerifyAccess();
+        _store.VerifyAccess();
         if (IsDisposed) return;
         IsDisposed = true;
         Session.Release(this);
@@ -156,11 +153,12 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         _subscription = null;
         foreach (var callback in _callbacks) Release(callback);
         foreach (var resource in _resources) Release(resource.Dispose);
-        Release(() => _context.Detach(this));
+        Release(() => _store.Detach(this));
+        Release(Presentation.Dispose);
+        Release(() => _store.NotifyRemoved(this));
         _callbacks.Clear();
         _resources.Clear();
         _cached = null;
-        _profile = null;
         Result = null;
         _coordinates = [];
         GeometryChanged = null;

@@ -25,7 +25,7 @@ public class MeasurementSessionTests
     {
         await using var first = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         await using var second = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
-        var tool = new LineTool();
+        var tool = new LengthTool();
         first.UnregisterMeasurementTool(tool.Id);
         second.UnregisterMeasurementTool(tool.Id);
         first.RegisterMeasurementTool(tool);
@@ -120,7 +120,7 @@ public class MeasurementSessionTests
             int acquisitions = 0, released = 0;
             using var queries = new PixelQueryScheduler(() => { acquisitions++; return null; },
                 NullLogger.Instance, new DispatcherQueryRuntime(layer.Overlay.Dispatcher));
-            var owner = new MeasurementContext(layer, () => null, queries, NullLogger.Instance);
+            var owner = new MeasurementStore(layer, () => null, queries, NullLogger.Instance);
             var creation = new MeasurementCreationSession(owner);
             var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQuery.Pixel });
             completed.Complete();

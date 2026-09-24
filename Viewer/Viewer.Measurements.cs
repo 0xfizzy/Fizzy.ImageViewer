@@ -70,7 +70,7 @@ public partial class Viewer
 
     private sealed class MeasurementRemoval(Viewer viewer, MeasurementItem item) : IDisposable
     {
-        public void Dispose() => viewer.Layers.InvokeRemoval(item.Dispose);
+        public void Dispose() => viewer._host.Lifetime.InvokeRemoval(viewer._host.Window.Dispatcher, item.Dispose);
     }
 
     public PixelQueryOptions QueryOptions

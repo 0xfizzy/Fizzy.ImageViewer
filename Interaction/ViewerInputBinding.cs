@@ -12,7 +12,7 @@ internal interface IMouseCapture
     void Release();
 }
 
-internal sealed class OverlayMouseCapture(OverlayLayer overlay) : IMouseCapture
+internal sealed class OverlayMouseCapture(MeasurementOverlay overlay) : IMouseCapture
 {
     public bool IsCaptured => overlay.Canvas.IsMouseCaptured;
     public bool Capture() => overlay.Canvas.CaptureMouse();
@@ -20,7 +20,7 @@ internal sealed class OverlayMouseCapture(OverlayLayer overlay) : IMouseCapture
 }
 
 /// <summary>Adapts WPF input and pointer effects without owning interaction state.</summary>
-internal sealed class ViewerInputBinding(ImageLayer input, OverlayLayer overlay, IMouseCapture? capture = null) : IDisposable
+internal sealed class ViewerInputBinding(ImageLayer input, MeasurementOverlay overlay, IMouseCapture? capture = null) : IDisposable
 {
     private readonly IMouseCapture _capture = capture ?? new OverlayMouseCapture(overlay);
     private InteractionCoordinator? _coordinator;

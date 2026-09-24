@@ -16,8 +16,58 @@ using Xunit;
 namespace Fizzy.ImageViewer.Tests;
 
 [Collection("Viewer")]
-public class LineStrengthTests
+public class LineProfileTests
 {
+    [Fact]
+    public async Task DataOnlyProfilePublishesRetainedResultsWithoutOpeningAPlot()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var before = Windows();
+            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements)
+                .CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 0)),
+                    new() { Query = MeasurementQuery.LineProfile });
+            item.Complete();
+            var descriptor = new FrameDescriptor(2, 1, 2, FramePixelFormat.Gray8);
+            var request = Assert.IsType<LineProfileQueryRequest>(item.Capture(descriptor));
+            PixelSample[] samples = [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255),
+                new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)];
+            request.Publish(new(1, descriptor, null), samples);
+            var retained = item.Result!;
+            samples[0] = samples[0] with { Gray = 30 };
+            request.Publish(new(2, descriptor, null), samples);
+            Assert.Equal(10, retained.Samples[0].Gray);
+            Assert.Equal(30, item.Result!.Samples[0].Gray);
+            Assert.Empty(Windows().Except(before));
+            item.Dispose();
+            Assert.Equal(20, retained.Samples[1].Gray);
+        });
+    }
+
+    [Fact]
+    public async Task RegistryCallbackFailureStillReleasesPresentationBeforeRemovalNotification()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var store = viewer.Host.Measurements;
+            var item = (MeasurementItem)new MeasurementCreationSession(store)
+                .CreateMeasurement(MeasurementGeometry.Point(new()));
+            item.Complete();
+            var failure = new InvalidOperationException("registry observer failed");
+            store.ItemRemoving += _ => throw failure;
+            bool detachedAtNotification = false;
+            store.ItemRemoved += removed => detachedAtNotification =
+                !store.Contains(removed) && !store.Layer.Canvas.Children.Contains(removed.Presentation.PrimaryVisual)
+                    && !store.Layer.Canvas.Children.Contains(removed.Presentation.Label);
+            var error = Assert.Throws<AggregateException>(item.Dispose);
+            Assert.Contains(failure, error.InnerExceptions);
+            Assert.True(detachedAtNotification);
+            item.Dispose();
+        });
+    }
+
     [Fact]
     public void PixelReductionPreservesEndpointsExtremaAndOrder()
     {
@@ -39,9 +89,9 @@ public class LineStrengthTests
         {
             var plot = new LineProfilePlotView.LineProfilePlotControl();
             var profile = Profile(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255));
-            for (int i = 0; i < 100; i++) { profile.Red[0] = i; plot.SetProfile(profile); }
+            for (int i = 0; i < 100; i++) { profile[0] = profile[0] with { Gray = i }; plot.SetProfile(profile); }
             long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 1000; i++) { profile.Red[0] = i; plot.SetProfile(profile); }
+            for (int i = 0; i < 1000; i++) { profile[0] = profile[0] with { Gray = i }; plot.SetProfile(profile); }
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
             Assert.Equal(0, allocated);
         });
@@ -76,7 +126,7 @@ public class LineStrengthTests
             Assert.Equal(2, System.Windows.Media.PathGeometry.CreateFromGeometry(first).Figures.Count);
             plot.SetProfile(profile);
             Assert.Same(first, Curve());
-            profile.Red[0] = 2;
+            profile[0] = profile[0] with { Gray = 2 };
             plot.SetProfile(profile);
             var changed = Curve();
             Assert.NotSame(first, changed);
@@ -113,7 +163,7 @@ public class LineStrengthTests
     private static Window[] Windows() => PresentationSource.CurrentSources.OfType<HwndSource>()
         .Select(source => source.RootVisual).OfType<Window>().ToArray();
 
-    private static (Line Line, Window Window) Draw(Viewer viewer, LineStrengthTool method, OverlayLayer overlay)
+    private static (Line Line, Window Window) Draw(Viewer viewer, LineProfileTool method, MeasurementOverlay overlay)
     {
         var before = Windows();
         var session = new MeasurementCreationSession(viewer.Host.Measurements);
@@ -125,13 +175,7 @@ public class LineStrengthTests
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
 
-    private static LineProfile Profile(params PixelSample[] samples)
-    {
-        var profile = new LineProfile();
-        profile.Prepare(new(8, 1, 24, FramePixelFormat.Bgr24), 0, 0, Math.Max(0, samples.Length - 1), 0);
-        profile.Apply(samples);
-        return profile;
-    }
+    private static PixelSample[] Profile(params PixelSample[] samples) => samples;
 
     [Fact]
     public async Task PlotReusesCapacityWhenProfilesShrinkAndSwitchChannels()
@@ -147,7 +191,7 @@ public class LineStrengthTests
                 view.Clear();
                 Assert.Equal(0, plot.SampleCount);
                 Assert.Equal(0, plot.ChannelCount);
-                // Empty profiles may retain allocated source arrays.
+                // Empty results clear previously displayed samples.
                 view.ShowProfile(Profile());
                 Assert.Equal(0, plot.SampleCount);
                 view.ShowProfile(Profile(rgb, rgb));
@@ -183,7 +227,7 @@ public class LineStrengthTests
     }
 
     [Fact]
-    public async Task PlotCopiesOnlyActiveSamplesFromRetainedProfileCapacity()
+    public async Task PlotCopiesOnlyTheRequestedSampleSlice()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -193,16 +237,13 @@ public class LineStrengthTests
             {
                 var profile = Profile(Enumerable.Repeat(
                     new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), 8).ToArray());
-                profile.Prepare(new(8, 1, 8, FramePixelFormat.Gray8), 0, 0, 1, 0);
-                profile.Apply([new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255),
-                    new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
-                Assert.Equal(8, profile.Red.Length);
-                view.ShowProfile(profile);
+                profile[0] = new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255);
+                profile[1] = new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255);
+                view.ShowProfile(new ArraySegment<PixelSample>(profile, 0, 2));
                 var plot = (LineProfilePlotView.LineProfilePlotControl)view.Window.Content;
                 Assert.Equal(2, plot.SampleCount);
                 Assert.Equal(new double[] { 10, 20 }, plot.GetSamples(0).ToArray());
-                profile.Apply([]);
-                view.ShowProfile(profile);
+                view.ShowProfile(Array.Empty<PixelSample>());
                 Assert.Equal(0, plot.ChannelCount);
             }
             finally { view.Window.Close(); }
@@ -225,9 +266,9 @@ public class LineStrengthTests
                 var plot = (LineProfilePlotView.LineProfilePlotControl)view.Window.Content;
                 for (int channel = 0; channel < 3; channel++)
                     Assert.True(double.IsNaN(plot.GetSamples(channel).Span[1]));
-                Assert.Equal(double.PositiveInfinity, profile.Red[1]);
-                Assert.Equal(double.NegativeInfinity, profile.Green[1]);
-                Assert.True(double.IsNaN(profile.Blue[1]));
+                Assert.Equal(double.PositiveInfinity, profile[1].R);
+                Assert.Equal(double.NegativeInfinity, profile[1].G);
+                Assert.True(double.IsNaN(profile[1].B));
             }
             finally { view.Window.Close(); }
         });
@@ -240,7 +281,7 @@ public class LineStrengthTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Host.Window.MeasurementOverlay;
-            var pair = Draw(viewer, new LineStrengthTool(), overlay);
+            var pair = Draw(viewer, new LineProfileTool(), overlay);
             var item = viewer.Host.Measurements.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(((IFrameQueryClient)item).Capture(descriptor));
@@ -259,7 +300,7 @@ public class LineStrengthTests
             Assert.Equal(3, plot.SampleCount);
             Assert.Equal(42, plot.GetSamples(0).Span[2]);
             Assert.True(pair.Window.IsVisible);
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.False(pair.Window.IsVisible);
         });
     }
@@ -272,8 +313,8 @@ public class LineStrengthTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool();
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
+            var method = new LineProfileTool();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             int removed = 0, closed = 0;
@@ -288,7 +329,7 @@ public class LineStrengthTests
             Assert.True(second.Window.IsVisible);
             Assert.Equal(2, overlay.Canvas.Children.Count);
             Assert.Same(second.Line, Assert.Single(overlay.Canvas.Children.OfType<Line>()));
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.False(second.Window.IsVisible);
         });
@@ -300,8 +341,8 @@ public class LineStrengthTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool();
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
+            var method = new LineProfileTool();
             var first = Draw(viewer, method, overlay);
             var second = Draw(viewer, method, overlay);
             viewer.Host.Measurements.Shutdown();
@@ -319,8 +360,8 @@ public class LineStrengthTests
         int closed = 0, removed = 0;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
-            var method = new LineStrengthTool();
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
+            var method = new LineProfileTool();
             var first = Draw(viewer, method, overlay); var second = Draw(viewer, method, overlay);
             first.Window.Closed += (_, _) => closed++;
             second.Window.Closed += (_, _) => closed++;

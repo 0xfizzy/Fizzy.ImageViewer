@@ -24,7 +24,7 @@ public class PixelInfoOverlayTests
     }
 
     [Fact]
-    public async Task HudQueriesAndUnsubscribesWithoutAMeasurementContextOrViewer()
+    public async Task HudQueriesAndUnsubscribesWithoutAMeasurementStoreOrViewer()
     {
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>

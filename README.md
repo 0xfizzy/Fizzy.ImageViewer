@@ -83,7 +83,7 @@ See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 - Zoom, pan, fit-to-window, and borderless modes
 - Lines, text, crosshairs, rectangles, circles, and HUD text
 - [Batch drawing and configurable layers](docs/drawing-layers.md): one visual per collection
-- Built-in point, line, rectangle, and line-strength measurements
+- Built-in point, line, rectangle, and line-profile measurements
 - Shape selection and interactive editing
 - Model-driven custom measurements with shared editing, queries and notifications
 - Extensible context menus

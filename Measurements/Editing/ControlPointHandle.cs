@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace Fizzy.ImageViewer.Editing;
+namespace Fizzy.ImageViewer.Measurements.Editing;
 
 /// <summary>
 /// Factory for creating control point visual handles.

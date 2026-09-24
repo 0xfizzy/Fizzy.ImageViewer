@@ -85,8 +85,7 @@ static async Task<(FrameSubmitResult, double)> Observe(ValueTask<FrameSubmitResu
 
 sealed class ProfileMeasurement(int width, int height) : IFrameQueryClient
 {
-    private readonly LineProfile _profile = new();
-    public QueryRequest? Capture(FrameDescriptor d) => new LineProfileQueryRequest(new(Guid.Empty, 0), _profile.Prepare(d,0,0,width-1,height-1), (_, samples) => _profile.Apply(samples));
+    public QueryRequest? Capture(FrameDescriptor d) => new LineProfileQueryRequest(new(Guid.Empty, 0), LineSampling.GetCoordinates(d,0,0,width-1,height-1), (_, samples) => { });
     public void ClearResult() { }
     public void Dispose() { }
 }

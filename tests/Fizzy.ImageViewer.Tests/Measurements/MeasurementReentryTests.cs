@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Controls;
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Rendering;
@@ -39,11 +39,11 @@ public class MeasurementReentryTests
     private sealed class Harness : IDisposable
     {
         internal readonly ImageLayer Input = new();
-        internal readonly OverlayLayer Overlay;
+        internal readonly MeasurementOverlay Overlay;
         internal readonly ViewerLayers Layers;
         internal readonly PixelQueryScheduler Queries;
         internal readonly MeasurementToolRegistry Tools;
-        internal readonly MeasurementContext Context;
+        internal readonly MeasurementStore Context;
         internal readonly InteractionCoordinator Coordinator;
         internal Harness()
         {

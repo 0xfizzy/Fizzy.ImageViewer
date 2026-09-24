@@ -9,7 +9,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation;
 /// <summary>Owns measurement visuals, labels and the optional plot; model changes flow into presentation.</summary>
 internal sealed class MeasurementPresentation : IDisposable
 {
-    private readonly OverlayLayer _layer;
+    private readonly MeasurementOverlay _layer;
     private readonly Action _closed;
     private LineProfilePlotView? _plot;
     private bool _disposed;
@@ -17,7 +17,7 @@ internal sealed class MeasurementPresentation : IDisposable
     public UIElement PrimaryVisual { get; }
     public TextBlock Label { get; }
 
-    internal MeasurementPresentation(OverlayLayer layer, MeasurementGeometry geometry, MeasurementStyle style, Action closed)
+    internal MeasurementPresentation(MeasurementOverlay layer, MeasurementGeometry geometry, MeasurementStyle style, Action closed)
     {
         _layer = layer;
         _closed = closed;
@@ -68,7 +68,7 @@ internal sealed class MeasurementPresentation : IDisposable
         _plot?.Clear();
     }
 
-    internal void ShowResult(MeasurementGeometry geometry, MeasurementResult result, LineProfile? profile)
+    internal void ShowResult(MeasurementGeometry geometry, MeasurementResult result)
     {
         UpdateText(geometry);
         if (result.Query == MeasurementQuery.Pixel && result.Samples.Count > 0)
@@ -79,8 +79,8 @@ internal sealed class MeasurementPresentation : IDisposable
             Label.Text = $"{region.Width} × {region.Height} px | " + string.Join(" | ", result.Channels.Select((s, i) =>
                 $"{names[i]}: n={s.Count} min={s.Minimum:G7} max={s.Maximum:G7} mean={s.Mean:G7}"));
         }
-        else if (result.Query == MeasurementQuery.LineProfile && profile != null)
-            _plot?.ShowProfile(profile);
+        else if (result.Query == MeasurementQuery.LineProfile)
+            _plot?.ShowProfile(result.Samples);
     }
 
     public void Dispose()

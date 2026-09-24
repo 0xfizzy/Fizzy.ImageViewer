@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer
     {
         // 公开图层供 Manager 使用
         public ImageLayer ImageLayer { get; }
-        internal OverlayLayer MeasurementOverlay => Layers.Measurements.Overlay;
+        internal MeasurementOverlay MeasurementOverlay => Layers.Measurements.Overlay;
         public HudLayer HudLayer { get; }
         public Layers.ViewerLayers Layers { get; }
 

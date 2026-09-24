@@ -15,11 +15,8 @@ internal static class Program
         foreach (int count in new[] { 1024, 4096 })
         foreach (bool gray in new[] { true, false })
         {
-            var profile = new LineProfile();
-            profile.Prepare(new(count, 1, count * 3, FramePixelFormat.Bgr24), 0, 0, count - 1, 0);
             var samples = new PixelSample[count];
             for (int i = 0; i < count; i++) samples[i] = new(gray ? FramePixelFormat.Gray8 : FramePixelFormat.Bgr24, i % 256, i % 256, i % 123, i % 67, 255);
-            profile.Apply(samples);
             var plot = new LineProfilePlotView.LineProfilePlotControl();
             plot.Measure(new Size(600, 400));
             plot.Arrange(new Rect(0, 0, 600, 400));
@@ -28,8 +25,8 @@ internal static class Program
             var visual = new DrawingVisual();
             void Update(bool draw, bool change)
             {
-                if (change) profile.Red[0] = profile.Red[0] == 0 ? 1 : 0;
-                plot.SetProfile(profile);
+                if (change) samples[0] = samples[0] with { Gray = samples[0].Gray == 0 ? 1 : 0, R = samples[0].R == 0 ? 1 : 0 };
+                plot.SetProfile(samples);
                 if (draw) { using var dc = visual.RenderOpen(); render(dc); }
             }
             if (args.Length == 2 && args[0] == "--preview")

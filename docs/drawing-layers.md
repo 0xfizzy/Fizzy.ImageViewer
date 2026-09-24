@@ -1,6 +1,6 @@
 # Drawing and business layers
 
-`Viewer.Layers` (also on `IViewerAPI`) owns image-coordinate business layers.
+`Viewer.Layers` (also on `IViewer`) owns image-coordinate business layers.
 `Markers` starts at ZIndex 0 with hit testing disabled; `Measurements` starts at
 1000 with hit testing enabled. Custom layers start at 100 with hit testing disabled.
 Higher ZIndex draws on top; equal values use creation order. Image and HUD remain
@@ -12,7 +12,7 @@ batch drawing API. `ViewerLayers` and the shared `ViewerLayer` base belong to `F
 Both layer types share `ViewerLayer` settings (`Name`, visibility, hit testing,
 ZIndex and `Clear`); `Layers.Items` returns a snapshot of those shared handles.
 
-Each completed `LineStrength` measurement links its line, length label, and pixel
+Each completed `LineProfile` measurement links its line, length label, and pixel
 curve window. Closing the window removes its line and label; deleting the line
 closes its window. Clearing measurements or disposing the viewer cleans up all
 associated windows. Other measurements remain independent.
@@ -29,7 +29,7 @@ using var batch = markers.AddBatch(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, ROI, LineStrength IDs.
+viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, ROI, LineProfile IDs.
 // Measurement results and their editing controls belong to Measurements.
 // Marker visuals do not intercept input by default.
 
@@ -184,12 +184,12 @@ For editable measurement shapes, continue using measurement tools and
 `IMeasurement`, update its geometry during creation and call `Complete()` to retain it.
 The measurement owns its framework-generated visual, label, query and registered
 resources until deletion, clear or viewer closure. Measurement shapes remain individual
-WPF UI elements. `OverlayLayer` is internal; use layers, drawing handles or measurement
+WPF UI elements. `MeasurementOverlay` is internal; use layers, drawing handles or measurement
 models for public access. WPF shape factories and their positioning metadata are internal;
 standalone WPF elements cannot be attached through the public drawing API.
 See [measurement contracts](measurements.md).
 
-`ClearShapes()` and the Clear All Shapes menu cancel measurement and clear every
+`viewer.Layers.Clear()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing
 uses a snapshot of layers taken before cancellation: layers created by callbacks
 survive this clear, and layers removed by callbacks are skipped (removal already
@@ -197,6 +197,10 @@ clears them). Existing layers that remain attached are cleared in snapshot order
 Clearing
 `Measurements` also cancels active measurement and editing sessions.
 Snapshot export still exports image data, not overlay layers.
+
+`DrawText`, `TextElement` and `DrawHudText` all accept fractional `double` font sizes.
+The single-element `Draw*` helpers return removal-only `IDisposable` handles. Use
+`DrawingLayer.AddBatch` when content must be replaced without recreating its visual.
 
 ## HUD text
 

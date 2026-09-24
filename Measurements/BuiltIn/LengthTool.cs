@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
-internal class LineTool : IMeasurementTool
+internal class LengthTool : IMeasurementTool
 {
     public virtual string Id => MeasurementToolIds.Length;
     public virtual string DisplayName => "Length";

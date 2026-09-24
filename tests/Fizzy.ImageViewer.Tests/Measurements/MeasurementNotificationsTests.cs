@@ -41,7 +41,7 @@ public class MeasurementNotificationsTests
     public async Task BuiltInAndCustomResultsAreObservableThroughThePublicFacade(bool custom)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
-        IViewerAPI api = viewer;
+        IViewer api = viewer;
         var events = new List<MeasurementEventArgs>();
         var ready = new TaskCompletionSource<MeasurementEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         MeasurementEventArgs? completed = null;
@@ -93,7 +93,7 @@ public class MeasurementNotificationsTests
         // Both geometry and samples remain snapshots after editing and cross-thread removal.
         Assert.Equal(completed.Snapshot.GeometryVersion, published.Snapshot.GeometryVersion);
         Assert.Equal(2.5, published.Result.Channels[0].Mean);
-        await Task.Run(published.Handle.Dispose);
+        await Task.Run(published.RemovalHandle.Dispose);
         Assert.NotNull(removed);
         Assert.Equal(completed.Snapshot.GeometryVersion + 1, removed.Snapshot.GeometryVersion);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -109,7 +109,7 @@ public class MeasurementNotificationsTests
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         int changed = 0, removed = 0;
-        viewer.MeasurementChanged += (_, e) => { changed++; e.Handle.Dispose(); };
+        viewer.MeasurementChanged += (_, e) => { changed++; e.RemovalHandle.Dispose(); };
         viewer.MeasurementRemoved += (_, _) => removed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {

@@ -79,7 +79,7 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 batching, independent rates, expiration, failed queries, stale geometry,
 re-registration and cancellation ownership. `MeasurementInteractionTests` cover
 corner crossing, model/query/export consistency, label updates, invalid editing,
-mode interruption, preview cancellation and reentrant removal. `LineStrengthTests`
+mode interruption, preview cancellation and reentrant removal. `LineProfileTests`
 and `QuerySchedulingTests` cover plot-window ownership and slow in-flight queries
 on real STA dispatchers. See [measurement contracts](measurements.md).
 Mouse capture state transitions use an injected capture boundary. Actual pointer
@@ -164,3 +164,8 @@ and after coordinator disposal. Existing reentry tests cover interrupted clicks,
 cancellation, completion and editing using explicit session contexts.
 Test source files are grouped by capability (Measurements, Layers, Drawing, Frames, Imaging,
 PixelInfo, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.
+
+`LineSamplingTests` verify clipping and endpoint order without presentation state.
+`LineProfileTests` cover data-only results without plot windows and visual cleanup after
+registry callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
+handles after shutdown and preservation of callback failures when shutdown starts reentrantly.

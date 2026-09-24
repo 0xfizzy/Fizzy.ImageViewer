@@ -86,7 +86,7 @@ public class MeasurementToolProtocolTests
     [InlineData(MeasurementToolIds.Point)]
     [InlineData(MeasurementToolIds.Length)]
     [InlineData(MeasurementToolIds.ROI)]
-    [InlineData(MeasurementToolIds.LineStrength)]
+    [InlineData(MeasurementToolIds.LineProfile)]
     public async Task BuiltInsCancelPreviewsAndCompleteThroughUnifiedExecution(string id)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
@@ -107,7 +107,7 @@ public class MeasurementToolProtocolTests
                 viewer.StartMeasurement(id); viewer.Host.Interaction.ImageDown(1, 1); viewer.Host.Interaction.ImageDown(4, 4);
             }
             Assert.Equal(1, completed);
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.Equal(1, removed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });

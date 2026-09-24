@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Rendering;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows;
 using Xunit;
@@ -94,7 +94,7 @@ public class MeasurementOwnershipTests
             Assert.Throws<InvalidOperationException>(() => viewer.CancelMeasurement());
             Assert.Equal(1, tool.Disposals);
             Assert.Equal(2, viewer.Host.Window.MeasurementOverlay.Canvas.Children.Count);
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.Equal(2, tool.Disposals);
         });
     }
@@ -151,7 +151,7 @@ public class MeasurementOwnershipTests
             completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()))));
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
-            Assert.Throws<InvalidOperationException>(() => viewer.ClearShapes());
+            Assert.Throws<InvalidOperationException>(() => viewer.Layers.Clear());
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });

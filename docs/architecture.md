@@ -17,7 +17,7 @@ public facade, drawing handles and measurement handles.
 | Drawing | Batch drawing descriptions, marker layers and HUD handles |
 | Measurements | Tool protocols, creation sessions, geometry, styles and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
-| Editing | Measurement edit sessions and control-point interaction |
+| Measurements/Editing | Measurement edit sessions and control-point interaction |
 | Controls | WPF image/HUD surfaces and coordinate transforms |
 | PixelInfo | Pixel HUD sampling and display state |
 | Snapshots | Captured frame/region ownership and encoding |
@@ -42,11 +42,11 @@ Viewer exposes the complete public facade and raises public notifications. Host 
 frame notifications in submission-callback, public-event order;
 subscriber failures are isolated at each boundary.
 ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
-query scheduler, measurement context, tool registry, interaction coordinator and HUD.
+query scheduler, measurement store, tool registry, interaction coordinator and HUD.
 The facade assigns the host before starting its STA. Startup failure uses the same
 idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
 Disposal waits for outstanding frame and query work and the actual STA exit.
-ViewerLifetime provides the shared stopping gate. HudTextCollection owns HUD text
+ViewerLifetime provides the shared stopping gate and shutdown-safe STA removal dispatch for measurement, drawing and HUD handles. HudTextCollection owns HUD text
 visuals and invalidates their handles on shutdown.
 
 ViewerInputBinding translates WPF events and coordinates, and applies cursor, focus
@@ -55,21 +55,23 @@ the active tool, session version, mode and selected measurement, and decides edi
 transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
 `IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
 that activation's mutable state. The coordinator owns this callback session and its explicit
-`MeasurementCreationSession` context; MeasurementContext stores no ambient current session.
+`MeasurementCreationSession` context; MeasurementStore stores no ambient current session.
 Every preview must be created through its owning context.
 Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
 through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
-`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and binds
-its MeasurementContext as the content owner. Clear enters the layer's clearing gate, notifies
-the coordinator to cancel input and selection, then clears model-owned content in a finally
-block. Model, query and resource cleanup does not depend on a coordinator being present.
+`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and exposes
+a content-clearing notification. MeasurementStore subscribes to clear its owned items and
+unsubscribes on shutdown; the layer has no reference to the concrete store. Clear enters the
+layer's clearing gate, cancels input and selection, then always notifies content cleanup and
+removes remaining visuals in finally blocks. Model, query and resource cleanup does not depend on a coordinator being present.
 The same layer gate rejects creation and interaction starts throughout cancellation and cleanup.
 MeasurementLayer exposes no batch creation or batch-click events.
 
-MeasurementItem owns model state, queries and disposal; MeasurementPresentation owns its WPF
+MeasurementItem owns model state, queries and disposal, and directly disposes its presentation
+after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
-Measurement context owns a primary set of model-driven items and a separate visual lookup index,
+MeasurementStore owns a primary set of model-driven items and a separate visual lookup index,
 and borrows query scheduling. The host creates and closes it independently of the
 tool registry. Hit testing resolves a visual to its registered measurement before selection.
 The edit manager receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
@@ -78,6 +80,9 @@ query runtime are internal imaging capabilities, not public measurement extensio
 A validated query publishes frame identity and its payload in one synchronous call;
 clients never stage samples awaiting a second publication notification.
 The query runtime controls time, worker execution and UI publication for deterministic tests.
+LineSampling computes clipped sample coordinates independently of display. The optional plot
+consumes immutable MeasurementResult samples and owns its channel buffers; data-only line
+queries allocate no plot or intermediate RGB buffers.
 
 EditManager directly owns a MeasurementEditSession and its control-point visuals.
 The session captures drag-start geometry and writes through MeasurementItem; geometry

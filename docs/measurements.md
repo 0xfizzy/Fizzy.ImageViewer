@@ -2,7 +2,7 @@
 
 Built-in and custom tools create the same model-owned measurements through
 `IMeasurementToolContext.CreateMeasurement`. Built-in IDs are `Point`, `Length`,
-`ROI` and `LineStrength`. Batch markers continue to use `DrawingElement` and
+`ROI` and `LineProfile`. Batch markers continue to use `DrawingElement` and
 `DrawingVisual`; the two rendering paths have independent purposes.
 
 ## Ownership and geometry
@@ -14,7 +14,7 @@ overrides the viewer default for a new measurement and is snapshotted on creatio
 
 Each measurement owns immutable `MeasurementGeometry`, a framework-generated primary
 visual and label, an optional pixel query subscription and its registered resources.
-The context registers measurement owners independently of visuals; a separate visual index
+MeasurementStore registers measurement owners independently of visuals; a separate visual index
 resolves hit testing. Each tool session owns its own unfinished measurements. A preview is
 already an owned measurement; `Complete` retains it and enables queries. Cancelling
 creation disposes unfinished measurements. `Tag` remains caller-owned presentation data.
@@ -47,15 +47,14 @@ leases, including sources that do not immediately honor cancellation.
 The internal coordinator owns the selected measurement, Idle/Editing/Measuring mode,
 active measurement tool and session version. The tool registry only stores registrations.
 The edit manager receives a MeasurementItem directly and owns its MeasurementEditSession
-and control-point visuals. Hit testing resolves visuals through the context before selection;
+and control-point visuals. Hit testing resolves visuals through the store before selection;
 unregistered visuals cannot become measurement interaction targets. The session retains
 drag-start geometry and writes changes through the measurement model; capability checks do not allocate a session.
 ViewerInputBinding translates WPF input and applies pointer effects
 without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
 It holds no coordinator or measurement-owner reference. The coordinator receives
-translated input and layer lifecycle notifications. MeasurementLayer binds its model content
-owner directly. Clearing first cancels input and selection, then always releases measurement
+translated input and layer lifecycle notifications. MeasurementStore subscribes to MeasurementLayer content cleanup without exposing the store to the layer. Clearing first cancels input and selection, then always releases measurement
 owners and their queries/resources, even if cancellation throws or no coordinator exists.
 The layer remains in its clearing state throughout both phases. Batch layers independently
 invalidate their batches.
@@ -99,8 +98,8 @@ shutdown cleans both completed and unfinished measurements and waits for owned q
 
 `PixelQueryScheduler` runs one batch at a time. It captures typed pixel, line and
 region requests on the viewer STA, performs all pixel-source operations off STA,
-and publishes results on STA. Viewer owns this shared imaging service. Measurement
-context and pixel HUD subscribe independently; disposing a measurement owner does not
+and publishes results on STA. Viewer owns this shared imaging service. MeasurementStore
+and pixel HUD subscribe independently; disposing a measurement owner does not
 stop other query clients. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
 not discard successful pixel results. Query options control rates and result-age limits;
@@ -138,7 +137,7 @@ completed measurement items intact. Menus are backed by the same registry and ar
 updated for subsequent openings when tools are registered or unregistered.
 
 Use `viewer.StartMeasurement(MeasurementToolIds.Length)` for built-in tools; the other
-constants are `Point`, `ROI` and `LineStrength`. Custom tools implement both `Id`
+constants are `Point`, `ROI` and `LineProfile`. Custom tools implement both `Id`
 and `DisplayName`, and are installed with `RegisterMeasurementTool`. IDs are
 case-sensitive; blank IDs or display names are rejected. `StartMeasurement` throws
 `KeyNotFoundException` for an unknown ID and `InvalidOperationException` when the
@@ -183,11 +182,11 @@ own identity, completion and removal lifetime; there is no arbitrary visual atta
 `Viewer.MeasurementCompleted` and `MeasurementRemoved` cover every tool. Completion fires
 once, excludes previews and does not imply query readiness. Removal fires only for a
 previously completed item. Snapshots include `Id`, complete `Geometry` and `GeometryVersion`.
-The event's removal handle can be disposed from any thread, repeatedly or after closure.
+The event's `RemovalHandle` can be disposed from any thread, repeatedly or after closure.
 
 ### Observing built-in and custom measurements
 
-Use `Viewer.MeasurementChanged` (also on `IViewerAPI`) to observe completed items without
+Use `Viewer.MeasurementChanged` (also on `IViewer`) to observe completed items without
 implementing a tool or accessing WPF visuals. Geometry edits, query publication and result
 invalidation all carry the measurement ID, immutable geometry/version and current immutable
 `Result`. `Result` is null after geometry changes, query failure or expiration. Previews do
@@ -204,8 +203,7 @@ viewer.MeasurementChanged += (_, e) =>
 viewer.StartMeasurement(MeasurementToolIds.ROI);
 ```
 
-Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's removal
-handle can be disposed from any thread. Removal is terminal for that item; a callback may
+Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's `RemovalHandle` can be disposed from any thread. Removal is terminal for that item; a callback may
 remove it reentrantly. Completion and removal events carry the same result snapshot field,
 but completion does not promise query readiness. Custom tools may additionally subscribe to
 `IMeasurement.GeometryChanged` and `ResultChanged` on their own items.
@@ -225,7 +223,7 @@ Incompatible combinations are rejected before any visual attaches. Pixel queries
 floor coordinates and reject points outside the frame. Line profiles clip to the frame;
 ROI queries and export share `PixelRegion.Clip`. Empty targets have no result.
 `ShowLineProfile` requires `LineProfile`; it opens an owned plot window on completion.
-Closing that window removes the measurement. Built-in LineStrength enables it; custom
+Closing that window removes the measurement. Built-in LineProfile enables it; custom
 line queries default to data only. Built-in ROI explicitly selects region statistics.
 
 `IMeasurement.Result` is null until successful publication. `ResultChanged` provides an
@@ -239,7 +237,8 @@ The scheduler and query protocol remain internal.
 
 ### Resources and threads
 
-Tool callbacks, measurement operations and notifications use the viewer STA. Use
+Tool callbacks, measurement operations (including `IMeasurement.Dispose`) and notifications
+require the viewer STA. For cross-thread removal use `MeasurementEventArgs.RemovalHandle`. Use
 `AddResource` and `OnDispose` to bind external resources and event subscriptions to the
 measurement. Unregistering a tool retains completed measurements. Selection and deletion
 target the measurement owner, which removes both its primary visual and label. Hiding cancels
@@ -312,7 +311,8 @@ Unchanged samples retain the geometry; data changes and resizing rebuild it.
 Within each physical pixel column, rendering retains each finite run's endpoints
 and minimum/maximum in sample order. Non-finite samples remain gaps. This bounds
 dense curve detail by display resolution without changing raw measurement samples.
-Sample buffers grow geometrically and remain owned by their plot. Query publication
+Plots consume immutable measurement-result samples directly. Channel buffers grow
+geometrically and remain owned by the plot; data-only queries do not build RGB curve buffers. Query publication
 delivers frame identity and read-only spans into the batch result together; callbacks consume
 them synchronously.
 WPF geometry serialization and frame queries still allocate when data changes.

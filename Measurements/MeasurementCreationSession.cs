@@ -3,7 +3,7 @@ using Fizzy.ImageViewer.Frames;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>A tool invocation context whose unfinished measurements belong to exactly one session.</summary>
-internal sealed class MeasurementCreationSession(MeasurementContext owner) : IMeasurementToolContext
+internal sealed class MeasurementCreationSession(MeasurementStore owner) : IMeasurementToolContext
 {
     private readonly HashSet<MeasurementItem> _previews = [];
     private bool _ended;

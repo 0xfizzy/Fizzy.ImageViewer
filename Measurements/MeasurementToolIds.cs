@@ -6,5 +6,5 @@ public static class MeasurementToolIds
     public const string Point = "Point";
     public const string Length = "Length";
     public const string ROI = "ROI";
-    public const string LineStrength = "LineStrength";
+    public const string LineProfile = "LineProfile";
 }

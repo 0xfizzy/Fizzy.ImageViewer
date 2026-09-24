@@ -1,7 +1,7 @@
 using Fizzy.ImageViewer.Measurements;
 using System.Windows;
 
-namespace Fizzy.ImageViewer.Editing;
+namespace Fizzy.ImageViewer.Measurements.Editing;
 
 /// <summary>Owns the drag-start geometry and writes edits through the measurement model.</summary>
 internal sealed class MeasurementEditSession(MeasurementItem item) : IDisposable

@@ -7,15 +7,9 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Layer for model-owned measurements. Content is created through measurement tools.</summary>
 public sealed class MeasurementLayer : ViewerLayer
 {
-    private MeasurementContext? _content;
+    internal event Action? ContentClearing;
 
-    internal void BindContent(MeasurementContext content)
-    {
-        if (_content != null) throw new InvalidOperationException("Measurement content is already bound.");
-        _content = content;
-    }
-
-    internal OverlayLayer Overlay { get; } = new();
+    internal MeasurementOverlay Overlay { get; } = new();
 
     internal MeasurementLayer(ViewerLayers owner)
         : base(owner, "Measurements", 1000, builtIn: true, hitTest: true)
@@ -26,8 +20,9 @@ public sealed class MeasurementLayer : ViewerLayer
 
     internal override void ClearContent()
     {
-        if (_content != null) _content.ClearMeasurements();
-        else Overlay.ClearVisuals();
+        try { ContentClearing?.Invoke(); }
+        finally { Overlay.ClearVisuals(); }
     }
+    internal override void ReleaseHandlers() => ContentClearing = null;
     internal override void Redraw(bool scaleOnly) => Overlay.UpdateScale(Owner.Scale);
 }

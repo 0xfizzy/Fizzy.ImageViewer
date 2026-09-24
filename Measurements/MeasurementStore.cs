@@ -7,11 +7,11 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Owns measurements and their visual lookup index; creation sessions borrow these services.</summary>
-internal sealed class MeasurementContext
+internal sealed class MeasurementStore
 {
     public MeasurementStyle Style { get; internal set; } = MeasurementStyle.Default;
     private readonly MeasurementLayer _measurementLayer;
-    internal OverlayLayer Layer => _measurementLayer.Overlay;
+    internal MeasurementOverlay Layer => _measurementLayer.Overlay;
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
     private readonly PixelQueryScheduler _scheduler;
@@ -34,10 +34,10 @@ internal sealed class MeasurementContext
         ItemCompleted?.Invoke(item);
     }
 
-    internal MeasurementContext(MeasurementLayer layer, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
+    internal MeasurementStore(MeasurementLayer layer, Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
     {
         _measurementLayer = layer;
-        layer.BindContent(this);
+        layer.ContentClearing += ClearMeasurements;
         _acquire = acquire;
         _logger = logger;
         _scheduler = scheduler;
@@ -87,12 +87,11 @@ internal sealed class MeasurementContext
         {
             _items.Remove(item);
             foreach (var visual in item.Presentation.Visuals) _visualOwners.Remove(visual);
-            try { item.Presentation.Dispose(); }
-            finally
-            {
-                if (item.CompletionNotified) ItemRemoved?.Invoke(item);
-            }
         }
+    }
+    internal void NotifyRemoved(MeasurementItem item)
+    {
+        if (item.CompletionNotified) ItemRemoved?.Invoke(item);
     }
     internal void ClearMeasurements()
     {
@@ -102,7 +101,6 @@ internal sealed class MeasurementContext
         {
             foreach (var item in _items.ToArray())
                 try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
-            Layer.ClearVisuals();
         }
         finally { _cleaning = false; }
     }
@@ -115,6 +113,7 @@ internal sealed class MeasurementContext
     {
         if (_disposed) return;
         _disposed = true;
-        ClearMeasurements();
+        try { ClearMeasurements(); }
+        finally { _measurementLayer.ContentClearing -= ClearMeasurements; }
     }
 }

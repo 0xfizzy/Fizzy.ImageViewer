@@ -1,6 +1,6 @@
 # Supported public API
 
-`Viewer` constructs an independent STA window. `IViewerAPI` is its complete consumer
+`Viewer` constructs an independent STA window. `IViewer` is its complete consumer
 contract, including `Label`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
 application adapters own an instance and use its public API. Raw-window access is not supported.
 
@@ -16,7 +16,7 @@ application adapters own an instance and use its public API. Raw-window access i
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/change/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
-The root namespace contains `Viewer` and `IViewerAPI`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
+The root namespace contains `Viewer` and `IViewer`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
 `DrawingLayer`, batch handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
 `MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
@@ -68,7 +68,7 @@ change reports its new version and clears the old result. Completion precedes ch
 notifications; previews do not emit changes. Snapshots and result arrays can be retained
 on other threads. Callbacks run on the viewer STA and subscriber failures are isolated.
 
-The event's `IDisposable` handle removes the item and its resources from any thread,
+The event's `IDisposable RemovalHandle` removes the item and its resources from any thread,
 including after closure. Removal may occur reentrantly during a completion subscriber.
 Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
 
@@ -84,7 +84,7 @@ The returned `IMeasurement` owns geometry, display, queries and registered resou
 Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
 observe `ResultChanged` for immutable query results or invalidation. `Complete` retains
 a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
-and measurement operations use the viewer STA. Only event removal handles marshal disposal.
+and measurement operations use the viewer STA. `IMeasurement.Dispose` also requires that STA; `MeasurementEventArgs.RemovalHandle` marshals removal from any thread.
 
 Geometry is a closed family identified by `MeasurementKind`: point, crosshair, line,
 rectangle and circle. `MeasurementGeometry.Bounds` is the normalized image-space bounding

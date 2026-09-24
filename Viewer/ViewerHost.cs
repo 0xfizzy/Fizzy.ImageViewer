@@ -1,5 +1,5 @@
 using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements.BuiltIn;
@@ -23,7 +23,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private Frames.FramePipeline _pipeline = null!;
     private Rendering.FramePresentation _presentation = null!;
     private MeasurementToolRegistry _tools = null!;
-    private MeasurementContext _context = null!;
+    private MeasurementStore _measurements = null!;
     private InteractionCoordinator _interaction = null!;
     private MenuManager _menuManager = null!;
     private ViewerMenuController? _menuController;
@@ -43,7 +43,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     internal ViewerWindow Window => _window;
     internal Frames.FramePipeline Pipeline => _pipeline;
     internal MeasurementToolRegistry Tools => _tools;
-    internal MeasurementContext Measurements => _context;
+    internal MeasurementStore Measurements => _measurements;
     internal InteractionCoordinator Interaction => _interaction;
     internal MenuManager Menus => _menuManager;
     internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
@@ -75,20 +75,20 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                _context = new MeasurementContext(win.Layers.Measurements, TryAcquireCurrentFrame, _queryScheduler, _logger);
+                _measurements = new MeasurementStore(win.Layers.Measurements, TryAcquireCurrentFrame, _queryScheduler, _logger);
                 _tools = new MeasurementToolRegistry();
-                _context.ItemCompleted += _owner.NotifyMeasurementCompleted;
-                _context.ItemRemoved += _owner.NotifyMeasurementRemoved;
-                _context.ItemChanged += _owner.NotifyMeasurementChanged;
+                _measurements.ItemCompleted += _owner.NotifyMeasurementCompleted;
+                _measurements.ItemRemoved += _owner.NotifyMeasurementRemoved;
+                _measurements.ItemChanged += _owner.NotifyMeasurementChanged;
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editMgr = new EditManager(win.MeasurementOverlay);
                 _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageLayer, win.MeasurementOverlay),
-                    win.MeasurementOverlay, editMgr, _tools, _context, win.Layers);
-                _tools.RegisterTool(new LineTool());
+                    win.MeasurementOverlay, editMgr, _tools, _measurements, win.Layers);
+                _tools.RegisterTool(new LengthTool());
                 _tools.RegisterTool(new PointTool());
-                _tools.RegisterTool(new RectTool());
-                _tools.RegisterTool(new LineStrengthTool());
+                _tools.RegisterTool(new RectangleRoiTool());
+                _tools.RegisterTool(new LineProfileTool());
                 _pixelInfoOverlay = new PixelInfoOverlay(win.ImageLayer, win.HudLayer, _queryScheduler);
                 _pixelInfoOverlay.Enable();
                 _menuManager = new MenuManager(win, _lifetime);
@@ -176,7 +176,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         Cleanup(() => _interaction?.Dispose());
         Cleanup(() => _pixelInfoOverlay?.Disable());
         Cleanup(() => _queryScheduler?.Dispose());
-        Cleanup(() => _context?.Shutdown());
+        Cleanup(() => _measurements?.Shutdown());
         Cleanup(() => _tools?.Clear());
         Cleanup(() => _window?.Layers.Close());
         Cleanup(() => _hud?.Dispose());

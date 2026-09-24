@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements.BuiltIn;
 
-internal sealed class RectTool : IMeasurementTool
+internal sealed class RectangleRoiTool : IMeasurementTool
 {
     public string Id => MeasurementToolIds.ROI;
     public string DisplayName => "ROI";

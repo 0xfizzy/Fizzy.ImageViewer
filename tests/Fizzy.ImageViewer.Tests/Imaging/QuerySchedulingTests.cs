@@ -14,7 +14,7 @@ public class QuerySchedulingTests
     private static Viewer Viewer()=>new(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
     private static ImageFrame Frame(ControlledSource source,Action release)=>new(new FrameStorage(new(2,1,2,FramePixelFormat.Gray8),new byte[]{7,8},release,0,source));
     [Fact]
-    public async Task ClosedLineStrengthDiscardsInFlightSamples()
+    public async Task ClosedLineProfileDiscardsInFlightSamples()
     {
         await using var viewer=Viewer();
         var source=new ControlledSource();
@@ -22,7 +22,7 @@ public class QuerySchedulingTests
         Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl? plot=null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
-            viewer.StartMeasurement(MeasurementToolIds.LineStrength);
+            viewer.StartMeasurement(MeasurementToolIds.LineProfile);
             viewer.Host.Interaction.ImageDown(0, 0);
             viewer.Host.Interaction.ImageDown(1, 0);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
@@ -42,7 +42,7 @@ public class QuerySchedulingTests
             Assert.False(window!.IsVisible);
             Assert.Equal(0, plot!.SampleCount);
             Assert.Equal(0, plot.ChannelCount);
-            var overlay=viewer.Layers.Measurements.Root.Children.OfType<Measurements.Presentation.OverlayLayer>().Single();
+            var overlay=viewer.Layers.Measurements.Root.Children.OfType<Measurements.Presentation.MeasurementOverlay>().Single();
             Assert.Empty(overlay.Canvas.Children.Cast<System.Windows.UIElement>());
         });
     }

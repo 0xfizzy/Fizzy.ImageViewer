@@ -14,9 +14,10 @@ public sealed record MeasurementSnapshot(Guid Id, MeasurementGeometry Geometry, 
 public sealed class MeasurementEventArgs : EventArgs
 {
     public MeasurementSnapshot Snapshot { get; }
-    public IDisposable Handle { get; }
+    /// <summary>Removes this measurement and its resources from any thread; safe to dispose repeatedly or after closure.</summary>
+    public IDisposable RemovalHandle { get; }
     /// <summary>Current immutable query result, or null before publication and after invalidation.</summary>
     public MeasurementResult? Result { get; }
     internal MeasurementEventArgs(MeasurementSnapshot snapshot, IDisposable handle, MeasurementResult? result)
-    { Snapshot = snapshot; Handle = handle; Result = result; }
+    { Snapshot = snapshot; RemovalHandle = handle; Result = result; }
 }

@@ -36,16 +36,10 @@ internal sealed class HudTextCollection(HudLayer layer, ViewerLifetime lifetime)
 
     private void Remove(HudTextHandle handle)
     {
-        if (lifetime.IsStopping) return;
-        try
+        lifetime.InvokeRemoval(layer.Dispatcher, () =>
         {
-            layer.Dispatcher.Invoke(() =>
-            {
-                if (_texts.Remove(handle, out var text)) layer.RemoveText(text);
-            });
-        }
-        catch (TaskCanceledException) when (lifetime.IsStopping) { }
-        catch (InvalidOperationException) when (lifetime.IsStopping) { }
+            if (_texts.Remove(handle, out var text)) layer.RemoveText(text);
+        });
     }
 
     public void Dispose()

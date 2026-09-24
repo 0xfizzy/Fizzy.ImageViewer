@@ -2,16 +2,11 @@ using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Imaging;
 
-internal sealed class LineProfile
+/// <summary>Clips a source-image line and returns ordered integer sample coordinates.</summary>
+internal static class LineSampling
 {
-    public double[] Red { get; private set; } = [];
-    public double[] Green { get; private set; } = [];
-    public double[] Blue { get; private set; } = [];
-    public int Count { get; private set; }
-    public bool IsGray { get; private set; }
-    public PixelCoordinate[] Prepare(FrameDescriptor descriptor, double x0, double y0, double x1, double y1)
+    public static PixelCoordinate[] GetCoordinates(FrameDescriptor descriptor, double x0, double y0, double x1, double y1)
     {
-        Count = 0;
         if (!double.IsFinite(x0) || !double.IsFinite(y0) || !double.IsFinite(x1) || !double.IsFinite(y1)) return [];
         double dx = x1 - x0, dy = y1 - y0;
         if (!double.IsFinite(dx) || !double.IsFinite(dy)) return [];
@@ -24,27 +19,18 @@ internal sealed class LineProfile
         int by = Math.Clamp((int)Math.Round(y0 + hi * dy), 0, descriptor.Height - 1);
         int nx = Math.Abs(bx - ax), ny = Math.Abs(by - ay), sx = ax < bx ? 1 : -1, sy = ay < by ? 1 : -1;
         int count = Math.Max(nx, ny) + 1;
-        if (Red.Length < count)
-        {
-            Red = new double[count]; Green = new double[count]; Blue = new double[count];
-        }
-        var coordinates=new PixelCoordinate[count];
+        var coordinates = new PixelCoordinate[count];
         long err = (long)nx - ny;
         for (int i = 0; i < count; i++)
         {
-            coordinates[i]=new(ax,ay);
+            coordinates[i] = new(ax, ay);
 
-            if (ax == bx && ay == by) { Count = i + 1; break; }
+            if (ax == bx && ay == by) break;
             long e = 2 * err;
             if (e > -ny) { err -= ny; ax += sx; }
             if (e < nx) { err += nx; ay += sy; }
         }
         return coordinates;
-    }
-    public void Apply(ReadOnlySpan<PixelSample> samples)
-    {
-        for(int i=0;i<samples.Length;i++) { var p=samples[i]; IsGray=p.IsGrayscale; Red[i]=p.IsGrayscale?p.Gray:p.R; Green[i]=p.G; Blue[i]=p.B; }
-        Count=samples.Length;
     }
     private static bool Clip(double p, double q, ref double lo, ref double hi)
     {

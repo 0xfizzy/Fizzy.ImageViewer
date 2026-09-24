@@ -5,7 +5,7 @@ using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Controls;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements.BuiltIn;
@@ -24,7 +24,7 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementInteractionTests
 {
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
-    private static OverlayLayer Overlay(Viewer viewer) => viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
+    private static MeasurementOverlay Overlay(Viewer viewer) => viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
 
     [Theory]
     [InlineData(false)]
@@ -177,7 +177,7 @@ public class MeasurementInteractionTests
             {
                 case "measure": viewer.StartMeasurement("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode); break;
                 case "delete": viewer.Host.Interaction.DeleteSelected(); break;
-                case "clear": viewer.ClearShapes(); break;
+                case "clear": viewer.Layers.Clear(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
                 case "disable": viewer.Layers.Measurements.IsHitTestVisible = false; break;
                 default: viewer.CancelMeasurement(); break;
@@ -209,7 +209,7 @@ public class MeasurementInteractionTests
             var item = viewer.Host.Measurements.Find(overlay.Canvas.Children.OfType<Rectangle>().Single())!;
             Assert.False(item.IsComplete);
             if (hide) viewer.Layers.Measurements.IsVisible = false;
-            else viewer.ClearShapes();
+            else viewer.Layers.Clear();
             Assert.True(item.IsDisposed); Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.False(viewer.Layers.InputSuppressed);
@@ -225,7 +225,7 @@ public class MeasurementInteractionTests
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             int removed = 0;
             overlay.ShapeRemoved += visual => { removed++; viewer.Host.Measurements.Find(visual)?.Dispose(); item.Dispose(); };
-            item.Dispose(); item.Dispose(); viewer.ClearShapes();
+            item.Dispose(); item.Dispose(); viewer.Layers.Clear();
             Assert.Equal(2, removed); Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }
@@ -255,12 +255,12 @@ public class MeasurementInteractionTests
             var layers = new Layers.ViewerLayers(image.TransformGroup);
             var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
-            var context = new MeasurementContext(layers.Measurements, () => null, queries, NullLogger.Instance);
+            var context = new MeasurementStore(layers.Measurements, () => null, queries, NullLogger.Instance);
             var tools = new MeasurementToolRegistry();
             var editor = new EditManager(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
-            var tool = new RectTool();
+            var tool = new RectangleRoiTool();
             var creation = new MeasurementCreationSession(context);
             var session = tool.CreateSession(creation);
             session.OnClick(new(2, 2)); session.OnClick(new(6, 6));

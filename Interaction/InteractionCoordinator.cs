@@ -1,6 +1,6 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
-using Fizzy.ImageViewer.Editing;
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
@@ -13,10 +13,10 @@ internal enum InteractionMode { Idle, Editing, Measuring }
 internal sealed class InteractionCoordinator : IDisposable
 {
     private readonly ViewerInputBinding _input;
-    private readonly OverlayLayer _overlay;
+    private readonly MeasurementOverlay _overlay;
     private readonly EditManager _edit;
     private readonly MeasurementToolRegistry _tools;
-    private readonly MeasurementContext _context;
+    private readonly MeasurementStore _measurements;
     private IMeasurementToolSession? _active;
     private MeasurementCreationSession? _session;
     private long _sessionVersion;
@@ -27,14 +27,14 @@ internal sealed class InteractionCoordinator : IDisposable
     public MeasurementItem? SelectedMeasurement { get; private set; }
     internal EditManager Editor => _edit;
 
-    internal InteractionCoordinator(ViewerInputBinding input, OverlayLayer overlay, EditManager edit,
-        MeasurementToolRegistry tools, MeasurementContext context, ViewerLayers layers)
+    internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, EditManager edit,
+        MeasurementToolRegistry tools, MeasurementStore context, ViewerLayers layers)
     {
         _input = input;
         _overlay = overlay;
         _edit = edit;
         _tools = tools;
-        _context = context;
+        _measurements = context;
         _layers = layers;
         layers.Measurements.Clearing += CancelForClear;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
@@ -46,14 +46,14 @@ internal sealed class InteractionCoordinator : IDisposable
         if (_disposed) return false;
         if (Mode == InteractionMode.Editing) return false;
         if (Mode == InteractionMode.Measuring) return true;
-        var item = _context.Find(shape);
+        var item = _measurements.Find(shape);
         if (item == null) return false;
         Select(item); return true;
     }
     internal void Select(MeasurementItem? item)
     {
         if (_disposed || Mode == InteractionMode.Measuring || item is null || item.IsDisposed ||
-            !_context.Contains(item)) return;
+            !_measurements.Contains(item)) return;
         StopEditing();
         if (item.IsDisposed) return;
         SelectedMeasurement = item;
@@ -78,7 +78,7 @@ internal sealed class InteractionCoordinator : IDisposable
             CancelTool();
             if (version != _sessionVersion || _disposed) return;
             ActiveId = name;
-            var creation = new MeasurementCreationSession(_context);
+            var creation = new MeasurementCreationSession(_measurements);
             _session = creation;
             ClearSelection();
             if (version != _sessionVersion || _disposed) return;
@@ -98,7 +98,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void StartEditing(MeasurementItem? item)
     {
         if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
-        if (_disposed || item is null || !_context.Contains(item) || !_edit.CanEdit(item) ||
+        if (_disposed || item is null || !_measurements.Contains(item) || !_edit.CanEdit(item) ||
             !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
         if (!CancelCore()) return;
         var version = _sessionVersion;
@@ -162,7 +162,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void Delete(MeasurementItem? selected)
     {
         if (_disposed || selected is null || selected.IsDisposed ||
-            !_context.Contains(selected)) return;
+            !_measurements.Contains(selected)) return;
         ClearSelection();
         selected.Dispose();
     }
@@ -251,7 +251,7 @@ internal sealed class InteractionCoordinator : IDisposable
             try { ClearSelection(); }
             finally
             {
-                _context.ItemRemoving -= ItemRemoving;
+                _measurements.ItemRemoving -= ItemRemoving;
                 _input.Dispose();
                 _layers.Measurements.Clearing -= CancelForClear;
                 _layers.Measurements.InputPolicyChanged -= InputPolicyChanged;

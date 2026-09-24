@@ -40,7 +40,7 @@ public class DrawingTests
             };
             viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.Equal(1, removed);
             Assert.NotNull(replacement);
             Assert.Contains(replacement, viewer.Layers.Items);
@@ -48,7 +48,7 @@ public class DrawingTests
             replacementBatch!.Replace([Circle(30, 30)]);
             Assert.Throws<ObjectDisposedException>(() => originalBatch.Replace([Circle()]));
             Assert.Equal(!removeLayer, viewer.Layers.Items.Contains(original));
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             Assert.Equal(0, replacement.Host.Count);
             Assert.Throws<ObjectDisposedException>(() => replacementBatch.Replace([Circle()]));
         });
@@ -343,7 +343,7 @@ public class DrawingTests
                 return item;
             });
             using var hud = viewer.DrawHudText("HUD", Brushes.White);
-            viewer.ClearShapes();
+            viewer.Layers.Clear();
             hud.Update("HUD 2", Brushes.White);
             Assert.Throws<ObjectDisposedException>(() => marker.Replace([Circle()]));
             Assert.True(measure.IsDisposed);
@@ -362,7 +362,7 @@ public class DrawingTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
             foreach (var geometry in new[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
                 var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(geometry);
@@ -391,9 +391,9 @@ public class DrawingTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Layers.Measurements.Root.Children.OfType<OverlayLayer>().Single();
+            var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
             foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
-                new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LineTool(), new Measurements.BuiltIn.RectTool() })
+                new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LengthTool(), new Measurements.BuiltIn.RectangleRoiTool() })
             {
                 var session = new MeasurementCreationSession(viewer.Host.Measurements);
                 var activation = method.CreateSession(session);
