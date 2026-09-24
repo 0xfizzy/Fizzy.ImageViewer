@@ -22,6 +22,10 @@ raw floating-point bits, alpha tags, size limits, cancellation and failed replac
 Passing the suite does not verify physical screen presentation, mixed-DPI monitors, remote
 desktop or real hardware. These require a separate interactive check.
 No package release is performed by these validation commands.
+The package embeds `docs/nuget-readme.md` as `README.md`; keep it in plain Markdown
+with absolute documentation links because NuGet does not render the repository's HTML header.
+Before publishing, inspect the packed README and preview its headings, code blocks and links.
+Check the repository README on GitHub for icon sharpness, size and spacing.
 The Windows CI workflow runs restore, build, test, tool builds and pack on pushes and pull
 requests, using only this repository's checkout. It does not publish packages.
 
