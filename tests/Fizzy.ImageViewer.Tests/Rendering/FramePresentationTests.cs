@@ -1,6 +1,5 @@
 using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;

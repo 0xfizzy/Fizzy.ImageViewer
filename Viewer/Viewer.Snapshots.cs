@@ -1,4 +1,4 @@
-using Fizzy.ImageViewer.Imaging;
+using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Snapshots;
 
 namespace Fizzy.ImageViewer;

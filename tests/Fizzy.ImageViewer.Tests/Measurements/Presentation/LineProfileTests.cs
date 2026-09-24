@@ -3,7 +3,6 @@ using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Measurements.BuiltIn;
 using Fizzy.ImageViewer.Rendering;

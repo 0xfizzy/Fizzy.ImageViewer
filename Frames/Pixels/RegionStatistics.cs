@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Frames;
-
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 /// <summary>Immutable statistics snapshot. Construction copies the supplied channels.</summary>
 public sealed class RegionStatistics

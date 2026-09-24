@@ -1,12 +1,8 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
-using Fizzy.ImageViewer.Snapshots;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Fizzy.ImageViewer.Tests;
 
-[Collection("Viewer")]
 public class PixelQueryTests
 {
     [Fact]
@@ -33,21 +29,9 @@ public class PixelQueryTests
         using var f=floats.Acquire();Assert.Equal(new ChannelStatistics(1,5,5,5),(await f.ComputeRegionStatisticsAsync(new(0,0,3,1))).Statistics.Channels[0]);
     }
     [Fact]
-    public async Task SnapshotRegionIsFixedAndIndependent()
+    public void RegionsClipToFrameBounds()
     {
-        await using var viewer=new Viewer(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(3,2,3,FramePixelFormat.Gray8),new byte[]{1,2,3,4,5,6}));
-        var pending=viewer.CaptureSnapshotAsync(SnapshotKind.Raw,new PixelRegion(1,0,2,2));
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1,1,1,FramePixelFormat.Gray8),new byte[]{9}));
-        using var snapshot=await pending;using var pixels=snapshot.AcquirePixels();
-        Assert.Equal(new byte[]{2,3,5,6},pixels.CpuPixels.ToArray());Assert.Equal(new PixelRegion(1,0,2,2),snapshot.Region);
-    }
-    [Fact]
-    public void QueryOptionsValidateAndRegionsClip()
-    {
-        Assert.Equal(TimeSpan.FromMilliseconds(100),new PixelQueryOptions().MaxResultAge);
-        Assert.Throws<ArgumentOutOfRangeException>(()=>new PixelQueryOptions{MaxResultAge=TimeSpan.Zero}.Validate());
-        Assert.Equal(new PixelRegion(0,1,3,3),PixelRegion.Clip(-.5,1.2,3.1,2.1,new(10,10,10,FramePixelFormat.Gray8)));
+        Assert.Equal(new PixelRegion(0, 1, 3, 3), PixelRegion.Clip(-.5, 1.2, 3.1, 2.1, new(10, 10, 10, FramePixelFormat.Gray8)));
     }
     [Fact]
     public async Task CancelledRegionRetainsSourceUntilCompletionAndDisposesOutput()

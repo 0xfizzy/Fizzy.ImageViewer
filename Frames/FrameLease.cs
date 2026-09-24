@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Imaging;
 namespace Fizzy.ImageViewer.Frames;
 
 /// <summary>A single ownership token. Do not dispose concurrently with reading its memory.</summary>
@@ -14,36 +13,51 @@ public sealed class FrameLease : IDisposable
     public FrameDescriptor Descriptor => Storage.Descriptor;
     public bool TryGetCpuPixels(out ReadOnlyMemory<byte> pixels)
     {
-        var storage=Storage; pixels=storage.CpuPixels; return storage.Surface==0;
+        var storage = Storage;
+        pixels = storage.CpuPixels;
+        return storage.Surface == 0;
     }
     internal ReadOnlyMemory<byte> CpuPixels => TryGetCpuPixels(out var pixels) ? pixels : throw new NotSupportedException("GPU pixels require an explicit asynchronous query.");
     public async ValueTask<PixelQueryResult> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct = default)
     {
-        using var lease=Acquire();
-        var copy=coordinates.ToArray();
-        foreach(var p in copy) if((uint)p.X >= (uint)lease.Descriptor.Width || (uint)p.Y >= (uint)lease.Descriptor.Height) throw new ArgumentOutOfRangeException(nameof(coordinates));
+        using var lease = Acquire();
+        var copy = coordinates.ToArray();
+        foreach (var point in copy)
+            if ((uint)point.X >= (uint)lease.Descriptor.Width || (uint)point.Y >= (uint)lease.Descriptor.Height)
+                throw new ArgumentOutOfRangeException(nameof(coordinates));
         ct.ThrowIfCancellationRequested();
-        var values=await lease.Storage.PixelSource.ReadPixelsAsync(copy,ct).ConfigureAwait(false);
+
+        var values = await lease.Storage.PixelSource.ReadPixelsAsync(copy, ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
         if (values.Length != copy.Length || values.Any(p => p.Format != lease.Descriptor.Format))
             throw new InvalidOperationException("Pixel source returned invalid samples.");
-        return new(lease.Info,values);
+        return new(lease.Info, values);
     }
     public async ValueTask<RegionStatisticsResult> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct = default)
     {
-        using var lease=Acquire(); region.Validate(lease.Descriptor); ct.ThrowIfCancellationRequested();
-        var result=await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region,ct).ConfigureAwait(false);
+        using var lease = Acquire();
+        region.Validate(lease.Descriptor);
+        ct.ThrowIfCancellationRequested();
+
+        var result = await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region, ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
         var format = lease.Descriptor.Format;
         if (result.Format != format)
             throw new InvalidOperationException("Pixel source returned invalid statistics.");
-        return new(lease.Info,region,result);
+        return new(lease.Info, region, result);
     }
     public async ValueTask<RegionPixels> ReadRegionAsync(PixelRegion region, CancellationToken ct = default)
     {
-        using var lease=Acquire(); region.Validate(lease.Descriptor); ct.ThrowIfCancellationRequested();
-        var pixels=await lease.Storage.PixelSource.ReadRegionAsync(region,ct).ConfigureAwait(false);
-        if(ct.IsCancellationRequested) { pixels.Dispose(); ct.ThrowIfCancellationRequested(); }
+        using var lease = Acquire();
+        region.Validate(lease.Descriptor);
+        ct.ThrowIfCancellationRequested();
+
+        var pixels = await lease.Storage.PixelSource.ReadRegionAsync(region, ct).ConfigureAwait(false);
+        if (ct.IsCancellationRequested)
+        {
+            pixels.Dispose();
+            ct.ThrowIfCancellationRequested();
+        }
         using (var check = pixels.Acquire())
         {
             if (check.Descriptor.Width != region.Width || check.Descriptor.Height != region.Height ||
@@ -53,7 +67,7 @@ public sealed class FrameLease : IDisposable
                 throw new InvalidOperationException("Pixel source returned an invalid CPU region.");
             }
         }
-        return new(lease.Info,region,pixels);
+        return new(lease.Info, region, pixels);
     }
     internal nint D3D9Surface => Storage.Surface;
     /// <summary>Describes these pixels. FrameId is zero until submitted to a viewer.</summary>

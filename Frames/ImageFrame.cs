@@ -1,4 +1,3 @@
-using Fizzy.ImageViewer.Imaging;
 using System.Buffers;
 
 namespace Fizzy.ImageViewer.Frames;
@@ -16,17 +15,28 @@ public sealed class ImageFrame : IDisposable
     {
         descriptor.Validate(data.Length);
         var owner = MemoryPool<byte>.Shared.Rent(descriptor.RequiredBytes);
-        data[..descriptor.RequiredBytes].CopyTo(owner.Memory.Span);
-        return new(new(descriptor, owner.Memory[..descriptor.RequiredBytes], owner.Dispose));
+        try
+        {
+            data[..descriptor.RequiredBytes].CopyTo(owner.Memory.Span);
+            return CreateCpuFrame(descriptor, owner.Memory[..descriptor.RequiredBytes], owner.Dispose);
+        }
+        catch { owner.Dispose(); throw; }
     }
 
     /// <summary>Transfers ownership, including on validation failure. Release is called exactly once.</summary>
     public static ImageFrame TakeOwnership(FrameDescriptor descriptor, ReadOnlyMemory<byte> data, Action release)
     {
         ArgumentNullException.ThrowIfNull(release);
-        try { descriptor.Validate(data.Length); return new(new(descriptor, data[..descriptor.RequiredBytes], release)); }
+        try
+        {
+            descriptor.Validate(data.Length);
+            return CreateCpuFrame(descriptor, data[..descriptor.RequiredBytes], release);
+        }
         catch { release(); throw; }
     }
+
+    private static ImageFrame CreateCpuFrame(FrameDescriptor descriptor, ReadOnlyMemory<byte> pixels, Action release)
+        => new(new FrameStorage(descriptor, pixels, new CpuFramePixelSource(descriptor, pixels), release));
 
     public FrameLease Acquire() => Storage.Acquire();
     /// <summary>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
@@ -41,7 +51,7 @@ public sealed class ImageFrame : IDisposable
             descriptor.Validate(descriptor.RequiredBytes);
             if (surface == 0) throw new ArgumentException("A ready D3D9 surface is required.", nameof(surface));
             ArgumentNullException.ThrowIfNull(pixelSource);
-            return new(new FrameStorage(descriptor, default, release, surface, pixelSource));
+            return new(new FrameStorage(descriptor, default, pixelSource, release, surface));
         }
         catch { release(); throw; }
     }

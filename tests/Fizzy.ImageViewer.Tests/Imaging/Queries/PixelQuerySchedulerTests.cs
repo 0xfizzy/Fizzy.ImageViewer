@@ -1,8 +1,8 @@
+using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Hud;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -10,6 +10,13 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class PixelQuerySchedulerTests
 {
+    [Fact]
+    public void QueryOptionsValidateResultAge()
+    {
+        Assert.Equal(TimeSpan.FromMilliseconds(100), new PixelQueryOptions().MaxResultAge);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PixelQueryOptions { MaxResultAge = TimeSpan.Zero }.Validate());
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -142,7 +149,7 @@ public class PixelQuerySchedulerTests
     }
     private static FrameLease Frame(Source source, Action? release = null)
     {
-        var frame = new ImageFrame(new FrameStorage(new(2, 1, 2, FramePixelFormat.Gray8), new byte[] { 7, 8 }, release ?? (() => { }), 0, source)).Transfer();
+        var frame = new ImageFrame(new FrameStorage(new(2, 1, 2, FramePixelFormat.Gray8), new byte[] { 7, 8 }, source, release ?? (() => { }))).Transfer();
         frame.Info = new(1, frame.Descriptor, null);
         return frame;
     }

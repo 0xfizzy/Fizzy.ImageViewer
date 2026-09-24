@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Frames;
-
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 public readonly record struct PixelSample(FramePixelFormat Format, double Gray, double R, double G, double B, double A)
 {

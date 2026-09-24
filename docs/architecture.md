@@ -9,9 +9,10 @@ public facade, drawing handles and measurement handles.
 | Directory | Responsibility |
 | --- | --- |
 | Viewer | Public facade, host composition, window and lifetime |
-| Frames | Immutable storage, frame descriptors, leases and submission contracts |
+| Frames | Immutable storage, frame descriptors, leases, original-pixel access and submission contracts |
+| Frames/Pixels | Pixel-source contract, CPU reading/decoding, coordinates, regions and owned or immutable read results |
 | Rendering | Submission queue, committed display state, CPU preparation/presentation and D3D presentation |
-| Imaging | Original-pixel access, regions, query results and display conversion shared by rendering and snapshots |
+| Imaging | Line sampling, shared query settings and display conversion shared by rendering and snapshots |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
 | Layers | Public layer composition and the container for transforms, input and lifetime |
 | Drawing | Drawing elements, marker layers, drawing handles and batch rendering |
@@ -42,13 +43,15 @@ and QueryResult.cs so their alternatives can be read as one protocol. Do not spl
 nested helper types or create a directory for a single type merely to satisfy a pattern.
 
 Subdirectories group established responsibilities, rather than visibility or type kind.
-Measurements/Geometry, Measurements/Tools and Measurements/Queries retain the public Measurements namespace:
+Frames/Pixels retains the public Frames namespace. Measurements/Geometry,
+Measurements/Tools and Measurements/Queries retain the public Measurements namespace:
 source navigation does not require a different consumer namespace for each subgroup.
 Built-in tools use Measurements.BuiltIn; editing and presentation have their own internal
 namespaces. Viewer files use the root namespace; other top-level feature directories use
 their feature namespace. Namespace changes require a separate API decision.
 
 Tests belong to the capability under test, not its historical implementation location.
+Frames/Pixels tests cover backend reads, pixel formats and immutable read results.
 Rendering tests cover presentation; Viewport tests cover pan; Imaging/Queries tests cover
 scheduling. Measurement geometry, query, tool-session and presentation tests use matching
 subdirectories. Tests spanning measurement ownership, notifications or interaction stay
@@ -78,6 +81,41 @@ Viewer.Queries contains the shared pixel-query configuration; Viewer.Hud contain
 The facade is sealed. Application adapters own a Viewer instance, create it hidden
 when setup must precede display, and converge closure and disposal on their own
 idempotent cleanup before awaiting the viewer's disposal completion.
+
+## Frame and imaging dependencies
+
+Arrows show code dependencies within the single library project. Names match the source
+modules; Frames/Pixels is part of Frames and uses the same public namespace.
+
+```mermaid
+flowchart TD
+    Measurements[Measurements] --> Queries["Imaging/Queries"]
+    Hud[Hud] --> Queries
+    Measurements --> Imaging["Imaging: sampling and display conversion"]
+    Rendering[Rendering] --> Imaging
+    Snapshots[Snapshots] --> Imaging
+    Queries --> Frames["Frames: storage, leases and original-pixel access"]
+    Imaging --> Frames
+    Rendering --> Frames
+    Snapshots --> Frames
+    Measurements --> Frames
+    Hud --> Frames
+```
+
+Frames does not reference Imaging. It owns the pixel-source protocol and its parameters
+and results, including byte decoding and CPU statistics. Imaging consumes that protocol
+for sampling, conversion and scheduling; refresh rates and result expiration stay there.
+
+ImageFrame factories compose storage with its pixel source. CPU factories share the same
+descriptor and memory slice with CpuFramePixelSource; the GPU factory receives the producer's
+source. FrameStorage only retains these components and manages reference counting and final
+release. It does not select a backend or independently dispose the pixel source.
+
+FrameLease is the backend-independent read boundary: each asynchronous operation retains
+its own lease, validates requests and results, and supplies frame provenance. Region reads
+return an independently owned CPU ImageFrame; RegionPixels adds the source frame and region
+without assigning source identity to the derived pixels. The producer's release callback
+owns external query resources until the final source lease is released.
 
 ## Ownership and direction
 
@@ -195,8 +233,8 @@ for each supported format. Component order, component bit depth, numeric represe
 and alpha mode are defined there; storage size, grayscale classification and semantic
 channel count are derived from those facts. Public `BytesPerPixel` uses the same definition.
 
-Imaging owns byte decoding, statistics and display mapping. Rendering owns WPF format
-adaptation; Snapshots owns output layout, channel conversion and encoding tags. These
+Frames/Pixels owns byte decoding and raw statistics; Imaging owns display mapping.
+Rendering owns WPF format adaptation; Snapshots owns output layout, channel conversion and encoding tags. These
 components consume format facts while retaining their own algorithms and policies:
 display ranges are not source-value limits, plot channel selection is not a format channel
 count, and encoded row sizes need not equal source row sizes. `RegionStatistics` validates

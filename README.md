@@ -53,6 +53,7 @@ var result = await viewer.SubmitFrameAsync(frame);
 Submission transfers ownership immediately. Awaiting returns a commit/drop result,
 not a physical presentation timestamp. One frame is processed while only the newest
 waiting frame is retained. Measurements read original pixels independently of display.
+Frame leases and original-pixel access types share the `Fizzy.ImageViewer.Frames` namespace.
 
 For thousands of markers, submit a collection as one visual:
 

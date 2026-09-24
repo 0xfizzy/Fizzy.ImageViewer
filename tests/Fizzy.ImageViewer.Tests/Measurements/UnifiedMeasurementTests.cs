@@ -4,7 +4,6 @@ using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Rendering;
@@ -53,7 +52,7 @@ public class UnifiedMeasurementTests
         public Harness(Source? source = null)
         {
             Frame = source == null ? ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()).Transfer()
-                : new ImageFrame(new FrameStorage(new(4, 4, 4, FramePixelFormat.Gray8), new byte[16], () => { }, 0, source)).Transfer();
+                : new ImageFrame(new FrameStorage(new(4, 4, 4, FramePixelFormat.Gray8), new byte[16], source, () => { })).Transfer();
             Frame.Info = new(42, Frame.Descriptor, null);
             Runtime = new(Overlay.Dispatcher);
             Queries = new(() => Frame.Acquire(), NullLogger.Instance, Runtime);

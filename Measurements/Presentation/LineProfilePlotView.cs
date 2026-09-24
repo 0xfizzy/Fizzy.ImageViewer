@@ -1,7 +1,7 @@
+using Fizzy.ImageViewer.Frames;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
-using Fizzy.ImageViewer.Imaging;
 
 namespace Fizzy.ImageViewer.Measurements.Presentation;
 

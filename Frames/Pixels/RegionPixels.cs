@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Frames;
-
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 public sealed class RegionPixels(FrameInfo sourceFrame, PixelRegion region, ImageFrame pixels) : IDisposable
 {

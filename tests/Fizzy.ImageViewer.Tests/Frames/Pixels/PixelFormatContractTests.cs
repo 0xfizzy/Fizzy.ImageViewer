@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Xunit;
 
 namespace Fizzy.ImageViewer.Tests;

@@ -1,14 +1,12 @@
-using Fizzy.ImageViewer.Imaging;
-
 namespace Fizzy.ImageViewer.Frames;
 
-internal sealed class FrameStorage(FrameDescriptor descriptor, ReadOnlyMemory<byte> data, Action release,
-    nint surface = 0, IFramePixelSource? pixelSource = null)
+internal sealed class FrameStorage(FrameDescriptor descriptor, ReadOnlyMemory<byte> data,
+    IFramePixelSource pixelSource, Action release, nint surface = 0)
 {
     private int _references = 1;
     public FrameDescriptor Descriptor { get; } = descriptor;
     public ReadOnlyMemory<byte> CpuPixels { get; } = data;
-    public IFramePixelSource PixelSource { get; } = pixelSource ?? new CpuFramePixelSource(descriptor, data);
+    public IFramePixelSource PixelSource { get; } = pixelSource;
     public nint Surface { get; } = surface;
     public FrameLease Acquire()
     {

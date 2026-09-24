@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Media;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Measurements.BuiltIn;
 
 internal static class Program

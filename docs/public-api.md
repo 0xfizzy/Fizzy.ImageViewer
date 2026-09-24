@@ -24,6 +24,12 @@ The root namespace contains `Viewer`, `IViewer` and `IViewerWindow`. Shared `Vie
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 HUD text handles and anchor alignment belong to `.Hud`.
 
+Frame storage and original-pixel access share `.Frames`: `IFramePixelSource`,
+`FramePixelReader`, `PixelCoordinate`, `PixelRegion`, `PixelSample`, `ChannelStatistics`,
+`RegionStatistics`, `PixelQueryResult`, `RegionStatisticsResult` and `RegionPixels`.
+`.Imaging` contains display range and shared query configuration/metrics, rather than
+the pixel-source protocol. See [module dependencies](architecture.md#frame-and-imaging-dependencies).
+
 ## Borrowing viewer capabilities
 
 `IViewer` aggregates the following interfaces and `IAsyncDisposable`. `Viewer` implements

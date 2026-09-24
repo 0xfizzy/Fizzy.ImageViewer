@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Frames;
-
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMemory<byte> pixels) : IFramePixelSource
 {

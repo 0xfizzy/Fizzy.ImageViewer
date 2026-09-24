@@ -1,6 +1,5 @@
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
 using System.Windows.Threading;
 

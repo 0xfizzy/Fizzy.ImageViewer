@@ -2,7 +2,6 @@ using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -12,7 +11,7 @@ namespace Fizzy.ImageViewer.Tests;
 public class QuerySchedulingTests
 {
     private static Viewer Viewer()=>new(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
-    private static ImageFrame Frame(ControlledSource source,Action release)=>new(new FrameStorage(new(2,1,2,FramePixelFormat.Gray8),new byte[]{7,8},release,0,source));
+    private static ImageFrame Frame(ControlledSource source,Action release)=>new(new FrameStorage(new(2,1,2,FramePixelFormat.Gray8),new byte[]{7,8},source,release));
     [Fact]
     public async Task ClosedLineProfileDiscardsInFlightSamples()
     {

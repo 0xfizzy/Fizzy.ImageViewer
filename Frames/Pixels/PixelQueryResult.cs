@@ -1,6 +1,4 @@
-using Fizzy.ImageViewer.Frames;
-
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 /// <summary>Immutable pixel snapshot. Construction copies the supplied samples.</summary>
 public sealed class PixelQueryResult

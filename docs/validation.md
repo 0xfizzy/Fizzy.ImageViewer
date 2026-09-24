@@ -44,8 +44,11 @@ dotnet run --project tools/DrawingBenchmark -c Release
 
 ## Pixel queries
 
-PixelQueryTests cover GPU ownership during async reads, CPU stride/finite statistics, explicit ROI
-snapshots and query options. QuerySchedulingTests inject slow sources to verify merged sampling,
+PixelQueryTests in Frames/Pixels cover GPU ownership during async reads, CPU stride/finite
+statistics, region clipping and cancellation cleanup. QueryResultSnapshotTests and
+PixelFormatContractTests in the same directory cover immutable results and format semantics.
+SnapshotCaptureTests cover fixed ROI snapshots; PixelQuerySchedulerTests cover query options.
+QuerySchedulingTests inject slow sources to verify merged sampling,
 STA responsiveness, replacement, geometry invalidation, expiration and shutdown ownership.
 GPU-backed producers should validate their native surface and pixel-source implementation in
 the consumer repository. This library does not require a specific GPU runtime or device SDK.

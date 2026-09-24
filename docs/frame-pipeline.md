@@ -84,6 +84,11 @@ Snapshot capture uses the last committed range/version, not a range still awaiti
 
 ## Pixel access and measurements
 
+Original-pixel access belongs to `Fizzy.ImageViewer.Frames`, alongside storage and leases.
+It includes `IFramePixelSource`, `FramePixelReader`, pixel coordinates/regions, samples,
+statistics and read results. `Fizzy.ImageViewer.Imaging` consumes these contracts for
+display conversion, line sampling and query scheduling; Frames has no Imaging dependency.
+
 `AcquireCurrentFrame()` returns an owned lease. `TryGetCpuPixels` exposes only existing
 CPU memory and returns false for GPU storage. There is no general `Data` accessor.
 `FramePixelReader` is a CPU-only decoding helper; it never downloads GPU pixels.
@@ -219,6 +224,12 @@ the display surface. The library has no CUDA dependency. The producer retains it
 and query resources until the final frame lease is released. Query failures affect interaction,
 not display, and must never trigger an implicit full-image readback. Cancellation of submitted
 GPU work must retain buffers and leases until device completion, even when publication is cancelled.
+
+Region reads transfer an independently owned CPU `ImageFrame` with the requested dimensions
+and source format. Coordinates in that image start at the region's origin; `FrameLease`
+adds source provenance in `RegionPixels`. A provider must finish access to source resources
+before its operation returns or throws, including cancellation. The frame's release callback
+owns the provider's resources; the library does not separately dispose the provider.
 
 DisplayRange is unsupported for GPU surfaces; producers must apply their GPU mapping before
 submission. Consumers are responsible for converting source formats to the supported frame contract.

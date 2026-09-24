@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
-using Fizzy.ImageViewer.Frames;
 
-namespace Fizzy.ImageViewer.Imaging;
+namespace Fizzy.ImageViewer.Frames;
 
 public sealed class FramePixelReader
 {

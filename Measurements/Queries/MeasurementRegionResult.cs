@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 
 namespace Fizzy.ImageViewer.Measurements;
 

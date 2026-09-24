@@ -1,6 +1,5 @@
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using System.Globalization;
 
 namespace Fizzy.ImageViewer.Hud;

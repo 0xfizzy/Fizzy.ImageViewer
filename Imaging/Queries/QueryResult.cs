@@ -1,3 +1,5 @@
+using Fizzy.ImageViewer.Frames;
+
 namespace Fizzy.ImageViewer.Imaging.Queries;
 
 internal abstract record QueryResult;
