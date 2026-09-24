@@ -6,6 +6,7 @@ namespace Fizzy.ImageViewer;
 public partial class Viewer
 {
     public Layers.ViewerLayers Layers => _host.Window.Layers;
+    public Drawing.DrawingLayer Markers => Layers.Markers;
 
     /// <summary>Creates a drawing initially containing one line in the Markers layer. The handle can replace its entire content.</summary>
     public Drawing.DrawingHandle DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0) =>

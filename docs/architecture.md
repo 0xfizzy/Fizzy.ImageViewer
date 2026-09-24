@@ -56,7 +56,17 @@ at the Measurements level. Test namespaces remain stable so existing filters con
 to work. Test-only helpers live beside their callers; benchmarks remain under tools.
 
 Keep the single library project at the repository root. Viewer partial files organize
-one facade by capability; they are not independently owned services. Documentation in
+one facade by capability; they are not independently owned services. `IViewer` aggregates
+borrowed capability interfaces placed with their owning features. `IViewerWindow` stays
+with Viewer; display control belongs to Viewport, shared query settings to Imaging.
+`Viewer` implements these interfaces directly, with one shared lifetime; only the aggregate
+contract includes asynchronous disposal and global `Layers` composition. Drawing exposes
+only its default `Markers` layer; measurements expose their `Measurements` layer.
+Layer handles manage the entire corresponding layer, while drawing/HUD/registration
+handles manage individual resources. Review returned objects, collection elements and
+event/callback arguments as well as direct members when changing a capability boundary.
+These interfaces constrain typed dependencies; a shared implementation and event sender
+do not provide security isolation. Documentation in
 docs describes current component contracts; plans/archive contains historical plans.
 Update this map when introducing or removing a feature boundary, not for ordinary files.
 

@@ -9,6 +9,14 @@ Built-in and custom tools create the same model-owned measurements through
 
 ## Ownership and geometry
 
+`IViewerMeasurements.Measurements` exposes the entire measurement layer for visibility,
+input policy and clearing. Clear cancels the current interaction and removes all measurements,
+while retaining drawing layers and HUD. Tool registration and `EndInteraction` likewise
+manage viewer-wide state, not only resources created by the caller. Within a tool session,
+use the context's `Finish` to end that activation without affecting a replacement session.
+Measurement events carry immutable snapshots alongside a live editable/removable handle;
+subscribing is therefore not a read-only observation capability.
+
 `MeasurementStyle` belongs to `.Measurements`. `Viewer.MeasurementStyle` configures newly created measurements independently for each
 viewer. Assignment copies and freezes all brushes on the caller's thread before UI
 dispatch. Existing measurements retain their normal and selected colors. `MeasurementOptions.Style`

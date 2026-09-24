@@ -204,3 +204,10 @@ and original-operation failures combined with attachment/completion cleanup fail
 
 `MeasurementQueryOptionsTests` check the geometry/query matrix against actual requests and result provenance, and reject invalid window/query combinations. Profile tests verify independent data-only and window-enabled queries and window ownership. Tool protocol tests cover registration replacement, context-scoped asynchronous
 finishing, origin retention and original callback errors combined with cleanup failures.
+
+`PublicApiTests` exercise borrowed window, frame, drawing, HUD, query and measurement
+capabilities against one Viewer, including frame consumption after closure. Facade coverage
+includes inherited interfaces; the API baseline records each capability and its signatures.
+Boundary tests reserve global layer management for `IViewer`, verify that drawing and
+measurement capabilities share their respective live layer handles, and exercise independent
+layer clearing, measurement cancellation and global clearing through those public contracts.

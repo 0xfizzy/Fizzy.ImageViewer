@@ -10,6 +10,7 @@ public sealed class ViewerLayers
     internal LayerCollection Collection { get; }
     public DrawingLayer Markers { get; }
     public MeasurementLayer Measurements { get; }
+    /// <summary>A membership snapshot containing live, mutable layer handles.</summary>
     public IReadOnlyList<ViewerLayer> Items => Collection.Items;
 
     internal ViewerLayers(Transform transform, ViewerLifetime? lifetime = null)

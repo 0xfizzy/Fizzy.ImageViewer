@@ -4,6 +4,8 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    public MeasurementLayer Measurements => Layers.Measurements;
+
     public MeasurementStyle MeasurementStyle
     {
         get => InvokeAlive(() => _host.Measurements.Style);

@@ -21,51 +21,76 @@ public class PublicApiTests
     {
         await using var viewer = Create();
         IViewer api = viewer;
+        IViewerWindow window = api;
+        IFrameSink sink = api;
+        ICommittedFrameSource frames = api;
+        Fizzy.ImageViewer.Hud.IViewerHud hud = api;
+        Fizzy.ImageViewer.Imaging.IViewerQueries queries = api;
+        IViewerDrawing drawing = api;
+        Fizzy.ImageViewer.Viewport.IViewerDisplay display = api;
+        Fizzy.ImageViewer.Snapshots.ISnapshotSource snapshots = api;
+        Fizzy.ImageViewer.Menus.IViewerMenu menus = api;
+        IDisposable? registration = null;
         await Task.Run(async () =>
         {
-            api.HudLabel = "camera";
-            Assert.Equal("camera", api.HudLabel);
-            Assert.True(api.IsPixelInfoEnabled);
-            api.IsPixelInfoEnabled = false;
-            Assert.False(api.IsPixelInfoEnabled);
-            api.QueryOptions = new();
-            Assert.NotNull(api.QueryOptions);
-            _ = api.QueryMetrics;
-            api.Show();
-            Assert.True(api.IsVisible);
-            api.Minimize();
-            Assert.True(api.IsMinimized);
-            Assert.True(api.IsVisible);
-            api.Show();
-            Assert.False(api.IsMinimized);
-            api.Hide();
-            Assert.False(api.IsVisible);
-            var result = await api.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+            hud.HudLabel = "camera";
+            Assert.Equal("camera", hud.HudLabel);
+            Assert.True(hud.IsPixelInfoEnabled);
+            hud.IsPixelInfoEnabled = false;
+            Assert.False(hud.IsPixelInfoEnabled);
+            queries.QueryOptions = new();
+            Assert.NotNull(queries.QueryOptions);
+            _ = queries.QueryMetrics;
+            display.DisplayRange = new(0, 255);
+            Assert.Equal(display.DisplayRange, viewer.DisplayRange);
+            registration = menus.RegisterMenu(new Fizzy.ImageViewer.Menus.MenuItem("Inspect", () => { }));
+            window.Show();
+            Assert.True(window.IsVisible);
+            window.Minimize();
+            Assert.True(window.IsMinimized);
+            Assert.True(window.IsVisible);
+            window.Show();
+            Assert.False(window.IsMinimized);
+            window.Hide();
+            Assert.False(window.IsVisible);
+            var result = await sink.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
             Assert.Equal(FrameSubmitStatus.Committed, result.Status);
-            using var line = api.DrawLine(new(0, 0), new(1, 1), Brushes.Red);
-            api.Show();
-            using var lease = api.AcquireCurrentFrame();
+            using var line = drawing.DrawLine(new(0, 0), new(1, 1), Brushes.Red);
+            window.Show();
+            using var lease = frames.AcquireCurrentFrame();
             Assert.Equal(42, lease!.CpuPixels.Span[0]);
+            display.FitImageToContainer();
+            using var snapshot = await snapshots.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind.Raw);
+            using var pixels = snapshot.AcquirePixels();
+            Assert.Equal(lease.Info.FrameId, snapshot.SourceFrame.FrameId);
+            Assert.Equal(42, pixels.CpuPixels.Span[0]);
         });
         await api.DisposeAsync();
-        Assert.Throws<ObjectDisposedException>(api.Hide);
-        Assert.Throws<ObjectDisposedException>(api.Minimize);
-        Assert.Throws<ObjectDisposedException>(api.Show);
-        Assert.Throws<ObjectDisposedException>(() => api.IsVisible);
-        Assert.Throws<ObjectDisposedException>(() => api.IsMinimized);
-        Assert.Throws<ObjectDisposedException>(() => api.HudLabel);
-        Assert.Throws<ObjectDisposedException>(() => api.IsPixelInfoEnabled);
-        Assert.Throws<ObjectDisposedException>(() => api.IsPixelInfoEnabled = true);
-        Assert.Throws<ObjectDisposedException>(() => api.QueryOptions);
-        Assert.Throws<ObjectDisposedException>(() => api.QueryMetrics);
-        Assert.Throws<ObjectDisposedException>(() => api.DrawLine(new(), new(1, 1), Brushes.Red));
+        registration!.Dispose();
+        registration.Dispose();
+        Assert.Throws<ObjectDisposedException>(window.Hide);
+        Assert.Throws<ObjectDisposedException>(window.Minimize);
+        Assert.Throws<ObjectDisposedException>(window.Show);
+        Assert.Throws<ObjectDisposedException>(() => window.IsVisible);
+        Assert.Throws<ObjectDisposedException>(() => window.IsMinimized);
+        Assert.Throws<ObjectDisposedException>(() => hud.HudLabel);
+        Assert.Throws<ObjectDisposedException>(() => hud.IsPixelInfoEnabled);
+        Assert.Throws<ObjectDisposedException>(() => hud.IsPixelInfoEnabled = true);
+        Assert.Throws<ObjectDisposedException>(() => queries.QueryOptions);
+        Assert.Throws<ObjectDisposedException>(() => queries.QueryMetrics);
+        Assert.Throws<ObjectDisposedException>(() => drawing.DrawLine(new(), new(1, 1), Brushes.Red));
+        var releases = 0;
+        var closed = await sink.SubmitFrameAsync(ImageFrame.TakeOwnership(
+            new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 1 }, () => releases++));
+        Assert.Equal(FrameSubmitStatus.Closed, closed.Status);
+        Assert.Equal(1, releases);
     }
 
     [Fact]
     public void ViewerImplementationMatchesItsFacade()
     {
-        var contract = typeof(IViewer).GetMethods().Select(m => m.ToString()).ToHashSet();
-        contract.UnionWith(typeof(IAsyncDisposable).GetMethods().Select(m => m.ToString()));
+        var contract = typeof(IViewer).GetInterfaces().Append(typeof(IViewer))
+            .SelectMany(type => type.GetMethods()).Select(m => m.ToString()).ToHashSet();
         foreach (var method in typeof(Viewer).GetMethods(System.Reflection.BindingFlags.Public |
                      System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
             Assert.Contains(method.ToString(), contract);
@@ -90,22 +115,76 @@ public class PublicApiTests
     }
 
     [Fact]
+    public void OnlyCompleteFacadeExposesGlobalLayerManagement()
+    {
+        Assert.Equal(typeof(ViewerLayers), typeof(IViewer).GetProperty("Layers")!.PropertyType);
+        foreach (var capability in typeof(IViewer).GetInterfaces())
+        {
+            Assert.Null(capability.GetProperty("Layers"));
+            Assert.DoesNotContain(capability.GetMethods(), method => method.ReturnType == typeof(ViewerLayers));
+        }
+        Assert.Equal(typeof(DrawingLayer), typeof(IViewerDrawing).GetProperty("Markers")!.PropertyType);
+        Assert.Equal(typeof(MeasurementLayer), typeof(IViewerMeasurements).GetProperty("Measurements")!.PropertyType);
+    }
+
+    [Fact]
+    public async Task BorrowedLayerManagementKeepsOtherContentAndGlobalClearRemovesBoth()
+    {
+        await using var viewer = Create();
+        IViewerDrawing drawing = viewer;
+        IViewerMeasurements measurements = viewer;
+        Assert.Same(viewer.Layers.Markers, drawing.Markers);
+        Assert.Same(viewer.Layers.Measurements, measurements.Measurements);
+        var completed = new List<IMeasurement>();
+        var removed = new List<IMeasurement>();
+        measurements.MeasurementCompleted += (_, e) => completed.Add(e.Measurement);
+        measurements.MeasurementRemoved += (_, e) => removed.Add(e.Measurement);
+        async Task CompletePoint() => await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            measurements.StartMeasurement(MeasurementToolIds.Point);
+            viewer.Host.Interaction.ImageDown(2, 3);
+        });
+
+        await CompletePoint();
+        using var firstDrawing = drawing.Markers.Add(new CircleElement(new(), 2, Brushes.Red));
+        await Task.Run(drawing.Markers.Clear);
+        Assert.Empty(removed);
+        completed[0].UpdateGeometry(MeasurementGeometry.Point(new(4, 5)));
+        Assert.Throws<ObjectDisposedException>(() => firstDrawing.Replace(new CircleElement(new(), 3, Brushes.Red)));
+
+        using var secondDrawing = drawing.Markers.Add(new CircleElement(new(), 2, Brushes.Red));
+        measurements.StartMeasurement(MeasurementToolIds.Length);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(1, 1));
+        await Task.Run(measurements.Measurements.Clear);
+        Assert.Equal(completed, removed);
+        secondDrawing.Replace(new CircleElement(new(), 3, Brushes.Red));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(5, 5));
+        Assert.Single(completed); // The cancelled preview must not complete on the next click.
+
+        await CompletePoint();
+        await Task.Run(((IViewer)viewer).Layers.ClearContents);
+        Assert.Equal(completed, removed);
+        Assert.Throws<ObjectDisposedException>(() => secondDrawing.Replace(new CircleElement(new(), 4, Brushes.Red)));
+    }
+
+    [Fact]
     public async Task MeasurementEventsExcludePreviewsAndCaptureLatestRemovalGeometry()
     {
         await using var viewer = Create();
+        IViewerMeasurements measurements = viewer;
         var completed = new List<MeasurementEventArgs>();
         var removed = new List<MeasurementEventArgs>();
-        viewer.MeasurementCompleted += (_, _) => throw new Exception("isolated subscriber");
-        viewer.MeasurementCompleted += (_, e) => completed.Add(e);
-        viewer.MeasurementRemoved += (_, e) => removed.Add(e);
+        measurements.MeasurementCompleted += (_, _) => throw new Exception("isolated subscriber");
+        measurements.MeasurementCompleted += (_, e) => completed.Add(e);
+        measurements.MeasurementRemoved += (_, e) => removed.Add(e);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            measurements.StartMeasurement(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
-            viewer.EndInteraction();
+            measurements.EndInteraction();
             Assert.Empty(removed);
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            measurements.StartMeasurement(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
             viewer.Host.Interaction.ImageDown(5, 6);
             Assert.Single(completed);

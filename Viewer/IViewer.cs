@@ -1,161 +1,20 @@
-using Fizzy.ImageViewer.Hud;
-using Fizzy.ImageViewer.Layers;
-using Fizzy.ImageViewer.Menus;
-using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media;
+using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Hud;
+using Fizzy.ImageViewer.Imaging;
+using Fizzy.ImageViewer.Layers;
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Menus;
+using Fizzy.ImageViewer.Snapshots;
+using Fizzy.ImageViewer.Viewport;
 
 namespace Fizzy.ImageViewer;
 
-/// <summary>
-/// 图像查看器的完整 API 接口。
-/// </summary>
-public interface IViewer : IAsyncDisposable
+/// <summary>Complete viewer capabilities and ownership of asynchronous shutdown.</summary>
+/// <remarks>Borrow individual capability interfaces when the caller does not own the viewer.</remarks>
+public interface IViewer : IFrameSink, ICommittedFrameSource, IViewerWindow, IViewerDisplay,
+    ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IAsyncDisposable
 {
-    /// <summary>Style for future measurements. Brushes are copied and frozen before UI dispatch.</summary>
-    MeasurementStyle MeasurementStyle { get; set; }
-    // === 窗口管理 ===
-
-    /// <summary>
-    /// 在查看器 STA 上显示、恢复最小化并激活窗口。关闭或释放开始后抛出 ObjectDisposedException。
-    /// </summary>
-    void Show();
-    /// <summary>在查看器 STA 上隐藏窗口，保留帧和绘图。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    void Hide();
-    /// <summary>在查看器 STA 上最小化窗口。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    void Minimize();
-    /// <summary>在查看器 STA 上查询可见性；已显示的最小化窗口仍可见。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    bool IsVisible { get; }
-    /// <summary>在查看器 STA 上查询最小化状态。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    bool IsMinimized { get; }
-
-    /// <summary>
-    /// 是否允许用户通过点击关闭按钮关闭窗口。
-    /// </summary>
-    bool CanUserClose { get; set; }
-    event EventHandler? Closed;
-    void FitImageToContainer();
-
-    /// <summary>
-    /// 窗口标题。
-    /// </summary>
-    string Title { get; set; }
-
-    /// <summary>
-    /// 窗口宽度。
-    /// </summary>
-    double Width { get; set; }
-
-    /// <summary>
-    /// 窗口高度。
-    /// </summary>
-    double Height { get; set; }
-
-    /// <summary>
-    /// 窗口左边缘位置。
-    /// </summary>
-    double Left { get; set; }
-
-    /// <summary>
-    /// 窗口顶边缘位置。
-    /// </summary>
-    double Top { get; set; }
-
-    /// <summary>
-    /// 是否启用无边框模式。
-    /// </summary>
-    bool Borderless { get; set; }
-    /// <summary>右上角 HUD 标签，通过查看器 STA 读写。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    string? HudLabel { get; set; }
-    /// <summary>Enables pixel inspection in the HUD; defaults to true.</summary>
-    bool IsPixelInfoEnabled { get; set; }
-    /// <summary>测量及像素 HUD 的查询配置，通过查看器 STA 读写。</summary>
-    Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { get; set; }
-    /// <summary>内置查询调度器的统计快照，通过查看器 STA 读取。</summary>
-    Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { get; }
-
-    ValueTask<Fizzy.ImageViewer.Frames.FrameSubmitResult> SubmitFrameAsync(
-        Fizzy.ImageViewer.Frames.ImageFrame frame,
-        Fizzy.ImageViewer.Frames.FrameSubmissionOptions? options = null,
-        CancellationToken ct = default);
-    Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame();
-    event Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted;
-    Fizzy.ImageViewer.Imaging.GrayDisplayRange? DisplayRange { get; set; }
-    Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
-        Fizzy.ImageViewer.Snapshots.SnapshotKind kind, CancellationToken ct = default);
-    Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(
-        Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Imaging.PixelRegion region, CancellationToken ct = default);
-    // === 绘图 ===
-    Fizzy.ImageViewer.Layers.ViewerLayers Layers { get; }
-
-    /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层创建初始内容为线段的绘图；返回句柄可整体替换为单个元素或集合。
-    /// </summary>
-    DrawingHandle DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0);
-
-    /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层创建初始内容为文本标签的绘图；返回句柄可整体替换为单个元素或集合。
-    /// </summary>
-    DrawingHandle DrawText(Point anchor, string text, Brush brush, double fontSize = 14, Vector offset = default);
-
-    /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层创建初始内容为准星的绘图；返回句柄可整体替换为单个元素或集合。
-    /// </summary>
-    DrawingHandle DrawCrosshair(Point center, Brush brush, double armLength = 20, double thickness = 2);
-
-    /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层创建初始内容为矩形框的绘图；返回句柄可整体替换为单个元素或集合。
-    /// </summary>
-    DrawingHandle DrawRectangle(Rect rect, Brush brush, double thickness = 1.0);
-
-    /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层创建初始内容为圆形的绘图；返回句柄可整体替换为单个元素或集合。
-    /// </summary>
-    DrawingHandle DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null);
-
-
-    /// <summary>
-    /// 在 HUD 层创建文本；通过返回句柄的 Update 更新文本和颜色。
-    /// </summary>
-    HudTextHandle DrawHudText(string text, Brush brush,
-        Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft,
-        double fontSize = 14);
-
-    // === 测量工具 ===
-
-    /// <summary>
-    /// 程序化启动已注册的测量工具。
-    /// </summary>
-    void StartMeasurement(string toolId);
-
-    /// <summary>
-    /// 结束当前创建或编辑交互，保留已完成的测量及已应用的编辑。
-    /// </summary>
-    void EndInteraction();
-    /// <summary>Completed measurements only; raised on the viewer STA, excluding previews.</summary>
-    event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
-    /// <summary>Removal of completed measurements; raised on the viewer STA, including closure.</summary>
-    event EventHandler<MeasurementEventArgs>? MeasurementRemoved;
-    /// <summary>Immutable geometry and query state of completed measurements after editing, publication or invalidation.</summary>
-    event EventHandler<MeasurementEventArgs>? MeasurementChanged;
-
-    // === 扩展 ===
-
-    /// <summary>
-    /// 注册自定义菜单项；释放返回句柄撤销本次注册，不释放菜单对象。
-    /// 句柄可从任意线程重复释放，查看器关闭后释放仍然安全。
-    /// </summary>
-    IDisposable RegisterMenu(IMenuItem menuItem);
-
-    /// <summary>
-    /// 注册自定义测量工具；CreateSession 为每次启动创建独立会话。会话通过 IMeasurementToolContext.CreateMeasurement 创建测量并托管资源，
-    /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
-    /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
-    /// </summary>
-    void RegisterMeasurementTool(IMeasurementTool tool);
-    bool UnregisterMeasurementTool(string toolId);
+    /// <summary>Global layer composition, enumeration and content clearing across drawing and measurements.</summary>
+    ViewerLayers Layers { get; }
 }

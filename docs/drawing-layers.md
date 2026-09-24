@@ -207,8 +207,15 @@ and is idempotent; clear, layer removal and viewer closure invalidate handles.
 
 Built-in layers cannot be removed. Names are nonempty and unique (case-sensitive).
 Layer handles belong to one viewer and cannot be passed to another viewer's manager.
-`Layers.Items` returns a snapshot. Clear preserves layer settings and subscriptions;
+`Layers.Items` returns a membership snapshot containing mutable layer handles. Clear preserves layer settings and subscriptions;
 removal and closure release subscriptions and drawing resources.
+
+Global layer composition is available through `IViewer.Layers`. Borrowing
+`IViewerDrawing` exposes only the default `Markers` layer and its `Draw*` helpers;
+`IViewerMeasurements.Measurements` exposes the measurement layer. A `DrawingLayer`
+grants management of that entire layer, including clearing other drawings and receiving
+their click handles. Pass a `DrawingHandle` when a component only updates one existing
+drawing. Keep layer access when it must create drawings or recreate them after global clear.
 
 `DrawLine`, `DrawCircle`, `DrawRectangle`, `DrawCrosshair`, and
 `DrawText` create drawings initially containing one element in `Markers`, without default selection

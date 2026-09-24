@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer;
 /// 所有 UI 操作都会自动调度到 UI 线程执行。
 /// </para>
 /// </summary>
-public sealed partial class Viewer : IViewer, IAsyncDisposable
+public sealed partial class Viewer : IViewer
 {
     private readonly ViewerHost _host;
     private readonly ILogger _logger;

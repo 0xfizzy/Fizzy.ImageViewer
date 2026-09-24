@@ -11,16 +11,68 @@ application adapters own an instance and use its public API. Raw-window access i
 | Frames | `SubmitFrameAsync`, `AcquireCurrentFrame`, `FrameCommitted`, frame descriptors, leases and submission results |
 | Pixels | CPU readers, external `IFramePixelSource`, query data, shared query configuration/metrics and display range |
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
-| Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
+| Layer composition | `Layers`, `ViewerLayers`, `ViewerLayer`, layer enumeration, creation/removal and global clear |
+| Drawing | `Markers`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
 | HUD | `HudLabel`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
-| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
+| Measurements | `Measurements` layer, instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
 
-The root namespace contains `Viewer` and `IViewer`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
+The root namespace contains `Viewer`, `IViewer` and `IViewerWindow`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
 `DrawingLayer`, drawing handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
 `MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 HUD text handles and anchor alignment belong to `.Hud`.
+
+## Borrowing viewer capabilities
+
+`IViewer` aggregates the following interfaces and `IAsyncDisposable`. `Viewer` implements
+all capabilities on the same instance; callers can accept the narrow interface they need.
+Only the owning host disposes the viewer. Borrowed capabilities share its STA, state and
+shutdown gate and have no independent disposal contract.
+
+| Interface | Namespace | Responsibility |
+| --- | --- | --- |
+| `IFrameSink` | `.Frames` | Submit owned frames and await commit/drop results |
+| `ICommittedFrameSource` | `.Frames` | Acquire current original-frame leases and observe commits |
+| `IViewerWindow` | Root | Window visibility, placement, title, close policy and `Closed` |
+| `IViewerDisplay` | `.Viewport` | Fit the image to the viewport and configure display range |
+| `ISnapshotSource` | `.Snapshots` | Capture independently owned full-frame or region snapshots |
+| `IViewerDrawing` | `.Drawing` | Default `Markers` layer and drawing helpers |
+| `IViewerMeasurements` | `.Measurements` | `Measurements` layer, tools, interaction, style and events |
+| `IViewerHud` | `.Hud` | Screen-space text and pixel inspection visibility |
+| `IViewerMenu` | `.Menus` | Revocable menu registration |
+| `IViewerQueries` | `.Imaging` | Shared query settings and metrics for measurements and HUD |
+
+```csharp
+using Fizzy.ImageViewer.Frames;
+
+static ValueTask<FrameSubmitResult> PublishAsync(IFrameSink sink, ImageFrame frame,
+    CancellationToken ct = default) => sink.SubmitFrameAsync(frame, ct: ct);
+```
+
+Submission transfers ownership even when the sink rejects or cancels the frame; alternate
+implementations and test doubles must release it on every terminal path. Frame readers
+own their acquired leases. A commit event and a subsequent acquisition are not atomic;
+use `FrameSubmissionOptions.OnCommitted` for a specific submission's borrowed lease.
+
+Global layer composition belongs only to `IViewer.Layers`: it can enumerate, create,
+remove and clear layers across both drawing and measurements. `Layers.Items` snapshots
+membership, but its elements remain live mutable handles. `IViewerDrawing.Markers` and
+`IViewerMeasurements.Measurements` expose their respective entire layers; clearing one
+does not clear the other. A renderer needing a particular layer can accept `DrawingLayer`;
+a component updating only an existing drawing can accept `DrawingHandle`. Layer access
+includes all content and click handles in that layer, not only the caller's creations.
+
+Measurement events include immutable snapshots and a live editable/removable measurement
+handle. Measurement tool registration and `EndInteraction` manage the viewer-wide state;
+a tool session should use its context's `Finish` to end only itself. Query configuration
+affects the shared scheduler for measurements and pixel HUD, including other callers.
+Menu and HUD handles instead operate on their individual registration or text.
+
+These interfaces describe normal typed dependencies, not security isolation. The same
+`Viewer` implements all capabilities and is the sender of viewer events; casts can recover
+the complete facade. They do not make drawing independent of WPF. `Closed` is a window
+notification; the owner still awaits `IViewer.DisposeAsync()` for complete shutdown.
 
 ## Threads and window lifetime
 
