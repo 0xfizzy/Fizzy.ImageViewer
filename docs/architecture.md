@@ -105,9 +105,13 @@ registration identity, creation context and callback session; callback reentry v
 that activation before continuing. Context-scoped finishing cannot affect replacements.
 
 MeasurementCollection owns membership, visual lookup, creation policy and viewer style.
-MeasurementRuntime supplies handle STA dispatch, query registration and shared notification
-execution; MeasurementItem receives the runtime, presentation layer and style explicitly.
-The collection is not the item's service locator. A per-viewer MeasurementNotificationQueue
+ViewerHost constructs MeasurementRuntime and shares it with the collection and interaction
+coordinator. The runtime supplies handle and creation-context STA dispatch, query registration
+and shared notification execution; MeasurementItem receives the runtime, presentation layer
+and style explicitly. Creation contexts receive the runtime and a frame-acquisition delegate
+directly, while the collection owns creation and membership rather than forwarding execution
+or frame access. Collection shutdown stops the shared runtime before disposing its items.
+A per-viewer MeasurementNotificationQueue
 serializes immutable viewer and handle notifications, including mutations made reentrantly
 by subscribers. Internal geometry application remains synchronous so editing controls are
 consistent before any public notification is queued.

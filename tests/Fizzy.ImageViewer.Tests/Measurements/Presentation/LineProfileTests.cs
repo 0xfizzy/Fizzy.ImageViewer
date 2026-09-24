@@ -24,7 +24,7 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Line(new(), new(3, 4)));
             item.Complete();
             Assert.Equal(5, ((LineMeasurementGeometry)item.Geometry).Length);
@@ -46,12 +46,12 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var before = Windows();
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 0)),
                     new() { Query = MeasurementQueryKind.LineProfile, ShowProfileWindow = showWindow });
             item.Complete();
             var descriptor = new FrameDescriptor(2, 1, 2, FramePixelFormat.Gray8);
-            var request = Assert.IsType<LineProfileQueryRequest>(item.QueryClient.Capture(descriptor));
+            var request = Assert.IsType<CoordinateQueryRequest>(item.QueryClient.Capture(descriptor));
             PixelSample[] samples = [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255),
                 new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)];
             request.Publish(new(1, descriptor, null), samples);
@@ -74,7 +74,7 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var store = viewer.Host.Measurements;
-            var item = (MeasurementItem)new MeasurementCreationContext(store)
+            var item = (MeasurementItem)new MeasurementCreationContext(store, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             var failure = new InvalidOperationException("registry observer failed");
@@ -167,7 +167,7 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Host.Window.MeasurementOverlay;
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()));
             item.OnDispose(() => throw new InvalidOperationException("resource cleanup failure"));
             item.Complete();
             int removed = 0;
@@ -188,7 +188,7 @@ public class LineProfileTests
     private static (Line Line, Window Window) Draw(Viewer viewer, LineProfileTool method, MeasurementOverlay overlay)
     {
         var before = Windows();
-        var session = new MeasurementCreationContext(viewer.Host.Measurements);
+        var session = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
         var activation = method.CreateSession(session);
         Assert.Equal(MeasurementClickResult.Continue, activation.OnClick(new(0, 0)));
         Assert.Empty(Windows().Except(before));
@@ -306,7 +306,7 @@ public class LineProfileTests
             var pair = Draw(viewer, new LineProfileTool(), overlay);
             var item = viewer.Host.Measurements.Find(pair.Line)!;
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
-            var request = Assert.IsType<LineProfileQueryRequest>(item.QueryClient.Capture(descriptor));
+            var request = Assert.IsType<CoordinateQueryRequest>(item.QueryClient.Capture(descriptor));
             request.Publish(new FrameInfo(1, descriptor, null), [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
             var plot = (LineProfilePlotView.LineProfilePlotControl)pair.Window.Content;
             Assert.Equal(2, plot.SampleCount);
@@ -315,7 +315,7 @@ public class LineProfileTests
             item.UpdateGeometry(MeasurementGeometry.Line(new(0, 0), new(2, 0)));
             Assert.Equal(0, plot.SampleCount);
             Assert.Equal(0, plot.ChannelCount);
-            var updated = Assert.IsType<LineProfileQueryRequest>(item.QueryClient.Capture(descriptor));
+            var updated = Assert.IsType<CoordinateQueryRequest>(item.QueryClient.Capture(descriptor));
             Assert.NotEqual(request.Identity, updated.Identity);
             updated.Publish(new FrameInfo(2, descriptor, null), Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255), updated.Coordinates.Length).ToArray());
             Assert.Equal(1, plot.ChannelCount);

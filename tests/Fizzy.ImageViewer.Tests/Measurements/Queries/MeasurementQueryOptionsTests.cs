@@ -59,19 +59,22 @@ public class MeasurementQueryOptionsTests
                     Assert.Null(request);
                     continue;
                 case MeasurementQueryKind.Pixel:
-                    var pixel = Assert.IsType<PixelQueryRequest>(request);
+                    var pixel = Assert.IsType<CoordinateQueryRequest>(request);
+                    Assert.Equal(QueryRateCategory.Pixel, pixel.RateCategory);
                     Assert.Equal(new PixelCoordinate(1, 1), Assert.Single(pixel.Coordinates));
                     pixel.Publish(frame, [new(FramePixelFormat.Gray8, 12, 0, 0, 0, 255)]);
                     Assert.Equal(12, Assert.Single(Assert.IsType<MeasurementSampleResult>(result).Samples).Gray);
                     break;
                 case MeasurementQueryKind.LineProfile:
-                    var profile = Assert.IsType<LineProfileQueryRequest>(request);
+                    var profile = Assert.IsType<CoordinateQueryRequest>(request);
+                    Assert.Equal(QueryRateCategory.Line, profile.RateCategory);
                     Assert.Equal(new PixelCoordinate[] { new(0, 0), new(1, 0), new(2, 0) }, profile.Coordinates);
                     profile.Publish(frame, new PixelSample[3]);
                     Assert.Equal(3, Assert.IsType<MeasurementSampleResult>(result).Samples.Count);
                     break;
                 case MeasurementQueryKind.RegionStatistics:
                     var region = Assert.IsType<RegionStatisticsQueryRequest>(request);
+                    Assert.Equal(QueryRateCategory.Region, region.RateCategory);
                     Assert.Equal(new PixelRegion(0, 0, 2, 2), region.Region);
                     region.Publish(frame, new RegionStatistics(FramePixelFormat.Gray8, []));
                     Assert.Equal(region.Region, Assert.IsType<MeasurementRegionResult>(result).Region);

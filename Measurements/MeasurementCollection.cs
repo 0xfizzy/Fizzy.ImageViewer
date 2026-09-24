@@ -1,9 +1,6 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
-using Fizzy.ImageViewer.Imaging.Queries;
-using Fizzy.ImageViewer.Frames;
 using Microsoft.Extensions.Logging;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer.Measurements;
 
@@ -13,7 +10,6 @@ internal sealed class MeasurementCollection
     internal MeasurementNotificationQueue Notifications => _runtime.Notifications;
     public MeasurementStyle Style { get; internal set; } = MeasurementStyle.Default;
     private readonly MeasurementLayer _measurementLayer;
-    private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
     private readonly MeasurementRuntime _runtime;
     private readonly HashSet<MeasurementItem> _items = [];
@@ -35,19 +31,16 @@ internal sealed class MeasurementCollection
         ItemCompleted?.Invoke(Snapshot(item));
     }
 
-    internal MeasurementCollection(MeasurementLayer layer, ViewerLifetime lifetime, Dispatcher dispatcher,
-        Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
+    internal MeasurementCollection(MeasurementLayer layer, MeasurementRuntime runtime, ILogger logger)
     {
         _measurementLayer = layer;
-        _runtime = new(lifetime, dispatcher, scheduler, logger);
+        _runtime = runtime;
         layer.ContentClearing += ClearMeasurements;
-        _acquire = acquire;
         _logger = logger;
     }
-    public FrameLease? AcquireCurrentFrame() => _acquire();
     internal IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options, MeasurementCreationContext session)
     {
-        VerifyAccess();
+        _runtime.VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_cleaning || _measurementLayer.IsClearing) throw new InvalidOperationException("Cannot create a measurement during cleanup.");
         ArgumentNullException.ThrowIfNull(session);
@@ -62,10 +55,6 @@ internal sealed class MeasurementCollection
     }
     private static MeasurementEventArgs Snapshot(MeasurementItem item) =>
         new(new(item.Id, item.Geometry, item.GeometryVersion, item.Origin), item, item.QueryResult);
-    public void VerifyAccess() => _runtime.VerifyAccess();
-    internal T Invoke<T>(Func<T> action) => _runtime.Invoke(action);
-    internal void Invoke(Action action) => _runtime.Invoke(action);
-    internal void InvokeRemoval(Action action) => _runtime.InvokeRemoval(action);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _visualOwners.TryGetValue(shape, out var item) ? item : null;
     internal bool Contains(MeasurementItem item) => _items.Contains(item);
 

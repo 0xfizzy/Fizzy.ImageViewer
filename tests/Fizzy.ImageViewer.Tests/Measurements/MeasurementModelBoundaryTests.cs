@@ -27,7 +27,7 @@ public class MeasurementModelBoundaryTests
             MeasurementItem? item = null;
             var error = Assert.Throws<AggregateException>(() =>
             {
-                item = (MeasurementItem)new MeasurementCreationContext(collection)
+                item = (MeasurementItem)new MeasurementCreationContext(collection, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                     .CreateMeasurement(MeasurementGeometry.Point(new()));
                 item.Complete();
             });

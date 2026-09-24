@@ -18,8 +18,8 @@ public class MeasurementStyleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var rectangleItem = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
-            using var pointItem = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
+            using var rectangleItem = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
+            using var pointItem = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
                 new() { Style = new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White } });
             var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).Presentation.PrimaryVisual;
             var label = ((MeasurementItem)rectangleItem).Presentation.Label;

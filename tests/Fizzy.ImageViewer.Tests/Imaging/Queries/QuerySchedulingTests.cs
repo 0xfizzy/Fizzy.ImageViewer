@@ -124,7 +124,7 @@ public class QuerySchedulingTests
     private sealed class Client : IFrameQueryClient
     {
         public int Revision;public List<double> Values=[];public TaskCompletionSource Published=new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public QueryRequest? Capture(FrameDescriptor descriptor)=>new PixelQueryRequest(new(Guid.Empty, Revision), [new(0,0)], (_, samples)=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
+        public QueryRequest? Capture(FrameDescriptor descriptor)=>new CoordinateQueryRequest(QueryRateCategory.Pixel, new(Guid.Empty, Revision), [new(0,0)], (_, samples)=>{Values.Add(samples![0].Gray);Published.TrySetResult();});
         public void ClearResult() { }
         public void Dispose() { }
     }

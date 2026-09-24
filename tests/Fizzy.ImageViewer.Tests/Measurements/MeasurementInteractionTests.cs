@@ -119,7 +119,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
@@ -264,7 +264,7 @@ public class MeasurementInteractionTests
         }
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(Geometry(0));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(Geometry(0));
             handle = item;
             item.Complete();
             viewer.Host.Interaction.StartEditing(item);
@@ -354,15 +354,16 @@ public class MeasurementInteractionTests
             var layers = new Layers.ViewerLayers(image.TransformGroup);
             var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
-            var context = new MeasurementCollection(layers.Measurements, new ViewerLifetime(), overlay.Dispatcher, () => null, queries, NullLogger.Instance);
+            var runtime = new MeasurementRuntime(new ViewerLifetime(), overlay.Dispatcher, queries, NullLogger.Instance);
+            var context = new MeasurementCollection(layers.Measurements, runtime, NullLogger.Instance);
             var tools = new MeasurementToolRegistry();
             var editor = new MeasurementEditController(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             var binding = new ViewerInputBinding(image, overlay, context, capture);
-            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers);
+            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers, runtime, () => null);
             binding.Connect(coordinator);
             var tool = new RectangleRoiTool();
-            var creation = new MeasurementCreationContext(context);
+            var creation = new MeasurementCreationContext(context, runtime, () => null);
             var session = tool.CreateSession(creation);
             session.OnClick(new(2, 2)); session.OnClick(new(6, 6));
             creation.End(); creation.ClearPreviews();

@@ -124,7 +124,7 @@ public class MeasurementActivationTests
         viewer.Closed += (_, _) => closed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.OnDispose(() => throw new InvalidOperationException("cleanup"));

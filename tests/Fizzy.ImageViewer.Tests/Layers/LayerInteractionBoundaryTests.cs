@@ -31,7 +31,7 @@ public class LayerInteractionBoundaryTests
         Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement("admission"));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             viewer.Host.Interaction.StartEditing(item);
             viewer.Host.Interaction.StartMeasurement("admission");
@@ -128,7 +128,7 @@ public class LayerInteractionBoundaryTests
         await using var viewer = new Viewer(showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             foreach (var visual in item.Presentation.Visuals)
             {
@@ -152,11 +152,11 @@ public class LayerInteractionBoundaryTests
         await using var viewer = new Viewer(showWindow: false);
         await using var other = new Viewer(showWindow: false);
         var foreign = await other.Host.Window.Dispatcher.InvokeAsync(() =>
-            (MeasurementItem)new MeasurementCreationContext(other.Host.Measurements)
+            (MeasurementItem)new MeasurementCreationContext(other.Host.Measurements, other.Host.MeasurementRuntime, other.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new())));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var context = new MeasurementCreationContext(viewer.Host.Measurements);
+            var context = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
             var selected = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new()));
             var removed = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
             removed.Dispose();

@@ -104,14 +104,16 @@ shutdown cleans both completed and unfinished measurements and waits for owned q
 
 ## Query execution
 
-`PixelQueryScheduler` runs one batch at a time. It captures typed pixel, line and
-region requests on the viewer STA, performs all pixel-source operations off STA,
+`PixelQueryScheduler` runs one batch at a time. It captures coordinate-sampling and
+region-statistics requests on the viewer STA, performs all pixel-source operations off STA,
 and publishes results on STA. Viewer owns this shared imaging service. Measurement items
 subscribe through MeasurementRuntime, independently of the pixel HUD; disposing a measurement owner does not
 stop other query clients. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
 not discard successful pixel results. Query options control rates and result-age limits;
 query metrics report execution, and each batch owns its frame lease until completion.
+Pixel and line-profile queries use the same coordinate request protocol; each request's
+rate category selects the pixel, line or region limit independently of execution and publication.
 The oldest-due request selects the next group: either one region query or a merged gather
 of due pixel and line requests. Each group publishes independently before another begins;
 unselected clients retain their due time and capture fresh state on the next tick. This

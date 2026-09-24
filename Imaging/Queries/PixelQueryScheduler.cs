@@ -100,15 +100,20 @@ internal sealed class PixelQueryScheduler : IDisposable
 
     private TimeSpan Interval(Entry entry)
     {
-        var rate = entry.Request switch { PixelQueryRequest => _options.PixelRate, LineProfileQueryRequest => _options.LineRate, _ => _options.RegionRate };
+        var rate = entry.Request.RateCategory switch
+        {
+            QueryRateCategory.Pixel => _options.PixelRate,
+            QueryRateCategory.Line => _options.LineRate,
+            QueryRateCategory.Region => _options.RegionRate,
+            _ => throw new InvalidOperationException("Unknown query rate category.")
+        };
         if (entry.Item.Policy.MaximumRate is double maximum) rate = Math.Min(rate, maximum);
         return TimeSpan.FromSeconds(1 / rate);
     }
 
     private static PixelCoordinate[] Coordinates(QueryRequest request) => request switch
     {
-        PixelQueryRequest pixel => pixel.Coordinates,
-        LineProfileQueryRequest line => line.Coordinates,
+        CoordinateQueryRequest coordinates => coordinates.Coordinates,
         _ => []
     };
 
@@ -210,8 +215,7 @@ internal sealed class PixelQueryScheduler : IDisposable
                 // FrameId here would starve every query slower than the frame rate.
                 switch (entry.Request, results[i])
                 {
-                    case (PixelQueryRequest p, SamplesResult s): p.Publish(frame.Info, s.Samples.Span); break;
-                    case (LineProfileQueryRequest l, SamplesResult s): l.Publish(frame.Info, s.Samples.Span); break;
+                    case (CoordinateQueryRequest c, SamplesResult s): c.Publish(frame.Info, s.Samples.Span); break;
                     case (RegionStatisticsQueryRequest r, StatisticsResult s): r.Publish(frame.Info, s.Statistics); break;
                     default: throw new InvalidOperationException("Mismatched query result.");
                 }

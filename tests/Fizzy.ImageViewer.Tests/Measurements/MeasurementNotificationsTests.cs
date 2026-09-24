@@ -114,7 +114,7 @@ public class MeasurementNotificationsTests
         viewer.MeasurementRemoved += (_, _) => removed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
             item.Complete();
             item.UpdateGeometry(MeasurementGeometry.Point(new(1, 1)));
             Assert.True(item.IsDisposed);
@@ -135,7 +135,7 @@ public class MeasurementNotificationsTests
         var handleSecond = new List<double>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             viewer.MeasurementChanged += (_, e) =>
@@ -177,7 +177,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => observed.Add("closed");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
         });
@@ -193,7 +193,7 @@ public class MeasurementNotificationsTests
         var second = new List<string>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.QueryResultChanged += result =>
@@ -221,7 +221,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => order.Add("closed");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.GeometryChanged += _ => order.Add("geometry");
@@ -244,7 +244,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => order.Add("closed:second");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            IMeasurement item = new MeasurementCreationContext(viewer.Host.Measurements)
+            IMeasurement item = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             void CloseDuringCleanup()

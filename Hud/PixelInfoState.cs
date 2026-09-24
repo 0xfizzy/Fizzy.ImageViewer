@@ -51,7 +51,7 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
         if (_x >= descriptor.Width || _y >= descriptor.Height) { Leave(); return null; }
         if (!_hasValue) ShowWaiting();
         int x = (int)Math.Floor(_x), y = (int)Math.Floor(_y);
-        return new PixelQueryRequest(new(_id, _positionVersion, _sessionVersion), [new(x, y)], (_, samples) =>
+        return new CoordinateQueryRequest(QueryRateCategory.Pixel, new(_id, _positionVersion, _sessionVersion), [new(x, y)], (_, samples) =>
         {
             _hasValue = true;
             SetText(Format(descriptor, x, y, samples[0]));

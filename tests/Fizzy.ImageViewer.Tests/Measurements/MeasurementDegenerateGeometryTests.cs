@@ -28,7 +28,7 @@ public class MeasurementDegenerateGeometryTests
                 "rectangle-height" => MeasurementGeometry.Rectangle(new(), new(4, 0)),
                 _ => MeasurementGeometry.Rectangle(new(), new())
             };
-            using var handle = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(initial);
+            using var handle = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(initial);
             handle.Complete();
             var item = (MeasurementItem)handle;
             var editor = viewer.Host.Interaction.Editor;
@@ -67,7 +67,7 @@ public class MeasurementDegenerateGeometryTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var handle = new MeasurementCreationContext(viewer.Host.Measurements)
+            using var handle = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Circle(new(), 4));
             handle.Complete();
             var editor = viewer.Host.Interaction.Editor;

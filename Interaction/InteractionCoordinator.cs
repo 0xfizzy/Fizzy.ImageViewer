@@ -1,4 +1,5 @@
 using Fizzy.ImageViewer.Layers;
+using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
 using System.Windows;
@@ -13,6 +14,8 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly MeasurementEditController _edit;
     private readonly MeasurementToolRegistry _tools;
     private readonly MeasurementCollection _measurements;
+    private readonly MeasurementRuntime _runtime;
+    private readonly Func<FrameLease?> _acquire;
     private sealed class Activation(MeasurementToolRegistry.Registration registration, MeasurementCreationContext context)
     {
         internal MeasurementToolRegistry.Registration Registration { get; } = registration;
@@ -29,12 +32,15 @@ internal sealed class InteractionCoordinator : IDisposable
     internal MeasurementEditController Editor => _edit;
 
     internal InteractionCoordinator(IInteractionView input, MeasurementEditController edit,
-        MeasurementToolRegistry tools, MeasurementCollection measurements, ViewerLayers layers)
+        MeasurementToolRegistry tools, MeasurementCollection measurements, ViewerLayers layers,
+        MeasurementRuntime runtime, Func<FrameLease?> acquire)
     {
         _input = input;
         _edit = edit;
         _tools = tools;
         _measurements = measurements;
+        _runtime = runtime;
+        _acquire = acquire;
         _layers = layers;
         layers.Measurements.Clearing += CancelForClear;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
@@ -79,7 +85,7 @@ internal sealed class InteractionCoordinator : IDisposable
                 if (version == _sessionVersion) RestoreInput();
                 return;
             }
-            var context = new MeasurementCreationContext(_measurements,
+            var context = new MeasurementCreationContext(_measurements, _runtime, _acquire,
                 new MeasurementOrigin(registration.Id, Guid.NewGuid()), Finish);
             var activation = new Activation(registration, context);
             _activation = activation;

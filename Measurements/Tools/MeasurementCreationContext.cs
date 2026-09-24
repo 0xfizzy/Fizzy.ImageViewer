@@ -3,7 +3,8 @@ using Fizzy.ImageViewer.Frames;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>A tool invocation context whose unfinished measurements belong to exactly one session.</summary>
-internal sealed class MeasurementCreationContext(MeasurementCollection owner, MeasurementOrigin? origin = null,
+internal sealed class MeasurementCreationContext(MeasurementCollection owner, MeasurementRuntime runtime,
+    Func<FrameLease?> acquire, MeasurementOrigin? origin = null,
     Func<MeasurementCreationContext, bool>? finish = null) : IMeasurementToolContext
 {
     private readonly HashSet<MeasurementItem> _previews = [];
@@ -14,12 +15,12 @@ internal sealed class MeasurementCreationContext(MeasurementCollection owner, Me
     public bool Finish()
     {
         var finished = false;
-        owner.InvokeRemoval(() => { if (!_ended) finished = finish?.Invoke(this) ?? false; });
+        runtime.InvokeRemoval(() => { if (!_ended) finished = finish?.Invoke(this) ?? false; });
         return finished;
     }
 
     public MeasurementStyle Style => owner.Style;
-    public FrameLease? AcquireCurrentFrame() => owner.AcquireCurrentFrame();
+    public FrameLease? AcquireCurrentFrame() => acquire();
 
     public IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null)
         => owner.CreateMeasurement(geometry, options, this);

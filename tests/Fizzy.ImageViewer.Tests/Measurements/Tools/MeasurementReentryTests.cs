@@ -44,16 +44,18 @@ public class MeasurementReentryTests
         internal readonly PixelQueryScheduler Queries;
         internal readonly MeasurementToolRegistry Tools;
         internal readonly MeasurementCollection Context;
+        internal readonly MeasurementRuntime Runtime;
         internal readonly InteractionCoordinator Coordinator;
         internal Harness()
         {
             Layers = new(Input.TransformGroup);
             Overlay = Layers.Measurements.Overlay;
             Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
-            Context = new(Layers.Measurements, new ViewerLifetime(), Overlay.Dispatcher, () => null, Queries, NullLogger.Instance);
+            Runtime = new(new ViewerLifetime(), Overlay.Dispatcher, Queries, NullLogger.Instance);
+            Context = new(Layers.Measurements, Runtime, NullLogger.Instance);
             Tools = new();
             var binding = new ViewerInputBinding(Input, Overlay, Context);
-            Coordinator = new(binding, new MeasurementEditController(Overlay), Tools, Context, Layers);
+            Coordinator = new(binding, new MeasurementEditController(Overlay), Tools, Context, Layers, Runtime, () => null);
             binding.Connect(Coordinator);
         }
         internal void AssertActive(string id)
@@ -75,7 +77,7 @@ public class MeasurementReentryTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness();
-            var independent = new MeasurementCreationContext(h.Context).CreateMeasurement(MeasurementGeometry.Point(new()));
+            var independent = new MeasurementCreationContext(h.Context, h.Runtime, () => null).CreateMeasurement(MeasurementGeometry.Point(new()));
             var tool = new Tool("scope");
             IMeasurementToolContext? retainedContext = null;
             IMeasurement? preview = null;
@@ -163,7 +165,7 @@ public class MeasurementReentryTests
             }
             h.Coordinator.StartMeasurement(old.Id);
             var scope = old.Context.CreateMeasurement(MeasurementGeometry.Point(new())); scope.OnDispose(() => oldReleased++);
-            var editable = (MeasurementItem)new MeasurementCreationContext(h.Context).CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
+            var editable = (MeasurementItem)new MeasurementCreationContext(h.Context, h.Runtime, () => null).CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
             var shape = editable.Presentation.PrimaryVisual;
             Action invoke;
             switch (operation)

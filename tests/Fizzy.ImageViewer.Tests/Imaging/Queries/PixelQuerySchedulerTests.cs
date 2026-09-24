@@ -71,8 +71,8 @@ public class PixelQuerySchedulerTests
             var identity = new QueryIdentity(Id, Version);
             return kind switch
             {
-                0 => new PixelQueryRequest(identity, [new(0, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
-                1 => new LineProfileQueryRequest(identity, [new(0, 0), new(1, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
+                0 => new CoordinateQueryRequest(QueryRateCategory.Pixel, identity, [new(0, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
+                1 => new CoordinateQueryRequest(QueryRateCategory.Line, identity, [new(0, 0), new(1, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
                 _ => new RegionStatisticsQueryRequest(identity, new(0, 0, 2, 1), (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); })
             };
         }
@@ -127,9 +127,9 @@ public class PixelQuerySchedulerTests
         using var frame = ImageFrame.Copy(new(3, 1, 3, FramePixelFormat.Gray8), new byte[] { 11, 22, 33 }).Transfer();
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         double[]? pixelValues = null, lineValues = null;
-        var pixel = new SliceClient(new PixelQueryRequest(new(Guid.NewGuid(), 0), [new(2, 0)],
+        var pixel = new SliceClient(new CoordinateQueryRequest(QueryRateCategory.Pixel, new(Guid.NewGuid(), 0), [new(2, 0)],
             (_, samples) => pixelValues = samples.ToArray().Select(p => p.Gray).ToArray()));
-        var line = new SliceClient(new LineProfileQueryRequest(new(Guid.NewGuid(), 0), [new(0, 0), new(1, 0)],
+        var line = new SliceClient(new CoordinateQueryRequest(QueryRateCategory.Line, new(Guid.NewGuid(), 0), [new(0, 0), new(1, 0)],
             (_, samples) => lineValues = samples.ToArray().Select(p => p.Gray).ToArray()));
         using var a = scheduler.Register(pixel);
         using var b = scheduler.Register(line);

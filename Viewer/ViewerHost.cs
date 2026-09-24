@@ -22,6 +22,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private Rendering.FramePresentation _presentation = null!;
     private MeasurementToolRegistry _tools = null!;
     private MeasurementCollection _measurements = null!;
+    private MeasurementRuntime _measurementRuntime = null!;
     private InteractionCoordinator _interaction = null!;
     private MenuManager _menuManager = null!;
     private ViewerMenuController? _menuController;
@@ -44,6 +45,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     internal Rendering.FramePipeline Pipeline => _pipeline;
     internal MeasurementToolRegistry Tools => _tools;
     internal MeasurementCollection Measurements => _measurements;
+    internal MeasurementRuntime MeasurementRuntime => _measurementRuntime;
     internal InteractionCoordinator Interaction => _interaction;
     internal MenuManager Menus => _menuManager;
     internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
@@ -75,7 +77,8 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                _measurements = new MeasurementCollection(win.Layers.Measurements, _lifetime, win.Dispatcher, TryAcquireCurrentFrame, _queryScheduler, _logger);
+                _measurementRuntime = new MeasurementRuntime(_lifetime, win.Dispatcher, _queryScheduler, _logger);
+                _measurements = new MeasurementCollection(win.Layers.Measurements, _measurementRuntime, _logger);
                 _tools = new MeasurementToolRegistry();
                 _measurements.ItemCompleted += _owner.NotifyMeasurementCompleted;
                 _measurements.ItemRemoved += _owner.NotifyMeasurementRemoved;
@@ -84,7 +87,8 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editor = new MeasurementEditController(win.MeasurementOverlay);
                 var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, logger: _logger);
-                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers);
+                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers,
+                    _measurementRuntime, TryAcquireCurrentFrame);
                 input.Connect(_interaction);
                 _tools.RegisterTool(new LengthTool());
                 _tools.RegisterTool(new PointTool());
