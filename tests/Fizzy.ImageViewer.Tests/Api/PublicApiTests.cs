@@ -72,12 +72,12 @@ public class PublicApiTests
         await using var viewer = Create();
         Assert.IsType<DrawingLayer>(viewer.Layers.Markers);
         Assert.IsType<MeasurementLayer>(viewer.Layers.Measurements);
-        Assert.Null(typeof(MeasurementLayer).GetMethod("AddBatch"));
-        Assert.Null(typeof(MeasurementLayer).GetEvent("BatchClicked"));
+        Assert.Null(typeof(MeasurementLayer).GetMethod("Add"));
+        Assert.Null(typeof(MeasurementLayer).GetEvent("DrawingClicked"));
         Assert.Empty(typeof(ViewerLayer).GetConstructors());
         Assert.Contains(viewer.Layers.Measurements, viewer.Layers.Items);
         Assert.Throws<InvalidOperationException>(() => viewer.Layers.RemoveLayer(viewer.Layers.Measurements));
-        using var batch = viewer.Layers.Markers.AddBatch([new CircleElement(new(), 2, Brushes.Red)]);
+        using var batch = viewer.Layers.Markers.Add([new CircleElement(new(), 2, Brushes.Red)]);
         viewer.Layers.Measurements.Clear();
         batch.Replace([new CircleElement(new(), 3, Brushes.Red)]);
         viewer.Layers.Measurements.IsVisible = false;

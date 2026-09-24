@@ -44,7 +44,7 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
         new(i % 125 * 28, i / 125 * 24), 5, Brushes.Red, 2) {
         ScaleMode = c.NoScale ? OverlayScaleMode.ScaleWithImage : OverlayScaleMode.FixedStroke }).ToArray();
     var moved = elements.Cast<CircleElement>().Select(e => (DrawingElement)(e with { Center = e.Center + new Vector(3, 3) })).ToArray();
-    using var batch = c.Count > 0 ? viewer.Layers.Markers.AddBatch(elements) : null;
+    using var batch = c.Count > 0 ? viewer.Layers.Markers.Add(elements) : null;
     await Task.Delay(400);
     var renderGaps = new List<double>();
     double lastRender = -1;

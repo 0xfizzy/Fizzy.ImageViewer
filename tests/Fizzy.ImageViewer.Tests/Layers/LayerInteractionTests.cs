@@ -71,7 +71,7 @@ public class LayerInteractionTests
             };
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             var layer = viewer.Layers.CreateLayer("after measurements");
-            using var batch = layer.AddBatch([new CircleElement(new(), 2, Brushes.Red)]);
+            using var batch = layer.Add([new CircleElement(new(), 2, Brushes.Red)]);
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.Clear));
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([]));
             Assert.Equal(1, tool.Cancellations);

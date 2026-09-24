@@ -1,18 +1,16 @@
-using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
-/// <summary>A batch owns exactly one visual. Replacing data preserves its identity and order.</summary>
-public sealed class DrawingBatchHandle : IDisposable
+/// <summary>Owns one drawing containing zero or more elements. Replacement preserves its visual identity and stacking order.</summary>
+public sealed class DrawingHandle : IDisposable
 {
     private readonly DrawingLayer _layer;
     private volatile bool _disposed;
     internal DrawingVisual Visual { get; } = new();
     internal DrawingElement[] Elements { get; private set; }
     internal bool NeedsScale => Elements.Any(e => e.ScaleMode != OverlayScaleMode.ScaleWithImage);
-    internal DrawingBatchHandle(DrawingLayer layer, DrawingElement[] elements) { _layer = layer; Elements = elements; }
+    internal DrawingHandle(DrawingLayer layer, DrawingElement[] elements) { _layer = layer; Elements = elements; }
     internal static DrawingElement[] Snapshot(IEnumerable<DrawingElement> elements)
     {
         ArgumentNullException.ThrowIfNull(elements);
@@ -37,6 +35,15 @@ public sealed class DrawingBatchHandle : IDisposable
         context.Close();
         Elements = elements;
     }
+    /// <summary>Replaces the entire drawing with one element, regardless of its previous content.</summary>
+    public void Replace(DrawingElement element)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(element);
+        Replace([element]);
+    }
+
+    /// <summary>Replaces the entire drawing with a snapshot of the elements. An empty collection retains the handle and visual.</summary>
     public void Replace(IEnumerable<DrawingElement> elements)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -59,11 +66,3 @@ public sealed class DrawingBatchHandle : IDisposable
         using var context = Visual.RenderOpen();
     }
 }
-
-public sealed class BatchClickedEventArgs(DrawingBatchHandle batch, Point imagePosition, MouseButton button) : EventArgs
-{
-    public DrawingBatchHandle Batch { get; } = batch;
-    public Point ImagePosition { get; } = imagePosition;
-    public MouseButton Button { get; } = button;
-}
-

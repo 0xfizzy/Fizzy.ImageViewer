@@ -11,13 +11,13 @@ application adapters own an instance and use its public API. Raw-window access i
 | Frames | `SubmitFrameAsync`, `AcquireCurrentFrame`, `FrameCommitted`, frame descriptors, leases and submission results |
 | Pixels | CPU readers, external `IFramePixelSource`, query data and display range |
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
-| Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, batch handles, click events and `Draw*` convenience methods |
+| Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
 | HUD | `Label`, `DrawHudText`, `HudTextHandle` |
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/change/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
 The root namespace contains `Viewer` and `IViewer`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
-`DrawingLayer`, batch handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
+`DrawingLayer`, drawing handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
 `MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
@@ -120,7 +120,7 @@ Built-in measurement tool implementations are internal; use
 layer controls, control-point visuals, measurement edit sessions, `MeasurementItem`, scheduling and
 rendering internals are not public contracts. `DrawingElement` is a closed family of
 supported drawing descriptions, not a custom-renderer base class. WPF shape factories and
-visual metadata are internal. Use drawing descriptions and batch handles for markers, and measurement models for editable geometry and query results;
+visual metadata are internal. Use drawing descriptions and drawing handles for markers, and measurement models for editable geometry and query results;
 consumers must not parse WPF visual trees to observe measurement state.
 
 The pixel HUD controller, built-in save-menu item and shape metadata/cache are internal.
@@ -165,12 +165,19 @@ using var registration = viewer.RegisterMenu(
 
 ## Layer capabilities
 
-`Layers.Markers` and `CreateLayer` return `DrawingLayer`, which supports `AddBatch` and
-`BatchClicked`. `Layers.Measurements` returns `MeasurementLayer`; measurement tools create
+`Layers.Markers` and `CreateLayer` return `DrawingLayer`, which supports `Add` and
+`DrawingClicked`. `Layers.Measurements` returns `MeasurementLayer`; measurement tools create
 its content. Both derive from the closed `ViewerLayer` family, which exposes `Name`,
 `IsVisible`, `IsHitTestVisible`, `ZIndex` and `Clear`. `Layers.Items` returns a snapshot of
 these common layer handles. Built-in layers cannot be removed; the layer base cannot be
 subclassed by consumers.
+
+Image-coordinate `Draw*` helpers and both `DrawingLayer.Add` overloads return
+`DrawingHandle`. `Add` and `Replace` accept one `DrawingElement` or an
+`IEnumerable<DrawingElement>`. Replacement changes the entire content while
+preserving visual identity and stacking order, including transitions between single,
+collection and empty content. `DrawingClickedEventArgs.Drawing` identifies the whole
+handle. See [drawing handles](drawing-layers.md#drawing-handles).
 
 ## API baseline
 

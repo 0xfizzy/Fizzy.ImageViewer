@@ -8,10 +8,6 @@ Fizzy.ImageViewer.Drawing.AnchorAlignment: public const Fizzy.ImageViewer.Drawin
 Fizzy.ImageViewer.Drawing.AnchorAlignment: public const Fizzy.ImageViewer.Drawing.AnchorAlignment TopCenter = 1
 Fizzy.ImageViewer.Drawing.AnchorAlignment: public const Fizzy.ImageViewer.Drawing.AnchorAlignment TopLeft = 0
 Fizzy.ImageViewer.Drawing.AnchorAlignment: public const Fizzy.ImageViewer.Drawing.AnchorAlignment TopRight = 2
-Fizzy.ImageViewer.Drawing.BatchClickedEventArgs: Fizzy.ImageViewer.Drawing.DrawingBatchHandle Batch { public get; }
-Fizzy.ImageViewer.Drawing.BatchClickedEventArgs: System.Windows.Input.MouseButton Button { public get; }
-Fizzy.ImageViewer.Drawing.BatchClickedEventArgs: System.Windows.Point ImagePosition { public get; }
-Fizzy.ImageViewer.Drawing.BatchClickedEventArgs: public ctor(Fizzy.ImageViewer.Drawing.DrawingBatchHandle batch, System.Windows.Point imagePosition, System.Windows.Input.MouseButton button)
 Fizzy.ImageViewer.Drawing.CircleElement: System.Double Radius { public get; public init; }
 Fizzy.ImageViewer.Drawing.CircleElement: System.Double Thickness { public get; public init; }
 Fizzy.ImageViewer.Drawing.CircleElement: System.Windows.Media.Brush Stroke { public get; public init; }
@@ -44,8 +40,10 @@ Fizzy.ImageViewer.Drawing.CrosshairElement: public virtual System.Boolean Equals
 Fizzy.ImageViewer.Drawing.CrosshairElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.CrosshairElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.CrosshairElement: virtual System.Type EqualityContract { protected get; }
-Fizzy.ImageViewer.Drawing.DrawingBatchHandle: public System.Void Dispose()
-Fizzy.ImageViewer.Drawing.DrawingBatchHandle: public System.Void Replace(System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Drawing.DrawingElement> elements)
+Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs: Fizzy.ImageViewer.Drawing.DrawingHandle Drawing { public get; }
+Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs: System.Windows.Input.MouseButton Button { public get; }
+Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs: System.Windows.Point ImagePosition { public get; }
+Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs: public ctor(Fizzy.ImageViewer.Drawing.DrawingHandle drawing, System.Windows.Point imagePosition, System.Windows.Input.MouseButton button)
 Fizzy.ImageViewer.Drawing.DrawingElement: Fizzy.ImageViewer.Drawing.OverlayScaleMode ScaleMode { public get; public init; }
 Fizzy.ImageViewer.Drawing.DrawingElement: protected ctor(Fizzy.ImageViewer.Drawing.DrawingElement original)
 Fizzy.ImageViewer.Drawing.DrawingElement: protected virtual System.Boolean PrintMembers(System.Text.StringBuilder builder)
@@ -57,8 +55,12 @@ Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.Boolean Equals(S
 Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.DrawingElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.DrawingElement: virtual System.Type EqualityContract { protected get; }
-Fizzy.ImageViewer.Drawing.DrawingLayer: public Fizzy.ImageViewer.Drawing.DrawingBatchHandle AddBatch(System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Drawing.DrawingElement> elements)
-Fizzy.ImageViewer.Drawing.DrawingLayer: public event System.EventHandler<Fizzy.ImageViewer.Drawing.BatchClickedEventArgs>? BatchClicked
+Fizzy.ImageViewer.Drawing.DrawingHandle: public System.Void Dispose()
+Fizzy.ImageViewer.Drawing.DrawingHandle: public System.Void Replace(Fizzy.ImageViewer.Drawing.DrawingElement element)
+Fizzy.ImageViewer.Drawing.DrawingHandle: public System.Void Replace(System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Drawing.DrawingElement> elements)
+Fizzy.ImageViewer.Drawing.DrawingLayer: public Fizzy.ImageViewer.Drawing.DrawingHandle Add(Fizzy.ImageViewer.Drawing.DrawingElement element)
+Fizzy.ImageViewer.Drawing.DrawingLayer: public Fizzy.ImageViewer.Drawing.DrawingHandle Add(System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Drawing.DrawingElement> elements)
+Fizzy.ImageViewer.Drawing.DrawingLayer: public event System.EventHandler<Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs>? DrawingClicked
 Fizzy.ImageViewer.Drawing.HudTextHandle: System.Boolean IsDisposed { public get; }
 Fizzy.ImageViewer.Drawing.HudTextHandle: public System.Void Dispose()
 Fizzy.ImageViewer.Drawing.HudTextHandle: public System.Void Update(System.String text, System.Windows.Media.Brush brush)
@@ -209,14 +211,14 @@ Fizzy.ImageViewer.IViewer: abstract System.Double Width { public get; public set
 Fizzy.ImageViewer.IViewer: abstract System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; public set; }
 Fizzy.ImageViewer.IViewer: abstract System.String Title { public get; public set; }
 Fizzy.ImageViewer.IViewer: abstract System.String? Label { public get; public set; }
+Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.DrawingHandle DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
+Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.DrawingHandle DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double size = 20, System.Double thickness = 2)
+Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.DrawingHandle DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.DrawingHandle DrawRectangle(System.Windows.Rect rect, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.DrawingHandle DrawText(System.Windows.Point anchor, System.String text, System.Windows.Media.Brush brush, System.Double fontSize = 14, System.Windows.Vector offset = default)
 Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Drawing.HudTextHandle DrawHudText(System.String text, System.Windows.Media.Brush brush, System.Nullable<System.Windows.Point> anchor = default, Fizzy.ImageViewer.Drawing.AnchorAlignment alignment = TopLeft, System.Double fontSize = 14)
 Fizzy.ImageViewer.IViewer: public abstract Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
 Fizzy.ImageViewer.IViewer: public abstract System.Boolean UnregisterMeasurementTool(System.String toolId)
-Fizzy.ImageViewer.IViewer: public abstract System.IDisposable DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
-Fizzy.ImageViewer.IViewer: public abstract System.IDisposable DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double size = 20, System.Double thickness = 2)
-Fizzy.ImageViewer.IViewer: public abstract System.IDisposable DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
-Fizzy.ImageViewer.IViewer: public abstract System.IDisposable DrawRectangle(System.Windows.Rect rect, System.Windows.Media.Brush brush, System.Double thickness = 1)
-Fizzy.ImageViewer.IViewer: public abstract System.IDisposable DrawText(System.Windows.Point anchor, System.String text, System.Windows.Media.Brush brush, System.Double fontSize = 14, System.Windows.Vector offset = default)
 Fizzy.ImageViewer.IViewer: public abstract System.IDisposable RegisterMenu(Fizzy.ImageViewer.Menus.IMenuItem menuItem)
 Fizzy.ImageViewer.IViewer: public abstract System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Imaging.PixelRegion region, System.Threading.CancellationToken ct = default)
 Fizzy.ImageViewer.IViewer: public abstract System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken ct = default)
@@ -527,14 +529,14 @@ Fizzy.ImageViewer.Viewer: System.Double Width { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.String Title { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.String? Label { public get; public set; }
+Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
+Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double size = 20, System.Double thickness = 2)
+Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawRectangle(System.Windows.Rect rect, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawText(System.Windows.Point anchor, System.String text, System.Windows.Media.Brush brush, System.Double fontSize = 14, System.Windows.Vector offset = default)
 Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.HudTextHandle DrawHudText(System.String text, System.Windows.Media.Brush brush, System.Nullable<System.Windows.Point> anchor = default, Fizzy.ImageViewer.Drawing.AnchorAlignment alignment = TopLeft, System.Double fontSize = 14)
 Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
 Fizzy.ImageViewer.Viewer: public System.Boolean UnregisterMeasurementTool(System.String toolId)
-Fizzy.ImageViewer.Viewer: public System.IDisposable DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
-Fizzy.ImageViewer.Viewer: public System.IDisposable DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double size = 20, System.Double thickness = 2)
-Fizzy.ImageViewer.Viewer: public System.IDisposable DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
-Fizzy.ImageViewer.Viewer: public System.IDisposable DrawRectangle(System.Windows.Rect rect, System.Windows.Media.Brush brush, System.Double thickness = 1)
-Fizzy.ImageViewer.Viewer: public System.IDisposable DrawText(System.Windows.Point anchor, System.String text, System.Windows.Media.Brush brush, System.Double fontSize = 14, System.Windows.Vector offset = default)
 Fizzy.ImageViewer.Viewer: public System.IDisposable RegisterMenu(Fizzy.ImageViewer.Menus.IMenuItem menuItem)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Imaging.PixelRegion region, System.Threading.CancellationToken ct = default)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken ct = default)
@@ -571,10 +573,10 @@ interface Fizzy.ImageViewer.Measurements.IMeasurementToolContext
 interface Fizzy.ImageViewer.Measurements.IMeasurementToolSession
 interface Fizzy.ImageViewer.Menus.ICheckableMenuItem : Fizzy.ImageViewer.Menus.IMenuItem
 interface Fizzy.ImageViewer.Menus.IMenuItem
-sealed class Fizzy.ImageViewer.Drawing.BatchClickedEventArgs : System.EventArgs
 sealed class Fizzy.ImageViewer.Drawing.CircleElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.CircleElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
 sealed class Fizzy.ImageViewer.Drawing.CrosshairElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.CrosshairElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
-sealed class Fizzy.ImageViewer.Drawing.DrawingBatchHandle : System.IDisposable
+sealed class Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs : System.EventArgs
+sealed class Fizzy.ImageViewer.Drawing.DrawingHandle : System.IDisposable
 sealed class Fizzy.ImageViewer.Drawing.DrawingLayer : Fizzy.ImageViewer.Layers.ViewerLayer
 sealed class Fizzy.ImageViewer.Drawing.HudTextHandle : System.IDisposable
 sealed class Fizzy.ImageViewer.Drawing.LineElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.LineElement>

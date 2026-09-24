@@ -107,7 +107,11 @@ hiding and stable invariant columns for gray, floating-point and premultiplied d
 `ViewerTests` also check that asynchronous disposal cannot be vetoed by window
 closing handlers, rejects subsequent API calls and consumes submissions with a
 `Closed` result. `DrawingTests` check layer and drawing-handle invalidation and
-that clearing business layers retains HUD text.
+that clearing business layers retains HUD text. Drawing tests also exercise both `Add`
+overloads and single/collection/empty replacement through `DrawingHandle`, preserving
+visual identity, stacking order and click identity. Invalid replacements retain prior
+content; all image-coordinate `Draw*` helpers support replacement from worker threads
+and reject updates after shutdown.
 
 `ViewerTests` cover pending versus committed display settings, redraw without new-frame
 notifications, menu Closed-before-Click and rapid reopening, independently retained menu

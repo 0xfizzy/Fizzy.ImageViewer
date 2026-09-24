@@ -9,9 +9,9 @@ namespace Fizzy.ImageViewer.Drawing;
 public sealed class DrawingLayer : ViewerLayer
 {
     internal BatchVisualHost Host { get; } = new();
-    private readonly List<DrawingBatchHandle> _batches = [];
+    private readonly List<DrawingHandle> _drawings = [];
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
-    public event EventHandler<BatchClickedEventArgs>? BatchClicked;
+    public event EventHandler<DrawingClickedEventArgs>? DrawingClicked;
 
     internal DrawingLayer(LayerCollection owner, string name, int zIndex, bool builtIn)
         : base(owner, name, zIndex, builtIn, hitTest: false)
@@ -23,49 +23,57 @@ public sealed class DrawingLayer : ViewerLayer
     }
     internal bool DispatchClick(Point imagePoint, System.Windows.Input.MouseButton button)
     {
-        var batch = HitBatch(imagePoint);
-        if (batch == null) return false;
-        BatchClicked?.Invoke(this, new(batch, imagePoint, button));
+        var drawing = HitDrawing(imagePoint);
+        if (drawing == null) return false;
+        DrawingClicked?.Invoke(this, new(drawing, imagePoint, button));
         return true;
     }
-    public DrawingBatchHandle AddBatch(IEnumerable<DrawingElement> elements)
+    /// <summary>Creates a drawing initially containing one element.</summary>
+    public DrawingHandle Add(DrawingElement element)
     {
-        var snapshot = DrawingBatchHandle.Snapshot(elements);
+        ArgumentNullException.ThrowIfNull(element);
+        return Add([element]);
+    }
+
+    /// <summary>Creates one drawing from a snapshot of the elements, using one visual regardless of element count.</summary>
+    public DrawingHandle Add(IEnumerable<DrawingElement> elements)
+    {
+        var snapshot = DrawingHandle.Snapshot(elements);
         return Owner.Invoke(() =>
         {
             EnsureAlive();
-            var handle = new DrawingBatchHandle(this, snapshot);
+            var handle = new DrawingHandle(this, snapshot);
             handle.Commit(snapshot, Owner.Scale, PixelsPerDip);
-            _batches.Add(handle); Host.Add(handle.Visual);
+            _drawings.Add(handle); Host.Add(handle.Visual);
             return handle;
         });
     }
-    internal DrawingBatchHandle? HitBatch(Point imagePoint)
+    internal DrawingHandle? HitDrawing(Point imagePoint)
     {
         if (!IsVisible || !IsHitTestVisible || Owner.InputSuppressed) return null;
         var hit = VisualTreeHelper.HitTest(Host, imagePoint)?.VisualHit;
-        return _batches.FirstOrDefault(b => ReferenceEquals(b.Visual, hit));
+        return _drawings.FirstOrDefault(b => ReferenceEquals(b.Visual, hit));
     }
     internal override void ClearContent()
     {
-        foreach (var batch in _batches) batch.Invalidate();
-        _batches.Clear();
+        foreach (var drawing in _drawings) drawing.Invalidate();
+        _drawings.Clear();
         Host.Clear();
     }
-    internal void Remove(DrawingBatchHandle handle)
+    internal void Remove(DrawingHandle handle)
     {
-        if (_batches.Remove(handle)) Host.Remove(handle.Visual);
+        if (_drawings.Remove(handle)) Host.Remove(handle.Visual);
         handle.Invalidate();
     }
     internal override void Redraw(bool scaleOnly)
     {
-        foreach (var batch in _batches)
-            if (!scaleOnly || batch.NeedsScale)
-                batch.Commit(batch.Elements, Owner.Scale, PixelsPerDip);
+        foreach (var drawing in _drawings)
+            if (!scaleOnly || drawing.NeedsScale)
+                drawing.Commit(drawing.Elements, Owner.Scale, PixelsPerDip);
     }
     internal override void ReleaseHandlers()
     {
-        BatchClicked = null;
+        DrawingClicked = null;
         Host.DpiChanged = null;
     }
 }

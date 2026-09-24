@@ -90,29 +90,29 @@ public interface IViewer : IAsyncDisposable
     Fizzy.ImageViewer.Layers.ViewerLayers Layers { get; }
 
     /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层绘制一条线段。
+    /// 在默认不参与命中测试的 Markers 图层创建初始内容为线段的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    IDisposable DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0);
+    DrawingHandle DrawLine(Point p1, Point p2, Brush brush, double thickness = 1.0);
 
     /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层绘制文本标签。
+    /// 在默认不参与命中测试的 Markers 图层创建初始内容为文本标签的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    IDisposable DrawText(Point anchor, string text, Brush brush, double fontSize = 14, Vector offset = default);
+    DrawingHandle DrawText(Point anchor, string text, Brush brush, double fontSize = 14, Vector offset = default);
 
     /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层绘制准星。
+    /// 在默认不参与命中测试的 Markers 图层创建初始内容为准星的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    IDisposable DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2);
+    DrawingHandle DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2);
 
     /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层绘制矩形框。
+    /// 在默认不参与命中测试的 Markers 图层创建初始内容为矩形框的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    IDisposable DrawRectangle(Rect rect, Brush brush, double thickness = 1.0);
+    DrawingHandle DrawRectangle(Rect rect, Brush brush, double thickness = 1.0);
 
     /// <summary>
-    /// 在默认不参与命中测试的 Markers 图层绘制圆形。
+    /// 在默认不参与命中测试的 Markers 图层创建初始内容为圆形的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    IDisposable DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null);
+    DrawingHandle DrawCircle(Point center, double radius, Brush brush, double thickness = 1.0, Brush? fill = null);
 
 
     /// <summary>

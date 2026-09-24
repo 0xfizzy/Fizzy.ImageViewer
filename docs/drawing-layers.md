@@ -6,7 +6,7 @@
 Higher ZIndex draws on top; equal values use creation order. Image and HUD remain
 below and above the business-layer container, respectively.
 
-`Markers` and custom layers are `DrawingLayer` instances with `AddBatch` and `BatchClicked`.
+`Markers` and custom layers are `DrawingLayer` instances with `Add` and `DrawingClicked`.
 `Measurements` is a `MeasurementLayer`: tools create its model-owned content, and it has no
 batch drawing API. `ViewerLayers` and the shared `ViewerLayer` base belong to `Fizzy.ImageViewer.Layers`.
 Both layer types share `ViewerLayer` settings (`Name`, visibility, hit testing,
@@ -17,6 +17,33 @@ curve window. Closing the window removes its line and label; deleting the line
 closes its window. Clearing measurements or disposing the viewer cleans up all
 associated windows. Other measurements remain independent.
 
+## Drawing handles
+
+`DrawingHandle` owns one independently managed drawing containing zero or more
+`DrawingElement` values. Single elements and collections have the same creation,
+replacement, hit-testing and disposal semantics:
+
+```csharp
+using var line = viewer.Layers.Markers.Add(new LineElement(start, end, Brushes.Red));
+using var markers = viewer.Layers.Markers.Add(elements);
+line.Replace(new LineElement(newStart, newEnd, Brushes.Red));
+markers.Replace(updatedElements);
+```
+
+`Add(DrawingElement)` and `Add(IEnumerable<DrawingElement>)` both create exactly one
+visual. `Replace` has the same two overloads and replaces the entire content; it
+never appends. Either handle can move between single-element, collection and empty
+content, including different shape types, without changing its identity or stacking
+order. Empty collections keep the drawing alive but draw and hit nothing.
+`DrawingClickedEventArgs.Drawing` identifies that same handle, not an individual
+element. Dispose removes the whole drawing.
+
+The `Viewer.DrawLine`, `DrawCircle`, `DrawRectangle`, `DrawCrosshair` and `DrawText`
+helpers return the same `DrawingHandle` in the default Markers layer. Their names
+specify the initial content, not a permanent shape constraint. Use the layer's `Add`
+overloads to choose a layer or submit a collection. Each helper call creates its own
+visual; use one collection per independently managed group for large marker sets.
+
 ## Batch markers alongside measurements
 
 ```csharp
@@ -25,7 +52,7 @@ using System.Windows;
 using System.Windows.Media;
 
 var markers = viewer.Layers.CreateLayer("detections");
-using var batch = markers.AddBatch(Enumerable.Range(0, 10000).Select(i =>
+using var batch = markers.Add(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
@@ -43,15 +70,15 @@ batch.Replace(new DrawingElement[] {
 markers.IsVisible = true;
 markers.ZIndex = 200;
 markers.IsHitTestVisible = true;
-markers.BatchClicked += (_, e) => {
-    // e.Batch identifies the entire batch; no per-element hit index or editing.
+markers.DrawingClicked += (_, e) => {
+    // e.Drawing identifies the entire drawing; no per-element hit index or editing.
     // e.ImagePosition is in image pixels; e.Button identifies the mouse button.
 };
 // markers.Clear();                 // Invalidates every batch in this layer.
 // viewer.Layers.RemoveLayer(markers); // Clears and removes a custom layer.
 ```
 
-Each `AddBatch` creates exactly one `DrawingVisual`, regardless of element count.
+Each `Add` creates exactly one `DrawingVisual`, regardless of element count.
 One call per marker still creates one visual per marker: submit the whole collection
 to obtain batching. Text is drawn with `FormattedText`, not layout controls.
 An empty batch retains its visual but draws and hits nothing.
@@ -64,7 +91,7 @@ or detection streams must follow these rules:
 
 | Avoid in the frame loop | Use instead |
 | --- | --- |
-| `Clear()` followed by `AddBatch(...)`, or disposing and recreating batches | Create each batch once and call `Replace(...)` on it |
+| `Clear()` followed by `Add(...)`, or disposing and recreating batches | Create each batch once and call `Replace(...)` on it |
 | Calling `DrawCircle`, `DrawLine`, etc. once per detection | Submit the complete detection collection in one batch per independently managed group |
 | Posting a dispatcher callback or starting a task for every incoming result | Keep one latest pending result and consume it from one serialized, rate-limited display loop |
 | Repainting fixed ROI, crosshairs, and labels with every camera frame | Keep static content in separate batches; update only changed content |
@@ -77,7 +104,7 @@ do not put the initialization or cleanup in the per-frame callback:
 ```csharp
 // Initialization: retain these handles for the display session.
 var detections = viewer.Layers.CreateLayer("camera-detections");
-var batch = detections.AddBatch(Array.Empty<DrawingElement>());
+var batch = detections.Add(Array.Empty<DrawingElement>());
 
 // Display update: call from ONE serialized consumer at the chosen display rate.
 // Build this collection only for the latest result selected for display.
@@ -149,7 +176,7 @@ physical presentation; it does not establish sustained camera-stream GC performa
 - Hit testing uses actual drawing geometry (including fill and text glyphs), not
   batch bounds. An unfilled circle's interior and blank space pass input through.
   Overlapping batches resolve to the last-added batch in the topmost enabled layer.
-- `BatchClicked` runs on the viewer STA thread and consumes that mouse-down event.
+- `DrawingClicked` runs on the viewer STA thread and consumes that mouse-down event.
   Handlers should remain short and marshal work to the application's UI when needed.
 - Measurement tools temporarily suppress all business-layer hit testing. Ending or
   cancelling measurement restores each layer's configured flag, including changes
@@ -177,8 +204,8 @@ Layer handles belong to one viewer and cannot be passed to another viewer's mana
 removal and closure release subscriptions and drawing resources.
 
 `DrawLine`, `DrawCircle`, `DrawRectangle`, `DrawCrosshair`, and
-`DrawText` create single-element batches in `Markers`, without default selection
-or editing. Use `Layers.<layer>.AddBatch(...)` for bulk drawing and layer selection.
+`DrawText` create drawings initially containing one element in `Markers`, without default selection
+or editing. Use `Layers.<layer>.Add(...)` for bulk drawing and layer selection.
 For editable measurement shapes, continue using measurement tools and
 `IMeasurementToolContext.CreateMeasurement(geometry, options)`. Keep the returned
 `IMeasurement`, update its geometry during creation and call `Complete()` to retain it.
@@ -199,8 +226,7 @@ Clearing
 Snapshot export still exports image data, not overlay layers.
 
 `DrawText`, `TextElement` and `DrawHudText` all accept fractional `double` font sizes.
-The single-element `Draw*` helpers return removal-only `IDisposable` handles. Use
-`DrawingLayer.AddBatch` when content must be replaced without recreating its visual.
+The image-coordinate `Draw*` helpers return replaceable `DrawingHandle` instances.
 
 ## HUD text
 

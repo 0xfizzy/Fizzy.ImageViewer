@@ -23,7 +23,7 @@ internal static class Program
         var layers = new ViewerLayers(Transform.Identity);
         var data = Enumerable.Range(0, count).Select(i => (DrawingElement)new CircleElement(new(i % 100 * 10, i / 100 * 10), 3, Brushes.Red, 2, Brushes.Red)).ToArray();
         var moved = data.Cast<CircleElement>().Select(c => (DrawingElement)(c with { Center = c.Center + new Vector(1, 1) })).ToArray();
-        using var batch = layers.Markers.AddBatch(data);
+        using var batch = layers.Markers.Add(data);
         for (int i = 0; i < 10; i++) batch.Replace(i % 2 == 0 ? moved : data);
         const int iterations = 50;
         long start = GC.GetAllocatedBytesForCurrentThread();
@@ -42,8 +42,8 @@ internal static class Program
     {
         var layers = new ViewerLayers(Transform.Identity);
         var data = Enumerable.Range(0, count).Select(i => (DrawingElement)new CircleElement(new(i % 100 * 10, i / 100 * 10), 3, Brushes.Red, 2, Brushes.Red)).ToArray();
-        DrawingBatchHandle? batch = null;
-        var create = Time(() => { batch = layers.Markers.AddBatch(data); Layout(layers.Collection.Root); });
+        DrawingHandle? batch = null;
+        var create = Time(() => { batch = layers.Markers.Add(data); Layout(layers.Collection.Root); });
         var replace = Time(() => { batch!.Replace(data); Layout(layers.Collection.Root); });
         var scale = Time(() => { layers.Collection.UpdateScale(2); layers.Collection.FlushScale(); Layout(layers.Collection.Root); });
         if (print) Console.WriteLine($"{count},batch,{create:F3},{replace:F3},{scale:F3},{layers.Markers.Host.Count}");

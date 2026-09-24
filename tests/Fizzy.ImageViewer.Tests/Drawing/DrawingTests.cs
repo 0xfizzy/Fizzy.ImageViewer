@@ -21,22 +21,97 @@ public class DrawingTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task SingleAndCollectionDrawingsShareReplacementIdentityAndLifetime(bool collection)
+    {
+        await using var viewer = Create();
+        var layer = viewer.Layers.Markers;
+        var drawing = collection ? layer.Add([Circle(), Circle(50, 50)]) : layer.Add(Circle());
+        using var later = layer.Add(Circle(200, 200));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            layer.IsHitTestVisible = true;
+            var visual = drawing.Visual;
+            DrawingHandle? clicked = null;
+            layer.DrawingClicked += (_, e) => clicked = e.Drawing;
+            void VerifyHit(double x, double y)
+            {
+                Arrange(viewer.Layers);
+                Assert.True(layer.DispatchClick(new(x, y), System.Windows.Input.MouseButton.Left));
+                Assert.Same(drawing, clicked);
+                Assert.Same(visual, VisualTreeHelper.GetChild(layer.Host, 0));
+                Assert.Same(later.Visual, VisualTreeHelper.GetChild(layer.Host, 1));
+                Assert.Equal(2, layer.Host.Count);
+            }
+            drawing.Replace(Circle(100, 100));
+            VerifyHit(100, 100);
+            drawing.Replace([Circle(120, 120), Circle(150, 150)]);
+            VerifyHit(150, 150);
+            Assert.Throws<ArgumentOutOfRangeException>(() => drawing.Replace(Circle() with { Radius = -1 }));
+            Assert.Throws<ArgumentNullException>(() => drawing.Replace((DrawingElement)null!));
+            VerifyHit(150, 150);
+            drawing.Replace([]);
+            Arrange(viewer.Layers);
+            Assert.Null(layer.HitDrawing(new(150, 150)));
+            Assert.Same(visual, VisualTreeHelper.GetChild(layer.Host, 0));
+            drawing.Replace(new RectangleElement(new Rect(80, 80, 20, 20), Brushes.Blue, Fill: Brushes.Blue));
+            VerifyHit(90, 90);
+        });
+        layer.Clear();
+        Assert.Throws<ObjectDisposedException>(() => drawing.Replace(Circle()));
+        Assert.Throws<ObjectDisposedException>(() => drawing.Replace([Circle()]));
+        drawing.Dispose();
+        drawing.Dispose();
+    }
+
+    [Fact]
+    public async Task FacadeDrawingHelpersReturnReplaceableDrawings()
+    {
+        await using var viewer = Create();
+        IViewer api = viewer;
+        DrawingHandle[] drawings = [
+            api.DrawLine(new(), new(10, 10), Brushes.Red),
+            api.DrawCircle(new(), 5, Brushes.Red),
+            api.DrawRectangle(new(0, 0, 10, 10), Brushes.Red),
+            api.DrawCrosshair(new(), Brushes.Red),
+            api.DrawText(new(), "initial", Brushes.Red)
+        ];
+        foreach (var drawing in drawings)
+        {
+            await Task.Run(() => drawing.Replace([Circle(), Circle(50, 50)]));
+            await Task.Run(() => drawing.Replace(Circle(100, 100)));
+        }
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            Assert.Equal(drawings.Length, viewer.Layers.Markers.Host.Count);
+            foreach (var drawing in drawings) Assert.Equal(Circle(100, 100), Assert.Single(drawing.Elements));
+        });
+        await viewer.DisposeAsync();
+        foreach (var drawing in drawings)
+        {
+            Assert.Throws<ObjectDisposedException>(() => drawing.Replace(Circle()));
+            drawing.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ClearUsesInitialLayersWhenRemovalSubscriberChangesCollection(bool removeLayer)
     {
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var original = viewer.Layers.CreateLayer("original");
-            var originalBatch = original.AddBatch([Circle()]);
+            var originalBatch = original.Add([Circle()]);
             DrawingLayer? replacement = null;
-            DrawingBatchHandle? replacementBatch = null;
+            DrawingHandle? replacementBatch = null;
             int removed = 0;
             viewer.MeasurementRemoved += (_, _) =>
             {
                 removed++;
                 if (removeLayer) viewer.Layers.RemoveLayer(original);
                 replacement = viewer.Layers.CreateLayer("replacement");
-                replacementBatch = replacement.AddBatch([Circle()]);
+                replacementBatch = replacement.Add([Circle()]);
             };
             viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
@@ -64,7 +139,7 @@ public class DrawingTests
     {
         await using var viewer = Create();
         var elements = Enumerable.Range(0, count).Select(i => Circle(i % 100 * 10, i / 100 * 10)).ToArray();
-        var batch = viewer.Layers.Markers.AddBatch(elements);
+        var batch = viewer.Layers.Markers.Add(elements);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Arrange(viewer.Layers);
@@ -87,7 +162,7 @@ public class DrawingTests
         await using var viewer = Create();
         var brush = new SolidColorBrush(Colors.Blue);
         var elements = new List<DrawingElement> { Circle() with { Stroke = brush, Fill = brush } };
-        using var batch = viewer.Layers.Markers.AddBatch(elements);
+        using var batch = viewer.Layers.Markers.Add(elements);
         brush.Color = Colors.Green; elements.Clear();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -111,7 +186,7 @@ public class DrawingTests
         {
             var brush = new SolidColorBrush(Colors.Blue);
             DrawingElement[] input = [Circle() with { Stroke = brush, Fill = brush }, Circle(60, 60)];
-            using var batch = viewer.Layers.Markers.AddBatch([]);
+            using var batch = viewer.Layers.Markers.Add([]);
             batch.Replace(input);
             brush.Color = Colors.Green;
             input[1] = Circle(200, 200);
@@ -134,7 +209,7 @@ public class DrawingTests
     public async Task SharedPensPreserveDifferentWidthsAndScaleModes()
     {
         await using var viewer = Create();
-        using var batch = viewer.Layers.Markers.AddBatch([
+        using var batch = viewer.Layers.Markers.Add([
             Circle(20, 20) with { Thickness = 2 },
             Circle(60, 60) with { Thickness = 8 },
             Circle(100, 100) with { Thickness = 8, ScaleMode = OverlayScaleMode.ScaleWithImage }]);
@@ -152,7 +227,7 @@ public class DrawingTests
     public async Task DrawingFailureDoesNotPublishPartialContentAndNextUpdateSucceeds()
     {
         await using var viewer = Create();
-        using var batch = viewer.Layers.Markers.AddBatch([Circle()]);
+        using var batch = viewer.Layers.Markers.Add([Circle()]);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var originalElements = batch.Elements;
@@ -165,7 +240,7 @@ public class DrawingTests
             Assert.Equal(originalBounds, batch.Visual.ContentBounds);
             Assert.NotNull(VisualTreeHelper.HitTest(batch.Visual, new Point(20, 20)));
             Assert.Null(VisualTreeHelper.HitTest(batch.Visual, new Point(200, 200)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => viewer.Layers.Markers.AddBatch(invalid));
+            Assert.Throws<ArgumentOutOfRangeException>(() => viewer.Layers.Markers.Add(invalid));
             Assert.Equal(1, viewer.Layers.Markers.Host.Count);
             batch.Replace([Circle(200, 200)]);
             Assert.Null(VisualTreeHelper.HitTest(batch.Visual, new Point(20, 20)));
@@ -193,7 +268,7 @@ public class DrawingTests
             var layers = new ViewerLayers(Transform.Identity);
             layers.Collection.UpdateScale(scale);
             layers.Collection.FlushScale();
-            using var batch = layers.Markers.AddBatch(elements);
+            using var batch = layers.Markers.Add(elements);
             // Reference path used before direct command recording.
             var group = new DrawingGroup();
             var resources = new DrawingResources();
@@ -222,35 +297,35 @@ public class DrawingTests
         await using var viewer = Create();
         var layers = await viewer.Host.Window.Dispatcher.InvokeAsync(() => new ViewerLayers(Transform.Identity));
         var markers = layers.Markers;
-        using var a = markers.AddBatch([Circle()]);
-        using var b = markers.AddBatch([Circle()]);
+        using var a = markers.Add([Circle()]);
+        using var b = markers.Add([Circle()]);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Drawing tests") { Width = 800, Height = 600, WindowStyle = unchecked((int)0x80000000) });
             source.RootVisual = layers.Collection.Root;
             Arrange(layers);
-            Assert.Null(markers.HitBatch(new(20, 20)));
+            Assert.Null(markers.HitDrawing(new(20, 20)));
             Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.IsHitTestVisible = true;
-            Assert.Same(b, markers.HitBatch(new(20, 20)));
-            BatchClickedEventArgs? clicked = null;
-            markers.BatchClicked += (_, e) => { Assert.True(viewer.Host.Window.Dispatcher.CheckAccess()); clicked = e; };
+            Assert.Same(b, markers.HitDrawing(new(20, 20)));
+            DrawingClickedEventArgs? clicked = null;
+            markers.DrawingClicked += (_, e) => { Assert.True(viewer.Host.Window.Dispatcher.CheckAccess()); clicked = e; };
             Assert.True(markers.DispatchClick(new(20, 20), System.Windows.Input.MouseButton.Left));
-            Assert.Same(b, clicked!.Batch); Assert.Equal(new Point(20, 20), clicked.ImagePosition);
+            Assert.Same(b, clicked!.Drawing); Assert.Equal(new Point(20, 20), clicked.ImagePosition);
             Assert.Equal(System.Windows.Input.MouseButton.Left, clicked.Button);
             Assert.False(markers.DispatchClick(new(100, 100), System.Windows.Input.MouseButton.Left));
             Assert.Same(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
-            Assert.Null(markers.HitBatch(new(100, 100)));
+            Assert.Null(markers.HitDrawing(new(100, 100)));
             Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(100, 100)));
-            b.Dispose(); Assert.Same(a, markers.HitBatch(new(20, 20)));
-            using var outline = markers.AddBatch([Circle(100, 100) with { Fill = null }]);
-            Assert.Null(markers.HitBatch(new(100, 100)));
-            Assert.Same(outline, markers.HitBatch(new(105, 100)));
-            markers.IsVisible = false; Assert.Null(markers.HitBatch(new(20, 20)));
+            b.Dispose(); Assert.Same(a, markers.HitDrawing(new(20, 20)));
+            using var outline = markers.Add([Circle(100, 100) with { Fill = null }]);
+            Assert.Null(markers.HitDrawing(new(100, 100)));
+            Assert.Same(outline, markers.HitDrawing(new(105, 100)));
+            markers.IsVisible = false; Assert.Null(markers.HitDrawing(new(20, 20)));
             Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.IsVisible = true;
             var top = layers.CreateLayer("top"); top.IsHitTestVisible = true;
-            top.AddBatch([Circle()]); Arrange(layers);
+            top.Add([Circle()]); Arrange(layers);
             Assert.Same(top.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.ZIndex = top.ZIndex;
             Assert.Same(top.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
@@ -299,10 +374,10 @@ public class DrawingTests
     public async Task ScaleModesPreserveCustomSizesAndPositions()
     {
         await using var viewer = Create();
-        using var fixedStroke = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6 }]);
-        using var fixedSize = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.FixedSize }]);
-        using var scaled = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.ScaleWithImage }]);
-        using var mixed = viewer.Layers.Markers.AddBatch([
+        using var fixedStroke = viewer.Layers.Markers.Add([Circle(100, 100) with { Radius = 10, Thickness = 6 }]);
+        using var fixedSize = viewer.Layers.Markers.Add([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.FixedSize }]);
+        using var scaled = viewer.Layers.Markers.Add([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.ScaleWithImage }]);
+        using var mixed = viewer.Layers.Markers.Add([
             new LineElement(new(1, 1), new(20, 1), Brushes.Green, 5),
             new RectangleElement(new(50, 50, 30, 30), Brushes.Blue, 4),
             new CrosshairElement(new(200, 200), Brushes.Yellow, 7, 3),
@@ -331,11 +406,11 @@ public class DrawingTests
             Assert.Throws<ArgumentException>(() => viewer.Layers.CreateLayer("custom"));
             Assert.Throws<ArgumentException>(() => other.Layers.RemoveLayer(custom));
             Assert.Throws<InvalidOperationException>(() => viewer.Layers.RemoveLayer(viewer.Layers.Markers));
-            var batch = custom.AddBatch([Circle()]);
+            var batch = custom.Add([Circle()]);
             viewer.Layers.RemoveLayer(custom);
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([Circle()]));
             Assert.Throws<ObjectDisposedException>(() => custom.Clear()); batch.Dispose();
-            var marker = viewer.Layers.Markers.AddBatch([Circle()]);
+            var marker = viewer.Layers.Markers.Add([Circle()]);
             var measure = await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
             {
                 var item = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
@@ -347,7 +422,7 @@ public class DrawingTests
             hud.Update("HUD 2", Brushes.White);
             Assert.Throws<ObjectDisposedException>(() => marker.Replace([Circle()]));
             Assert.True(measure.IsDisposed);
-            var last = viewer.Layers.Markers.AddBatch([Circle()]);
+            var last = viewer.Layers.Markers.Add([Circle()]);
             await viewer.DisposeAsync();
             Assert.Throws<ObjectDisposedException>(() => last.Replace([Circle()]));
             last.Dispose();
@@ -432,7 +507,7 @@ public class DrawingTests
                 { Width = 800, Height = 600, WindowStyle = unchecked((int)0x80000000) });
             source.RootVisual = root;
             root.Measure(new(800, 600)); root.Arrange(new(0, 0, 800, 600)); root.UpdateLayout();
-            using var batch = layers.Markers.AddBatch([Circle()]);
+            using var batch = layers.Markers.Add([Circle()]);
             Assert.Same(image.Container, root.InputHitTest(new(20, 20)));
             image.Container.RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, 120)
                 { RoutedEvent = UIElement.MouseWheelEvent });

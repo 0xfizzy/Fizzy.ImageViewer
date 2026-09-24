@@ -57,7 +57,7 @@ waiting frame is retained. Measurements read original pixels independently of di
 For thousands of markers, submit a collection as one visual:
 
 ```csharp
-using var markers = viewer.Layers.Markers.AddBatch(
+using var markers = viewer.Layers.Markers.Add(
     Enumerable.Range(0, 10000).Select(i =>
         new Fizzy.ImageViewer.Drawing.CircleElement(
             new System.Windows.Point(i % 100 * 10, i / 100 * 10),
