@@ -29,7 +29,7 @@ public partial class Viewer
         return _host.Interaction.UnregisterMeasurementTool(toolId);
     });
 
-    public void StartMeasurement(string toolId)
+    public void ActivateMeasurementTool(string toolId)
     {
         InvokeAlive(() =>
         {
@@ -37,7 +37,7 @@ public partial class Viewer
             if (!_host.Tools.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
             if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
             if (!Layers.Measurements.IsHitTestVisible) throw new InvalidOperationException("Measurement layer hit testing is disabled.");
-            _host.Interaction.StartMeasurement(toolId);
+            _host.Interaction.ActivateMeasurementTool(toolId);
         });
     }
 

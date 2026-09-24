@@ -205,7 +205,7 @@ Fizzy.ImageViewer.Hud.HudTextHandle: System.Boolean IsDisposed { public get; }
 Fizzy.ImageViewer.Hud.HudTextHandle: public System.Void Dispose()
 Fizzy.ImageViewer.Hud.HudTextHandle: public System.Void Update(System.String text, System.Windows.Media.Brush brush)
 Fizzy.ImageViewer.Hud.IViewerHud: abstract System.Boolean IsPixelInfoEnabled { public get; public set; }
-Fizzy.ImageViewer.Hud.IViewerHud: abstract System.String? HudLabel { public get; public set; }
+Fizzy.ImageViewer.Hud.IViewerHud: abstract System.String? HudLabelText { public get; public set; }
 Fizzy.ImageViewer.Hud.IViewerHud: public abstract Fizzy.ImageViewer.Hud.HudTextHandle DrawHudText(System.String text, System.Windows.Media.Brush brush, System.Nullable<System.Windows.Point> anchor = default, Fizzy.ImageViewer.Hud.AnchorAlignment alignment = TopLeft, System.Double fontSize = 14)
 Fizzy.ImageViewer.IViewer: abstract Fizzy.ImageViewer.Layers.ViewerLayers Layers { public get; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean Borderless { public get; public set; }
@@ -272,9 +272,9 @@ Fizzy.ImageViewer.Imaging.PixelQueryMetrics: public static System.Boolean op_Ine
 Fizzy.ImageViewer.Imaging.PixelQueryMetrics: public virtual System.Boolean Equals(System.Object obj)
 Fizzy.ImageViewer.Imaging.PixelQueryMetrics: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Imaging.PixelQueryMetrics: public virtual System.String ToString()
-Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double LineRate { public get; public init; }
-Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double PixelRate { public get; public init; }
-Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double RegionRate { public get; public init; }
+Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double LineQueryRateHz { public get; public init; }
+Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double PixelQueryRateHz { public get; public init; }
+Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.Double RegionQueryRateHz { public get; public init; }
 Fizzy.ImageViewer.Imaging.PixelQueryOptions: System.TimeSpan MaxResultAge { public get; public init; }
 Fizzy.ImageViewer.Imaging.PixelQueryOptions: public Fizzy.ImageViewer.Imaging.PixelQueryOptions <Clone>$()
 Fizzy.ImageViewer.Imaging.PixelQueryOptions: public System.Boolean Equals(Fizzy.ImageViewer.Imaging.PixelQueryOptions? other)
@@ -404,9 +404,9 @@ Fizzy.ImageViewer.Measurements.IMeasurementToolSession: public abstract System.V
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: abstract Fizzy.ImageViewer.Measurements.MeasurementLayer Measurements { public get; }
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: abstract Fizzy.ImageViewer.Measurements.MeasurementStyle MeasurementStyle { public get; public set; }
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract System.Boolean UnregisterMeasurementTool(System.String toolId)
+Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract System.Void ActivateMeasurementTool(System.String toolId)
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract System.Void EndInteraction()
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract System.Void RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool tool)
-Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract System.Void StartMeasurement(System.String toolId)
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.Measurements.IViewerMeasurements: public abstract event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
@@ -600,7 +600,7 @@ Fizzy.ImageViewer.Viewer: System.Double Top { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Double Width { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.String Title { public get; public set; }
-Fizzy.ImageViewer.Viewer: System.String? HudLabel { public get; public set; }
+Fizzy.ImageViewer.Viewer: System.String? HudLabelText { public get; public set; }
 Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
 Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double armLength = 20, System.Double thickness = 2)
 Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
@@ -614,13 +614,13 @@ Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.S
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken ct = default)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.ValueTask DisposeAsync()
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.FrameSubmitResult> SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame frame, Fizzy.ImageViewer.Frames.FrameSubmissionOptions? options = null, System.Threading.CancellationToken ct = default)
+Fizzy.ImageViewer.Viewer: public System.Void ActivateMeasurementTool(System.String toolId)
 Fizzy.ImageViewer.Viewer: public System.Void EndInteraction()
 Fizzy.ImageViewer.Viewer: public System.Void FitToViewport()
 Fizzy.ImageViewer.Viewer: public System.Void Hide()
 Fizzy.ImageViewer.Viewer: public System.Void Minimize()
 Fizzy.ImageViewer.Viewer: public System.Void RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool tool)
 Fizzy.ImageViewer.Viewer: public System.Void Show()
-Fizzy.ImageViewer.Viewer: public System.Void StartMeasurement(System.String toolId)
 Fizzy.ImageViewer.Viewer: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.Viewer>? logger = null, System.Double left = NaN, System.Double top = NaN, System.Double width = NaN, System.Double height = NaN, System.Boolean showWindow = true)
 Fizzy.ImageViewer.Viewer: public event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged

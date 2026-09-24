@@ -290,8 +290,8 @@ public class MenuTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(1, 1);
-            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 2);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(1, 1);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 2);
             var overlay = viewer.Host.Window.MeasurementOverlay;
             var shapes = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().ToArray();
             var menu = viewer.Host.Window.ContextMenu;
@@ -345,7 +345,7 @@ public class MenuTests
             Open(menu);
             Assert.Contains(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             Close(menu);
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
             Open(menu);
             Assert.DoesNotContain(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             var cancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));

@@ -39,7 +39,7 @@ public class LayerInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             switch (operation)
             {
                 case "all": viewer.Layers.ClearContents(); break;
@@ -64,12 +64,12 @@ public class LayerInteractionTests
             var failure = new InvalidOperationException("cancel failed");
             tool.Cancelled = context =>
             {
-                Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
+                Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(tool.Id));
                 Assert.Throws<InvalidOperationException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new())));
                 viewer.Layers.ClearContents(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             var layer = viewer.Layers.CreateDrawingLayer("after measurements");
             using var batch = layer.Add([new CircleElement(new(), 2, Brushes.Red)]);
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.ClearContents));

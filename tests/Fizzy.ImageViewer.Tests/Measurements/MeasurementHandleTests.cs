@@ -14,7 +14,7 @@ public class MeasurementHandleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         MeasurementEventArgs? completed = null;
         viewer.MeasurementCompleted += (_, e) => completed = e;
-        viewer.StartMeasurement(MeasurementToolIds.Point);
+        viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(1, 2));
         var handle = completed!.Measurement;
         int changes = 0, disposed = 0;
@@ -51,12 +51,12 @@ public class MeasurementHandleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         IMeasurement? preview = null;
         viewer.RegisterMeasurementTool(new TestMeasurementTool(item => preview = item));
-        viewer.StartMeasurement("async");
+        viewer.ActivateMeasurementTool("async");
         await Task.Run(() => { preview!.UpdateGeometry(MeasurementGeometry.Point(new(5, 6))); preview.Complete(); });
         Assert.True(preview!.IsComplete);
         viewer.EndInteraction();
         Assert.False(preview.IsDisposed);
-        viewer.StartMeasurement("async");
+        viewer.ActivateMeasurementTool("async");
         viewer.EndInteraction();
         Assert.True(preview.IsDisposed);
         await Assert.ThrowsAsync<ObjectDisposedException>(() => Task.Run(() => preview.Complete()));

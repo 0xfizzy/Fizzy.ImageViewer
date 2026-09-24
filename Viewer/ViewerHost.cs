@@ -23,7 +23,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private MeasurementToolRegistry _tools = null!;
     private MeasurementCollection _measurements = null!;
     private MeasurementRuntime _measurementRuntime = null!;
-    private InteractionCoordinator _interaction = null!;
+    private MeasurementInteractionCoordinator _interaction = null!;
     private MenuManager _menuManager = null!;
     private ViewerMenuController? _menuController;
     private Imaging.Queries.PixelQueryScheduler _queryScheduler = null!;
@@ -46,7 +46,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     internal MeasurementToolRegistry Tools => _tools;
     internal MeasurementCollection Measurements => _measurements;
     internal MeasurementRuntime MeasurementRuntime => _measurementRuntime;
-    internal InteractionCoordinator Interaction => _interaction;
+    internal MeasurementInteractionCoordinator Interaction => _interaction;
     internal MenuManager Menus => _menuManager;
     internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
     internal Menus.MenuSnapshotSession MenuSession => _menuSession;
@@ -87,7 +87,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editor = new MeasurementEditController(win.MeasurementOverlay);
                 var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, win.Layers.Collection, logger: _logger);
-                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers.Measurements,
+                _interaction = new MeasurementInteractionCoordinator(input, editor, _tools, _measurements, win.Layers.Measurements,
                     _measurementRuntime, TryAcquireCurrentFrame);
                 input.Connect(_interaction);
                 _tools.RegisterTool(new LengthTool());

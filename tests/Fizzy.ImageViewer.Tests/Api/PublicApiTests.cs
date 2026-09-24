@@ -33,8 +33,8 @@ public class PublicApiTests
         IDisposable? registration = null;
         await Task.Run(async () =>
         {
-            hud.HudLabel = "camera";
-            Assert.Equal("camera", hud.HudLabel);
+            hud.HudLabelText = "camera";
+            Assert.Equal("camera", hud.HudLabelText);
             Assert.True(hud.IsPixelInfoEnabled);
             hud.IsPixelInfoEnabled = false;
             Assert.False(hud.IsPixelInfoEnabled);
@@ -73,7 +73,7 @@ public class PublicApiTests
         Assert.Throws<ObjectDisposedException>(window.Show);
         Assert.Throws<ObjectDisposedException>(() => window.IsVisible);
         Assert.Throws<ObjectDisposedException>(() => window.IsMinimized);
-        Assert.Throws<ObjectDisposedException>(() => hud.HudLabel);
+        Assert.Throws<ObjectDisposedException>(() => hud.HudLabelText);
         Assert.Throws<ObjectDisposedException>(() => hud.IsPixelInfoEnabled);
         Assert.Throws<ObjectDisposedException>(() => hud.IsPixelInfoEnabled = true);
         Assert.Throws<ObjectDisposedException>(() => queries.QueryOptions);
@@ -141,7 +141,7 @@ public class PublicApiTests
         measurements.MeasurementRemoved += (_, e) => removed.Add(e.Measurement);
         async Task CompletePoint() => await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            measurements.StartMeasurement(MeasurementToolIds.Point);
+            measurements.ActivateMeasurementTool(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(2, 3);
         });
 
@@ -153,7 +153,7 @@ public class PublicApiTests
         Assert.Throws<ObjectDisposedException>(() => firstDrawing.Replace(new CircleElement(new(), 3, Brushes.Red)));
 
         using var secondDrawing = drawing.Markers.Add(new CircleElement(new(), 2, Brushes.Red));
-        measurements.StartMeasurement(MeasurementToolIds.Length);
+        measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(1, 1));
         await Task.Run(measurements.Measurements.Clear);
         Assert.Equal(completed, removed);
@@ -179,12 +179,12 @@ public class PublicApiTests
         measurements.MeasurementRemoved += (_, e) => removed.Add(e);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            measurements.StartMeasurement(MeasurementToolIds.Length);
+            measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
             measurements.EndInteraction();
             Assert.Empty(removed);
-            measurements.StartMeasurement(MeasurementToolIds.Length);
+            measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
             viewer.Host.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
@@ -211,10 +211,10 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, _) => removals++;
         EventHandler<MeasurementEventArgs> remove = (_, e) => e.Measurement.Dispose();
         viewer.MeasurementCompleted += remove;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);
         viewer.MeasurementCompleted -= remove;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(4, 5); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(4, 5); });
         await viewer.DisposeAsync();
         Assert.Equal(2, removals);
     }

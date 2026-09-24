@@ -126,7 +126,7 @@ then image intersection; empty regions are not queried. Shape editors preserve s
 The separate interaction coordinator manages selection, editing and creation sessions.
 See [measurement ownership and interaction](measurements.md) for geometry and extension contracts.
 
-`Viewer.QueryOptions` accepts `PixelQueryOptions`: PixelRate=30, LineRate=30, RegionRate=10 Hz,
+`Viewer.QueryOptions` accepts `PixelQueryOptions`: PixelQueryRateHz=30, LineQueryRateHz=30, RegionQueryRateHz=10 Hz,
 MaxResultAge=100 ms, all positive. Due requests are served in due order; pending geometry is replaced
 by its latest state without resetting the execution interval, including during edits and resizes.
 Monotonic age starts at the frame/geometry snapshot, not camera capture time.
@@ -135,7 +135,7 @@ recent prior frame within the age limit; advancing video clears expired values, 
 paused frame keeps its valid result. FrameId stays in API results/logging and is never a HUD label.
 `QueryMetrics` reports completed batches, expired results and last completion duration.
 
-The bottom-left pixel HUD has its own cap of `min(10, PixelRate)` Hz, with a full
+The bottom-left pixel HUD has its own cap of `min(10, PixelQueryRateHz)` Hz, with a full
 interval after each completed query (including failures). Mouse moves coalesce to
 the latest target without resetting that interval. It may publish a recently sampled
 position from the same interaction session; the coordinates and value always update

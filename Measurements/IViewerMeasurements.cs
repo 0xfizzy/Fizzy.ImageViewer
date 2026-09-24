@@ -10,9 +10,9 @@ public interface IViewerMeasurements
     MeasurementStyle MeasurementStyle { get; set; }
 
     /// <summary>
-    /// 程序化启动已注册的测量工具。
+    /// 激活已注册的测量工具，为本次交互创建独立会话；会话可创建零个或多个测量。
     /// </summary>
-    void StartMeasurement(string toolId);
+    void ActivateMeasurementTool(string toolId);
 
     /// <summary>
     /// 结束当前创建或编辑交互，保留已完成的测量及已应用的编辑。

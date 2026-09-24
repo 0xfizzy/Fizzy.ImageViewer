@@ -104,7 +104,7 @@ public class UnifiedMeasurementTests
             viewer.RegisterMeasurementTool(tool);
             viewer.MeasurementCompleted += (_, e) => { completed++; Assert.Equal(MeasurementGeometryKind.Rectangle, e.Snapshot.Geometry.Kind); };
             viewer.MeasurementRemoved += (_, _) => removed++;
-            viewer.StartMeasurement(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
+            viewer.ActivateMeasurementTool(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
             viewer.Host.Interaction.ImageDown(0, 0); viewer.Host.Interaction.ImageDown(2, 2);
             var shape = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
             item = viewer.Host.Measurements.Find(shape)!;

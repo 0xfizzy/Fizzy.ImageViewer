@@ -380,7 +380,7 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.False(viewer.Host.Window.Dispatcher.HasShutdownStarted);
-            viewer.StartMeasurement(MeasurementToolIds.Point);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(2, 3);
         });
         Assert.Equal(1, cleanup);

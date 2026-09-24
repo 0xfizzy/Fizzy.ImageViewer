@@ -58,7 +58,7 @@ using var batch = markers.Add(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, RectangleRoi, LineProfile IDs.
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Also: Point, RectangleRoi, LineProfile IDs.
 // Measurement results and their editing controls belong to Measurements.
 // Marker visuals do not intercept input by default.
 
@@ -244,7 +244,7 @@ The image-coordinate `Draw*` helpers return replaceable `DrawingHandle` instance
 
 ## HUD text
 
-`viewer.HudLabel` sets the upper-right label. `viewer.IsPixelInfoEnabled` enables or
+`viewer.HudLabelText` sets the upper-right label. `viewer.IsPixelInfoEnabled` enables or
 disables pixel inspection independently of application HUD text and can be set before `Show()`.
 
 

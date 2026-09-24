@@ -39,10 +39,10 @@ public class MeasurementInteractionTests
             {
                 completed++;
                 if (completed != 1) return;
-                viewer.StartMeasurement(startRectangle ? MeasurementToolIds.RectangleRoi : MeasurementToolIds.Point);
+                viewer.ActivateMeasurementTool(startRectangle ? MeasurementToolIds.RectangleRoi : MeasurementToolIds.Point);
                 if (startRectangle) viewer.Host.Interaction.ImageDown(2, 2);
             };
-            viewer.StartMeasurement(MeasurementToolIds.Point);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
             Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode);
             Assert.True(viewer.Layers.Collection.InputSuppressed);
@@ -55,7 +55,7 @@ public class MeasurementInteractionTests
 
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
-        viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
+        viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
         viewer.Host.Interaction.ImageDown(2, 2);
         viewer.Host.Interaction.ImageDown(6, 6);
         var shape = Overlay(viewer).Canvas.Children.OfType<Rectangle>().Last();
@@ -140,7 +140,7 @@ public class MeasurementInteractionTests
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(invalid));
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.Empty(viewer.Host.Interaction.Editor.Handles);
-            viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(3, 4);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(3, 4);
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(point));
             Assert.Equal(InteractionMode.Editing, viewer.Host.Interaction.Mode);
@@ -175,7 +175,7 @@ public class MeasurementInteractionTests
             viewer.Host.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
             {
-                case "measure": viewer.StartMeasurement("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode); break;
+                case "measure": viewer.ActivateMeasurementTool("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode); break;
                 case "delete": viewer.Host.Interaction.DeleteSelected(); break;
                 case "clear": viewer.Layers.ClearContents(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
@@ -202,7 +202,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
             viewer.Host.Interaction.ImageDown(1, 1); viewer.Host.Interaction.ImageMove(4, 4);
             var overlay = Overlay(viewer);
             Assert.Equal(2, overlay.Canvas.Children.Count);
@@ -356,7 +356,7 @@ public class MeasurementInteractionTests
             var measurements = new MeasurementCollection(layers.Measurements, runtime, NullLogger.Instance);
             var capture = new FakeCapture();
             var binding = new ViewerInputBinding(image, overlay, measurements, layers.Collection, capture);
-            using var coordinator = new InteractionCoordinator(binding, new MeasurementEditController(overlay),
+            using var coordinator = new MeasurementInteractionCoordinator(binding, new MeasurementEditController(overlay),
                 new MeasurementToolRegistry(), measurements, layers.Measurements, runtime, () => null);
             binding.Connect(coordinator);
             try
@@ -401,7 +401,7 @@ public class MeasurementInteractionTests
             var editor = new MeasurementEditController(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
             var binding = new ViewerInputBinding(image, overlay, context, layers.Collection, capture);
-            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers.Measurements, runtime, () => null);
+            using var coordinator = new MeasurementInteractionCoordinator(binding, editor, tools, context, layers.Measurements, runtime, () => null);
             binding.Connect(coordinator);
             var tool = new RectangleRoiTool();
             var creation = new MeasurementCreationContext(context, runtime, () => null);

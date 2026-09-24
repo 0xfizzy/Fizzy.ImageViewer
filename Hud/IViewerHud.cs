@@ -7,7 +7,7 @@ namespace Fizzy.ImageViewer.Hud;
 public interface IViewerHud
 {
     /// <summary>右上角 HUD 标签，通过查看器 STA 读写。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    string? HudLabel { get; set; }
+    string? HudLabelText { get; set; }
 
     /// <summary>Enables pixel inspection in the HUD; defaults to true.</summary>
     bool IsPixelInfoEnabled { get; set; }

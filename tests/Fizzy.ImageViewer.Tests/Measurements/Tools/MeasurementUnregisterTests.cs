@@ -18,7 +18,7 @@ public sealed class MeasurementUnregisterTests
                 point => OnMouseMove(point, context), () => Cancel(context));
         public bool OnClick(Point point, IMeasurementToolContext context) => false;
         public void OnMouseMove(Point point, IMeasurementToolContext context) { }
-        public void Cancel(IMeasurementToolContext context) => viewer.StartMeasurement(Id);
+        public void Cancel(IMeasurementToolContext context) => viewer.ActivateMeasurementTool(Id);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public sealed class MeasurementUnregisterTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.RegisterMeasurementTool(new Tool(viewer));
-            viewer.StartMeasurement("reentrant");
+            viewer.ActivateMeasurementTool("reentrant");
             Assert.Throws<KeyNotFoundException>(() => viewer.UnregisterMeasurementTool("reentrant"));
             Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);

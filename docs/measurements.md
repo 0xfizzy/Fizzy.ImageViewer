@@ -4,8 +4,10 @@ There is no standalone measurement creation or saved-ROI restoration API. Nonint
 
 Built-in and custom tools create the same model-owned measurements through
 `IMeasurementToolContext.CreateMeasurement`. Built-in IDs are `Point`, `Length`,
-`RectangleRoi` and `LineProfile`. Batch markers continue to use `DrawingElement` and
-`DrawingVisual`; the two rendering paths have independent purposes.
+`RectangleRoi` and `LineProfile`. Activate a tool with `ActivateMeasurementTool(toolId)`;
+each activation creates a session that can create zero or more measurements.
+Batch markers use `DrawingElement` descriptions and are managed through `DrawingHandle`;
+the two rendering paths have independent purposes.
 
 ## Ownership and geometry
 
@@ -57,7 +59,7 @@ leases, including sources that do not immediately honor cancellation.
 
 ## Interaction
 
-The internal coordinator owns the selected measurement, Idle/Editing/Measuring mode,
+The internal MeasurementInteractionCoordinator owns the selected measurement, Idle/Editing/Measuring mode,
 active measurement tool and session version. The tool registry only stores registrations.
 MeasurementEditController receives a MeasurementItem directly and owns its MeasurementEditSession
 and control-point visuals. Hit testing resolves visuals through the collection before selection;
@@ -108,7 +110,7 @@ A callback interrupted by a newer session cannot create through its old context;
 throws `ObjectDisposedException`. Measurements created by the new session survive cleanup,
 even when a disposal callback starts it. Cleanup attempts every owned preview and logs
 disposal failures. Bulk measurement cleanup rejects new measurement creation.
-Once viewer shutdown begins, `StartMeasurement` throws `ObjectDisposedException`;
+Once viewer shutdown begins, `ActivateMeasurementTool` throws `ObjectDisposedException`;
 shutdown cleans both completed and unfinished measurements and waits for owned queries.
 
 ## Query execution
@@ -161,10 +163,10 @@ removes only the registry entry and cancels an active session for that ID while 
 completed measurement items intact. Menus are backed by the same registry and are
 updated for subsequent openings when tools are registered or unregistered.
 
-Use `viewer.StartMeasurement(MeasurementToolIds.Length)` for built-in tools; the other
+Use `viewer.ActivateMeasurementTool(MeasurementToolIds.Length)` for built-in tools; the other
 constants are `Point`, `RectangleRoi` and `LineProfile`. Custom tools implement both `Id`
 and `DisplayName`, and are installed with `RegisterMeasurementTool`. IDs are
-case-sensitive; blank IDs or display names are rejected. `StartMeasurement` throws
+case-sensitive; blank IDs or display names are rejected. `ActivateMeasurementTool` throws
 `KeyNotFoundException` for an unknown ID and `InvalidOperationException` when the
 measurement layer is hidden or its configured hit testing is disabled. `UnregisterMeasurementTool(id)` returns whether an entry
 was removed. Call `EndInteraction()` to cancel creation or end editing; completed measurements and applied edits remain.
@@ -246,7 +248,7 @@ viewer.MeasurementChanged += (_, e) =>
     var result = e.QueryResult; // Null means the measurement currently has no valid pixel result.
     // Retain these immutable values or dispatch them to the application's UI.
 };
-viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
+viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
 ```
 
 Viewer and handle notifications share one FIFO queue on the viewer STA. Each mutation

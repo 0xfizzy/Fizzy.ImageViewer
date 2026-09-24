@@ -35,8 +35,8 @@ public class MeasurementActivationTests
         }
         viewer.RegisterMeasurementTool(new Tool("outgoing", _ => new TestMeasurementSession(_ => false, _ => { },
             () => { if (!dispose) Revoke(); }, () => { if (dispose) Revoke(); })));
-        viewer.StartMeasurement("outgoing");
-        viewer.StartMeasurement("target");
+        viewer.ActivateMeasurementTool("outgoing");
+        viewer.ActivateMeasurementTool("target");
         Assert.Equal(0, oldCalls);
         Assert.Equal(0, newCalls);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -45,7 +45,7 @@ public class MeasurementActivationTests
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
-        if (replace) { viewer.StartMeasurement("target"); Assert.Equal(1, newCalls); }
+        if (replace) { viewer.ActivateMeasurementTool("target"); Assert.Equal(1, newCalls); }
     }
 
     [Theory]
@@ -57,7 +57,7 @@ public class MeasurementActivationTests
         viewer.RegisterMeasurementTool(new Tool("failure", _ => new TestMeasurementSession(
             _ => throw new InvalidOperationException("click"), _ => throw new InvalidOperationException("move"),
             () => throw new InvalidOperationException("cancel"), () => throw new InvalidOperationException("dispose"))));
-        viewer.StartMeasurement("failure");
+        viewer.ActivateMeasurementTool("failure");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var error = Assert.Throws<AggregateException>(() =>
@@ -81,10 +81,10 @@ public class MeasurementActivationTests
             items.Add(context.CreateMeasurement(MeasurementGeometry.Line(new(), new(1, 1))));
             return new TestMeasurementSession(_ => false, _ => { }, () => { });
         }));
-        viewer.StartMeasurement("async");
+        viewer.ActivateMeasurementTool("async");
         items[0].Complete();
         var origin = items[0].Origin;
-        viewer.StartMeasurement("async");
+        viewer.ActivateMeasurementTool("async");
         Assert.False(await Task.Run(contexts[0].Finish));
         Assert.NotEqual(origin.SessionId, contexts[1].Origin.SessionId);
         Assert.Equal("async", origin.ToolId);
@@ -110,7 +110,7 @@ public class MeasurementActivationTests
             Assert.True(context.Finish());
             return new TestMeasurementSession(_ => false, _ => { }, () => cancellations++, () => disposals++);
         }));
-        viewer.StartMeasurement("factory-finish");
+        viewer.ActivateMeasurementTool("factory-finish");
         Assert.Equal(0, cancellations);
         Assert.Equal(1, disposals);
         Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);

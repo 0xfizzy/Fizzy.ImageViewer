@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer.Menus;
 internal sealed class ViewerMenuController : IDisposable
 {
     private readonly MenuManager _menus;
-    private readonly InteractionCoordinator _interaction;
+    private readonly MeasurementInteractionCoordinator _interaction;
     private readonly MeasurementToolRegistry _tools;
     private readonly ViewerLayers _layers;
     private readonly MenuSnapshotSession _session;
@@ -19,7 +19,7 @@ internal sealed class ViewerMenuController : IDisposable
     private readonly PixelInfoController _pixelInfo;
     private IDisposable? _registration;
 
-    internal ViewerMenuController(MenuManager menus, InteractionCoordinator interaction,
+    internal ViewerMenuController(MenuManager menus, MeasurementInteractionCoordinator interaction,
         MeasurementToolRegistry tools, ViewerLayers layers, MenuSnapshotSession session,
         SnapshotCapture capture, PixelInfoController pixelInfo)
     {
@@ -74,7 +74,7 @@ internal sealed class ViewerMenuController : IDisposable
             yield return new MenuItem(tool.DisplayName, () =>
             {
                 if (_tools.HasTool(tool.Id) && _layers.Measurements.IsVisible)
-                    _interaction.StartMeasurement(tool.Id);
+                    _interaction.ActivateMeasurementTool(tool.Id);
             });
     }
 

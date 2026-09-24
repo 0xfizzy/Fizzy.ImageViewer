@@ -14,8 +14,8 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
     IMouseCapture? capture = null, ILogger? logger = null) : IInteractionView
 {
     private readonly MouseCaptureSession _capture = new(capture ?? new ElementMouseCapture(overlay.Canvas));
-    private InteractionCoordinator? _coordinator;
-    internal void Connect(InteractionCoordinator coordinator)
+    private MeasurementInteractionCoordinator? _coordinator;
+    internal void Connect(MeasurementInteractionCoordinator coordinator)
     {
         if (_coordinator != null) throw new InvalidOperationException("Input is already connected.");
         _coordinator = coordinator;

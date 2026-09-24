@@ -145,7 +145,7 @@ public class PixelQuerySchedulerTests
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
-        { QueryOptions = new() { PixelRate = 20, LineRate = 10, RegionRate = 5, MaxResultAge = TimeSpan.FromSeconds(5) } };
+        { QueryOptions = new() { PixelQueryRateHz = 20, LineQueryRateHz = 10, RegionQueryRateHz = 5, MaxResultAge = TimeSpan.FromSeconds(5) } };
         var pixel = new Client(runtime); var line = new Client(runtime, 1); var region = new Client(runtime, 2);
         using var p = scheduler.Register(pixel); using var l = scheduler.Register(line); using var r = scheduler.Register(region);
         runtime.Tick!();
@@ -266,7 +266,7 @@ public class PixelQuerySchedulerTests
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
-        { QueryOptions = new() { PixelRate = rate } };
+        { QueryOptions = new() { PixelQueryRateHz = rate } };
         string? text = null;
         var hud = new PixelInfoState(value => text = value);
         hud.Enable(); hud.Move(0, 0);
@@ -300,7 +300,7 @@ public class PixelQuerySchedulerTests
         var runtime = new Runtime(); var source = new Source(runtime);
         using var frame = Frame(source);
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
-        { QueryOptions = new() { PixelRate = 2 } };
+        { QueryOptions = new() { PixelQueryRateHz = 2 } };
         string? text = null;
         var hud = new PixelInfoState(value => text = value);
         hud.Enable(); hud.Move(0, 0);
@@ -371,7 +371,7 @@ public class PixelQuerySchedulerTests
         var runtime = new Runtime();
         using var frame = Frame(new(runtime));
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
-        { QueryOptions = new() { PixelRate = 1, LineRate = 1, RegionRate = 1 } };
+        { QueryOptions = new() { PixelQueryRateHz = 1, LineQueryRateHz = 1, RegionQueryRateHz = 1 } };
         var client = new Client(runtime, kind);
         using var registration = scheduler.Register(client);
         runtime.Tick!(); await runtime.Finish(scheduler);

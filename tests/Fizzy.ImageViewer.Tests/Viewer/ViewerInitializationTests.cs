@@ -199,7 +199,7 @@ public class ViewerInitializationTests
         Assert.Equal(1, closedWindows);
         Assert.Equal(1, presenter.Disposals);
         Assert.Equal(ApartmentState.STA, presenter.Apartment);
-        Assert.Throws<ObjectDisposedException>(() => partial.StartMeasurement(MeasurementToolIds.Point));
+        Assert.Throws<ObjectDisposedException>(() => partial.ActivateMeasurementTool(MeasurementToolIds.Point));
         await partial.DisposeAsync();
         Assert.Equal(1, presenter.Disposals);
     }

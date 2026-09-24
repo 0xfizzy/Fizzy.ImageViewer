@@ -44,7 +44,7 @@ public class ToolSessionLifetimeTests
                 disposed++;
             });
         }));
-        viewer.StartMeasurement("lifetime");
+        viewer.ActivateMeasurementTool("lifetime");
         if (ending == "close") await viewer.DisposeAsync();
         else await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -72,10 +72,10 @@ public class ToolSessionLifetimeTests
         viewer.RegisterMeasurementTool(new Tool(_ => new TestMeasurementSession(_ => true, _ => { }, () => { }, () =>
         {
             disposed++;
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
             if (fail) throw new InvalidOperationException("dispose");
         })));
-        viewer.StartMeasurement("lifetime");
+        viewer.ActivateMeasurementTool("lifetime");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             if (fail) Assert.Throws<InvalidOperationException>(() => viewer.Host.Interaction.ImageDown(0, 0));
@@ -94,10 +94,10 @@ public class ToolSessionLifetimeTests
         int cancelled = 0, disposed = 0;
         viewer.RegisterMeasurementTool(new Tool(_ =>
         {
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
             return new TestMeasurementSession(_ => false, _ => { }, () => cancelled++, () => disposed++);
         }));
-        viewer.StartMeasurement("lifetime");
+        viewer.ActivateMeasurementTool("lifetime");
         Assert.Equal(1, cancelled);
         Assert.Equal(1, disposed);
         Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);

@@ -104,7 +104,7 @@ pan state in screen coordinates;
 it and measurement editing use MouseCaptureSession for capture admission, loss and
 idempotent release. Failed capture never starts a drag. Cancellation, interaction
 switching, hiding/unloading the image surface and shutdown end viewport capture.
-The interaction coordinator alone owns
+MeasurementInteractionCoordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
 transitions. Tool and edit admission share the layer's configured visibility and hit-test
 policy, including admission after reentrant cancellation. Temporary input suppression

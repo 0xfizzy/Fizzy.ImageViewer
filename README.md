@@ -62,7 +62,7 @@ using var markers = viewer.Layers.Markers.Add(
         new Fizzy.ImageViewer.Drawing.CircleElement(
             new System.Windows.Point(i % 100 * 10, i / 100 * 10),
             3, System.Windows.Media.Brushes.Red)));
-viewer.StartMeasurement(MeasurementToolIds.Length); // Independent interactive measurement layer.
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
 ```
 
 See [measurement ownership and interaction](docs/measurements.md).

@@ -22,7 +22,7 @@ public class QuerySchedulingTests
         Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl? plot=null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
-            viewer.StartMeasurement(MeasurementToolIds.LineProfile);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.LineProfile);
             viewer.Host.Interaction.ImageDown(0, 0);
             viewer.Host.Interaction.ImageDown(1, 0);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()

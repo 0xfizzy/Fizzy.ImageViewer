@@ -113,7 +113,7 @@ public class DrawingTests
                 replacement = viewer.Layers.CreateDrawingLayer("replacement");
                 replacementBatch = replacement.Add([Circle()]);
             };
-            viewer.StartMeasurement(MeasurementToolIds.Point);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
             viewer.Layers.ClearContents();
             Assert.Equal(1, removed);
@@ -341,7 +341,7 @@ public class DrawingTests
         var enabled = viewer.Layers.CreateDrawingLayer("enabled"); enabled.IsHitTestVisible = true;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasurement("Length");
+            viewer.ActivateMeasurementTool("Length");
             Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.False(enabled.Root.IsHitTestVisible);
             Assert.True(enabled.IsHitTestVisible);
@@ -357,11 +357,11 @@ public class DrawingTests
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Collection.Root);
             var image = parent.Children.OfType<ImageViewport>().Single();
-            Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement("Point"));
+            Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool("Point"));
             Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.False(viewer.Layers.Measurements.IsHitTestVisible);
             viewer.Layers.Measurements.IsHitTestVisible = true;
-            viewer.StartMeasurement("Point");
+            viewer.ActivateMeasurementTool("Point");
             Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             Assert.True(viewer.Layers.Measurements.IsHitTestVisible);
@@ -371,7 +371,7 @@ public class DrawingTests
             Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.True(viewer.Layers.Measurements.Root.IsHitTestVisible);
-            viewer.StartMeasurement("Length");
+            viewer.ActivateMeasurementTool("Length");
             viewer.Layers.Measurements.Clear();
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });

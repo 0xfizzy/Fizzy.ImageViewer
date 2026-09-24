@@ -102,9 +102,9 @@ internal sealed class PixelQueryScheduler : IDisposable
     {
         var rate = entry.Request.RateCategory switch
         {
-            QueryRateCategory.Pixel => _options.PixelRate,
-            QueryRateCategory.Line => _options.LineRate,
-            QueryRateCategory.Region => _options.RegionRate,
+            QueryRateCategory.Pixel => _options.PixelQueryRateHz,
+            QueryRateCategory.Line => _options.LineQueryRateHz,
+            QueryRateCategory.Region => _options.RegionQueryRateHz,
             _ => throw new InvalidOperationException("Unknown query rate category.")
         };
         if (entry.Item.Policy.MaximumRate is double maximum) rate = Math.Min(rate, maximum);

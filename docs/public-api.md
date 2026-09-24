@@ -1,7 +1,7 @@
 # Supported public API
 
 `Viewer` constructs an independent STA window. `IViewer` is its complete consumer
-contract, including `HudLabel`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
+contract, including `HudLabelText`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
 application adapters own an instance and use its public API. Raw-window access is not supported.
 
 | Capability | Supported entry points |
@@ -13,7 +13,7 @@ application adapters own an instance and use its public API. Raw-window access i
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
 | Layer composition | `Layers`, `ViewerLayers`, `ViewerLayer`, layer enumeration, creation/removal and global clear |
 | Drawing | `Markers`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
-| HUD | `HudLabel`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
+| HUD | `HudLabelText`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
 | Measurements | `Measurements` layer, instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
 | Display | `FitToViewport`, `DisplayRange` |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
@@ -111,7 +111,7 @@ after closure consumes the frame and returns `Closed`, rather than using the win
 property exception policy. Drawing and HUD handle disposal is idempotent after closure.
 See [frame contracts](frame-pipeline.md) and [drawing contracts](drawing-layers.md).
 
-`HudLabel` controls the upper-right HUD text. `IsPixelInfoEnabled` defaults to true and
+`HudLabelText` controls the upper-right HUD text. `IsPixelInfoEnabled` defaults to true and
 controls bottom-left pixel inspection and its query subscription; the context menu uses
 the same state. Both properties can be configured before showing the window.
 `EndInteraction()` cancels unfinished creation or ends editing, preserving completed
@@ -195,13 +195,13 @@ Arbitrary WPF attachment, geometry implementations and query algorithms are not 
 contracts. See [measurement contracts and example](measurements.md).
 
 During normal operation, a new session started synchronously from a callback takes
-precedence over the interrupted session. Once disposal begins, `StartMeasurement` throws
+precedence over the interrupted session. Once disposal begins, `ActivateMeasurementTool` throws
 `ObjectDisposedException` and measurement creation is rejected.
 
 ## Internal implementation
 
 Built-in measurement tool implementations are internal; use
-`StartMeasurement(MeasurementToolIds.Point)` (or another built-in ID) to activate them.
+`ActivateMeasurementTool(MeasurementToolIds.Point)` (or another built-in ID) to activate them.
 
 `ViewerHost`, `ViewerWindow`, `MenuManager`, `ViewerMenuController`, WPF image/overlay/HUD
 layer controls, control-point visuals, measurement edit sessions, `MeasurementItem`, scheduling and

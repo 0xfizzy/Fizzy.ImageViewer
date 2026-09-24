@@ -89,9 +89,9 @@ public class MeasurementOwnershipTests
         {
             var tool = new Tool { Finish = true };
             viewer.RegisterMeasurementTool(tool);
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             tool.Finish = false;
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(4, 5);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(4, 5);
             Assert.Throws<InvalidOperationException>(() => viewer.EndInteraction());
             Assert.Equal(1, tool.Disposals);
             Assert.Equal(2, viewer.Host.Window.MeasurementOverlay.Canvas.Children.Count);
@@ -151,7 +151,7 @@ public class MeasurementOwnershipTests
             completed.AddResource(new Resource(() => disposed++));
             completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()))));
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Throws<InvalidOperationException>(() => viewer.Layers.ClearContents());
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
@@ -167,8 +167,8 @@ public class MeasurementOwnershipTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var tool = new Tool { Finish = true }; viewer.RegisterMeasurementTool(tool);
-            viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
-            tool.Finish = false; viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(3, 4);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
+            tool.Finish = false; viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(3, 4);
             Assert.Throws<InvalidOperationException>(() =>
             {
                 if (action == "hide") viewer.Layers.Measurements.IsVisible = false;

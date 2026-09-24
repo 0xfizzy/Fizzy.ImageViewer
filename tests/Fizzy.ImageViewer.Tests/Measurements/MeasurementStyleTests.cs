@@ -71,7 +71,7 @@ public class MeasurementStyleTests
         });
         static Line CompleteLine(Viewer viewer)
         {
-            viewer.StartMeasurement(MeasurementToolIds.Length);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 1);
             viewer.Host.Interaction.ImageDown(4, 4);
             return viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<Line>().Last();
@@ -118,7 +118,7 @@ public class MeasurementStyleTests
         viewer.RegisterMeasurementTool(new StyledTool());
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.StartMeasurement("styled");
+            viewer.ActivateMeasurementTool("styled");
             viewer.Host.Interaction.ImageDown(3, 4);
             var shape = Assert.Single(viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
             Assert.Same(Brushes.Purple, shape.Stroke);

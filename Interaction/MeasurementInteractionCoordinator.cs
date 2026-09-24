@@ -6,8 +6,8 @@ using System.Runtime.ExceptionServices;
 
 namespace Fizzy.ImageViewer.Interaction;
 
-/// <summary>Owns selection and every input-state transition on the viewer's UI thread.</summary>
-internal sealed class InteractionCoordinator : IDisposable
+/// <summary>Owns measurement selection, tool activation and editing transitions on the viewer's UI thread.</summary>
+internal sealed class MeasurementInteractionCoordinator : IDisposable
 {
     private readonly IInteractionView _input;
     private readonly MeasurementEditController _edit;
@@ -30,7 +30,7 @@ internal sealed class InteractionCoordinator : IDisposable
     public MeasurementItem? SelectedMeasurement { get; private set; }
     internal MeasurementEditController Editor => _edit;
 
-    internal InteractionCoordinator(IInteractionView input, MeasurementEditController edit,
+    internal MeasurementInteractionCoordinator(IInteractionView input, MeasurementEditController edit,
         MeasurementToolRegistry tools, MeasurementCollection measurements, MeasurementLayer measurementLayer,
         MeasurementRuntime runtime, Func<FrameLease?> acquire)
     {
@@ -67,7 +67,7 @@ internal sealed class InteractionCoordinator : IDisposable
         SelectedMeasurement = null;
         _input.SetSelection(null);
     }
-    internal void StartMeasurement(string toolId)
+    internal void ActivateMeasurementTool(string toolId)
     {
         if (_measurementLayer.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
         if (!CanInteract) return;

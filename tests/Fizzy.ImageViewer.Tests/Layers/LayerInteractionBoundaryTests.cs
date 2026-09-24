@@ -28,20 +28,20 @@ public class LayerInteractionBoundaryTests
             return new TestMeasurementSession(_ => false, _ => { }, () => { });
         }));
         viewer.Layers.Measurements.IsHitTestVisible = false;
-        Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement("admission"));
+        Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool("admission"));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             viewer.Host.Interaction.StartEditing(item);
-            viewer.Host.Interaction.StartMeasurement("admission");
+            viewer.Host.Interaction.ActivateMeasurementTool("admission");
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
             Assert.False(viewer.Host.Interaction.Editor.IsEditing);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
         Assert.Equal(0, factories);
         viewer.Layers.Measurements.IsHitTestVisible = true;
-        viewer.StartMeasurement("admission");
+        viewer.ActivateMeasurementTool("admission");
         Assert.Equal(1, factories);
     }
 
@@ -53,7 +53,7 @@ public class LayerInteractionBoundaryTests
         await using var viewer = new Viewer(showWindow: false);
         var factories = 0;
         IMeasurement? preview = null;
-        void Restart() => Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement("restart"));
+        void Restart() => Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool("restart"));
         viewer.RegisterMeasurementTool(new Tool("restart", context =>
         {
             factories++;
@@ -62,7 +62,7 @@ public class LayerInteractionBoundaryTests
                 () => { if (!restartFromDispose) Restart(); },
                 () => { if (restartFromDispose) Restart(); });
         }));
-        viewer.StartMeasurement("restart");
+        viewer.ActivateMeasurementTool("restart");
         viewer.Layers.Measurements.IsHitTestVisible = false;
         Assert.Equal(1, factories);
         Assert.True(preview!.IsDisposed);
@@ -86,8 +86,8 @@ public class LayerInteractionBoundaryTests
             factories++;
             return new TestMeasurementSession(_ => false, _ => { }, () => { });
         }));
-        viewer.StartMeasurement("outgoing");
-        viewer.StartMeasurement("target");
+        viewer.ActivateMeasurementTool("outgoing");
+        viewer.ActivateMeasurementTool("target");
         Assert.Equal(0, factories);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -110,7 +110,7 @@ public class LayerInteractionBoundaryTests
             viewer.Layers.Measurements.IsHitTestVisible = false;
             return new TestMeasurementSession(_ => false, _ => { }, () => cancellations++, () => disposals++);
         }));
-        viewer.StartMeasurement("factory-disable");
+        viewer.ActivateMeasurementTool("factory-disable");
         Assert.True(preview!.IsDisposed);
         Assert.Equal(1, cancellations);
         Assert.Equal(1, disposals);

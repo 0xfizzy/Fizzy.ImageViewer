@@ -48,7 +48,7 @@ public class MeasurementSessionTests
             else item.Dispose();
             return new TestMeasurementSession(_ => false, _ => { }, () => { });
         }));
-        viewer.StartMeasurement("factory");
+        viewer.ActivateMeasurementTool("factory");
         viewer.EndInteraction();
         viewer.UnregisterMeasurementTool("factory");
         return (item!, contextReference!);
@@ -74,8 +74,8 @@ public class MeasurementSessionTests
         MeasurementEventArgs? a = null, b = null;
         first.MeasurementCompleted += (_, e) => a = e;
         second.MeasurementCompleted += (_, e) => b = e;
-        first.StartMeasurement(tool.Id);
-        second.StartMeasurement(tool.Id);
+        first.ActivateMeasurementTool(tool.Id);
+        second.ActivateMeasurementTool(tool.Id);
         await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Interaction.ImageDown(1, 2));
         await second.Host.Window.Dispatcher.InvokeAsync(() => second.Host.Interaction.ImageDown(10, 20));
         await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Interaction.ImageDown(3, 4));
@@ -102,15 +102,15 @@ public class MeasurementSessionTests
                 {
                     oldContext = context;
                     oldPreview = context.CreateMeasurement(MeasurementGeometry.Point(new()));
-                    viewer.StartMeasurement("factory");
+                    viewer.ActivateMeasurementTool("factory");
                     if (throws) throw failure;
                 }
                 else survivor = context.CreateMeasurement(MeasurementGeometry.Point(new(5, 6)));
                 return new TestMeasurementSession(_ => false, _ => { }, () => cancellations++);
             });
             viewer.RegisterMeasurementTool(tool);
-            if (throws) Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id)));
-            else viewer.StartMeasurement(tool.Id);
+            if (throws) Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(tool.Id)));
+            else viewer.ActivateMeasurementTool(tool.Id);
             Assert.Equal(tool.Id, viewer.Host.Interaction.ActiveId);
             Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.True(oldPreview!.IsDisposed);
@@ -141,7 +141,7 @@ public class MeasurementSessionTests
                 throw new InvalidOperationException("factory failed");
             });
             viewer.RegisterMeasurementTool(tool);
-            Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
+            Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(tool.Id));
             Assert.True(preview!.IsDisposed);
             Assert.Null(viewer.Host.Interaction.ActiveId);
             Assert.False(viewer.Layers.Collection.InputSuppressed);

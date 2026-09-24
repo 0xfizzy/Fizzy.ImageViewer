@@ -61,7 +61,7 @@ public class MeasurementNotificationsTests
         api.RegisterMeasurementTool(tool);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            api.StartMeasurement(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
+            api.ActivateMeasurementTool(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
             viewer.Host.Interaction.ImageDown(0, 0);
             viewer.Host.Interaction.ImageMove(2, 2);
             Assert.Empty(events); // Previews never enter the public result stream.
