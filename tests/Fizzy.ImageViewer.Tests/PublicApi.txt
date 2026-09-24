@@ -395,7 +395,6 @@ Fizzy.ImageViewer.Measurements.IMeasurementTool: public abstract Fizzy.ImageView
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: abstract Fizzy.ImageViewer.Measurements.MeasurementStyle Style { public get; }
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
 Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract Fizzy.ImageViewer.Measurements.IMeasurement CreateMeasurement(Fizzy.ImageViewer.Measurements.MeasurementGeometry geometry, Fizzy.ImageViewer.Measurements.MeasurementOptions? options = null)
-Fizzy.ImageViewer.Measurements.IMeasurementToolContext: public abstract event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Measurements.IMeasurementToolSession: public abstract System.Boolean OnClick(System.Windows.Point point)
 Fizzy.ImageViewer.Measurements.IMeasurementToolSession: public abstract System.Void Cancel()
 Fizzy.ImageViewer.Measurements.IMeasurementToolSession: public abstract System.Void OnMouseMove(System.Windows.Point point)

@@ -39,7 +39,7 @@ idempotent cleanup before awaiting the viewer's disposal completion.
 ## Ownership and direction
 
 Viewer exposes the complete public facade and raises public notifications. Host composes
-internal frame notifications in submission-callback, measurement-context, public-event order;
+frame notifications in submission-callback, public-event order;
 subscriber failures are isolated at each boundary.
 ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
 query scheduler, measurement context, tool registry, interaction coordinator and HUD.

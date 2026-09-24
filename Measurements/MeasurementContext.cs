@@ -19,7 +19,6 @@ internal sealed class MeasurementContext
     private readonly Dictionary<UIElement, MeasurementItem> _visualOwners = [];
     private bool _cleaning;
     private bool _disposed;
-    public event Action<FrameInfo>? FrameCommitted;
     internal event Action<MeasurementItem>? ItemRemoving;
     internal event Action<MeasurementItem>? ItemCompleted;
     internal event Action<MeasurementItem>? ItemRemoved;
@@ -112,16 +111,10 @@ internal sealed class MeasurementContext
         foreach (var item in items)
             try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
     }
-    internal void NotifyFrameCommitted(FrameInfo info)
-    {
-        foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
-            try { handler(info); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
-    }
     internal void Shutdown()
     {
         if (_disposed) return;
         _disposed = true;
         ClearMeasurements();
-        FrameCommitted = null;
     }
 }

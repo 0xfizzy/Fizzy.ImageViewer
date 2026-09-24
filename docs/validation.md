@@ -121,7 +121,7 @@ frame/measurement/presenter release, original exceptions and actual STA exit. `L
 cover routed selection input, one cancellation per layer operation and complete bulk cleanup
 after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
 context. MeasurementGeometryTests verify normalized bounds, endpoint order, zero extents and invalid
-coordinates/radii. ViewerTests verify submission, measurement and public frame-notification
+coordinates/radii. ViewerTests verify submission callbacks and public frame-notification
 order despite callback failures. The public API baseline test detects exported type/member changes; its update
 procedure is documented in [public API](public-api.md).
 

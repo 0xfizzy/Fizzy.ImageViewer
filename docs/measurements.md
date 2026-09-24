@@ -249,7 +249,7 @@ Disposal revokes queries, executes cleanup callbacks, disposes resources, closes
 and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates
 cleanup errors; framework cleanup logs errors and continues. Disposal is idempotent.
 Creation is rejected during bulk cleanup and shutdown. Geometry/result and viewer event
-subscriber failures are logged and isolated. `FrameCommitted` is a notification, not a
+subscriber failures are logged and isolated. `Viewer.FrameCommitted` is a viewer-level notification, not a
 query execution callback.
 
 This custom ROI gets the same model editing, statistics, labels and viewer notifications

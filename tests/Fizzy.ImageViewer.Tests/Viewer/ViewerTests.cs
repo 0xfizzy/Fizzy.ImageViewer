@@ -25,15 +25,11 @@ public class ViewerTests
     {
         await using var viewer = Create();
         var order = new List<string>();
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        viewer.FrameCommitted += _ =>
         {
-            viewer.Host.Measurements.FrameCommitted += _ =>
-            {
-                order.Add("measurement-failure");
-                throw new InvalidOperationException("measurement subscriber");
-            };
-            viewer.Host.Measurements.FrameCommitted += _ => order.Add("measurement");
-        });
+            order.Add("viewer-failure");
+            throw new InvalidOperationException("viewer subscriber");
+        };
         viewer.FrameCommitted += _ => order.Add("viewer");
         var result = await viewer.SubmitFrameAsync(Frame(42), new()
         {
@@ -45,7 +41,7 @@ public class ViewerTests
             }
         });
         Assert.Equal(FrameSubmitStatus.Committed, result.Status);
-        Assert.Equal(new[] { "submission", "measurement-failure", "measurement", "viewer" }, order);
+        Assert.Equal(new[] { "submission", "viewer-failure", "viewer" }, order);
     }
 
     [Fact]

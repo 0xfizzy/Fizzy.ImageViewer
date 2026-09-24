@@ -10,11 +10,6 @@ internal sealed class MeasurementCreationSession(MeasurementContext owner) : IMe
 
     public MeasurementStyle Style => owner.Style;
     public FrameLease? AcquireCurrentFrame() => owner.AcquireCurrentFrame();
-    public event Action<FrameInfo>? FrameCommitted
-    {
-        add => owner.FrameCommitted += value;
-        remove => owner.FrameCommitted -= value;
-    }
 
     public IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null)
         => owner.CreateMeasurement(geometry, options, this);

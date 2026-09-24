@@ -149,7 +149,6 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
             options?.OnCommitted?.Invoke(borrowed);
         }
         catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }
-        _context?.NotifyFrameCommitted(frame.Info);
         _owner.NotifyFrameCommitted(frame.Info);
     }
 

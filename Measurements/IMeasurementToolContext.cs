@@ -11,5 +11,4 @@ public interface IMeasurementToolContext
     FrameLease? AcquireCurrentFrame();
     /// <summary>Creates a model-owned preview. Complete retains it after the tool finishes.</summary>
     IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null);
-    event Action<FrameInfo>? FrameCommitted;
 }
