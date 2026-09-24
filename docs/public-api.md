@@ -23,6 +23,10 @@ to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 
 ## Threads and window lifetime
 
+The optional `ILogger<Viewer>` constructor argument defaults to no logging. Omitting it
+or passing `null` uses `NullLogger<Viewer>.Instance`; pass a logger to integrate with
+the application logging system. `new Viewer()` requires no logging setup.
+
 Construction shows the window by default. Pass `showWindow: false` to create a hidden
 viewer, configure it and subscribe to events before calling `Show()`. A hidden viewer
 has a running STA and can accept frames; its owner must await `DisposeAsync()` even

@@ -4,6 +4,7 @@ using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using System.Windows.Media;
 using Xunit;
 
@@ -12,6 +13,41 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class ViewerInitializationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OptionalLoggerSupportsFramesAndShutdown(bool explicitNull)
+    {
+        await using var viewer = explicitNull ? new Viewer(logger: null, showWindow: false) : new Viewer(showWindow: false);
+        Assert.False(viewer.IsVisible);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+            ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }))).Status);
+        await viewer.DisposeAsync();
+        Assert.False(sta.IsAlive);
+    }
+
+    [Fact]
+    public async Task InjectedLoggerReceivesIsolatedSubscriberFailure()
+    {
+        var logger = new RecordingLogger();
+        await using var viewer = new Viewer(logger, showWindow: false);
+        var failure = new InvalidOperationException("subscriber failure");
+        viewer.Closed += (_, _) => throw failure;
+        await viewer.DisposeAsync();
+        Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Warning &&
+            ReferenceEquals(entry.Exception, failure) && entry.Message == "Closed handler failed");
+    }
+
+    private sealed class RecordingLogger : ILogger<Viewer>
+    {
+        public readonly System.Collections.Concurrent.ConcurrentQueue<(LogLevel Level, Exception? Exception, string Message)> Entries = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Entries.Enqueue((logLevel, exception, formatter(state, exception)));
+    }
+
     [Fact]
     public async Task StartupRollbackPreservesFailureAndStopsSta()
     {
@@ -51,7 +87,7 @@ public class ViewerInitializationTests
     [Fact]
     public async Task PublicHiddenCreationAllowsSetupBeforeShowing()
     {
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await using var viewer = new Viewer(showWindow: false);
         Assert.False(viewer.IsVisible);
         viewer.Title = "Configured before show";
         var closed = 0;
@@ -69,7 +105,7 @@ public class ViewerInitializationTests
     [Fact]
     public async Task NeverShownViewerClosesAndStopsSta()
     {
-        var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var viewer = new Viewer(showWindow: false);
         var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
         var closed = 0;
         viewer.Closed += (_, _) => closed++;
@@ -128,7 +164,6 @@ public class ViewerInitializationTests
         Assert.False(initialized);
         Assert.Equal(0, presenter.Disposals);
         Assert.Throws<ArgumentOutOfRangeException>(() => new Viewer(NullLogger<Viewer>.Instance, left: double.NegativeInfinity));
-        Assert.Throws<ArgumentNullException>(() => new Viewer(null!));
     }
 
     [Theory]

@@ -1,5 +1,6 @@
 using Fizzy.ImageViewer.Menus;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Fizzy.ImageViewer;
 
@@ -16,10 +17,11 @@ public sealed partial class Viewer : IViewer, IAsyncDisposable
     private readonly ILogger _logger;
 
     /// <summary>Creates a viewer on its own STA. Use showWindow: false to configure and
-    /// subscribe before calling Show. The caller owns disposal even if never shown.</summary>
-    public Viewer(ILogger<Viewer> logger, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
+    /// subscribe before calling Show. The caller owns disposal even if never shown.
+    /// Omitting logger or passing null disables logging.</summary>
+    public Viewer(ILogger<Viewer>? logger = null, double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,
         bool showWindow = true)
-        : this(logger, null, showWindow, left, top, width, height) { }
+        : this(logger ?? NullLogger<Viewer>.Instance, null, showWindow, left, top, width, height) { }
 
     internal Viewer(ILogger<Viewer> logger, Rendering.ICpuImagePresenter? presenter, bool showWindow,
         double left = double.NaN, double top = double.NaN, double width = double.NaN, double height = double.NaN,

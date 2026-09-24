@@ -16,8 +16,11 @@ dotnet pack Fizzy.ImageViewer.csproj -c Release -o artifacts
 
 The library suite uses independent hidden STA windows, injected presenters and explicit gates
 for queue tests. It exercises ownership, pixels, submission/notification order, frozen snapshots,
-format changes and TIFF readback. Passing it does not verify physical screen presentation,
-mixed-DPI monitors, remote desktop or real hardware. These require a separate interactive check.
+format changes and TIFF readback. LibTIFF is a test-only dependency used as an independent
+decoder for the built-in TIFF writer. TIFF tests cover all pixel formats, strip layouts,
+raw floating-point bits, alpha tags, size limits, cancellation and failed replacement cleanup.
+Passing the suite does not verify physical screen presentation, mixed-DPI monitors, remote
+desktop or real hardware. These require a separate interactive check.
 No package release is performed by these validation commands.
 The Windows CI workflow runs restore, build, test, tool builds and pack on pushes and pull
 requests, using only this repository's checkout. It does not publish packages.

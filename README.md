@@ -42,9 +42,8 @@ and set `<UseWPF>true</UseWPF>`.
 using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Measurements;
-using Microsoft.Extensions.Logging.Abstractions;
 
-await using var viewer = new Viewer(NullLogger<Viewer>.Instance);
+await using var viewer = new Viewer();
 var pixels = new byte[640 * 480];
 var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
     FramePixelFormat.Gray8), pixels);
