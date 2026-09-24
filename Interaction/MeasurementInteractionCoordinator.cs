@@ -67,12 +67,14 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
         SelectedMeasurement = null;
         _input.SetSelection(null);
     }
-    internal void ActivateMeasurementTool(string toolId)
+    internal MeasurementActivationResult ActivateMeasurementTool(string toolId)
+        => ActivateMeasurementTool(_tools.FindRegistration(toolId));
+
+    internal MeasurementActivationResult ActivateMeasurementTool(MeasurementToolRegistry.Registration? registration)
     {
-        if (_measurementLayer.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
-        if (!CanInteract) return;
-        var registration = _tools.FindRegistration(toolId);
-        if (registration == null) return;
+        var admission = Admission(registration);
+        if (admission != MeasurementActivationResult.Started) return admission;
+        ArgumentNullException.ThrowIfNull(registration);
         var version = _sessionVersion;
         try
         {
@@ -82,33 +84,45 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
             if (!CanActivate(version, registration))
             {
                 if (version == _sessionVersion) RestoreInput();
-                return;
+                return MeasurementActivationResult.Superseded;
             }
             var context = new MeasurementCreationContext(_measurements, _runtime, _acquire,
                 new MeasurementOrigin(registration.Id, Guid.NewGuid()), Finish);
             var activation = new Activation(registration, context);
             _activation = activation;
             ClearSelection();
-            if (!IsCurrent(activation)) return;
+            if (!IsCurrent(activation)) return MeasurementActivationResult.Superseded;
             var callback = registration.Tool.CreateSession(context)
                 ?? throw new InvalidOperationException("Tool returned no session.");
             if (!IsCurrent(activation))
             {
                 ReleaseSession(callback, cancelled: context.WasCancelled);
-                return;
+                return version == _sessionVersion && !context.WasCancelled
+                    ? MeasurementActivationResult.Started : MeasurementActivationResult.Superseded;
             }
             activation.Callback = callback;
             Mode = InteractionMode.Measuring;
             _input.SetLayerInputSuppressed(true);
             _input.ShowMeasurementCursor();
+            return MeasurementActivationResult.Started;
         }
         catch (Exception error) { CancelAfterFailure(error, version); throw; }
+    }
+
+    private MeasurementActivationResult Admission(MeasurementToolRegistry.Registration? registration)
+    {
+        if (_disposed) return MeasurementActivationResult.Closed;
+        if (registration == null || !_tools.Contains(registration)) return MeasurementActivationResult.Unregistered;
+        if (_measurementLayer.IsClearing) return MeasurementActivationResult.Clearing;
+        if (!_measurementLayer.IsVisible) return MeasurementActivationResult.Hidden;
+        if (!_measurementLayer.IsHitTestVisible) return MeasurementActivationResult.InputDisabled;
+        return MeasurementActivationResult.Started;
     }
 
     private bool CanInteract => !_disposed && !_measurementLayer.IsClearing &&
         _measurementLayer.IsVisible && _measurementLayer.IsHitTestVisible;
     private bool CanActivate(long version, MeasurementToolRegistry.Registration registration)
-        => version == _sessionVersion && CanInteract && _tools.Contains(registration);
+        => version == _sessionVersion && Admission(registration) == MeasurementActivationResult.Started;
     private bool IsCurrent(Activation activation)
         => !_disposed && ReferenceEquals(_activation, activation) && _tools.Contains(activation.Registration);
 
@@ -150,12 +164,13 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
     }
 
     internal bool UnregisterMeasurementTool(string id)
+        => _tools.FindRegistration(id) is { } registration && RevokeMeasurementTool(registration);
+
+    internal bool RevokeMeasurementTool(MeasurementToolRegistry.Registration registration)
     {
-        if (_disposed) return false;
-        // Remove before callbacks: the outgoing registration cannot restart itself.
-        // A newly registered replacement or another tool may still take ownership.
-        if (!_tools.UnregisterTool(id)) return false;
-        if (ActiveId == id) Cancel();
+        if (_disposed || !_tools.UnregisterTool(registration)) return false;
+        // Revoke before callbacks; replacements with the same ID have a different identity.
+        if (ReferenceEquals(_activation?.Registration, registration)) Cancel();
         return true;
     }
     private bool CancelCore()

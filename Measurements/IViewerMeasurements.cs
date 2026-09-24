@@ -33,7 +33,8 @@ public interface IViewerMeasurements
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
     /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
     /// </summary>
-    void RegisterMeasurementTool(IMeasurementTool tool);
+    /// <returns>A thread-safe, idempotent handle revoking only this registration. Completed measurements survive.</returns>
+    IDisposable RegisterMeasurementTool(IMeasurementTool tool);
 
     /// <summary>Removes the viewer-wide registration for this ID, including an active session using it.</summary>
     bool UnregisterMeasurementTool(string toolId);

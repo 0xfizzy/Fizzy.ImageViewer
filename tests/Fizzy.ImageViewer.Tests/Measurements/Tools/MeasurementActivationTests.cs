@@ -17,6 +17,117 @@ public class MeasurementActivationTests
         public IMeasurementToolSession CreateSession(IMeasurementToolContext context) => factory(context);
     }
 
+    [Fact]
+    public async Task ViewerClosureInvalidatesRetainedRegistrationHandle()
+    {
+        var viewer = new Viewer(showWindow: false);
+        var handle = viewer.RegisterMeasurementTool(new Tool("retained", _ =>
+            new TestMeasurementSession(_ => false, _ => { }, () => { })));
+        var registration = await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Tools.FindRegistration("retained")!);
+        Assert.Same(handle, registration.Handle);
+        await viewer.DisposeAsync();
+        Assert.Null(registration.Handle);
+        await Task.Run(handle.Dispose);
+        handle.Dispose();
+    }
+
+    [Fact]
+    public async Task OldHandleCannotRevokeReplacementAndWorkerDisposalPreservesCompletedItems()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        var old = viewer.RegisterMeasurementTool(new Tool("owned", _ => new TestMeasurementSession(_ => false, _ => { }, () => { })));
+        viewer.UnregisterMeasurementTool("owned");
+        IMeasurement? completed = null;
+        var cancellations = 0;
+        var replacement = viewer.RegisterMeasurementTool(new Tool("owned", context =>
+        {
+            completed = context.CreateMeasurement(MeasurementGeometry.Point(new()));
+            completed.Complete();
+            return new TestMeasurementSession(_ => false, _ => { }, () => cancellations++);
+        }));
+        await Task.Run(old.Dispose);
+        viewer.ActivateMeasurementTool("owned");
+        await Task.Run(replacement.Dispose);
+        replacement.Dispose();
+        Assert.Equal(1, cancellations);
+        Assert.False(completed!.IsDisposed);
+        Assert.Throws<KeyNotFoundException>(() => viewer.ActivateMeasurementTool("owned"));
+        await viewer.DisposeAsync();
+        replacement.Dispose();
+    }
+
+    [Fact]
+    public async Task DisposalCanRegisterReplacementEvenWhenCancellationThrows()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        var replacementCalls = 0;
+        var disposalCalls = 0;
+        var failure = new InvalidOperationException("cancel");
+        var registration = viewer.RegisterMeasurementTool(new Tool("owned", _ =>
+            new TestMeasurementSession(_ => false, _ => { }, () =>
+            {
+                viewer.RegisterMeasurementTool(new Tool("owned", _ =>
+                {
+                    replacementCalls++;
+                    return new TestMeasurementSession(_ => false, _ => { }, () => { });
+                }));
+                viewer.ActivateMeasurementTool("owned");
+                throw failure;
+            }, () => disposalCalls++)));
+        viewer.ActivateMeasurementTool("owned");
+        Assert.Same(failure, Assert.Throws<InvalidOperationException>(registration.Dispose));
+        registration.Dispose();
+        Assert.Equal(1, replacementCalls);
+        Assert.Equal(1, disposalCalls);
+        Assert.Equal("owned", viewer.Host.Interaction.ActiveId);
+    }
+
+    [Fact]
+    public async Task CapturedMenuToolCannotActivateSameIdReplacement()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        var calls = 0;
+        using var registration = viewer.RegisterMeasurementTool(new Tool("captured", _ =>
+            new TestMeasurementSession(_ => false, _ => { }, () => { })));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var menu = viewer.Host.Window.ContextMenu;
+            menu.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.ContextMenu.OpenedEvent));
+            var item = menu.Items.OfType<System.Windows.Controls.MenuItem>().Single(i => Equals(i.Header, "captured"));
+            registration.Dispose();
+            viewer.RegisterMeasurementTool(new Tool("captured", _ =>
+            {
+                calls++;
+                return new TestMeasurementSession(_ => false, _ => { }, () => { });
+            }));
+            item.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent));
+            Assert.Equal(0, calls);
+            viewer.ActivateMeasurementTool("captured");
+            Assert.Equal(1, calls);
+        });
+    }
+
+    [Fact]
+    public async Task InvalidAdmissionPreservesCurrentActivationAndSharesMenuRules()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
+        Assert.Throws<KeyNotFoundException>(() => viewer.ActivateMeasurementTool("missing"));
+        Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
+        viewer.EndInteraction();
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var registration = viewer.Host.Tools.FindRegistration(MeasurementToolIds.Length)!;
+            viewer.Measurements.IsVisible = false;
+            Assert.Equal(MeasurementActivationResult.Hidden, viewer.Host.Interaction.ActivateMeasurementTool(registration));
+            Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(registration.Id));
+            viewer.Measurements.IsVisible = true;
+            viewer.Measurements.IsHitTestVisible = false;
+            Assert.Equal(MeasurementActivationResult.InputDisabled, viewer.Host.Interaction.ActivateMeasurementTool(registration));
+            Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(registration.Id));
+        });
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

@@ -198,6 +198,17 @@ During normal operation, a new session started synchronously from a callback tak
 precedence over the interrupted session. Once disposal begins, `ActivateMeasurementTool` throws
 `ObjectDisposedException` and measurement creation is rejected.
 
+## Tool registration lifetime
+
+`RegisterMeasurementTool` returns an `IDisposable` handle for one registration.
+Component cleanup disposes that handle; viewer-wide management may instead call
+`UnregisterMeasurementTool(id)` to remove the current registration under an ID.
+Revocation cancels that registration's active session, preserves completed measurements,
+and never disposes the caller-owned tool. Handles are idempotent and safe across threads
+and after closure. A retained old handle cannot remove a same-ID replacement.
+See [registration ownership](measurements.md#tool-registration-ownership) for callback,
+activation and captured-menu behavior.
+
 ## Internal implementation
 
 Built-in measurement tool implementations are internal; use

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;
 
 namespace Fizzy.ImageViewer;
@@ -18,10 +19,12 @@ public partial class Viewer
         }
     }
 
-    public void RegisterMeasurementTool(IMeasurementTool tool)
+    public IDisposable RegisterMeasurementTool(IMeasurementTool tool) => InvokeAlive(() =>
     {
-        InvokeAlive(() => _host.Tools.RegisterTool(tool));
-    }
+        var registration = _host.Tools.RegisterTool(tool);
+        return registration.Handle = new MeasurementToolRegistration(() => _host.Lifetime.InvokeRemoval(_host.Window.Dispatcher,
+            () => _host.Interaction.RevokeMeasurementTool(registration)));
+    });
 
     public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
     {
@@ -34,10 +37,20 @@ public partial class Viewer
         InvokeAlive(() =>
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-            if (!_host.Tools.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
-            if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
-            if (!Layers.Measurements.IsHitTestVisible) throw new InvalidOperationException("Measurement layer hit testing is disabled.");
-            _host.Interaction.ActivateMeasurementTool(toolId);
+            var result = _host.Interaction.ActivateMeasurementTool(toolId);
+            switch (result)
+            {
+                case MeasurementActivationResult.Unregistered:
+                    throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
+                case MeasurementActivationResult.Hidden:
+                    throw new InvalidOperationException("Measurement layer is hidden.");
+                case MeasurementActivationResult.InputDisabled:
+                    throw new InvalidOperationException("Measurement layer hit testing is disabled.");
+                case MeasurementActivationResult.Clearing:
+                    throw new InvalidOperationException("Cannot activate a tool during layer cleanup.");
+                case MeasurementActivationResult.Closed:
+                    throw new ObjectDisposedException(nameof(Viewer));
+            }
         });
     }
 

@@ -73,8 +73,7 @@ internal sealed class ViewerMenuController : IDisposable
         foreach (var tool in _tools.RegisteredTools)
             yield return new MenuItem(tool.DisplayName, () =>
             {
-                if (_tools.HasTool(tool.Id) && _layers.Measurements.IsVisible)
-                    _interaction.ActivateMeasurementTool(tool.Id);
+                _interaction.ActivateMeasurementTool(tool);
             });
     }
 

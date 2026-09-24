@@ -76,7 +76,7 @@ internal sealed class PixelQueryScheduler : IDisposable
                     item.InvalidateResult(descriptorChanged ? ResultInvalidation.DescriptorChanged : ResultInvalidation.CoordinatesChanged);
                 }
                 bool needsUpdate = !state.Valid || state.Frame != current.Info.FrameId || state.PublishedIdentity != request.Identity;
-                if (state.HasResult && needsUpdate && now - state.Started > (item.Policy.DisplayAge ?? _options.MaxResultAge))
+                if (state.HasResult && needsUpdate && now - state.Started > (item.Policy.DisplayRetentionAge ?? _options.MaxResultAge))
                 { state.Valid = state.HasResult = false; item.InvalidateResult(ResultInvalidation.Expired); }
                 if (Completion.IsCompleted && now >= state.Due && needsUpdate)
                     (due ??= []).Add(new(item, request, state));
@@ -194,7 +194,7 @@ internal sealed class PixelQueryScheduler : IDisposable
         {
             var entry = entries[i];
             if (!_states.TryGetValue(entry.Item, out var state) || !ReferenceEquals(state, entry.State)) continue;
-            if (entry.Item.Policy.AllowMovingResult) state.Due = _runtime.Now + Interval(entry);
+            if (entry.Item.Policy.IntervalOrigin == QueryIntervalOrigin.Completion) state.Due = _runtime.Now + Interval(entry);
             try
             {
                 if (current == null)
@@ -207,7 +207,7 @@ internal sealed class PixelQueryScheduler : IDisposable
                 if (latest == null || current.Descriptor != frame.Descriptor) continue;
                 bool sameSession = latest.Identity.ClientId == entry.Request.Identity.ClientId &&
                     latest.Identity.SessionVersion == entry.Request.Identity.SessionVersion;
-                if (!sameSession || (!entry.Item.Policy.AllowMovingResult && latest.Identity != entry.Request.Identity)) continue;
+                if (!sameSession || (!entry.Item.Policy.AllowPreviousGeometry && latest.Identity != entry.Request.Identity)) continue;
                 if (_runtime.Now - started > _options.MaxResultAge)
                 { Interlocked.Increment(ref _expired); state.Valid = state.HasResult = false; entry.Item.InvalidateResult(ResultInvalidation.Expired); continue; }
                 if (results[i] is FailedQueryResult) { state.Valid = state.HasResult = false; entry.Item.InvalidateResult(ResultInvalidation.Failed); continue; }

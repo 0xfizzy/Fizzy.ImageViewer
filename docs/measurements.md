@@ -155,6 +155,27 @@ publication. Deterministic tests manually advance those boundaries without a rea
 window or wall-clock waits. The production runtime uses DispatcherTimer,
 Stopwatch, Task.Run and Dispatcher publication.
 
+## Tool registration ownership
+
+`RegisterMeasurementTool(tool)` returns an `IDisposable` handle for that registration.
+Dispose it from any thread to revoke only that instance and cancel its active session.
+Disposal is idempotent and safe after viewer closure; completed measurements survive.
+The caller owns the tool object, which is never disposed by the registration.
+Keep the handle for the installing component's lifetime. Ignoring it retains the
+registration until global unregistration or viewer closure.
+
+`UnregisterMeasurementTool(id)` is a viewer-wide management operation: it removes
+whichever registration currently has that ID. Component cleanup should instead dispose
+its own handle, so it cannot remove a replacement registered under the same ID.
+Revocation takes effect before cancellation callbacks. Callback failures propagate to
+explicit callers after cleanup; they do not restore the revoked registration.
+
+Activation captures the registration instance before interrupting the previous session.
+Invalid initial requests preserve the current interaction. Reentrant callbacks may
+supersede a request; the superseded request never activates a same-ID replacement.
+Built-in menu actions retain the registration captured when the menu opens and ignore
+it if revoked, hidden, input-disabled or clearing when clicked.
+
 ## Extension boundary
 
 Measurement tools use a stable, ordinal `Id` for programmatic lookup and a separate

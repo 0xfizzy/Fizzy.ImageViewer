@@ -215,3 +215,8 @@ layer clearing, measurement cancellation and global clearing through those publi
 Measurement session tests verify that retained completed or disposed handles do not retain
 their ended creation contexts. Interaction tests verify control-point admission at different
 image scales through the input adapter, including the screen-space hit boundary.
+
+Query policy regression tests cover all four geometry-acceptance/interval-origin
+combinations using a manual clock. Activation tests cover instance-bound registration
+handles, worker-thread revocation, completed-item retention, same-ID replacement during
+throwing cancellation, captured menu targets and shared activation admission.

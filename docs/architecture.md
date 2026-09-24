@@ -224,3 +224,16 @@ explicitly or reject it. A descriptor entry alone does not implement format supp
 See [public API](public-api.md), [frame pipeline](frame-pipeline.md),
 [measurements](measurements.md), [drawing](drawing-layers.md) and
 [validation](validation.md) for the behavioral contracts and verification commands.
+
+## Query policy and tool admission
+
+Query policy independently selects acceptance of previous geometry and the interval
+origin (start or completion). Completion means STA processing of the result, including
+failed, expired and rejected results. Subscription, session and descriptor checks always
+apply. Display retention age controls existing values; MaxResultAge controls publication.
+
+MeasurementInteractionCoordinator owns activation admission and reentry checks. The
+facade maps initial rejection to public exceptions; menus ignore unavailable targets.
+Both activate a specific registration instance. Registration handles use ViewerLifetime
+for shutdown-safe removal, and registry removal/closure invalidates their owner references.
+Global ID-based revocation resolves the current instance and uses the same cleanup path.

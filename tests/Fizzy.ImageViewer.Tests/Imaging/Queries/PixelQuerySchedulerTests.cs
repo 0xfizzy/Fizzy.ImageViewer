@@ -10,6 +10,38 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class PixelQuerySchedulerTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task GeometryAcceptanceAndIntervalOriginAreIndependent(bool allowPrevious, bool fromCompletion)
+    {
+        var runtime = new Runtime();
+        using var frame = Frame(new Source(runtime));
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelQueryRateHz = 10, MaxResultAge = TimeSpan.FromSeconds(1) } };
+        var client = new Client(runtime) { Policy = new(AllowPreviousGeometry: allowPrevious,
+            IntervalOrigin: fromCompletion ? QueryIntervalOrigin.Completion : QueryIntervalOrigin.Start) };
+        using var subscription = scheduler.Register(client);
+        runtime.Tick!();
+        client.Version++;
+        runtime.Now = TimeSpan.FromMilliseconds(80);
+        await runtime.Finish(scheduler);
+        Assert.Equal(allowPrevious ? 1 : 0, client.Published);
+        runtime.Now = TimeSpan.FromMilliseconds(100);
+        runtime.Tick();
+        if (fromCompletion)
+        {
+            Assert.Empty(runtime.Work);
+            runtime.Now = TimeSpan.FromMilliseconds(180);
+            runtime.Tick();
+        }
+        Assert.Single(runtime.Work);
+        await runtime.Finish(scheduler);
+        Assert.Equal(1, client.PublishedVersion);
+    }
+
     private sealed class Runtime : IQueryRuntime
     {
         public TimeSpan Now { get; set; }
@@ -59,6 +91,7 @@ public class PixelQuerySchedulerTests
     }
     private sealed class Client(Runtime runtime, int kind = 0) : IFrameQueryClient
     {
+        public QueryPolicy Policy { get; init; }
         public readonly Guid Id = Guid.NewGuid();
         public long Version;
         public bool Enabled = true, ThrowOnPublish;

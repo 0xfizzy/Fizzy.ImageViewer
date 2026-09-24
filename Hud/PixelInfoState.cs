@@ -15,7 +15,8 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
     private long _positionVersion, _sessionVersion;
     private string? _text;
 
-    public QueryPolicy Policy => new(true, 10, TimeSpan.FromMilliseconds(300));
+    public QueryPolicy Policy => new(AllowPreviousGeometry: true, IntervalOrigin: QueryIntervalOrigin.Completion,
+        MaximumRate: 10, DisplayRetentionAge: TimeSpan.FromMilliseconds(300));
 
     public void Enable() { _enabled = true; _sessionVersion++; }
     public void Disable() { _enabled = false; Leave(); }
