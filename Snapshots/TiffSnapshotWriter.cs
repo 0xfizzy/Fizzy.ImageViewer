@@ -15,11 +15,10 @@ internal static class TiffSnapshotWriter
         if (descriptor.Width <= 0 || descriptor.Height <= 0)
             throw new ArgumentOutOfRangeException(nameof(descriptor));
         // Also reject unknown formats before deriving the output layout.
-        _ = descriptor.Format.BytesPerPixel();
-        bool gray = IsGray(descriptor.Format), alpha = HasAlpha(descriptor.Format);
-        int channels = gray ? 1 : alpha ? 4 : 3;
-        int bits = descriptor.Format == FramePixelFormat.Gray16 ? 16 :
-            descriptor.Format == FramePixelFormat.Gray32Float ? 32 : 8;
+        var info = descriptor.Format.GetInfo();
+        bool alpha = info.HasAlpha;
+        int channels = info.SemanticChannelCount;
+        int bits = info.BitsPerComponent;
         long rowBytes = checked((long)descriptor.Width * channels * (bits / 8));
         long pixelBytes = checked(rowBytes * descriptor.Height);
         // Preserve the existing conservative Classic TIFF admission limit.
@@ -54,7 +53,8 @@ internal static class TiffSnapshotWriter
         cancellationToken.ThrowIfCancellationRequested();
         var descriptor = frame.Descriptor;
         var layout = CreateLayout(descriptor);
-        bool gray = IsGray(descriptor.Format), alpha = HasAlpha(descriptor.Format);
+        var info = descriptor.Format.GetInfo();
+        bool gray = info.IsGrayscale, alpha = info.HasAlpha;
         // SHORT values of at most two elements fit in the IFD value field; LONG fits one.
         var tags = new List<Tag>
         {
@@ -70,8 +70,8 @@ internal static class TiffSnapshotWriter
             Long(279, layout.StripByteCounts),
             Short(284, 1), // Chunky (interleaved).
         };
-        if (alpha) tags.Add(Short(338, descriptor.Format == FramePixelFormat.Pbgra32 ? 1u : 2u));
-        tags.Add(Short(339, Enumerable.Repeat(descriptor.Format == FramePixelFormat.Gray32Float ? 3u : 1u,
+        if (alpha) tags.Add(Short(338, info.IsPremultiplied ? 1u : 2u));
+        tags.Add(Short(339, Enumerable.Repeat(info.NumericType == FramePixelFormatInfo.NumericKind.FloatingPoint ? 3u : 1u,
             layout.Channels).ToArray()));
 
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -100,7 +100,7 @@ internal static class TiffSnapshotWriter
         foreach (var tag in tags)
             if (tag.ByteCount > 4) WriteValues(writer, tag);
 
-        byte[]? row = gray || descriptor.Format == FramePixelFormat.Rgb24 ? null : new byte[layout.RowBytes];
+        byte[]? row = gray || info.Order == FramePixelFormatInfo.ComponentOrder.Rgb ? null : new byte[layout.RowBytes];
         long position = layout.PixelOffset;
         for (int y = 0; y < descriptor.Height; y++)
         {
@@ -114,7 +114,7 @@ internal static class TiffSnapshotWriter
             if (row is null) writer.Write(source);
             else
             {
-                int bytesPerPixel = descriptor.Format.BytesPerPixel();
+                int bytesPerPixel = info.BytesPerPixel;
                 for (int x = 0; x < descriptor.Width; x++)
                 {
                     row[x * layout.Channels] = source[x * bytesPerPixel + 2];
@@ -129,10 +129,6 @@ internal static class TiffSnapshotWriter
         cancellationToken.ThrowIfCancellationRequested();
     }
 
-    private static bool IsGray(FramePixelFormat format)
-        => format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float;
-    private static bool HasAlpha(FramePixelFormat format)
-        => format is FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32;
     private sealed record Tag(ushort Id, ushort Type, uint[] Values)
     {
         public int ByteCount => Values.Length * (Type == 3 ? 2 : 4);

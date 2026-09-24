@@ -17,7 +17,9 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
     }
     public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
     {
-        int channels = descriptor.Format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float ? 1 : descriptor.Format is FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32 ? 4 : 3;
+        var info = descriptor.Format.GetInfo();
+        int channels = info.SemanticChannelCount;
+        int bytesPerPixel = info.BytesPerPixel;
         var count = new long[channels]; var min = Enumerable.Repeat(double.PositiveInfinity, channels).ToArray();
         var max = Enumerable.Repeat(double.NegativeInfinity, channels).ToArray(); var sum = new double[channels];
         for (int y = region.Y; y < region.Y + region.Height; y++)
@@ -25,10 +27,10 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
             ct.ThrowIfCancellationRequested();
             for (int x = region.X; x < region.X + region.Width; x++)
             {
-                var p = FramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(y * descriptor.Stride + x * descriptor.Format.BytesPerPixel()));
+                var p = FramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(y * descriptor.Stride + x * bytesPerPixel));
                 for (int c = 0; c < channels; c++)
                 {
-                    double v = p.IsGrayscale ? p.Gray : c == 0 ? p.R : c == 1 ? p.G : c == 2 ? p.B : p.A;
+                    double v = info.IsGrayscale ? p.Gray : c == 0 ? p.R : c == 1 ? p.G : c == 2 ? p.B : p.A;
                     if (!double.IsFinite(v)) continue;
                     count[c]++; min[c] = Math.Min(min[c], v); max[c] = Math.Max(max[c], v); sum[c] += v;
                 }

@@ -99,9 +99,10 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
             .PadLeft(maximum.ToString(CultureInfo.InvariantCulture).Length);
         static string Value(double? value) => (value?.ToString("G7", CultureInfo.InvariantCulture) ?? "—").PadLeft(7);
         var coordinates = $"X: {Coordinate(x, descriptor.Width - 1)}, Y: {Coordinate(y, descriptor.Height - 1)} | ";
-        if (descriptor.Format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float)
+        var info = descriptor.Format.GetInfo();
+        if (info.IsGrayscale)
             return coordinates + $"GRAY: {Value(sample?.Gray)}";
         return coordinates + $"R: {Value(sample?.R)}, G: {Value(sample?.G)}, B: {Value(sample?.B)}, A: {Value(sample?.A)}" +
-            (descriptor.Format == FramePixelFormat.Pbgra32 ? " (premultiplied)" : "");
+            (info.IsPremultiplied ? " (premultiplied)" : "");
     }
 }

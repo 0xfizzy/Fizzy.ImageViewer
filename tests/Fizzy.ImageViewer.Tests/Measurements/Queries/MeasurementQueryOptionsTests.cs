@@ -76,7 +76,7 @@ public class MeasurementQueryOptionsTests
                     var region = Assert.IsType<RegionStatisticsQueryRequest>(request);
                     Assert.Equal(QueryRateCategory.Region, region.RateCategory);
                     Assert.Equal(new PixelRegion(0, 0, 2, 2), region.Region);
-                    region.Publish(frame, new RegionStatistics(FramePixelFormat.Gray8, []));
+                    region.Publish(frame, new RegionStatistics(FramePixelFormat.Gray8, [new(0, null, null, null)]));
                     Assert.Equal(region.Region, Assert.IsType<MeasurementRegionResult>(result).Region);
                     break;
             }

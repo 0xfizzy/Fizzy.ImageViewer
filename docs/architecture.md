@@ -170,6 +170,24 @@ borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnaps
 alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.
 ViewerHost detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.
 
+## Pixel format ownership
+
+`Frames.FramePixelFormats.GetInfo` supplies the internal immutable `FramePixelFormatInfo`
+for each supported format. Component order, component bit depth, numeric representation
+and alpha mode are defined there; storage size, grayscale classification and semantic
+channel count are derived from those facts. Public `BytesPerPixel` uses the same definition.
+
+Imaging owns byte decoding, statistics and display mapping. Rendering owns WPF format
+adaptation; Snapshots owns output layout, channel conversion and encoding tags. These
+components consume format facts while retaining their own algorithms and policies:
+display ranges are not source-value limits, plot channel selection is not a format channel
+count, and encoded row sizes need not equal source row sizes. `RegionStatistics` validates
+its own format and channel count; frame leases check that provider results match the source.
+
+When adding a format, define its intrinsic facts once and review decoding, statistics,
+display, HUD/measurement presentation and snapshot paths. Each path must support it
+explicitly or reject it. A descriptor entry alone does not implement format support.
+
 ## Invariants when extending the library
 
 - Frame submission consumes ownership immediately; terminal results and last-lease

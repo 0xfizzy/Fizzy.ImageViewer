@@ -159,6 +159,11 @@ selected measurement or become edit targets; retained menu actions ignore dispos
 Measurement resource failure tests verify visual detachment and idempotent disposal
 even when specialized cleanup throws.
 
+`PixelFormatContractTests` verify statistics for all supported formats using explicit source
+bytes and expected semantic values, including Bgr32 padding, RGB/BGR order and preserved
+premultiplied channels. They also check invalid statistics channel counts and unknown formats.
+`TiffSnapshotWriterTests` independently verify encoded channel layout, bit depth and alpha tags.
+
 ## Line-profile allocations
 
 ```powershell

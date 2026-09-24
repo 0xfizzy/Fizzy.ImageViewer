@@ -7,6 +7,7 @@ internal static class DisplayConverter
     public static DisplayBuffer Convert(FrameLease frame, GrayDisplayRange? range, CancellationToken ct, bool normalize = false)
     {
         var d = frame.Descriptor;
+        var info = d.Format.GetInfo();
         bool native = !normalize && d.Format is not (FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float) &&
             (d.Format != FramePixelFormat.Gray8 || range == null || range.Value == new GrayDisplayRange(0, 255));
         var output = new DisplayBuffer(d.Width, d.Height, native ? d.Format : FramePixelFormat.Pbgra32);
@@ -25,7 +26,7 @@ internal static class DisplayConverter
             Span<byte> gray8 = stackalloc byte[256];
             if (d.Format == FramePixelFormat.Gray8)
                 for (int i = 0; i < gray8.Length; i++) gray8[i] = MapGray(i, bounds);
-            int bpp = d.Format.BytesPerPixel();
+            int bpp = info.BytesPerPixel;
             for (int y = 0; y < d.Height; y++)
             {
                 ct.ThrowIfCancellationRequested();
@@ -36,7 +37,7 @@ internal static class DisplayConverter
                 {
                     int i = x * 4;
                     int s = x * bpp;
-                    if (d.Format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float)
+                    if (info.IsGrayscale)
                     {
                         byte gray = d.Format == FramePixelFormat.Gray8 ? gray8[row[s]] :
                             MapGray(FramePixelReader.Decode(d.Format, row.Slice(s)).Gray, bounds);

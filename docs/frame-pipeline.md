@@ -39,6 +39,10 @@ lease and export gate and may finish after the Viewer closes.
 Width/height must be positive, stride must be positive and at least the valid row size.
 Row padding and non-contiguous source rows are supported. Data is top-down, single plane;
 Gray16 and Gray32Float are little endian. Unsupported formats fail explicitly.
+Storage size differs from semantic channel count: Gray16 uses two bytes for one channel,
+and Bgr32 uses four bytes for three channels; its fourth byte is padding, not alpha.
+Bgra32 and Pbgra32 have four semantic channels, with straight and premultiplied alpha,
+respectively.
 
 `SubmitFrameAsync` consumes the frame even when cancelled, frozen or closed. Never dispose
 or mutate transferred storage. `ImageFrame` cannot be submitted twice. Each `FrameLease`
@@ -105,7 +109,12 @@ independent CPU image and must be disposed. Unsupported capabilities fail withou
 
 CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. Statistics return
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
-with null statistics when no finite values exist. Premultiplied channels stay premultiplied.
+with zero count and null statistics when no finite values exist. Premultiplied channels stay premultiplied.
+`RegionStatistics.Channels` uses Gray, R/G/B or R/G/B/A order regardless of source byte order;
+Bgr32 padding is excluded. Construction rejects unknown formats and incorrect channel counts.
+External `IFramePixelSource` implementations must follow that ordering and return the source
+frame's format; frame leases reject a mismatched format. Display ranges do not constrain
+original query values, including Gray32Float values outside the default 0–1 display range.
 
 One pixel query scheduler per viewer captures geometry on STA and queries off STA, with at most
 one batch in flight. Each batch executes and publishes either one ROI or a shared gather
