@@ -13,7 +13,7 @@ public facade, drawing handles and measurement handles.
 | Rendering | CPU preparation/presentation and D3D surface presentation |
 | Imaging | Original-pixel access, regions, query results and display conversion |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
-| Layers | Business-layer container, shared visibility, input and clear lifecycle |
+| Layers | Public layer composition and an internal container for transforms, input and lifetime |
 | Drawing | Batch drawing descriptions, marker layers and HUD handles |
 | Measurements | Tool protocols, creation sessions, geometry, styles and resource owners |
 | Interaction | Interaction session ownership, selection and WPF input binding |
@@ -49,8 +49,13 @@ Disposal waits for outstanding frame and query work and the actual STA exit.
 ViewerLifetime provides the shared stopping gate and shutdown-safe STA removal dispatch for measurement, drawing and HUD handles. HudTextCollection owns HUD text
 visuals and invalidates their handles on shutdown.
 
-ViewerInputBinding translates WPF events and coordinates, and applies cursor, focus
-and capture effects. It holds no session state. The interaction coordinator alone owns
+ViewerInputBinding translates measurement input and applies cursor, focus
+and capture effects without owning tool-session state. ViewportPan owns middle-button
+pan state in screen coordinates;
+it and measurement editing use MouseCaptureSession for capture admission, loss and
+idempotent release. Failed capture never starts a drag. Cancellation, interaction
+switching, hiding/unloading the image surface and shutdown end viewport capture.
+The interaction coordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
 transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
 `IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
@@ -59,6 +64,10 @@ that activation's mutable state. The coordinator owns this callback session and 
 Every preview must be created through its owning context.
 Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
 through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
+`ViewerLayers` composes default layers and exposes consumer capabilities. Its internal
+`LayerCollection` owns attachment, transforms, input suppression and lifecycle without
+depending on concrete drawing or measurement types. Concrete layers depend on that
+container rather than the public composition facade.
 `DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and exposes
 a content-clearing notification. MeasurementStore subscribes to clear its owned items and
 unsubscribes on shutdown; the layer has no reference to the concrete store. Clear enters the
@@ -67,7 +76,8 @@ removes remaining visuals in finally blocks. Model, query and resource cleanup d
 The same layer gate rejects creation and interaction starts throughout cancellation and cleanup.
 MeasurementLayer exposes no batch creation or batch-click events.
 
-MeasurementItem owns model state, queries and disposal, and directly disposes its presentation
+MeasurementItem implements the public IMeasurement handle with STA dispatch and owns
+model state, queries and disposal, and directly disposes its presentation
 after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
@@ -93,6 +103,9 @@ MenuManager owns registrations and WPF click bindings. Each registration has an
 independent disposable handle; revocation disables current bindings and releases their
 targets. Normal menu closure retains bindings until input drains because WPF can deliver
 Closed before Click. A new opening invalidates the previous bindings and delayed cleanup.
+Menu bindings await `ExecuteAsync`, isolate failures through logging and prevent
+concurrent execution of the same menu object across openings. Started work owns its
+resources and may outlive registration or viewer closure.
 ViewerMenuController supplies built-in menu policy and captures interaction/ROI targets,
 borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession in Menus
 alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.

@@ -2,15 +2,10 @@ using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Imaging;
 
-public sealed class RegionPixels(FrameInfo frame, PixelRegion region, ImageFrame pixels) : IDisposable
+public sealed class RegionPixels(FrameInfo sourceFrame, PixelRegion region, ImageFrame pixels) : IDisposable
 {
-    public FrameInfo Frame { get; } = frame;
+    public FrameInfo SourceFrame { get; } = sourceFrame;
     public PixelRegion Region { get; } = region;
-    public FrameLease AcquirePixels()
-    {
-        var lease = pixels.Acquire();
-        lease.Info = Frame;
-        return lease;
-    }
+    public FrameLease AcquirePixels() => pixels.Acquire();
     public void Dispose() => pixels.Dispose();
 }

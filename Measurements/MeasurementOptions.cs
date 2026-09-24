@@ -5,7 +5,7 @@ public enum MeasurementQuery { None, Pixel, LineProfile, RegionStatistics }
 public sealed record MeasurementOptions
 {
     public MeasurementQuery Query { get; init; }
-    public bool ShowLineProfile { get; init; }
+    public bool ShowProfileWindow { get; init; }
     public MeasurementStyle? Style { get; init; }
 
     internal void Validate(MeasurementGeometry geometry)
@@ -18,7 +18,7 @@ public sealed record MeasurementOptions
             MeasurementQuery.RegionStatistics => geometry.Kind == MeasurementKind.Rectangle,
             _ => false
         };
-        if (!valid || (ShowLineProfile && Query != MeasurementQuery.LineProfile))
+        if (!valid || (ShowProfileWindow && Query != MeasurementQuery.LineProfile))
             throw new ArgumentException("The query and presentation must match the measurement geometry.");
     }
 }

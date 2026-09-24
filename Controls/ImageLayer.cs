@@ -51,8 +51,7 @@ namespace Fizzy.ImageViewer.Controls
         public TranslateTransform Panner { get; }
 
         // === 交互状态 ===
-        private Point? _moveStart;
-        private bool _isDraggingMiddle;
+        private readonly ViewportPan _pan;
 
         // === 事件 (使用 Action 避免 struct 装箱) ===
         
@@ -98,6 +97,7 @@ namespace Fizzy.ImageViewer.Controls
                 ClipToBounds = true
             };
             Container.Children.Add(ImageDisplay);
+            _pan = new ViewportPan(new ElementMouseCapture(Container));
 
             Content = Container;
 
@@ -119,11 +119,14 @@ namespace Fizzy.ImageViewer.Controls
             Container.MouseDown += OnMouseDown;
             Container.MouseMove += OnMouseMove;
             Container.MouseUp += OnMouseUp;
-            Container.MouseLeave += (s, e) => EndDrag();
+            Container.MouseLeave += (s, e) => EndPan();
+            Container.LostMouseCapture += (s, e) => _pan.LostCapture();
+            Container.IsVisibleChanged += (s, e) => { if (!Container.IsVisible) EndPan(); };
+            Container.Unloaded += (s, e) => EndPan();
             Container.SizeChanged += (s, e) => FitImageToContainer();
         }
 
-        // === 交互逻辑移植 ===
+        // === 视口交互 ===
 
         private void OnMouseWheel(object sender, MouseWheelEventArgs e)
         {
@@ -153,9 +156,7 @@ namespace Fizzy.ImageViewer.Controls
         {
             if (e.ChangedButton == MouseButton.Middle)
             {
-                _moveStart = e.GetPosition(Container);
-                _isDraggingMiddle = true;
-                Container.CaptureMouse();
+                _pan.Begin(e.GetPosition(Container));
             }
         }
 
@@ -164,7 +165,7 @@ namespace Fizzy.ImageViewer.Controls
             var posContainer = e.GetPosition(Container);
 
             // 1. 中键拖拽逻辑 (必须使用容器坐标，因为是在操作容器的视口)
-            if (_isDraggingMiddle && _moveStart.HasValue)
+            if (_pan.IsActive)
             {
                 DoMove(posContainer);
             }
@@ -182,17 +183,12 @@ namespace Fizzy.ImageViewer.Controls
         {
             if (e.ChangedButton == MouseButton.Middle)
             {
-                EndDrag();
+                EndPan();
             }
 
         }
 
-        private void EndDrag()
-        {
-            _isDraggingMiddle = false;
-            _moveStart = null;
-            Container.ReleaseMouseCapture();
-        }
+        internal void EndPan() => _pan.End();
 
         // === 数学逻辑 ===
 
@@ -238,14 +234,9 @@ namespace Fizzy.ImageViewer.Controls
         /// <param name="moveEndPoint">当前鼠标位置（容器坐标）</param>
         private void DoMove(Point moveEndPoint)
         {
-            if (_moveStart == null) return;
-
-            Point start = Container.TranslatePoint(_moveStart.Value, ImageDisplay);
-            Point end = Container.TranslatePoint(moveEndPoint, ImageDisplay);
-
-            Panner.X += (end.X - start.X) * Scaler.ScaleX;
-            Panner.Y += (end.Y - start.Y) * Scaler.ScaleY;
-            _moveStart = moveEndPoint;
+            var delta = _pan.Move(moveEndPoint);
+            Panner.X += delta.X;
+            Panner.Y += delta.Y;
         }
 
         /// <summary>

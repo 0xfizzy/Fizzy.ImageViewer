@@ -2,8 +2,8 @@
 
 ## Internal composition
 
-`Viewer` assembles the internal components on its STA, forwards public API calls, and
-coordinates notifications and window shutdown. It does not own rendering queue or menu-target state.
+`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
+public API calls and raises notifications. It does not own rendering queue or menu-target state.
 
 | Component | State and responsibility |
 | --- | --- |
@@ -20,12 +20,13 @@ before showing a file dialog.
 The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
 Expensive upload runs outside that gate; image attachment and current-frame publication run
 inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
-Only the Viewer notification callback connects committed submissions to measurements,
-public subscribers and the pixel HUD; display-only redraws do not invoke it.
+The commit callback invokes the submission callback and then the public frame event;
+display-only redraws do not invoke it. Measurements and the pixel HUD independently
+subscribe to the shared query scheduler, which samples acquired committed frames.
 
 Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
 resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
-measurement completion and the window thread. Already acquired export work retains its own
+query completion and the window thread. Already acquired export work retains its own
 lease and export gate and may finish after the Viewer closes.
 
 ## Input and lifetime
@@ -59,8 +60,9 @@ frame terminates when dequeued/replaced/frozen/closed rather than using a per-fr
 
 `Committed` means the source and current frame have changed on the UI thread; it does not mean
 the monitor displayed it. FrameId is viewer-local and monotonic. Notifications occur after
-writing pixels. The per-submission `OnCommitted` runs first, then measurement/public events.
-Its frame lease is borrowed for the callback only. Callbacks must not block on another viewer
+writing pixels. The per-submission `OnCommitted` runs first, then `FrameCommitted`.
+The `OnCommitted` frame lease is borrowed for that callback only.
+Measurement query notifications are scheduled independently. Callbacks must not block on another viewer
 submission; use asynchronous work with an acquired lease. Subscriber failures are isolated.
 
 The CPU presenter owns two reusable WriteableBitmaps. Conversion runs off the UI thread;
@@ -84,7 +86,16 @@ Use `FrameLease.ReadPixelsAsync(coordinates, token)`, `ComputeRegionStatisticsAs
 token)` and `ReadRegionAsync(region, token)` for backend-independent access. Coordinates use
 `ReadOnlyMemory<PixelCoordinate>` and results preserve input order, raw units and format.
 Each call acquires its own lease before asynchronous work and retains storage through completion.
-Results carry source FrameInfo; RegionPixels additionally records the original region, owns an
+Pixel and statistics results carry the queried lease's `FrameInfo`. `FrameLease.Info.Descriptor`
+always describes its own pixels. Unsubmitted frames, including derived pixel buffers, have
+FrameId 0 and no source timestamp. Submission assigns a viewer-local ID to the submitted lease;
+leases acquired before submission remain unsubmitted.
+
+`RegionPixels.SourceFrame` and `ImageSnapshot.SourceFrame` identify their input frame.
+Their `Region` is expressed in that input frame's coordinates. `AcquirePixels()` returns an
+independent lease describing the cropped or converted pixels, without copying source metadata
+onto it. Queries on that lease use local coordinates and describe the derived pixels; retain
+the containing region/snapshot when source provenance is needed. `RegionPixels` owns its
 independent CPU image and must be disposed. Unsupported capabilities fail without download fallback.
 
 CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. Statistics return
@@ -130,7 +141,7 @@ the file dialog. The menu lease is released when input drains or on viewer shutd
 `CaptureSnapshotAsync(Raw|Display)` captures the current committed frame at call time and
 returns independent immutable storage. `Raw` preserves input values; `Display` applies the
 committed display mapping without annotations, HUD or viewport scaling.
-The overload accepting PixelRegion reads only that region. Snapshots record source FrameInfo and
+The overload accepting PixelRegion reads only that region. Snapshots record `SourceFrame` and
 region origin. Full snapshots explicitly request the entire region; GPU results are never cached
 back into source storage. One export read per Viewer executes at a time.
 The ROI save menu pins both frame and integer region before opening the file dialog.

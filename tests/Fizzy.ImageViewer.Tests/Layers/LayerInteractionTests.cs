@@ -49,7 +49,7 @@ public class LayerInteractionTests
             }
             Assert.Equal(1, tool.Cancellations);
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
         });
     }

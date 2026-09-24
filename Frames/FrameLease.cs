@@ -5,7 +5,11 @@ namespace Fizzy.ImageViewer.Frames;
 public sealed class FrameLease : IDisposable
 {
     private FrameStorage? _storage;
-    internal FrameLease(FrameStorage storage) => _storage = storage;
+    internal FrameLease(FrameStorage storage)
+    {
+        _storage = storage;
+        Info = new(0, storage.Descriptor, null);
+    }
     private FrameStorage Storage => Volatile.Read(ref _storage) ?? throw new ObjectDisposedException(nameof(FrameLease));
     public FrameDescriptor Descriptor => Storage.Descriptor;
     public bool TryGetCpuPixels(out ReadOnlyMemory<byte> pixels)
@@ -54,6 +58,7 @@ public sealed class FrameLease : IDisposable
         return new(lease.Info,region,pixels);
     }
     internal nint D3D9Surface => Storage.Surface;
+    /// <summary>Describes these pixels. FrameId is zero until submitted to a viewer.</summary>
     public FrameInfo Info { get; internal set; }
     public FrameLease Acquire()
     {

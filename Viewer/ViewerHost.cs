@@ -91,7 +91,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 _tools.RegisterTool(new LineProfileTool());
                 _pixelInfoOverlay = new PixelInfoOverlay(win.ImageLayer, win.HudLayer, _queryScheduler);
                 _pixelInfoOverlay.Enable();
-                _menuManager = new MenuManager(win, _lifetime);
+                _menuManager = new MenuManager(win, _lifetime, _logger);
                 _menuController = new ViewerMenuController(_menuManager, _interaction, _tools, win.Layers,
                     _menuSession, _snapshotCapture, _pixelInfoOverlay);
                 checkpoint?.Invoke(ViewerInitializationStage.MenusCreated);
@@ -178,7 +178,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         Cleanup(() => _queryScheduler?.Dispose());
         Cleanup(() => _measurements?.Shutdown());
         Cleanup(() => _tools?.Clear());
-        Cleanup(() => _window?.Layers.Close());
+        Cleanup(() => _window?.Layers.Collection.Close());
         Cleanup(() => _hud?.Dispose());
         Cleanup(() => _presentation?.Dispose());
         _owner.ClearNotifications();

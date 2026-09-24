@@ -59,7 +59,7 @@ public class MenuTests
     {
         public string Header => "owned by caller";
         public int Clicks, Disposals;
-        public void Execute(object sender, RoutedEventArgs e) => Clicks++;
+        public ValueTask ExecuteAsync() { Clicks++; return ValueTask.CompletedTask; }
         public void Dispose() => Disposals++;
     }
 

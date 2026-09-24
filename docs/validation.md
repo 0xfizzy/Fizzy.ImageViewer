@@ -82,7 +82,8 @@ corner crossing, model/query/export consistency, label updates, invalid editing,
 mode interruption, preview cancellation and reentrant removal. `LineProfileTests`
 and `QuerySchedulingTests` cover plot-window ownership and slow in-flight queries
 on real STA dispatchers. See [measurement contracts](measurements.md).
-Mouse capture state transitions use an injected capture boundary. Actual pointer
+`ViewportPanTests` verify failed/lost capture, restart, screen-coordinate deltas and
+reentrant release through the same capture boundary used by measurement editing. Actual pointer
 capture and dragging on an interactive desktop still require manual validation.
 
 For interactive validation, cancel a preview with Escape, start consecutive
@@ -112,6 +113,13 @@ exercise serialized export reads, cancellation while queued, read failures, and 
 release independently of a window or a native GPU surface.
 `FramePresentationTests` verify that GPU preparation performs no pixel reads and rejects
 CPU display mapping; they do not bind a native surface or validate real CPU/GPU switching.
+
+`FrameMetadataTests` cover standalone queries, cropped/raw/display pixel descriptors,
+local coordinates and explicit source provenance. `MeasurementHandleTests` cover worker
+updates/completion/disposal, STA callbacks, immutable retained snapshots, cancelled
+previews and handles after shutdown. `MenuExecutionTests` cover awaitable actions,
+reopening while an action is pending, independent actions, revocation and failures
+after the viewer dispatcher exits.
 
 ## Architectural boundaries
 
@@ -162,10 +170,10 @@ viewers, factory reentry and failure cleanup, and rejection of ended creation co
 They also clear model-owned content and query subscriptions without an interaction coordinator,
 and after coordinator disposal. Existing reentry tests cover interrupted clicks, moves,
 cancellation, completion and editing using explicit session contexts.
-Test source files are grouped by capability (Measurements, Layers, Drawing, Frames, Imaging,
+Test source files are grouped by capability (Measurements, Interaction, Layers, Drawing, Frames, Imaging,
 PixelInfo, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.
 
 `LineSamplingTests` verify clipping and endpoint order without presentation state.
 `LineProfileTests` cover data-only results without plot windows and visual cleanup after
-registry callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
+store callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
 handles after shutdown and preservation of callback failures when shutdown starts reentrantly.

@@ -55,7 +55,7 @@ public class DrawingTests
     }
 
     private static void Arrange(ViewerLayers layers)
-    { layers.Root.Measure(new(800, 600)); layers.Root.Arrange(new(0, 0, 800, 600)); layers.Root.UpdateLayout(); }
+    { layers.Collection.Root.Measure(new(800, 600)); layers.Collection.Root.Arrange(new(0, 0, 800, 600)); layers.Collection.Root.UpdateLayout(); }
 
     [Theory]
     [InlineData(1000)]
@@ -137,10 +137,10 @@ public class DrawingTests
         using var batch = viewer.Layers.Markers.AddBatch([
             Circle(20, 20) with { Thickness = 2 },
             Circle(60, 60) with { Thickness = 8 },
-            Circle(100, 100) with { Thickness = 8, ScaleMode = OverlayScaleMode.None }]);
+            Circle(100, 100) with { Thickness = 8, ScaleMode = OverlayScaleMode.ScaleWithImage }]);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.Layers.UpdateScale(2); viewer.Layers.FlushScale();
+            viewer.Layers.Collection.UpdateScale(2); viewer.Layers.Collection.FlushScale();
             var group = batch.Visual.Drawing;
             var drawings = group.Children.Cast<GeometryDrawing>().ToArray();
             Assert.Equal(new double[] { 1, 4, 8 }, drawings.Select(d => d.Pen.Thickness));
@@ -191,8 +191,8 @@ public class DrawingTests
                 new CrosshairElement(new(100, 30), Brushes.White, 12, 2),
                 new TextElement(new(10, 110), "Camera 123", Brushes.White, 16, new(2, -3))];
             var layers = new ViewerLayers(Transform.Identity);
-            layers.UpdateScale(scale);
-            layers.FlushScale();
+            layers.Collection.UpdateScale(scale);
+            layers.Collection.FlushScale();
             using var batch = layers.Markers.AddBatch(elements);
             // Reference path used before direct command recording.
             var group = new DrawingGroup();
@@ -212,7 +212,7 @@ public class DrawingTests
             }
             Assert.Equal(reference.ContentBounds, batch.Visual.ContentBounds);
             Assert.Equal(Pixels(reference), Pixels(batch.Visual));
-            layers.Close();
+            layers.Collection.Close();
         });
     }
 
@@ -227,10 +227,10 @@ public class DrawingTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Drawing tests") { Width = 800, Height = 600, WindowStyle = unchecked((int)0x80000000) });
-            source.RootVisual = layers.Root;
+            source.RootVisual = layers.Collection.Root;
             Arrange(layers);
             Assert.Null(markers.HitBatch(new(20, 20)));
-            Assert.NotSame(markers.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.IsHitTestVisible = true;
             Assert.Same(b, markers.HitBatch(new(20, 20)));
             BatchClickedEventArgs? clicked = null;
@@ -239,23 +239,23 @@ public class DrawingTests
             Assert.Same(b, clicked!.Batch); Assert.Equal(new Point(20, 20), clicked.ImagePosition);
             Assert.Equal(System.Windows.Input.MouseButton.Left, clicked.Button);
             Assert.False(markers.DispatchClick(new(100, 100), System.Windows.Input.MouseButton.Left));
-            Assert.Same(markers.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.Same(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             Assert.Null(markers.HitBatch(new(100, 100)));
-            Assert.NotSame(markers.Host, layers.Root.InputHitTest(new(100, 100)));
+            Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(100, 100)));
             b.Dispose(); Assert.Same(a, markers.HitBatch(new(20, 20)));
             using var outline = markers.AddBatch([Circle(100, 100) with { Fill = null }]);
             Assert.Null(markers.HitBatch(new(100, 100)));
             Assert.Same(outline, markers.HitBatch(new(105, 100)));
             markers.IsVisible = false; Assert.Null(markers.HitBatch(new(20, 20)));
-            Assert.NotSame(markers.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.IsVisible = true;
             var top = layers.CreateLayer("top"); top.IsHitTestVisible = true;
             top.AddBatch([Circle()]); Arrange(layers);
-            Assert.Same(top.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.Same(top.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.ZIndex = top.ZIndex;
-            Assert.Same(top.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.Same(top.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.ZIndex = top.ZIndex + 1;
-            Assert.Same(markers.Host, layers.Root.InputHitTest(new(20, 20)));
+            Assert.Same(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
         });
     }
 
@@ -267,7 +267,7 @@ public class DrawingTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.StartMeasurement("Length");
-            Assert.True(viewer.Layers.InputSuppressed);
+            Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.False(enabled.Root.IsHitTestVisible);
             Assert.True(enabled.IsHitTestVisible);
             Assert.False(viewer.Layers.Markers.IsHitTestVisible);
@@ -275,23 +275,23 @@ public class DrawingTests
             Assert.False(during.Root.IsHitTestVisible);
             viewer.Layers.Measurements.IsHitTestVisible = false;
             viewer.CancelMeasurement();
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.True(during.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Markers.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
-            var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Root);
+            var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Collection.Root);
             var image = parent.Children.OfType<ImageLayer>().Single();
             viewer.StartMeasurement("Point");
             image.Container.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(
                 System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
                 { RoutedEvent = UIElement.MouseLeftButtonDownEvent });
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             viewer.StartMeasurement("Length");
             viewer.Layers.Measurements.Clear();
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
 
@@ -301,7 +301,7 @@ public class DrawingTests
         await using var viewer = Create();
         using var fixedStroke = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6 }]);
         using var fixedSize = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.FixedSize }]);
-        using var scaled = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.None }]);
+        using var scaled = viewer.Layers.Markers.AddBatch([Circle(100, 100) with { Radius = 10, Thickness = 6, ScaleMode = OverlayScaleMode.ScaleWithImage }]);
         using var mixed = viewer.Layers.Markers.AddBatch([
             new LineElement(new(1, 1), new(20, 1), Brushes.Green, 5),
             new RectangleElement(new(50, 50, 30, 30), Brushes.Blue, 4),
@@ -310,7 +310,7 @@ public class DrawingTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var before = scaled.Visual.ContentBounds;
-            viewer.Layers.UpdateScale(2); viewer.Layers.UpdateScale(4); viewer.Layers.FlushScale();
+            viewer.Layers.Collection.UpdateScale(2); viewer.Layers.Collection.UpdateScale(4); viewer.Layers.Collection.FlushScale();
             Assert.Equal(21.5, fixedStroke.Visual.ContentBounds.Width, 5);
             Assert.Equal(6.5, fixedSize.Visual.ContentBounds.Width, 5);
             Assert.Equal(100, fixedSize.Visual.ContentBounds.X + fixedSize.Visual.ContentBounds.Width / 2, 5);
@@ -371,7 +371,7 @@ public class DrawingTests
                 var data = OverlayShapeData.Get(shape)!;
                 Assert.NotEmpty(viewer.Host.Interaction.Editor.Handles);
                 var editor = viewer.Host.Interaction.Editor;
-                Assert.True(editor.BeginDrag(geometry.Start, 1));
+                Assert.True(editor.BeginDrag(geometry.Anchor, 1));
                 editor.UpdateDrag(new(40, 40)); editor.EndDrag();
 
                 viewer.Host.Interaction.DeleteSelected();
@@ -426,8 +426,8 @@ public class DrawingTests
         {
             var image = new ImageLayer();
             var layers = new ViewerLayers(image.TransformGroup);
-            image.ScaleChanged += layers.UpdateScale;
-            var root = new Grid(); root.Children.Add(image); root.Children.Add(layers.Root);
+            image.ScaleChanged += layers.Collection.UpdateScale;
+            var root = new Grid(); root.Children.Add(image); root.Children.Add(layers.Collection.Root);
             using var source = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters("Input tests")
                 { Width = 800, Height = 600, WindowStyle = unchecked((int)0x80000000) });
             source.RootVisual = root;
@@ -438,12 +438,12 @@ public class DrawingTests
                 { RoutedEvent = UIElement.MouseWheelEvent });
             Assert.True(image.Scaler.ScaleX > 1);
             image.Panner.X += 30; image.Panner.Y += 50;
-            layers.FlushScale();
+            layers.Collection.FlushScale();
             var expected = image.ImageToContainer(new(20, 20));
             var actual = layers.Markers.Host.TranslatePoint(new(20, 20), image.Container);
             Assert.Equal(expected.X, actual.X, 6); Assert.Equal(expected.Y, actual.Y, 6);
             Assert.Same(image.Container, root.InputHitTest(expected));
-            layers.Close();
+            layers.Collection.Close();
         });
     }
 }

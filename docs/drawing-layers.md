@@ -137,12 +137,12 @@ physical presentation; it does not establish sustained camera-stream GC performa
 ## Coordinates, size and input
 
 - Line, rectangle and circle default to `FixedStroke`: geometry uses image pixels,
-  thickness uses screen DIPs. `None` scales both geometry and thickness.
+  thickness uses screen DIPs. `ScaleWithImage` scales both geometry and thickness.
 - Circle additionally supports `FixedSize`: radius and thickness use screen DIPs,
   while the center remains in image coordinates.
-- Crosshair defaults to `FixedSize`, supports `FixedStroke` and `None`; `Size` is
+- Crosshair defaults to `FixedSize`, supports `FixedStroke` and `ScaleWithImage`; `Size` is
   the half-length of an arm, with a center ring of radius `Size / 2`.
-- Text defaults to `AnchoredLabel`: font size and offset use screen DIPs. `None`
+- Text defaults to `AnchoredLabel`: font size and offset use screen DIPs. `ScaleWithImage`
   scales them with the image. Its default typeface is Segoe UI.
 - Pan updates only the shared transform. Scale-dependent batches are redrawn once
   per rendering cycle; DPI changes also refresh text drawing.

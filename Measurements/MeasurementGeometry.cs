@@ -7,15 +7,32 @@ namespace Fizzy.ImageViewer.Measurements;
 public sealed record MeasurementGeometry
 {
     public MeasurementKind Kind { get; }
-    public Point Start { get; }
-    public Point End { get; }
-    public double Radius { get; private init; }
-    public double X => Start.X;
-    public double Y => Start.Y;
+    private readonly Point _anchor;
+    private readonly Point _end;
+    private double _radius;
+    internal Point Anchor => _anchor;
+    /// <summary>First endpoint of a line, or normalized top-left corner of a rectangle.</summary>
+    public Point Start => Kind is MeasurementKind.Line or MeasurementKind.Rectangle
+        ? _anchor : throw new InvalidOperationException("This geometry has no endpoints.");
+    /// <summary>Last endpoint of a line, or normalized bottom-right corner of a rectangle.</summary>
+    public Point End => Kind is MeasurementKind.Line or MeasurementKind.Rectangle
+        ? _end : throw new InvalidOperationException("This geometry has no endpoints.");
+    public Point Position => Kind is MeasurementKind.Point or MeasurementKind.Crosshair
+        ? _anchor : throw new InvalidOperationException("This geometry is not a point or crosshair.");
+    public Point Center => Kind == MeasurementKind.Circle
+        ? _anchor : throw new InvalidOperationException("This geometry is not a circle.");
+    public double Radius => Kind == MeasurementKind.Circle
+        ? _radius : throw new InvalidOperationException("This geometry is not a circle.");
+    public override string ToString() => Kind switch
+    {
+        MeasurementKind.Point or MeasurementKind.Crosshair => $"{Kind} {{ Position = {Position} }}",
+        MeasurementKind.Circle => $"Circle {{ Center = {Center}, Radius = {Radius} }}",
+        _ => $"{Kind} {{ Start = {Start}, End = {End} }}"
+    };
     /// <summary>Normalized image-space bounds; point and crosshair have zero extent.</summary>
     public Rect Bounds => Kind == MeasurementKind.Circle
-        ? new Rect(Start.X - Radius, Start.Y - Radius, Radius * 2, Radius * 2)
-        : new Rect(Start, End);
+        ? new Rect(Center.X - Radius, Center.Y - Radius, Radius * 2, Radius * 2)
+        : new Rect(_anchor, _end);
 
     private MeasurementGeometry(MeasurementKind kind, Point start, Point end)
     {
@@ -23,7 +40,7 @@ public sealed record MeasurementGeometry
             !double.IsFinite(end.X) || !double.IsFinite(end.Y) ||
             !double.IsFinite(end.X - start.X) || !double.IsFinite(end.Y - start.Y))
             throw new ArgumentOutOfRangeException(nameof(start));
-        Kind = kind; Start = start; End = end;
+        Kind = kind; _anchor = start; _end = end;
     }
 
     public static MeasurementGeometry Rectangle(Point a, Point b)
@@ -40,7 +57,7 @@ public sealed record MeasurementGeometry
         if (!double.IsFinite(radius) || radius < 0 || !double.IsFinite(center.X + radius) || !double.IsFinite(center.Y + radius) ||
             !double.IsFinite(center.X - radius) || !double.IsFinite(center.Y - radius) || !double.IsFinite(radius * 2))
             throw new ArgumentOutOfRangeException(nameof(radius));
-        return new(MeasurementKind.Circle, center, center) { Radius = radius };
+        return new(MeasurementKind.Circle, center, center) { _radius = radius };
     }
 
     internal PixelRegion ToRegion(Frames.FrameDescriptor descriptor) => Kind == MeasurementKind.Rectangle
@@ -50,8 +67,8 @@ public sealed record MeasurementGeometry
     {
         MeasurementKind.Rectangle => RectangleControlPoints(Start, End),
         MeasurementKind.Line => [Start, End],
-        MeasurementKind.Circle => [Start, new(Start.X + Radius, Start.Y)],
-        _ => [Start]
+        MeasurementKind.Circle => [Center, new(Center.X + Radius, Center.Y)],
+        _ => [Position]
     };
 
     // Use the drag-start snapshot so crossing an opposite corner never changes the fixed anchor.
@@ -63,7 +80,7 @@ public sealed record MeasurementGeometry
         MeasurementKind.Point when index == 0 => Point(point),
         MeasurementKind.Crosshair when index == 0 => Crosshair(point),
         MeasurementKind.Circle when index == 0 => Circle(point, Radius),
-        MeasurementKind.Circle when index == 1 => Circle(Start, (point - Start).Length),
+        MeasurementKind.Circle when index == 1 => Circle(Center, (point - Center).Length),
         _ => throw new ArgumentOutOfRangeException(nameof(index))
     };
 

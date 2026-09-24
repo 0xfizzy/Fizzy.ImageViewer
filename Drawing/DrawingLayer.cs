@@ -13,7 +13,7 @@ public sealed class DrawingLayer : ViewerLayer
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
     public event EventHandler<BatchClickedEventArgs>? BatchClicked;
 
-    internal DrawingLayer(ViewerLayers owner, string name, int zIndex, bool builtIn)
+    internal DrawingLayer(LayerCollection owner, string name, int zIndex, bool builtIn)
         : base(owner, name, zIndex, builtIn, hitTest: false)
     {
         Host.RenderTransform = owner.Transform;

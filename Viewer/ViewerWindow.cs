@@ -32,13 +32,13 @@ namespace Fizzy.ImageViewer
             HudLayer = new HudLayer();
 
 
-            ImageLayer.ScaleChanged += Layers.UpdateScale;
+            ImageLayer.ScaleChanged += Layers.Collection.UpdateScale;
 
             var grid = new Grid();
 
             // 叠加顺序很重要：0在底，2在顶
             grid.Children.Add(ImageLayer);
-            grid.Children.Add(Layers.Root);
+            grid.Children.Add(Layers.Collection.Root);
             grid.Children.Add(HudLayer);
 
             Content = grid;

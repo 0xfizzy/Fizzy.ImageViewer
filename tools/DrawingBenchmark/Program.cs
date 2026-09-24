@@ -32,7 +32,7 @@ internal static class Program
         var elapsed = Stopwatch.GetElapsedTime(ticks);
         long bytes = GC.GetAllocatedBytesForCurrentThread() - start;
         Console.WriteLine($"{count},{bytes / iterations},{elapsed.TotalMilliseconds / iterations:F3}");
-        layers.Close();
+        layers.Collection.Close();
     }
     private static double Time(Action action)
     { var timer = Stopwatch.StartNew(); action(); return timer.Elapsed.TotalMilliseconds; }
@@ -43,11 +43,11 @@ internal static class Program
         var layers = new ViewerLayers(Transform.Identity);
         var data = Enumerable.Range(0, count).Select(i => (DrawingElement)new CircleElement(new(i % 100 * 10, i / 100 * 10), 3, Brushes.Red, 2, Brushes.Red)).ToArray();
         DrawingBatchHandle? batch = null;
-        var create = Time(() => { batch = layers.Markers.AddBatch(data); Layout(layers.Root); });
-        var replace = Time(() => { batch!.Replace(data); Layout(layers.Root); });
-        var scale = Time(() => { layers.UpdateScale(2); layers.FlushScale(); Layout(layers.Root); });
+        var create = Time(() => { batch = layers.Markers.AddBatch(data); Layout(layers.Collection.Root); });
+        var replace = Time(() => { batch!.Replace(data); Layout(layers.Collection.Root); });
+        var scale = Time(() => { layers.Collection.UpdateScale(2); layers.Collection.FlushScale(); Layout(layers.Collection.Root); });
         if (print) Console.WriteLine($"{count},batch,{create:F3},{replace:F3},{scale:F3},{layers.Markers.Host.Count}");
-        layers.Close();
+        layers.Collection.Close();
 
         var legacyLayers = new ViewerLayers(Transform.Identity);
         var legacy = legacyLayers.Measurements.Overlay;
@@ -64,6 +64,6 @@ internal static class Program
         replace = Time(() => { legacy.ClearVisuals(); AddLegacy(); Layout(legacy); });
         scale = Time(() => { legacy.UpdateScale(2); Layout(legacy); });
         if (print) Console.WriteLine($"{count},legacy,{create:F3},{replace:F3},{scale:F3},{legacy.Canvas.Children.Count}");
-        legacyLayers.Close();
+        legacyLayers.Collection.Close();
     }
 }

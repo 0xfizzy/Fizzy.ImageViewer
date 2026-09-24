@@ -17,7 +17,7 @@ visual and label, an optional pixel query subscription and its registered resour
 MeasurementStore registers measurement owners independently of visuals; a separate visual index
 resolves hit testing. Each tool session owns its own unfinished measurements. A preview is
 already an owned measurement; `Complete` retains it and enables queries. Cancelling
-creation disposes unfinished measurements. `Tag` remains caller-owned presentation data.
+creation disposes unfinished measurements.
 Visuals attach once and are not replaced on completion.
 
 Geometry uses source-image coordinates. A rectangle stores normalized opposite
@@ -86,7 +86,7 @@ are logged and later subscribers still run.
 
 Cancellation ends the outgoing creation context before invoking the tool and then releases
 that session's unfinished items. Normal completion also ends the context and releases only
-its unfinished items. Completed items belong to the measurement registry until removal.
+its unfinished items. Completed items belong to the measurement store until removal.
 A callback interrupted by a newer session cannot create through its old context; creation
 throws `ObjectDisposedException`. Measurements created by the new session survive cleanup,
 even when a disposal callback starts it. Cleanup attempts every owned preview and logs
@@ -165,8 +165,9 @@ A retained context cannot create measurements after its activation ends.
 ### Geometry, editing and notifications
 
 Create geometry with `MeasurementGeometry.Point`, `Crosshair`, `Line`, `Rectangle` or
-`Circle`. Point and crosshair use `Start`; lines use `Start`/`End`; rectangles normalize
-opposite corners. Circles use `Start` as center and `Radius`; `End` equals the center.
+`Circle`. Point and crosshair use `Position`; lines use `Start`/`End`; rectangles normalize
+opposite corners. Circles use `Center` and `Radius`. Reading a coordinate or radius
+accessor that does not apply to the geometry kind throws `InvalidOperationException`.
 Kinds use the measurement-specific `MeasurementKind` enum. `Bounds` returns normalized
 image-space bounds: endpoint bounds for lines and rectangles, diameter bounds for circles,
 and zero extent for points and crosshairs. Line endpoints retain their original order.
@@ -182,7 +183,8 @@ own identity, completion and removal lifetime; there is no arbitrary visual atta
 `Viewer.MeasurementCompleted` and `MeasurementRemoved` cover every tool. Completion fires
 once, excludes previews and does not imply query readiness. Removal fires only for a
 previously completed item. Snapshots include `Id`, complete `Geometry` and `GeometryVersion`.
-The event's `RemovalHandle` can be disposed from any thread, repeatedly or after closure.
+The event's `Measurement` handle supports updates and disposal from any thread; disposal
+is idempotent and safe after closure.
 
 ### Observing built-in and custom measurements
 
@@ -203,7 +205,7 @@ viewer.MeasurementChanged += (_, e) =>
 viewer.StartMeasurement(MeasurementToolIds.ROI);
 ```
 
-Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's `RemovalHandle` can be disposed from any thread. Removal is terminal for that item; a callback may
+Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's `Measurement` can be disposed from any thread. Removal is terminal for that item; a callback may
 remove it reentrantly. Completion and removal events carry the same result snapshot field,
 but completion does not promise query readiness. Custom tools may additionally subscribe to
 `IMeasurement.GeometryChanged` and `ResultChanged` on their own items.
@@ -222,7 +224,7 @@ but completion does not promise query readiness. Custom tools may additionally s
 Incompatible combinations are rejected before any visual attaches. Pixel queries use
 floor coordinates and reject points outside the frame. Line profiles clip to the frame;
 ROI queries and export share `PixelRegion.Clip`. Empty targets have no result.
-`ShowLineProfile` requires `LineProfile`; it opens an owned plot window on completion.
+`ShowProfileWindow` requires `LineProfile`; it opens an owned plot window on completion.
 Closing that window removes the measurement. Built-in LineProfile enables it; custom
 line queries default to data only. Built-in ROI explicitly selects region statistics.
 
@@ -237,9 +239,17 @@ The scheduler and query protocol remain internal.
 
 ### Resources and threads
 
-Tool callbacks, measurement operations (including `IMeasurement.Dispose`) and notifications
-require the viewer STA. For cross-thread removal use `MeasurementEventArgs.RemovalHandle`. Use
-`AddResource` and `OnDispose` to bind external resources and event subscriptions to the
+Tool callbacks, context creation and notifications run on the viewer STA. Returned
+`IMeasurement` handles dispatch reads, updates and subscription changes to that STA,
+so background work can update or complete a live preview without retaining a dispatcher.
+Cancellation still disposes unfinished previews; late updates/completion then throw
+`ObjectDisposedException`. The handle supplied by `MeasurementEventArgs.Measurement`
+also supports application-driven updates to completed measurements. `Dispose` and event
+unsubscription are safe after closure; `Id` and `IsDisposed` remain readable, while other
+access requires a running viewer. Do not block STA callbacks waiting for workers that
+call these handles.
+
+Use `AddResource` and `OnDispose` to bind external resources and event subscriptions to the
 measurement. Unregistering a tool retains completed measurements. Selection and deletion
 target the measurement owner, which removes both its primary visual and label. Hiding cancels
 previews but retains completed items; clear and viewer closure dispose all items.

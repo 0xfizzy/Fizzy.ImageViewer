@@ -31,7 +31,7 @@ public sealed class MeasurementUnregisterTests
             viewer.StartMeasurement("reentrant");
             Assert.Throws<KeyNotFoundException>(() => viewer.UnregisterMeasurementTool("reentrant"));
             Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
 }

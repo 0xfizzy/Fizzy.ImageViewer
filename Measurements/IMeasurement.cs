@@ -1,7 +1,8 @@
 namespace Fizzy.ImageViewer.Measurements;
 
-/// <summary>A model-driven measurement owned by the viewer. All operations, including Dispose,
-/// require the viewer STA. Use MeasurementEventArgs.RemovalHandle to remove an item from another thread.</summary>
+/// <summary>A viewer-owned measurement handle. Operations dispatch synchronously to the viewer STA;
+/// callbacks run on that STA. Dispose is idempotent and safe after viewer closure.
+/// Id and IsDisposed remain readable after closure; other access requires a running viewer.</summary>
 public interface IMeasurement : IDisposable
 {
     Guid Id { get; }

@@ -24,7 +24,7 @@ public abstract record DrawingElement
         if (ScaleMode != a && ScaleMode != b && ScaleMode != c) throw new ArgumentException("Unsupported scale mode for this element.");
     }
     internal Pen Pen(Brush brush, double thickness, double scale, DrawingResources resources) =>
-        resources.GetPen(brush, ScaleMode == OverlayScaleMode.None ? thickness : thickness / scale);
+        resources.GetPen(brush, ScaleMode == OverlayScaleMode.ScaleWithImage ? thickness : thickness / scale);
 }
 
 public sealed record LineElement(Point Start, Point End, Brush Stroke, double Thickness = 1) : DrawingElement
@@ -32,7 +32,7 @@ public sealed record LineElement(Point Start, Point End, Brush Stroke, double Th
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Start.X, Start.Y, End.X, End.Y); Positive(Thickness, nameof(Thickness));
-        ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
+        ValidateMode(OverlayScaleMode.ScaleWithImage, OverlayScaleMode.FixedStroke);
         var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
@@ -45,7 +45,7 @@ public sealed record CircleElement(Point Center, double Radius, Brush Stroke, do
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Center.X, Center.Y); Positive(Radius, nameof(Radius)); Positive(Thickness, nameof(Thickness));
-        ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
+        ValidateMode(OverlayScaleMode.ScaleWithImage, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
         var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         var fill = Fill == null ? null : BrushSnapshots.Copy(Fill, ref brushes);
         return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
@@ -63,7 +63,7 @@ public sealed record RectangleElement(Rect Bounds, Brush Stroke, double Thicknes
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height); Positive(Thickness, nameof(Thickness));
-        ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke);
+        ValidateMode(OverlayScaleMode.ScaleWithImage, OverlayScaleMode.FixedStroke);
         var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         var fill = Fill == null ? null : BrushSnapshots.Copy(Fill, ref brushes);
         return ReferenceEquals(stroke, Stroke) && ReferenceEquals(fill, Fill)
@@ -85,7 +85,7 @@ public sealed record CrosshairElement : DrawingElement
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)
     {
         Finite(Center.X, Center.Y); Positive(Size, nameof(Size)); Positive(Thickness, nameof(Thickness));
-        ValidateMode(OverlayScaleMode.None, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
+        ValidateMode(OverlayScaleMode.ScaleWithImage, OverlayScaleMode.FixedStroke, OverlayScaleMode.FixedSize);
         var stroke = BrushSnapshots.Copy(Stroke, ref brushes);
         return ReferenceEquals(stroke, Stroke) ? this : this with { Stroke = stroke };
     }
@@ -113,7 +113,7 @@ public sealed record TextElement : DrawingElement
     {
         Finite(Anchor.X, Anchor.Y, Offset.X, Offset.Y); Positive(FontSize, nameof(FontSize));
         ArgumentNullException.ThrowIfNull(Text); ArgumentException.ThrowIfNullOrWhiteSpace(FontFamily);
-        ValidateMode(OverlayScaleMode.None, OverlayScaleMode.AnchoredLabel);
+        ValidateMode(OverlayScaleMode.ScaleWithImage, OverlayScaleMode.AnchoredLabel);
         var foreground = BrushSnapshots.Copy(Foreground, ref brushes);
         return ReferenceEquals(foreground, Foreground) ? this : this with { Foreground = foreground };
     }

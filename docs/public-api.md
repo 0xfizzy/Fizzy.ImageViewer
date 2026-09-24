@@ -68,8 +68,9 @@ change reports its new version and clears the old result. Completion precedes ch
 notifications; previews do not emit changes. Snapshots and result arrays can be retained
 on other threads. Callbacks run on the viewer STA and subscriber failures are isolated.
 
-The event's `IDisposable RemovalHandle` removes the item and its resources from any thread,
-including after closure. Removal may occur reentrantly during a completion subscriber.
+The event's `IMeasurement Measurement` is the same live handle returned to its tool.
+Use it to update geometry or dispose the item from any thread; disposal is safe after
+closure. Removal may occur reentrantly during a completion subscriber.
 Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
 
 Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
@@ -84,10 +85,17 @@ The returned `IMeasurement` owns geometry, display, queries and registered resou
 Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
 observe `ResultChanged` for immutable query results or invalidation. `Complete` retains
 a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
-and measurement operations use the viewer STA. `IMeasurement.Dispose` also requires that STA; `MeasurementEventArgs.RemovalHandle` marshals removal from any thread.
+and context creation run on the viewer STA. `IMeasurement` reads, updates and subscription
+changes synchronously dispatch to that STA. `Dispose` and event unsubscription are safe
+after viewer closure; `Id` and `IsDisposed` remain readable. Other access requires a running
+viewer, and mutations reject disposed items. Notifications still run on STA: never block
+them waiting for worker code that is calling the handle. Retained event snapshots remain
+immutable even when another subscriber updates or disposes the live handle.
 
 Geometry is a closed family identified by `MeasurementKind`: point, crosshair, line,
-rectangle and circle. `MeasurementGeometry.Bounds` is the normalized image-space bounding
+rectangle and circle. Point/crosshair coordinates use `Position`, circles use `Center`
+and `Radius`, and lines/rectangles use `Start`/`End`. Accessors for another kind throw
+`InvalidOperationException`. `MeasurementGeometry.Bounds` is the normalized image-space bounding
 rectangle. Lines retain their endpoint order; circles use diameter bounds; points and
 crosshairs have zero extent, excluding their screen-space marker size. Query options
 compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
@@ -128,8 +136,15 @@ handle keeps the registration alive until the viewer closes. The viewer never di
 caller-owned menu object itself.
 
 Revocation prevents new callbacks from an already open menu and disables its current item;
-the next opening omits it. An executing callback is allowed to finish, including when it
-revokes itself. Visibility/check callbacks run on the viewer STA and may change registrations;
+the next opening omits it. An executing action is allowed to finish, including when it
+revokes itself or the viewer closes. `IMenuItem.ExecuteAsync()` returns a `ValueTask`
+and starts on the viewer STA; no WPF event objects cross this interface. Bindings await
+completion and log failures. The same menu object cannot execute again while its action
+is in flight, including after reopening; other actions remain available. Action helpers
+accept either `Action` or `Func<ValueTask>`. Async work that outlives the viewer must own
+its resources and avoid depending on the viewer dispatcher after it closes.
+
+Visibility/check callbacks run on the viewer STA and may change registrations;
 registrations added while building the menu appear on the next opening. Do not block these
 callbacks on another thread that is waiting for a viewer operation.
 

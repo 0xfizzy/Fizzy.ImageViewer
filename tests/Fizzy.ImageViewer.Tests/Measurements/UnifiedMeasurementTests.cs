@@ -219,7 +219,7 @@ public class UnifiedMeasurementTests
             item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(2, 3), 1)); editor.UpdateDrag(new(5, 6)); editor.EndDrag();
-            Assert.Equal(new Point(5, 6), item.Geometry.Start); Assert.Equal(4, item.Geometry.Radius);
+            Assert.Equal(new Point(5, 6), item.Geometry.Center); Assert.Equal(4, item.Geometry.Radius);
             Assert.True(editor.BeginDrag(new(9, 6), 1)); editor.UpdateDrag(new(5, 9)); editor.EndDrag();
             Assert.Equal(3, item.Geometry.Radius);
             var ellipse = (System.Windows.Media.EllipseGeometry)((System.Windows.Shapes.Path)item.Presentation.PrimaryVisual).Data;
@@ -238,7 +238,7 @@ public class UnifiedMeasurementTests
         {
             var context = viewer.Host.Measurements;
             Assert.Throws<ArgumentException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Circle(new(), 1), new() { Query = MeasurementQuery.RegionStatistics }));
-            Assert.Throws<ArgumentException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()), new() { ShowLineProfile = true }));
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()), new() { ShowProfileWindow = true }));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), double.MaxValue));
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);

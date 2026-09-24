@@ -108,15 +108,15 @@ public class PublicApiTests
                 .Select(s => viewer.Host.Measurements.Find(s)).Single(i => i != null)!;
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });
-        Assert.Equal(new Point(5, 6), completed[0].Snapshot.End);
-        await Task.Run(() => completed[0].RemovalHandle.Dispose());
+        Assert.Equal(new Point(5, 6), completed[0].Snapshot.Geometry.End);
+        await Task.Run(() => completed[0].Measurement.Dispose());
         Assert.Single(removed);
         Assert.Equal(completed[0].Snapshot.Id, removed[0].Snapshot.Id);
-        Assert.Equal(new Point(7, 8), removed[0].Snapshot.End);
-        completed[0].RemovalHandle.Dispose();
+        Assert.Equal(new Point(7, 8), removed[0].Snapshot.Geometry.End);
+        completed[0].Measurement.Dispose();
         Assert.Single(removed);
         await viewer.DisposeAsync();
-        completed[0].RemovalHandle.Dispose();
+        completed[0].Measurement.Dispose();
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class PublicApiTests
         await using var viewer = Create();
         int removals = 0;
         viewer.MeasurementRemoved += (_, _) => removals++;
-        EventHandler<MeasurementEventArgs> remove = (_, e) => e.RemovalHandle.Dispose();
+        EventHandler<MeasurementEventArgs> remove = (_, e) => e.Measurement.Dispose();
         viewer.MeasurementCompleted += remove;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.StartMeasurement(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);

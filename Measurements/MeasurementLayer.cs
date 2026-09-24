@@ -11,7 +11,7 @@ public sealed class MeasurementLayer : ViewerLayer
 
     internal MeasurementOverlay Overlay { get; } = new();
 
-    internal MeasurementLayer(ViewerLayers owner)
+    internal MeasurementLayer(LayerCollection owner)
         : base(owner, "Measurements", 1000, builtIn: true, hitTest: true)
     {
         Overlay.BindTransform(owner.Transform);

@@ -42,7 +42,7 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
     if (c.Width > 0) await viewer.SubmitFrameAsync(Frame());
     var elements = Enumerable.Range(0, c.Count).Select(i => (DrawingElement)new CircleElement(
         new(i % 125 * 28, i / 125 * 24), 5, Brushes.Red, 2) {
-        ScaleMode = c.NoScale ? OverlayScaleMode.None : OverlayScaleMode.FixedStroke }).ToArray();
+        ScaleMode = c.NoScale ? OverlayScaleMode.ScaleWithImage : OverlayScaleMode.FixedStroke }).ToArray();
     var moved = elements.Cast<CircleElement>().Select(e => (DrawingElement)(e with { Center = e.Center + new Vector(3, 3) })).ToArray();
     using var batch = c.Count > 0 ? viewer.Layers.Markers.AddBatch(elements) : null;
     await Task.Delay(400);

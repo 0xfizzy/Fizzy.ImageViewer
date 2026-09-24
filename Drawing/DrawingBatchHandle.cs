@@ -11,7 +11,7 @@ public sealed class DrawingBatchHandle : IDisposable
     private volatile bool _disposed;
     internal DrawingVisual Visual { get; } = new();
     internal DrawingElement[] Elements { get; private set; }
-    internal bool NeedsScale => Elements.Any(e => e.ScaleMode != OverlayScaleMode.None);
+    internal bool NeedsScale => Elements.Any(e => e.ScaleMode != OverlayScaleMode.ScaleWithImage);
     internal DrawingBatchHandle(DrawingLayer layer, DrawingElement[] elements) { _layer = layer; Elements = elements; }
     internal static DrawingElement[] Snapshot(IEnumerable<DrawingElement> elements)
     {

@@ -13,7 +13,7 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementOwnershipTests
 {
     [Fact]
-    public async Task ModelMovesAnchorsAndRejectsForeignThreadAndDisposedUpdates()
+    public async Task ModelMovesAnchorsAndDispatchesForeignThreadUpdates()
     {
         await using var viewer = Create();
         IMeasurement? owner = null;
@@ -24,10 +24,11 @@ public class MeasurementOwnershipTests
             viewer.Host.Window.MeasurementOverlay.UpdateScale(2);
             owner.UpdateGeometry(MeasurementGeometry.Point(new(3, 4)));
             Assert.Equal(5.5, System.Windows.Controls.Canvas.GetLeft(item.Presentation.Label));
-            Assert.Equal(new Point(3, 4), item.Geometry.Start);
+            Assert.Equal(new Point(3, 4), item.Geometry.Position);
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Point(new(double.NaN, 1)));
         });
-        await Task.Run(() => Assert.Throws<InvalidOperationException>(() => owner!.UpdateGeometry(MeasurementGeometry.Point(new()))));
+        await Task.Run(() => owner!.UpdateGeometry(MeasurementGeometry.Point(new(8, 9))));
+        Assert.Equal(new Point(8, 9), owner!.Geometry.Position);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             owner!.Dispose();
@@ -50,7 +51,7 @@ public class MeasurementOwnershipTests
             using var target = new MeasurementEditSession(item);
             target.BeginDrag(0); target.Update(new(5, 6)); target.EndDrag();
             viewer.Host.Window.MeasurementOverlay.UpdateScale(2);
-            Assert.Equal(new Point(5, 6), item.Geometry.Start);
+            Assert.Equal(new Point(5, 6), item.Geometry.Anchor);
             Assert.Equal(new Point(5, 6), Assert.Single(target.Points));
             Assert.Same(geometry, shape.Data);
         });

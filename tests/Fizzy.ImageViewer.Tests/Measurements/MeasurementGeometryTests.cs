@@ -7,6 +7,23 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementGeometryTests
 {
     [Fact]
+    public void CoordinatesUseGeometrySpecificNames()
+    {
+        var point = MeasurementGeometry.Point(new(2, 3));
+        var circle = MeasurementGeometry.Circle(new(4, 5), 6);
+        Assert.Equal(new Point(2, 3), point.Position);
+        Assert.Equal(new Point(4, 5), circle.Center);
+        Assert.Equal(6, circle.Radius);
+        Assert.Throws<InvalidOperationException>(() => circle.Start);
+        Assert.Throws<InvalidOperationException>(() => circle.End);
+        Assert.Throws<InvalidOperationException>(() => point.Radius);
+        Assert.Throws<InvalidOperationException>(() => point.Center);
+        Assert.Throws<InvalidOperationException>(() => circle.Position);
+        foreach (var geometry in new[] { point, circle, MeasurementGeometry.Crosshair(new()),
+                     MeasurementGeometry.Line(new(), new(1, 2)), MeasurementGeometry.Rectangle(new(), new(1, 2)) })
+            Assert.Contains(geometry.Kind.ToString(), geometry.ToString());
+    }
+    [Fact]
     public void BoundsNormalizeLinesWithoutChangingEndpointOrder()
     {
         var line = MeasurementGeometry.Line(new(8, 9), new(2, 3));

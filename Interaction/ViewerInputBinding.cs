@@ -5,24 +5,10 @@ using System.Windows.Input;
 
 namespace Fizzy.ImageViewer.Interaction;
 
-internal interface IMouseCapture
-{
-    bool IsCaptured { get; }
-    bool Capture();
-    void Release();
-}
-
-internal sealed class OverlayMouseCapture(MeasurementOverlay overlay) : IMouseCapture
-{
-    public bool IsCaptured => overlay.Canvas.IsMouseCaptured;
-    public bool Capture() => overlay.Canvas.CaptureMouse();
-    public void Release() => overlay.Canvas.ReleaseMouseCapture();
-}
-
 /// <summary>Adapts WPF input and pointer effects without owning interaction state.</summary>
 internal sealed class ViewerInputBinding(ImageLayer input, MeasurementOverlay overlay, IMouseCapture? capture = null) : IDisposable
 {
-    private readonly IMouseCapture _capture = capture ?? new OverlayMouseCapture(overlay);
+    private readonly MouseCaptureSession _capture = new(capture ?? new ElementMouseCapture(overlay.Canvas));
     private InteractionCoordinator? _coordinator;
     internal void Connect(InteractionCoordinator coordinator)
     {
@@ -38,13 +24,15 @@ internal sealed class ViewerInputBinding(ImageLayer input, MeasurementOverlay ov
         overlay.Canvas.MouseLeftButtonUp += MouseUp;
         overlay.Canvas.LostMouseCapture += LostCapture;
     }
-    internal bool Capture() => _capture.Capture();
+    internal bool Capture() => _capture.Begin();
+    internal void EndPan() => input.EndPan();
     internal void ShowMeasurementCursor() { input.Container.Cursor = Cursors.Pen; input.Container.Focus(); }
     internal void ShowDragCursor() => input.Container.Cursor = Cursors.Hand;
     internal void ShowDefaultCursor() => input.Container.Cursor = Cursors.Cross;
     internal void Restore()
     {
-        if (_capture.IsCaptured) _capture.Release();
+        _capture.End();
+        input.EndPan();
         ShowDefaultCursor();
     }
     private void KeyDown(object sender, KeyEventArgs e)
@@ -65,10 +53,14 @@ internal sealed class ViewerInputBinding(ImageLayer input, MeasurementOverlay ov
     {
         if (_coordinator!.EndDrag()) e.Handled = true;
     }
-    private void LostCapture(object sender, MouseEventArgs e) => _coordinator!.LostCapture();
+    private void LostCapture(object sender, MouseEventArgs e)
+    {
+        if (_capture.Lost()) _coordinator!.LostCapture();
+    }
     public void Dispose()
     {
         if (_coordinator == null) return;
+        Restore();
         input.ImageMouseDown -= _coordinator.ImageDown;
         input.ImageMouseMove -= _coordinator.ImageMove;
         input.Container.PreviewKeyDown -= KeyDown;

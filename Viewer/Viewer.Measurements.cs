@@ -62,15 +62,10 @@ public partial class Viewer
     {
         var geometry = item.Geometry;
         var args = new MeasurementEventArgs(new(item.Id, geometry, item.GeometryVersion),
-            new MeasurementRemoval(this, item), item.Result);
+            item, item.Result);
         foreach (EventHandler<MeasurementEventArgs> handler in handlers?.GetInvocationList() ?? [])
             try { handler(this, args); }
             catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
-    }
-
-    private sealed class MeasurementRemoval(Viewer viewer, MeasurementItem item) : IDisposable
-    {
-        public void Dispose() => viewer._host.Lifetime.InvokeRemoval(viewer._host.Window.Dispatcher, item.Dispose);
     }
 
     public PixelQueryOptions QueryOptions

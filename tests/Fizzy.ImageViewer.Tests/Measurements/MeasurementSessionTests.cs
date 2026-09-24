@@ -71,7 +71,7 @@ public class MeasurementSessionTests
             if (throws) Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id)));
             else viewer.StartMeasurement(tool.Id);
             Assert.Equal(tool.Id, viewer.Host.Interaction.ActiveId);
-            Assert.True(viewer.Layers.InputSuppressed);
+            Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.True(oldPreview!.IsDisposed);
             Assert.False(survivor!.IsDisposed);
             Assert.Throws<ObjectDisposedException>(() => oldContext!.CreateMeasurement(MeasurementGeometry.Point(new())));
@@ -103,7 +103,7 @@ public class MeasurementSessionTests
             Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
             Assert.True(preview!.IsDisposed);
             Assert.Null(viewer.Host.Interaction.ActiveId);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
             Assert.Throws<ObjectDisposedException>(() => retained!.CreateMeasurement(MeasurementGeometry.Point(new())));
         });
@@ -144,7 +144,7 @@ public class MeasurementSessionTests
             queries.Tick();
             Assert.Equal(1, acquisitions); // No query subscription survived the layer clear.
             owner.Shutdown();
-            layers.Close();
+            layers.Collection.Close();
         });
     }
 

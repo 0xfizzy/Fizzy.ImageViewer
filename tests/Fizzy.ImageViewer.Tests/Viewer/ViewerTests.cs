@@ -68,7 +68,7 @@ public class ViewerTests
         using var redrawn = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         using var mapped = redrawn.AcquirePixels();
         Assert.Equal(1, redrawn.DisplayVersion);
-        Assert.Equal(snapshot.Frame, redrawn.Frame);
+        Assert.Equal(snapshot.SourceFrame, redrawn.SourceFrame);
         Assert.Equal(255, mapped.CpuPixels.Span[0]);
         Assert.Equal(0, notifications);
     }
@@ -193,7 +193,7 @@ public class ViewerTests
         await viewer.SubmitFrameAsync(Frame(25));
         using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire(), SnapshotKind.Raw, target.Region);
         using var pixels = snapshot.AcquirePixels();
-        Assert.Equal(first.FrameId, snapshot.Frame.FrameId); Assert.Equal(17, pixels.CpuPixels.Span[0]);
+        Assert.Equal(first.FrameId, snapshot.SourceFrame.FrameId); Assert.Equal(17, pixels.CpuPixels.Span[0]);
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public class ViewerTests
         using var display = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         using var raw = await viewer.CaptureSnapshotAsync(SnapshotKind.Raw);
         using var dp = display.AcquirePixels(); using var rp = raw.AcquirePixels();
-        Assert.Equal(result.FrameId, raw.Frame.FrameId);
+        Assert.Equal(result.FrameId, raw.SourceFrame.FrameId);
         Assert.Equal(255, dp.CpuPixels.Span[0]); Assert.Equal(0xe8, rp.CpuPixels.Span[0]);
         await viewer.SubmitFrameAsync(Frame(7));
         Assert.Equal(0xe8, rp.CpuPixels.Span[0]);

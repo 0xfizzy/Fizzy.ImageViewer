@@ -1,37 +1,31 @@
-using System;
-using System.Windows;
-
 namespace Fizzy.ImageViewer.Menus;
 
-/// <summary>
-/// 通用菜单项，支持 lambda 回调。
-/// </summary>
-public sealed class MenuItem(string header, Action action, Func<bool>? isVisible = null) : IMenuItem
+/// <summary>A menu action. Async actions start on the viewer STA and are awaited by the menu binding.</summary>
+public sealed class MenuItem(string header, Func<ValueTask> action, Func<bool>? isVisible = null) : IMenuItem
 {
+    public MenuItem(string header, Action action, Func<bool>? isVisible = null)
+        : this(header, () => { action(); return ValueTask.CompletedTask; }, isVisible) { }
     public string Header { get; } = header;
     public bool IsVisible => isVisible?.Invoke() ?? true;
-    public void Execute(object sender, RoutedEventArgs e) => action();
+    public ValueTask ExecuteAsync() => action();
 }
 
-/// <summary>
-/// 可勾选的菜单项，支持 lambda 回调。
-/// </summary>
-public sealed class CheckableMenuItem(string header, Func<bool> isChecked, Action action, Func<bool>? isVisible = null) : ICheckableMenuItem
+/// <summary>A checkable menu action whose state is evaluated on opening.</summary>
+public sealed class CheckableMenuItem(string header, Func<bool> isChecked, Func<ValueTask> action, Func<bool>? isVisible = null) : ICheckableMenuItem
 {
+    public CheckableMenuItem(string header, Func<bool> isChecked, Action action, Func<bool>? isVisible = null)
+        : this(header, isChecked, () => { action(); return ValueTask.CompletedTask; }, isVisible) { }
     public string Header { get; } = header;
     public bool IsVisible => isVisible?.Invoke() ?? true;
     public bool IsChecked => isChecked();
-    public void Execute(object sender, RoutedEventArgs e) => action();
+    public ValueTask ExecuteAsync() => action();
 }
 
-/// <summary>
-/// 分隔符菜单项（单例）。
-/// </summary>
+/// <summary>A separator normalized by the menu renderer.</summary>
 public sealed class SeparatorMenuItem : IMenuItem
 {
     public static readonly SeparatorMenuItem Instance = new();
     private SeparatorMenuItem() { }
-
     public string Header => string.Empty;
-    public void Execute(object sender, RoutedEventArgs e) { }
+    public ValueTask ExecuteAsync() => ValueTask.CompletedTask;
 }

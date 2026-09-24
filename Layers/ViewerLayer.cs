@@ -6,7 +6,7 @@ namespace Fizzy.ImageViewer.Layers;
 /// <summary>Shared visibility, input and lifetime of a business layer. Operations dispatch to the viewer STA.</summary>
 public abstract class ViewerLayer
 {
-    internal ViewerLayers Owner { get; }
+    internal LayerCollection Owner { get; }
     internal Grid Root { get; } = new() { Background = null };
     private bool _visible = true, _hitTest;
     private int _zIndex;
@@ -17,7 +17,7 @@ public abstract class ViewerLayer
     public string Name { get; }
     internal bool IsBuiltIn { get; }
 
-    internal ViewerLayer(ViewerLayers owner, string name, int zIndex, bool builtIn, bool hitTest)
+    internal ViewerLayer(LayerCollection owner, string name, int zIndex, bool builtIn, bool hitTest)
     {
         Owner = owner;
         Name = name;

@@ -64,6 +64,9 @@ internal sealed class MeasurementStore
             try { handler(value); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
     }
     public void VerifyAccess() => Layer.Dispatcher.VerifyAccess();
+    internal T Invoke<T>(Func<T> action) => _measurementLayer.Owner.Invoke(action);
+    internal void Invoke(Action action) => _measurementLayer.Owner.Invoke(action);
+    internal void InvokeRemoval(Action action) => _measurementLayer.Owner.InvokeRemoval(action);
     public QuerySubscription Register(IFrameQueryClient item) => _scheduler.Register(item);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _visualOwners.TryGetValue(shape, out var item) ? item : null;
     internal bool Contains(MeasurementItem item) => _items.Contains(item);

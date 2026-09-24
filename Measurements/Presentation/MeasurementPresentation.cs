@@ -23,14 +23,14 @@ internal sealed class MeasurementPresentation : IDisposable
         _closed = closed;
         PrimaryVisual = geometry.Kind switch
         {
-            MeasurementKind.Point => MeasurementVisualFactory.CreatePoint(geometry.Start, style),
-            MeasurementKind.Crosshair => MeasurementVisualFactory.CreateCrosshair(geometry.Start, style: style),
+            MeasurementKind.Point => MeasurementVisualFactory.CreatePoint(geometry.Position, style),
+            MeasurementKind.Crosshair => MeasurementVisualFactory.CreateCrosshair(geometry.Position, style: style),
             MeasurementKind.Line => MeasurementVisualFactory.CreateLine(style),
             MeasurementKind.Rectangle => MeasurementVisualFactory.CreateRectangle(style),
-            MeasurementKind.Circle => MeasurementVisualFactory.CreateCircle(geometry.Start, geometry.Radius, style),
+            MeasurementKind.Circle => MeasurementVisualFactory.CreateCircle(geometry.Center, geometry.Radius, style),
             _ => throw new ArgumentException("Unsupported geometry.", nameof(geometry))
         };
-        Label = MeasurementVisualFactory.CreateLabel(geometry.Start, "", 5, 0, style);
+        Label = MeasurementVisualFactory.CreateLabel(geometry.Anchor, "", 5, 0, style);
         Apply(geometry);
         ClearResult(geometry);
     }
@@ -44,9 +44,9 @@ internal sealed class MeasurementPresentation : IDisposable
         }
     }
 
-    internal void Complete(bool showLineProfile)
+    internal void Complete(bool showProfileWindow)
     {
-        if (!showLineProfile) return;
+        if (!showProfileWindow) return;
         _plot = new LineProfilePlotView();
         _plot.Window.Closed += PlotClosed;
         _plot.Window.Show();
@@ -57,7 +57,7 @@ internal sealed class MeasurementPresentation : IDisposable
     private void UpdateText(MeasurementGeometry geometry) => Label.Text = geometry.Kind switch
     {
         MeasurementKind.Line => $"{(geometry.End - geometry.Start).Length:F1} px",
-        MeasurementKind.Point or MeasurementKind.Crosshair => $"X:{geometry.X:F2}\nY:{geometry.Y:F2}",
+        MeasurementKind.Point or MeasurementKind.Crosshair => $"X:{geometry.Position.X:F2}\nY:{geometry.Position.Y:F2}",
         MeasurementKind.Circle => $"r={geometry.Radius:F1} px",
         _ => $"{geometry.Bounds.Width:F1} × {geometry.Bounds.Height:F1} px"
     };
@@ -122,9 +122,9 @@ internal sealed class MeasurementPresentation : IDisposable
                 line.X2 = geometry.End.X; line.Y2 = geometry.End.Y;
                 break;
             default:
-                _layer.UpdateAnchor(shape, geometry.Start);
+                _layer.UpdateAnchor(shape, geometry.Anchor);
                 break;
         }
-        _layer.UpdateAnchor(Label, geometry.Kind == MeasurementKind.Line ? geometry.End : geometry.Start);
+        _layer.UpdateAnchor(Label, geometry.Kind == MeasurementKind.Line ? geometry.End : geometry.Anchor);
     }
 }

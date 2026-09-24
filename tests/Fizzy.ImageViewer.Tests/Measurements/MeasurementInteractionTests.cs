@@ -45,11 +45,11 @@ public class MeasurementInteractionTests
             viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
             Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode);
-            Assert.True(viewer.Layers.InputSuppressed);
+            Assert.True(viewer.Layers.Collection.InputSuppressed);
             viewer.Host.Interaction.ImageDown(5, 5);
             Assert.Equal(2, completed);
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
 
@@ -88,7 +88,7 @@ public class MeasurementInteractionTests
             Assert.Equal(2, item.GeometryVersion - initialVersion);
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             Assert.Equal(expected.Bounds.Width, rectangle.Width); Assert.Equal(expected.Bounds.Height, rectangle.Height);
-            Assert.Equal(expected.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Y, Canvas.GetTop(rectangle));
+            Assert.Equal(expected.Start.X, Canvas.GetLeft(rectangle)); Assert.Equal(expected.Start.Y, Canvas.GetTop(rectangle));
             Assert.Equal(expected.Start, OverlayShapeData.Get(item.Presentation.Label)!.AnchorPoint);
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
@@ -149,7 +149,7 @@ public class MeasurementInteractionTests
             var editor = viewer.Host.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(3, 4), 1)); editor.UpdateDrag(new(7, 8)); editor.EndDrag();
             var item = viewer.Host.Measurements.Find(point)!;
-            Assert.Equal(new Point(7, 8), item.Geometry.Start);
+            Assert.Equal(new Point(7, 8), item.Geometry.Position);
             Assert.Equal($"X:{7:F2}\nY:{8:F2}", item.Presentation.Label.Text);
             viewer.Host.Interaction.DeleteSelected(); Assert.True(item.IsDisposed);
             Assert.Empty(editor.Handles); Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
@@ -188,7 +188,7 @@ public class MeasurementInteractionTests
             Assert.False(overlay.Canvas.IsMouseCaptured);
             viewer.CancelMeasurement();
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.False(viewer.Layers.Markers.IsHitTestVisible);
             Assert.Equal(action != "disable", viewer.Layers.Measurements.IsHitTestVisible);
         });
@@ -212,7 +212,7 @@ public class MeasurementInteractionTests
             else viewer.Layers.Clear();
             Assert.True(item.IsDisposed); Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Layers.InputSuppressed);
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
 
@@ -281,7 +281,7 @@ public class MeasurementInteractionTests
             Assert.False(capture.IsCaptured); Assert.False(editor.IsDragging);
             Assert.Equal(action == "failed" ? 0 : 1, capture.Releases);
             Assert.Same(Cursors.Cross, image.Container.Cursor);
-            Assert.False(layers.InputSuppressed);
+            Assert.False(layers.Collection.InputSuppressed);
             Assert.Equal(action is "lost" or "failed" ? InteractionMode.Editing : InteractionMode.Idle, coordinator.Mode);
             context.Shutdown();
         });

@@ -15,7 +15,7 @@ internal sealed class MeasurementToolRegistry
         if (!_tools.TryAdd(id, new(id, name, tool))) throw new ArgumentException($"Measurement tool '{id}' is already registered.", nameof(tool));
     }
     internal bool UnregisterTool(string id) => _tools.Remove(id);
-    internal bool HasTool(string name) => _tools.ContainsKey(name);
+    internal bool HasTool(string id) => _tools.ContainsKey(id);
     internal IMeasurementTool? Find(string id) => _tools.GetValueOrDefault(id)?.Tool;
     internal void Clear() => _tools.Clear();
 }

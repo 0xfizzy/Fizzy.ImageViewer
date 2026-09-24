@@ -58,7 +58,7 @@ public class MeasurementReentryTests
         {
             Assert.Equal(id, Coordinator.ActiveId);
             Assert.Equal(InteractionMode.Measuring, Coordinator.Mode);
-            Assert.True(Layers.InputSuppressed);
+            Assert.True(Layers.Collection.InputSuppressed);
             Assert.Same(Cursors.Pen, Input.Container.Cursor);
         }
         public void Dispose() { try { Coordinator.Dispose(); } finally { Context.Shutdown(); Queries.Dispose(); } }
@@ -178,7 +178,7 @@ public class MeasurementReentryTests
             next.Click = null;
             h.Coordinator.ImageDown(2, 2); Assert.Equal(2, next.Clicks);
             h.Coordinator.Cancel(); Assert.Equal(1, nextReleased);
-            Assert.Equal(InteractionMode.Idle, h.Coordinator.Mode); Assert.False(h.Layers.InputSuppressed);
+            Assert.Equal(InteractionMode.Idle, h.Coordinator.Mode); Assert.False(h.Layers.Collection.InputSuppressed);
         });
     }
 
@@ -201,7 +201,7 @@ public class MeasurementReentryTests
             else { tool.Cancelled = _ => throw failure; invoke = () => h.Coordinator.StartMeasurement(tool.Id); }
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(invoke));
             Assert.Null(h.Coordinator.ActiveId); Assert.Equal(InteractionMode.Idle, h.Coordinator.Mode);
-            Assert.False(h.Layers.InputSuppressed); Assert.Same(Cursors.Cross, h.Input.Container.Cursor); Assert.Equal(1, released);
+            Assert.False(h.Layers.Collection.InputSuppressed); Assert.Same(Cursors.Cross, h.Input.Container.Cursor); Assert.Equal(1, released);
         });
     }
 
@@ -245,7 +245,7 @@ public class MeasurementReentryTests
             if (throws) Assert.Throws<InvalidOperationException>(h.Coordinator.Dispose); else h.Coordinator.Dispose();
             h.Coordinator.Dispose();
             Assert.Null(h.Coordinator.ActiveId); Assert.Equal(InteractionMode.Idle, h.Coordinator.Mode);
-            Assert.False(h.Layers.InputSuppressed); Assert.Equal(1, released);
+            Assert.False(h.Layers.Collection.InputSuppressed); Assert.Equal(1, released);
         });
     }
 

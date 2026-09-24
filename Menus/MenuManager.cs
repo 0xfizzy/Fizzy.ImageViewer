@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using WpfMenuItem = System.Windows.Controls.MenuItem;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Fizzy.ImageViewer.Menus;
 
@@ -11,6 +13,8 @@ internal sealed class MenuManager : IDisposable
     private readonly FrameworkElement _target;
     private readonly ContextMenu _menu = new();
     private readonly ViewerLifetime _lifetime;
+    private readonly ILogger _logger;
+    private readonly HashSet<IMenuItem> _executing = new(ReferenceEqualityComparer.Instance);
     private readonly List<Registration> _registrations = [];
     private readonly List<ClickBinding> _bindings = [];
     private bool _disposed, _open;
@@ -18,10 +22,11 @@ internal sealed class MenuManager : IDisposable
     internal event Action? Opening;
     internal event Action? Closing;
 
-    internal MenuManager(FrameworkElement target, ViewerLifetime? lifetime = null)
+    internal MenuManager(FrameworkElement target, ViewerLifetime? lifetime = null, ILogger? logger = null)
     {
         _target = target;
         _lifetime = lifetime ?? new ViewerLifetime();
+        _logger = logger ?? NullLogger.Instance;
         target.ContextMenu = _menu;
         _menu.Opened += Opened;
         _menu.Closed += Closed;
@@ -68,10 +73,15 @@ internal sealed class MenuManager : IDisposable
         private IMenuItem? _item = item;
         internal Registration Registration { get; } = registration;
         internal void Attach() => visual.Click += Execute;
-        private void Execute(object sender, RoutedEventArgs args)
+        private async void Execute(object sender, RoutedEventArgs args)
         {
-            if (!manager._disposed && !manager._lifetime.IsStopping && Registration.IsActive)
-                _item?.Execute(sender, args);
+            var item = _item;
+            if (manager._disposed || manager._lifetime.IsStopping || !Registration.IsActive ||
+                item == null) return;
+            lock (manager._executing) if (!manager._executing.Add(item)) return;
+            try { await item.ExecuteAsync().ConfigureAwait(false); }
+            catch (Exception ex) { manager._logger.LogError(ex, "Menu action failed"); }
+            finally { lock (manager._executing) manager._executing.Remove(item); }
         }
         public void Dispose()
         {

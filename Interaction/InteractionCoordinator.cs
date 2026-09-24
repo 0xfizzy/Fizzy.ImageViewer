@@ -28,17 +28,17 @@ internal sealed class InteractionCoordinator : IDisposable
     internal EditManager Editor => _edit;
 
     internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, EditManager edit,
-        MeasurementToolRegistry tools, MeasurementStore context, ViewerLayers layers)
+        MeasurementToolRegistry tools, MeasurementStore store, ViewerLayers layers)
     {
         _input = input;
         _overlay = overlay;
         _edit = edit;
         _tools = tools;
-        _measurements = context;
+        _measurements = store;
         _layers = layers;
         layers.Measurements.Clearing += CancelForClear;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
-        context.ItemRemoving += ItemRemoving;
+        store.ItemRemoving += ItemRemoving;
         input.Connect(this);
     }
     internal bool Hit(UIElement shape)
@@ -65,19 +65,20 @@ internal sealed class InteractionCoordinator : IDisposable
         SelectedMeasurement = null;
         _overlay.SetSelection(null, []);
     }
-    internal void StartMeasurement(string name)
+    internal void StartMeasurement(string toolId)
     {
         if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
         if (_disposed || !_layers.Measurements.IsVisible) return;
-        var tool = _tools.Find(name);
+        var tool = _tools.Find(toolId);
         if (tool == null) return;
         var version = _sessionVersion;
         try
         {
+            _input.EndPan();
             version = ++_sessionVersion;
             CancelTool();
             if (version != _sessionVersion || _disposed) return;
-            ActiveId = name;
+            ActiveId = toolId;
             var creation = new MeasurementCreationSession(_measurements);
             _session = creation;
             ClearSelection();
@@ -90,7 +91,7 @@ internal sealed class InteractionCoordinator : IDisposable
             }
             _active = active;
             Mode = InteractionMode.Measuring;
-            _layers.SuppressInput(true);
+            _layers.Collection.SuppressInput(true);
             _input.ShowMeasurementCursor();
         }
         catch { if (version == _sessionVersion) Cancel(); throw; }
@@ -156,7 +157,7 @@ internal sealed class InteractionCoordinator : IDisposable
     private void RestoreInput()
     {
         _input.Restore();
-        _layers.SuppressInput(false);
+        _layers.Collection.SuppressInput(false);
     }
     internal void DeleteSelected() => Delete(SelectedMeasurement);
     internal void Delete(MeasurementItem? selected)
@@ -217,7 +218,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal bool BeginDrag(Point point)
     {
         if (Mode != InteractionMode.Editing) return false;
-        if (!_edit.BeginDrag(point, _layers.Scale)) { StopEditing(); return false; }
+        if (!_edit.BeginDrag(point, _layers.Collection.Scale)) { StopEditing(); return false; }
         if (!_input.Capture()) { _edit.EndDrag(); return false; }
         _input.ShowDragCursor();
         return true;
