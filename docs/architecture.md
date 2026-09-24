@@ -71,7 +71,7 @@ handles manage individual resources. Review returned objects, collection element
 event/callback arguments as well as direct members when changing a capability boundary.
 These interfaces constrain typed dependencies; a shared implementation and event sender
 do not provide security isolation. Documentation in
-docs describes current component contracts; plans/archive contains historical plans.
+docs describes current component contracts.
 Update this map when introducing or removing a feature boundary, not for ordinary files.
 
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.

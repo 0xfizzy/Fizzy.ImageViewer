@@ -30,3 +30,7 @@
 
 - 使用 `type(scope): description` 格式，scope 可省略；type、scope 及英文描述均以小写开头，破坏性变更用 `!` 标记。
 - 示例：`refactor(viewer): simplify frame ownership`、`chore: update dependencies`、`refactor(api)!: remove legacy interface`。
+
+## 本地计划
+
+- 任务计划仅保存在已忽略的根目录 `plans/` 或仓库外，不纳入 Git 提交。
