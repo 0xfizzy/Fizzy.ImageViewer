@@ -19,7 +19,7 @@ public class MeasurementOwnershipTests
         IMeasurement? owner = null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            owner = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            owner = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             var item = (MeasurementItem)owner;
             viewer.Host.Window.MeasurementOverlay.UpdateScale(2);
             owner.UpdateGeometry(MeasurementGeometry.Point(new(3, 4)));
@@ -37,14 +37,14 @@ public class MeasurementOwnershipTests
     }
 
     [Theory]
-    [InlineData(MeasurementKind.Point)]
-    [InlineData(MeasurementKind.Crosshair)]
-    public async Task AnchorEditorUpdatesModelAndRetainsVisualGeometry(MeasurementKind kind)
+    [InlineData(MeasurementGeometryKind.Point)]
+    [InlineData(MeasurementGeometryKind.Crosshair)]
+    public async Task AnchorEditorUpdatesModelAndRetainsVisualGeometry(MeasurementGeometryKind kind)
     {
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(kind == MeasurementKind.Point
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(kind == MeasurementGeometryKind.Point
                 ? MeasurementGeometry.Point(new(1, 2)) : MeasurementGeometry.Crosshair(new(1, 2)));
             var shape = (System.Windows.Shapes.Path)item.Presentation.PrimaryVisual;
             var geometry = shape.Data;
@@ -107,8 +107,8 @@ public class MeasurementOwnershipTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var ctx = viewer.Host.Measurements;
-            var a = (MeasurementItem)new MeasurementCreationSession(ctx).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
-            var b = (MeasurementItem)new MeasurementCreationSession(ctx).CreateMeasurement(MeasurementGeometry.Point(new(3, 4)));
+            var a = (MeasurementItem)new MeasurementCreationContext(ctx).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var b = (MeasurementItem)new MeasurementCreationContext(ctx).CreateMeasurement(MeasurementGeometry.Point(new(3, 4)));
             var primary = a.Presentation.PrimaryVisual; var label = a.Presentation.Label; a.Complete(); b.Complete();
             var survivor = b.Presentation.PrimaryVisual;
             var disposed = 0;
@@ -132,7 +132,7 @@ public class MeasurementOwnershipTests
             void Added(UIElement element) => ctx.Find(element)?.Dispose();
             overlay.VisualAdded += Added;
             IMeasurement item;
-            try { item = new MeasurementCreationSession(ctx).CreateMeasurement(MeasurementGeometry.Point(new())); }
+            try { item = new MeasurementCreationContext(ctx).CreateMeasurement(MeasurementGeometry.Point(new())); }
             finally { overlay.VisualAdded -= Added; }
             Assert.True(item.IsDisposed);
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -145,11 +145,11 @@ public class MeasurementOwnershipTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var completed = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new())); var disposed = 0;
+            var completed = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new())); var disposed = 0;
             completed.Complete();
             completed.OnDispose(() => throw new Exception("cleanup failed"));
             completed.AddResource(new Resource(() => disposed++));
-            completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()))));
+            completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()))));
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Throws<InvalidOperationException>(() => viewer.Layers.ClearContents());
@@ -185,7 +185,7 @@ public class MeasurementOwnershipTests
         var viewer = Create(); var disposed = 0;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var scope = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
+            var scope = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
             scope.AddResource(new Resource(() => disposed++)); scope.Complete();
         });
         await viewer.DisposeAsync(); await viewer.DisposeAsync();
@@ -198,7 +198,7 @@ public class MeasurementOwnershipTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (System.Windows.Shapes.Rectangle)item.Presentation.PrimaryVisual;
             using var session = new MeasurementEditSession(item);
             Assert.NotNull(session); session.BeginDrag(0); session.Update(new(8, 9)); session.Update(new(10, 11));
@@ -231,7 +231,7 @@ public class MeasurementOwnershipTests
         {
             var context = viewer.Host.Measurements;
             var interaction = viewer.Host.Interaction;
-            var item = (MeasurementItem)new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new(2, 3)));
+            var item = (MeasurementItem)new MeasurementCreationContext(context).CreateMeasurement(MeasurementGeometry.Point(new(2, 3)));
             item.Complete();
             var orphan = MeasurementVisualFactory.CreatePoint(new(5, 6));
             viewer.Host.Window.MeasurementOverlay.AddVisual(orphan);
@@ -258,7 +258,7 @@ public class MeasurementOwnershipTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var context = viewer.Host.Measurements;
-            var item = (MeasurementItem)new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var item = (MeasurementItem)new MeasurementCreationContext(context).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             var released = 0;
             item.OnDispose(() => released++);
             item.Complete();

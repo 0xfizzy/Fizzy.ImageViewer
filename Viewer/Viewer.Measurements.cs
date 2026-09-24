@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Measurements;
-using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
 
@@ -53,18 +52,14 @@ public partial class Viewer
     /// <summary>Geometry or query state changed on a completed measurement. Runs on the viewer STA.</summary>
     public event EventHandler<MeasurementEventArgs>? MeasurementChanged;
 
-    internal void NotifyMeasurementChanged(MeasurementItem item) => NotifyMeasurement(MeasurementChanged, item);
-    internal void NotifyMeasurementCompleted(MeasurementItem item) => NotifyMeasurement(MeasurementCompleted, item);
-    internal void NotifyMeasurementRemoved(MeasurementItem item) => NotifyMeasurement(MeasurementRemoved, item);
+    internal void NotifyMeasurementChanged(MeasurementEventArgs args) => NotifyMeasurement(MeasurementChanged, args);
+    internal void NotifyMeasurementCompleted(MeasurementEventArgs args) => NotifyMeasurement(MeasurementCompleted, args);
+    internal void NotifyMeasurementRemoved(MeasurementEventArgs args) => NotifyMeasurement(MeasurementRemoved, args);
 
-    private void NotifyMeasurement(EventHandler<MeasurementEventArgs>? handlers, MeasurementItem item)
+    private void NotifyMeasurement(EventHandler<MeasurementEventArgs>? handlers, MeasurementEventArgs args)
     {
-        var geometry = item.Geometry;
-        var args = new MeasurementEventArgs(new(item.Id, geometry, item.GeometryVersion),
-            item, item.Result);
         foreach (EventHandler<MeasurementEventArgs> handler in handlers?.GetInvocationList() ?? [])
-            try { handler(this, args); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
+            _host.Measurements.Notifications.Post(() => handler(this, args));
     }
 
 }

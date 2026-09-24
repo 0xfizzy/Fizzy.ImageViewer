@@ -7,8 +7,8 @@ namespace Fizzy.ImageViewer.Measurements;
 /// Cancellation notification is separate from unconditional session-resource cleanup.</summary>
 public interface IMeasurementToolSession : IDisposable
 {
-    /// <summary>Returns true to end input. Only measurements explicitly completed are retained.</summary>
-    bool OnClick(Point point);
+    /// <summary>Return Finish to end input. Only measurements explicitly completed are retained.</summary>
+    MeasurementClickResult OnClick(Point point);
     void OnMouseMove(Point point);
     /// <summary>Called once when interrupted, including an activation superseded during its factory.
     /// The creation context has already ended; unfinished measurements are released by the framework.</summary>

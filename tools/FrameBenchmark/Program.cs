@@ -35,7 +35,7 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
             foreach (var viewer in viewers)
             {
                 await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(width, height, stride, format), data, () => { }));
-                if (measure) await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Measurements.Register(new ProfileMeasurement(width, height)));
+                if (measure) await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Queries.Register(new ProfileMeasurement(width, height)));
             }
             using var process = Process.GetCurrentProcess();
             long allocated = GC.GetTotalAllocatedBytes(true), memory = process.PrivateMemorySize64;

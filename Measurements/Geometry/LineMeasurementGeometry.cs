@@ -6,7 +6,7 @@ public sealed record LineMeasurementGeometry : MeasurementGeometry
 {
     public Point Start { get; }
     public Point End { get; }
-    public override MeasurementKind Kind => MeasurementKind.Line;
+    public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Line;
     public override Rect Bounds => new(Start, End);
     internal override Point Anchor => Start;
     internal override IReadOnlyList<Point> ControlPoints => [Start, End];

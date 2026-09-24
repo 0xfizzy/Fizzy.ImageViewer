@@ -63,7 +63,7 @@ public class PixelQuerySchedulerTests
         public long Version;
         public bool Enabled = true, ThrowOnPublish;
         public int Clears, Published;
-        public long FrameId;
+        public long FrameId, PublishedVersion;
         public QueryRequest? Capture(FrameDescriptor descriptor)
         {
             Assert.False(runtime.InWorker);
@@ -71,9 +71,9 @@ public class PixelQuerySchedulerTests
             var identity = new QueryIdentity(Id, Version);
             return kind switch
             {
-                0 => new PixelQueryRequest(identity, [new(0, 0)], (frame, _) => Publish(frame)),
-                1 => new LineProfileQueryRequest(identity, [new(0, 0), new(1, 0)], (frame, _) => Publish(frame)),
-                _ => new RegionStatisticsQueryRequest(identity, new(0, 0, 2, 1), (frame, _) => Publish(frame))
+                0 => new PixelQueryRequest(identity, [new(0, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
+                1 => new LineProfileQueryRequest(identity, [new(0, 0), new(1, 0)], (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); }),
+                _ => new RegionStatisticsQueryRequest(identity, new(0, 0, 2, 1), (frame, _) => { PublishedVersion = identity.GeometryVersion; Publish(frame); })
             };
         }
         private void Publish(FrameInfo frame)
@@ -88,6 +88,7 @@ public class PixelQuerySchedulerTests
     private sealed class Source(Runtime runtime) : IFramePixelSource
     {
         public int GatherCalls, Coordinates, RegionCalls;
+        public TimeSpan RegionDuration;
         public bool FailGather, FailRegion;
         public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
         {
@@ -97,7 +98,7 @@ public class PixelQuerySchedulerTests
         }
         public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
         {
-            Assert.True(runtime.InWorker); RegionCalls++;
+            Assert.True(runtime.InWorker); RegionCalls++; runtime.Now += RegionDuration;
             if (FailRegion) throw new NotSupportedException();
             using var frame = ImageFrame.Copy(new(2, 1, 2, FramePixelFormat.Gray8), new byte[] { 7, 8 }).Transfer();
             return Compute(frame, region, ct);
@@ -151,7 +152,9 @@ public class PixelQuerySchedulerTests
         Assert.Single(runtime.Work);
         runtime.Tick(); Assert.Single(runtime.Work); // one batch at a time
         await runtime.Finish(scheduler);
-        Assert.Equal(1, source.GatherCalls); Assert.Equal(3, source.Coordinates); Assert.Equal(1, source.RegionCalls);
+        Assert.Equal(1, source.GatherCalls); Assert.Equal(3, source.Coordinates); Assert.Equal(0, source.RegionCalls);
+        runtime.Tick(); await runtime.Finish(scheduler);
+        Assert.Equal(1, source.RegionCalls);
         Assert.Equal(1, pixel.Published); Assert.Equal(1, line.Published); Assert.Equal(1, region.Published);
         runtime.Tick(); Assert.Empty(runtime.Work); // same frame: no repeated query
         frame.Info = new(2, frame.Descriptor, null);
@@ -175,7 +178,7 @@ public class PixelQuerySchedulerTests
         using var replacement = scheduler.Register(removed);
         await runtime.Finish(scheduler);
         Assert.Equal(0, changed.Published); Assert.Equal(0, removed.Published); Assert.Equal(0, disabled.Published);
-        runtime.Tick(); await runtime.Finish(scheduler);
+        runtime.Now = TimeSpan.FromMilliseconds(34); runtime.Tick(); await runtime.Finish(scheduler);
         Assert.Equal(1, changed.Published); Assert.Equal(1, removed.Published);
     }
 
@@ -188,12 +191,14 @@ public class PixelQuerySchedulerTests
         var pixel = new Client(runtime); var region = new Client(runtime, 2);
         using var p = scheduler.Register(pixel); using var r = scheduler.Register(region);
         runtime.Tick!(); runtime.Now = TimeSpan.FromMilliseconds(101); await runtime.Finish(scheduler);
-        Assert.Equal(2, scheduler.QueryMetrics.ExpiredResults); Assert.Equal(0, pixel.Published);
+        Assert.Equal(1, scheduler.QueryMetrics.ExpiredResults); Assert.Equal(0, pixel.Published);
         source.FailRegion = true;
+        runtime.Tick(); await runtime.Finish(scheduler);
         runtime.Tick(); await runtime.Finish(scheduler);
         Assert.Equal(1, pixel.Published); Assert.Equal(0, region.Published);
         frame.Info = new(2, frame.Descriptor, null); runtime.Now += TimeSpan.FromSeconds(1);
         source.FailRegion = false; source.FailGather = true;
+        runtime.Tick(); await runtime.Finish(scheduler);
         runtime.Tick(); await runtime.Finish(scheduler);
         Assert.Equal(1, pixel.Published); Assert.Equal(1, region.Published);
     }
@@ -250,6 +255,7 @@ public class PixelQuerySchedulerTests
         var client = new Client(runtime); using var subscription = scheduler.Register(client);
         runtime.Tick!(); current = resized;
         await runtime.Finish(scheduler); Assert.Equal(0, client.Published);
+        runtime.Now = TimeSpan.FromMilliseconds(34);
         runtime.Tick(); await runtime.Finish(scheduler); Assert.Equal(1, client.Published);
     }
     [Theory]
@@ -354,6 +360,101 @@ public class PixelQuerySchedulerTests
         else Assert.Contains("—", text);
         // A rejected completion still observes the cooldown, including leave/re-enter.
         runtime.Now = TimeSpan.FromMilliseconds(99); runtime.Tick(); Assert.Empty(runtime.Work);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ContinuousGeometryAndFrameChangesKeepExecutionBudgetAndLatestTarget(int kind)
+    {
+        var runtime = new Runtime();
+        using var frame = Frame(new(runtime));
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelRate = 1, LineRate = 1, RegionRate = 1 } };
+        var client = new Client(runtime, kind);
+        using var registration = scheduler.Register(client);
+        runtime.Tick!(); await runtime.Finish(scheduler);
+        for (int time = 10; time < 1000; time += 10)
+        {
+            client.Version++;
+            frame.Info = new(time, frame.Descriptor, null);
+            runtime.Now = TimeSpan.FromMilliseconds(time);
+            runtime.Tick();
+            Assert.Empty(runtime.Work);
+        }
+        runtime.Now = TimeSpan.FromSeconds(1);
+        runtime.Tick(); await runtime.Finish(scheduler);
+        Assert.Equal(2, client.Published);
+        Assert.Equal(client.Version, client.PublishedVersion);
+        Assert.Equal(frame.Info.FrameId, client.FrameId);
+    }
+
+    [Fact]
+    public async Task MultipleSlowRegionsAndContinuousPixelsPublishFairlyWithFreshSnapshots()
+    {
+        var runtime = new Runtime();
+        var source = new Source(runtime) { RegionDuration = TimeSpan.FromMilliseconds(60) };
+        using var frame = Frame(source);
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        var pixel = new Client(runtime); var first = new Client(runtime, 2); var second = new Client(runtime, 2);
+        using var p = scheduler.Register(pixel);
+        using var a = scheduler.Register(first);
+        using var b = scheduler.Register(second);
+        for (int batch = 0; batch < 12; batch++)
+        {
+            frame.Info = new(batch + 1, frame.Descriptor, null);
+            pixel.Version++; first.Version++; second.Version++;
+            runtime.Tick!();
+            Assert.Single(runtime.Work);
+            await runtime.Finish(scheduler);
+            Assert.Empty(runtime.Work);
+            Assert.Empty(runtime.Publications);
+        }
+        Assert.True(pixel.Published >= 3);
+        Assert.True(first.Published >= 3);
+        Assert.True(second.Published >= 3);
+        Assert.Equal(0, scheduler.QueryMetrics.ExpiredResults);
+        Assert.Equal(12, scheduler.QueryMetrics.Batches);
+    }
+
+    [Fact]
+    public async Task SlowRegionExpiresFromCaptureWithoutDiscardingIndependentPixelPublication()
+    {
+        var runtime = new Runtime();
+        var source = new Source(runtime) { RegionDuration = TimeSpan.FromMilliseconds(101) };
+        using var frame = Frame(source);
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        var pixel = new Client(runtime); var region = new Client(runtime, 2);
+        using var p = scheduler.Register(pixel); using var r = scheduler.Register(region);
+        runtime.Tick!(); await runtime.Finish(scheduler);
+        Assert.Equal(1, pixel.Published);
+        runtime.Tick(); await runtime.Finish(scheduler);
+        Assert.Equal(0, region.Published);
+        Assert.Equal(1, pixel.Published);
+        Assert.Equal(1, scheduler.QueryMetrics.ExpiredResults);
+        Assert.Equal(101, scheduler.QueryMetrics.LastDurationMilliseconds);
+    }
+
+    [Fact]
+    public async Task CancellationBetweenGroupsReleasesOnlyAdmittedWorkAndNeverStartsWaitingRegion()
+    {
+        var runtime = new Runtime(); var source = new Source(runtime); int released = 0;
+        var frame = Frame(source, () => released++);
+        var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
+        var pixel = new Client(runtime); var first = new Client(runtime, 2); var second = new Client(runtime, 2);
+        using var p = scheduler.Register(pixel);
+        using var a = scheduler.Register(first);
+        using var b = scheduler.Register(second);
+        runtime.Tick!(); await runtime.Finish(scheduler);
+        Assert.Equal(1, pixel.Published); Assert.Equal(0, source.RegionCalls);
+        runtime.Tick(); Assert.Single(runtime.Work);
+        scheduler.Dispose(); frame.Dispose();
+        Assert.Equal(0, released);
+        await runtime.Work.Dequeue()(); await scheduler.Completion;
+        Assert.Equal(1, released);
+        Assert.Equal(0, source.RegionCalls);
+        Assert.Equal(0, first.Published); Assert.Equal(0, second.Published);
     }
 
 }

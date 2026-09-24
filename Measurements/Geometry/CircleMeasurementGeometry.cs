@@ -6,7 +6,7 @@ public sealed record CircleMeasurementGeometry : MeasurementGeometry
 {
     public Point Center { get; }
     public double Radius { get; }
-    public override MeasurementKind Kind => MeasurementKind.Circle;
+    public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Circle;
     public override Rect Bounds => new(Center.X - Radius, Center.Y - Radius, Radius * 2, Radius * 2);
     internal override Point Anchor => Center;
     internal override IReadOnlyList<Point> ControlPoints => [Center, new(Center.X + Radius, Center.Y)];

@@ -413,7 +413,7 @@ public class DrawingTests
             var marker = viewer.Layers.Markers.Add([Circle()]);
             var measure = await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
             {
-                var item = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
+                var item = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
                 item.Complete();
                 return item;
             });
@@ -440,7 +440,7 @@ public class DrawingTests
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
             foreach (var geometry in new MeasurementGeometry[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
-                var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(geometry);
+                var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(geometry);
                 var shape = item.Presentation.PrimaryVisual; item.Complete();
                 viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!);
                 var data = MeasurementVisualData.Get(shape)!;
@@ -454,7 +454,7 @@ public class DrawingTests
                 Assert.Empty(viewer.Host.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
-            var measurement = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
+            var measurement = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
             measurement.Complete(); var line = measurement.Presentation.PrimaryVisual;
             viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(line)); viewer.Host.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -470,9 +470,9 @@ public class DrawingTests
             foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
                 new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LengthTool(), new Measurements.BuiltIn.RectangleRoiTool() })
             {
-                var session = new MeasurementCreationSession(viewer.Host.Measurements);
+                var session = new MeasurementCreationContext(viewer.Host.Measurements);
                 var activation = method.CreateSession(session);
-                bool done = activation.OnClick(new(10, 10));
+                bool done = activation.OnClick(new(10, 10)) == MeasurementClickResult.Finish;
                 if (!done)
                 {
                     activation.OnMouseMove(new(50, 50));
@@ -480,11 +480,11 @@ public class DrawingTests
                     session.End();
                     activation.Cancel();
                     session.ClearPreviews();
-                    session = new MeasurementCreationSession(viewer.Host.Measurements);
+                    session = new MeasurementCreationContext(viewer.Host.Measurements);
                     activation = method.CreateSession(session);
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-                    Assert.False(activation.OnClick(new(10, 10)));
-                    Assert.True(activation.OnClick(new(50, 50)));
+                    Assert.Equal(MeasurementClickResult.Continue, activation.OnClick(new(10, 10)));
+                    Assert.Equal(MeasurementClickResult.Finish, activation.OnClick(new(50, 50)));
                 }
                 session.End(); session.ClearPreviews();
                 Assert.NotEmpty(overlay.Canvas.Children.Cast<UIElement>());

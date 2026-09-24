@@ -76,7 +76,7 @@ public class MeasurementHandleTests
         }
         private sealed class Session : IMeasurementToolSession
         {
-            public bool OnClick(Point point) => false;
+            public MeasurementClickResult OnClick(Point point) => MeasurementClickResult.Continue;
             public void OnMouseMove(Point point) { }
             public void Cancel() { }
             public void Dispose() { }

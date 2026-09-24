@@ -17,5 +17,7 @@ internal sealed class MeasurementToolRegistry
     internal bool UnregisterTool(string id) => _tools.Remove(id);
     internal bool HasTool(string id) => _tools.ContainsKey(id);
     internal IMeasurementTool? Find(string id) => _tools.GetValueOrDefault(id)?.Tool;
+    internal Registration? FindRegistration(string id) => _tools.GetValueOrDefault(id);
+    internal bool Contains(Registration registration) => ReferenceEquals(FindRegistration(registration.Id), registration);
     internal void Clear() => _tools.Clear();
 }

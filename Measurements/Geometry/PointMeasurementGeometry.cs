@@ -5,7 +5,7 @@ namespace Fizzy.ImageViewer.Measurements;
 public sealed record PointMeasurementGeometry : MeasurementGeometry
 {
     public Point Position { get; }
-    public override MeasurementKind Kind => MeasurementKind.Point;
+    public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Point;
     public override Rect Bounds => new(Position, Position);
     internal override Point Anchor => Position;
     internal override IReadOnlyList<Point> ControlPoints => [Position];

@@ -83,7 +83,10 @@ or completion notification takes precedence, even when it uses the same tool.
 Returning or throwing from the old callback does not cancel that session or
 restore its input state. This also applies when cancellation interrupts an outer
 start request: the callback's session wins. Exceptions from tool callbacks propagate
-to their caller; cleanup restores idle only if that operation still owns the session.
+to explicit API callers; framework input and plot-window callbacks log failures and keep
+the viewer usable. Cleanup restores idle only if that operation still owns the session.
+When operation and cleanup both fail, an aggregate retains the original failure first
+and the cleanup failure after it; cleanup still attempts all owned resources.
 Completion/removal notification subscribers are instead isolated: their exceptions
 are logged and later subscribers still run.
 
@@ -101,12 +104,18 @@ shutdown cleans both completed and unfinished measurements and waits for owned q
 
 `PixelQueryScheduler` runs one batch at a time. It captures typed pixel, line and
 region requests on the viewer STA, performs all pixel-source operations off STA,
-and publishes results on STA. Viewer owns this shared imaging service. MeasurementCollection
-and pixel HUD subscribe independently; disposing a measurement owner does not
+and publishes results on STA. Viewer owns this shared imaging service. Measurement items
+subscribe through MeasurementRuntime, independently of the pixel HUD; disposing a measurement owner does not
 stop other query clients. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
 not discard successful pixel results. Query options control rates and result-age limits;
 query metrics report execution, and each batch owns its frame lease until completion.
+The oldest-due request selects the next group: either one region query or a merged gather
+of due pixel and line requests. Each group publishes independently before another begins;
+unselected clients retain their due time and capture fresh state on the next tick. This
+provides fairness without giving gathers global priority over regions. Geometry invalidation
+retains the next allowed execution deadline, so continuous dragging cannot bypass the
+configured query rate.
 
 Subscriptions have distinct lifetimes. Publication requires the same registration,
 stable measurement identity, geometry version and frame descriptor. Re-registering
@@ -154,7 +163,7 @@ and other mutable interaction state in this session. The registration contains r
 configuration; sharing it across viewers requires a thread-safe factory and configuration.
 
 The session receives `OnClick(Point)`, `OnMouseMove(Point)` and `Cancel()` callbacks and retains
-its own creation context. Returning `true` from `OnClick` ends input; call `Complete()` on each
+its own creation context. Returning `MeasurementClickResult.Finish` from `OnClick` ends input; `Continue` retains it; call `Complete()` on each
 measurement to retain it. Unfinished measurements are released automatically. Normal completion
 does not call `Cancel`; interruption calls it once after ending the creation context and releases
 previews even if cancellation throws.
@@ -168,7 +177,15 @@ Factories may create previews and may reenter viewer APIs. A newer activation ta
 If a factory returns after its activation was interrupted, its returned session is cancelled
 without changing the newer session. A factory failure or null return releases its unfinished
 measurements; the factory owns cleanup of resources not yet transferred to a measurement.
-A retained context cannot create measurements after its activation ends.
+A retained context cannot create measurements after its activation ends. For asynchronous
+work, call `context.Finish()` to end only that context's activation after committing the
+items to retain. It dispatches to the viewer STA and returns false for an ended,
+superseded or closed context; it never ends a replacement session. `IMeasurement.Complete()`
+commits one item and does not finish its tool session. Each context, item and event snapshot
+retains `Origin` with the registration's `ToolId` and activation's `SessionId`; multiple
+items from one activation share the origin, while later activations get a new session ID.
+Revoking a registration during cancellation invalidates an outer request to start that
+registration, even when another registration subsequently uses the same ID.
 
 ### Geometry, editing and notifications
 
@@ -178,12 +195,15 @@ opposite corners. Circles use `Center` and `Radius`. Factories return the sealed
 records `PointMeasurementGeometry`, `CrosshairMeasurementGeometry`, `LineMeasurementGeometry`,
 `RectangleMeasurementGeometry` and `CircleMeasurementGeometry`. Pattern-match these types
 when reading a handle or event snapshot; unsupported coordinate properties do not exist.
-Kinds use the measurement-specific `MeasurementKind` enum. `Bounds` returns normalized
+Kinds use the measurement-specific `MeasurementGeometryKind` enum. `Bounds` returns normalized
 image-space bounds: endpoint bounds for lines and rectangles, diameter bounds for circles,
 and zero extent for points and crosshairs. Line endpoints retain their original order.
 Coordinates and extents must be finite; circle radii must be nonnegative.
 
-The framework creates the shape, label and supported control points. Use
+The framework creates the shape, label and supported control points. Coincident control
+points prioritize extent handles, allowing zero-radius circles, zero-length lines and
+collapsed rectangles to expand. The entire label uses inverse scale, keeping text,
+padding and offset fixed in screen space while its anchor follows image coordinates. Use
 `UpdateGeometry` for previews and programmatic updates. Directly changing WPF properties
 is not a measurement mutation API. `GeometryChanged` reports the new immutable geometry
 after model, label and result invalidation have been applied. Use it to write edits back
@@ -215,14 +235,20 @@ viewer.MeasurementChanged += (_, e) =>
 viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
 ```
 
-Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's `Measurement` can be disposed from any thread. Removal is terminal for that item; a callback may
-remove it reentrantly. Completion and removal events carry the same result snapshot field,
+Viewer and handle notifications share one FIFO queue on the viewer STA. Each mutation
+captures immutable payloads and its subscribers before delivery; reentrant mutations append
+their events after the current mutation's notifications. Every subscriber sees nondecreasing
+geometry versions, completion precedes removal, and removal is terminal. The live handle
+may already reflect a later mutation or disposal while an older snapshot is delivered.
+Closing from a subscriber preserves queued measurement events and emits `Closed` after
+removals. Subscriber exceptions are logged and isolated. The event's `Measurement` can be
+disposed from any thread, including reentrantly from a callback. Completion and removal events carry the same result snapshot field,
 but completion does not promise query readiness. Custom tools may additionally subscribe to
 `IMeasurement.GeometryChanged` and `ResultChanged` on their own items.
 
 ### Queries and retained results
 
-`MeasurementOptions.Query` selects a closed set of capabilities:
+`MeasurementOptions.Query` accepts the closed `MeasurementQueryOptions` family:
 
 | Query | Supported geometry | Result |
 | --- | --- | --- |
@@ -234,9 +260,11 @@ but completion does not promise query readiness. Custom tools may additionally s
 Incompatible combinations are rejected before any visual attaches. Pixel queries use
 floor coordinates and reject points outside the frame. Line profiles clip to the frame;
 ROI queries and export share `PixelRegion.Clip`. Empty targets have no result.
-`ShowProfileWindow` requires `LineProfile`; it opens an owned plot window on completion.
-Closing that window removes the measurement. Built-in LineProfile enables it; custom
-line queries default to data only. Built-in ROI explicitly selects region statistics.
+Use `MeasurementQueryOptions.Pixel`, `LineProfile`, `RegionStatistics` or `None`.
+Only `new LineProfileMeasurementQueryOptions(showWindow: true)` requests an owned plot
+window on completion. Closing that window removes the measurement. Built-in LineProfile
+enables it; `MeasurementQueryOptions.LineProfile` is data only. Geometry compatibility
+is validated before attachment; unrelated query types have no window option.
 
 `IMeasurement.Result` is null until successful publication. `ResultChanged` provides an
 immutable `MeasurementResult`, or null when a previous result becomes invalid. The result
@@ -244,11 +272,11 @@ includes measurement ID, geometry version, source `FrameInfo`, query kind and re
 copies of samples, coordinates or channel statistics. It is safe to retain the result
 after another frame, editing or removal. Collections never borrow scheduler buffers.
 
-Results are a closed family selected by `Query`. `Pixel` has one coordinate/sample pair;
-`LineProfile` has equally sized ordered `Coordinates` and `Samples`; both have null
-`Region` and empty `Channels`. `RegionStatistics` has a non-null clipped `Region` and
-channel statistics, with empty coordinate/sample collections. `None` produces no result.
-Branch on `Query` before reading the corresponding payload.
+Results are a closed class family. Pattern-match `MeasurementSampleResult` to read
+`Coordinates` and `Samples`: `Query` is `Pixel` for one pair or `LineProfile` for ordered
+pairs. `MeasurementRegionResult` exposes a non-null clipped `Region` and `Channels`.
+Common `MeasurementResult` properties contain only provenance and `Query`, so unrelated
+payload fields cannot be accidentally read. `None` produces no result.
 
 Labels and plots update before notification. Geometry changes invalidate immediately;
 query failure, descriptor change, missing targets and expiration clear obsolete results.
@@ -262,7 +290,7 @@ so background work can update or complete a live preview without retaining a dis
 Cancellation still disposes unfinished previews; late updates/completion then throw
 `ObjectDisposedException`. The handle supplied by `MeasurementEventArgs.Measurement`
 also supports application-driven updates to completed measurements. `Dispose` and event
-unsubscription are safe after closure; `Id` and `IsDisposed` remain readable, while other
+unsubscription are safe after closure; `Id`, `Origin` and `IsDisposed` remain readable, while other
 access requires a running viewer. Do not block STA callbacks waiting for workers that
 call these handles.
 
@@ -297,19 +325,19 @@ public sealed class CustomRoi : IMeasurementTool
         private IMeasurement? _preview;
         private Point _start;
 
-        public bool OnClick(Point point)
+        public MeasurementClickResult OnClick(Point point)
         {
             if (_preview is null or { IsDisposed: true })
             {
                 _start = point;
                 _preview = context.CreateMeasurement(
                     MeasurementGeometry.Rectangle(point, point),
-                    new() { Query = MeasurementQuery.RegionStatistics });
-                return false;
+                    new() { Query = MeasurementQueryOptions.RegionStatistics });
+                return MeasurementClickResult.Continue;
             }
             OnMouseMove(point);
             _preview.Complete();
-            return true;
+            return MeasurementClickResult.Finish;
         }
 
         public void OnMouseMove(Point point)

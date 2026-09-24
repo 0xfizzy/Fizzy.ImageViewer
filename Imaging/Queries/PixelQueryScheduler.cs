@@ -70,7 +70,8 @@ internal sealed class PixelQueryScheduler : IDisposable
                 {
                     bool descriptorChanged = state.Descriptor != current.Descriptor;
                     state.Valid = false; state.Identity = request.Identity; state.Descriptor = current.Descriptor;
-                    if (!item.Policy.AllowMovingResult) state.Due = TimeSpan.Zero;
+                    // Invalidation replaces the target, not its execution budget.
+                    // Continuous edits and frame resizes must obey the same rate as video.
                     if (descriptorChanged) state.HasResult = false;
                     item.InvalidateResult(descriptorChanged ? ResultInvalidation.DescriptorChanged : ResultInvalidation.CoordinatesChanged);
                 }
@@ -84,11 +85,17 @@ internal sealed class PixelQueryScheduler : IDisposable
         }
         if (current == null || !Completion.IsCompleted || due == null) return;
         due.Sort((a, b) => a.State.Due.CompareTo(b.State.Due));
-        foreach (var entry in due)
-        {
+        // Publish each independently executable group before admitting another. A
+        // batch contains either one ROI or a merged coordinate gather, never a serial
+        // chain of backend operations whose cumulative age can starve every result.
+        // Unselected clients retain their due time and capture fresh state next tick;
+        // oldest-due selection gives slow ROI and coordinate clients the same fairness.
+        var selected = due[0].Request is RegionStatisticsQueryRequest
+            ? new List<Entry> { due[0] }
+            : due.Where(entry => entry.Request is not RegionStatisticsQueryRequest).ToList();
+        foreach (var entry in selected)
             entry.State.Due = now + Interval(entry);
-        }
-        Completion = RunAsync(current.Acquire(), due, now);
+        Completion = RunAsync(current.Acquire(), selected, now);
     }
 
     private TimeSpan Interval(Entry entry)

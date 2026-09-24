@@ -36,8 +36,7 @@ internal sealed class MeasurementQueryClient(MeasurementItem item, MeasurementQu
         {
             var region = ((RectangleMeasurementGeometry)geometry).ToRegion(descriptor);
             return region.IsEmpty ? null : new RegionStatisticsQueryRequest(identity, region,
-                (frame, stats) => item.PublishResult(new(item.Id, identity.GeometryVersion, frame, query,
-                    [], [], region, stats.Channels.ToArray())));
+                (frame, stats) => item.PublishResult(new MeasurementRegionResult(item.Id, identity.GeometryVersion, frame, region, stats.Channels.ToArray())));
         }
 
         PixelCoordinate[] coordinates;
@@ -56,7 +55,7 @@ internal sealed class MeasurementQueryClient(MeasurementItem item, MeasurementQu
         }
 
         void Publish(FrameInfo frame, ReadOnlySpan<PixelSample> samples) =>
-            item.PublishResult(new(item.Id, identity.GeometryVersion, frame, query, coordinates, samples.ToArray(), null, []));
+            item.PublishResult(new MeasurementSampleResult(item.Id, identity.GeometryVersion, frame, query, coordinates, samples.ToArray()));
         return query == MeasurementQuery.Pixel
             ? new PixelQueryRequest(identity, coordinates, Publish)
             : new LineProfileQueryRequest(identity, coordinates, Publish);

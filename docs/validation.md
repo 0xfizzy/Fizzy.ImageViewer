@@ -184,10 +184,20 @@ Viewport, Hud, Menus, Snapshots, Viewer and Api); test filters continue to use t
 
 `LineSamplingTests` verify clipping and endpoint order without presentation state.
 `LineProfileTests` cover data-only results without plot windows and visual cleanup after
-store callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
+collection callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
 handles after shutdown and preservation of callback failures when shutdown starts reentrantly.
 
 `ToolSessionLifetimeTests` cover exactly-once STA session disposal on completion, cancellation,
 callback failure, shutdown and factory supersession, including replacement from a throwing
 disposal callback. `QueryResultSnapshotTests` verify independent immutable query collections.
 Public API/menu tests verify pixel HUD configuration before display and shared menu state.
+
+`MeasurementNotificationsTests` also verify two-subscriber reentry across viewer and handle
+notifications, result invalidation ordering and closure from a subscriber, including terminal
+removal before `Closed`. `MeasurementModelBoundaryTests` cover typed result payload ownership
+and original-operation failures combined with attachment/completion cleanup failures.
+
+`MeasurementQueryOptionsTests` check the geometry/configuration matrix, profile-window
+ownership and a closed immutable configuration family with no externally accessible base
+constructor. Tool protocol tests cover registration replacement, context-scoped asynchronous
+finishing, origin retention and original callback errors combined with cleanup failures.

@@ -25,20 +25,20 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var before = Windows();
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
                 .CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 0)),
-                    new() { Query = MeasurementQuery.LineProfile });
+                    new() { Query = MeasurementQueryOptions.LineProfile });
             item.Complete();
             var descriptor = new FrameDescriptor(2, 1, 2, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(item.QueryClient.Capture(descriptor));
             PixelSample[] samples = [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255),
                 new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)];
             request.Publish(new(1, descriptor, null), samples);
-            var retained = item.Result!;
+            var retained = Assert.IsType<MeasurementSampleResult>(item.Result);
             samples[0] = samples[0] with { Gray = 30 };
             request.Publish(new(2, descriptor, null), samples);
             Assert.Equal(10, retained.Samples[0].Gray);
-            Assert.Equal(30, item.Result!.Samples[0].Gray);
+            Assert.Equal(30, Assert.IsType<MeasurementSampleResult>(item.Result).Samples[0].Gray);
             Assert.Empty(Windows().Except(before));
             item.Dispose();
             Assert.Equal(20, retained.Samples[1].Gray);
@@ -52,15 +52,15 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var store = viewer.Host.Measurements;
-            var item = (MeasurementItem)new MeasurementCreationSession(store)
+            var item = (MeasurementItem)new MeasurementCreationContext(store)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             var failure = new InvalidOperationException("registry observer failed");
             store.ItemRemoving += _ => throw failure;
             bool detachedAtNotification = false;
             store.ItemRemoved += removed => detachedAtNotification =
-                !store.Contains(removed) && !store.Layer.Canvas.Children.Contains(removed.Presentation.PrimaryVisual)
-                    && !store.Layer.Canvas.Children.Contains(removed.Presentation.Label);
+                !store.Contains((MeasurementItem)removed.Measurement) && !viewer.Host.Window.MeasurementOverlay.Canvas.Children.Contains(item.Presentation.PrimaryVisual)
+                    && !viewer.Host.Window.MeasurementOverlay.Canvas.Children.Contains(item.Presentation.Label);
             var error = Assert.Throws<AggregateException>(item.Dispose);
             Assert.Contains(failure, error.InnerExceptions);
             Assert.True(detachedAtNotification);
@@ -145,7 +145,7 @@ public class LineProfileTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Host.Window.MeasurementOverlay;
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()));
             item.OnDispose(() => throw new InvalidOperationException("resource cleanup failure"));
             item.Complete();
             int removed = 0;
@@ -166,11 +166,11 @@ public class LineProfileTests
     private static (Line Line, Window Window) Draw(Viewer viewer, LineProfileTool method, MeasurementOverlay overlay)
     {
         var before = Windows();
-        var session = new MeasurementCreationSession(viewer.Host.Measurements);
+        var session = new MeasurementCreationContext(viewer.Host.Measurements);
         var activation = method.CreateSession(session);
-        Assert.False(activation.OnClick(new(0, 0)));
+        Assert.Equal(MeasurementClickResult.Continue, activation.OnClick(new(0, 0)));
         Assert.Empty(Windows().Except(before));
-        Assert.True(activation.OnClick(new(1, 0)));
+        Assert.Equal(MeasurementClickResult.Finish, activation.OnClick(new(1, 0)));
         session.End(); session.ClearPreviews();
         return (overlay.Canvas.Children.OfType<Line>().Last(), Assert.Single(Windows().Except(before)));
     }
@@ -333,6 +333,39 @@ public class LineProfileTests
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             Assert.False(second.Window.IsVisible);
         });
+    }
+
+    [Fact]
+    public async Task ClosingPlotWithThrowingResourceKeepsDispatcherAliveAndRemovesOnce()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        int viewerClosed = 0, removed = 0, cleanup = 0;
+        viewer.Closed += (_, _) => viewerClosed++;
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var overlay = viewer.Host.Window.MeasurementOverlay;
+            var pair = Draw(viewer, new LineProfileTool(), overlay);
+            var item = Assert.IsType<MeasurementItem>(viewer.Host.Measurements.Find(pair.Line));
+            viewer.MeasurementRemoved += (_, args) => { if (args.Snapshot.Id == item.Id) removed++; };
+            item.OnDispose(() => { cleanup++; throw new InvalidOperationException("plot resource cleanup"); });
+            pair.Window.Close();
+            Assert.True(item.IsDisposed);
+            Assert.False(pair.Window.IsVisible);
+            Assert.Empty(overlay.Canvas.Children);
+            Assert.Null(viewer.Host.Measurements.Find(pair.Line));
+            item.Dispose();
+        });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            Assert.False(viewer.Host.Window.Dispatcher.HasShutdownStarted);
+            viewer.StartMeasurement(MeasurementToolIds.Point);
+            viewer.Host.Interaction.ImageDown(2, 3);
+        });
+        Assert.Equal(1, cleanup);
+        Assert.Equal(1, removed);
+        Assert.Equal(0, viewerClosed);
+        await viewer.DisposeAsync();
+        Assert.Equal(1, viewerClosed);
     }
 
     [Fact]

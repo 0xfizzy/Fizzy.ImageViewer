@@ -10,46 +10,42 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Owns measurements and their visual lookup index; creation sessions borrow these services.</summary>
 internal sealed class MeasurementCollection
 {
+    internal MeasurementNotificationQueue Notifications => _runtime.Notifications;
     public MeasurementStyle Style { get; internal set; } = MeasurementStyle.Default;
     private readonly MeasurementLayer _measurementLayer;
-    internal MeasurementOverlay Layer => _measurementLayer.Overlay;
     private readonly Func<FrameLease?> _acquire;
     private readonly ILogger _logger;
-    private readonly PixelQueryScheduler _scheduler;
-    private readonly ViewerLifetime _lifetime;
-    private readonly Dispatcher _dispatcher;
+    private readonly MeasurementRuntime _runtime;
     private readonly HashSet<MeasurementItem> _items = [];
     private readonly Dictionary<UIElement, MeasurementItem> _visualOwners = [];
     private bool _cleaning;
     private bool _disposed;
     internal event Action<MeasurementItem>? ItemRemoving;
-    internal event Action<MeasurementItem>? ItemCompleted;
-    internal event Action<MeasurementItem>? ItemRemoved;
-    internal event Action<MeasurementItem>? ItemChanged;
+    internal event Action<MeasurementEventArgs>? ItemCompleted;
+    internal event Action<MeasurementEventArgs>? ItemRemoved;
+    internal event Action<MeasurementEventArgs>? ItemChanged;
 
     internal void NotifyChanged(MeasurementItem item)
     {
-        if (item.CompletionNotified && !item.IsDisposed) ItemChanged?.Invoke(item);
+        if (item.CompletionNotified && !item.IsDisposed) ItemChanged?.Invoke(Snapshot(item));
     }
     public void NotifyCompleted(MeasurementItem item)
     {
         item.CompletionNotified = true;
-        ItemCompleted?.Invoke(item);
+        ItemCompleted?.Invoke(Snapshot(item));
     }
 
     internal MeasurementCollection(MeasurementLayer layer, ViewerLifetime lifetime, Dispatcher dispatcher,
         Func<FrameLease?> acquire, PixelQueryScheduler scheduler, ILogger logger)
     {
         _measurementLayer = layer;
-        _lifetime = lifetime;
-        _dispatcher = dispatcher;
+        _runtime = new(lifetime, dispatcher, scheduler, logger);
         layer.ContentClearing += ClearMeasurements;
         _acquire = acquire;
         _logger = logger;
-        _scheduler = scheduler;
     }
     public FrameLease? AcquireCurrentFrame() => _acquire();
-    internal IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options, MeasurementCreationSession session)
+    internal IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options, MeasurementCreationContext session)
     {
         VerifyAccess();
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -59,28 +55,17 @@ internal sealed class MeasurementCollection
         ArgumentNullException.ThrowIfNull(geometry);
         options ??= new();
         options.Validate(geometry);
-        var item = new MeasurementItem(this, geometry, options, session);
+        var item = new MeasurementItem(this, _runtime, _measurementLayer.Overlay, (options.Style ?? Style).Snapshot(), geometry, options, session);
         session.Track(item);
         Attach(item);
         return item;
     }
-    internal void Notify<T>(Action<T>? handlers, T value)
-    {
-        foreach (Action<T> handler in handlers?.GetInvocationList() ?? [])
-            try { handler(value); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
-    }
-    public void VerifyAccess() => _dispatcher.VerifyAccess();
-    internal T Invoke<T>(Func<T> action) => _lifetime.Invoke(_dispatcher, () =>
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        return action();
-    });
-    internal void Invoke(Action action) => Invoke(() => { action(); return true; });
-    internal void InvokeRemoval(Action action) => _lifetime.InvokeRemoval(_dispatcher, () =>
-    {
-        if (!_disposed) action();
-    });
-    public QuerySubscription Register(IFrameQueryClient item) => _scheduler.Register(item);
+    private static MeasurementEventArgs Snapshot(MeasurementItem item) =>
+        new(new(item.Id, item.Geometry, item.GeometryVersion, item.Origin), item, item.Result);
+    public void VerifyAccess() => _runtime.VerifyAccess();
+    internal T Invoke<T>(Func<T> action) => _runtime.Invoke(action);
+    internal void Invoke(Action action) => _runtime.Invoke(action);
+    internal void InvokeRemoval(Action action) => _runtime.InvokeRemoval(action);
     internal MeasurementItem? Find(UIElement? shape) => shape != null && _visualOwners.TryGetValue(shape, out var item) ? item : null;
     internal bool Contains(MeasurementItem item) => _items.Contains(item);
 
@@ -93,7 +78,7 @@ internal sealed class MeasurementCollection
             foreach (var visual in item.Presentation.Visuals) _visualOwners.Add(visual, item);
             item.Presentation.Attach();
         }
-        catch { item.Dispose(); throw; }
+        catch (Exception error) { MeasurementFailure.RethrowAfterCleanup(error, item.Dispose); throw; }
     }
 
     public void Detach(MeasurementItem item)
@@ -107,7 +92,7 @@ internal sealed class MeasurementCollection
     }
     internal void NotifyRemoved(MeasurementItem item)
     {
-        if (item.CompletionNotified) ItemRemoved?.Invoke(item);
+        if (item.CompletionNotified) ItemRemoved?.Invoke(Snapshot(item));
     }
     internal void ClearMeasurements()
     {
@@ -129,6 +114,7 @@ internal sealed class MeasurementCollection
     {
         if (_disposed) return;
         _disposed = true;
+        _runtime.Stop();
         try { ClearMeasurements(); }
         finally { _measurementLayer.ContentClearing -= ClearMeasurements; }
     }

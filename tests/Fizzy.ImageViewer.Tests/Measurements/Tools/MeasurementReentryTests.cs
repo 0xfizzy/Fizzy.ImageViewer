@@ -73,7 +73,7 @@ public class MeasurementReentryTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             using var h = new Harness();
-            var independent = new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Point(new()));
+            var independent = new MeasurementCreationContext(h.Context).CreateMeasurement(MeasurementGeometry.Point(new()));
             var tool = new Tool("scope");
             IMeasurementToolContext? retainedContext = null;
             IMeasurement? preview = null;
@@ -161,7 +161,7 @@ public class MeasurementReentryTests
             }
             h.Coordinator.StartMeasurement(old.Id);
             var scope = old.Context.CreateMeasurement(MeasurementGeometry.Point(new())); scope.OnDispose(() => oldReleased++);
-            var editable = (MeasurementItem)new MeasurementCreationSession(h.Context).CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
+            var editable = (MeasurementItem)new MeasurementCreationContext(h.Context).CreateMeasurement(MeasurementGeometry.Point(new())); editable.Complete();
             var shape = editable.Presentation.PrimaryVisual;
             Action invoke;
             switch (operation)

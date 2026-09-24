@@ -3,10 +3,20 @@ using Fizzy.ImageViewer.Frames;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>A tool invocation context whose unfinished measurements belong to exactly one session.</summary>
-internal sealed class MeasurementCreationSession(MeasurementCollection owner) : IMeasurementToolContext
+internal sealed class MeasurementCreationContext(MeasurementCollection owner, MeasurementOrigin? origin = null,
+    Func<MeasurementCreationContext, bool>? finish = null) : IMeasurementToolContext
 {
     private readonly HashSet<MeasurementItem> _previews = [];
     private bool _ended;
+
+    public MeasurementOrigin Origin { get; } = origin ?? new("internal", Guid.NewGuid());
+
+    public bool Finish()
+    {
+        var finished = false;
+        owner.InvokeRemoval(() => { if (!_ended) finished = finish?.Invoke(this) ?? false; });
+        return finished;
+    }
 
     public MeasurementStyle Style => owner.Style;
     public FrameLease? AcquireCurrentFrame() => owner.AcquireCurrentFrame();
@@ -20,8 +30,10 @@ internal sealed class MeasurementCreationSession(MeasurementCollection owner) : 
     internal void Track(MeasurementItem item) => _previews.Add(item);
     internal void Release(MeasurementItem item) => _previews.Remove(item);
 
-    internal void End()
+    internal bool WasCancelled { get; private set; }
+    internal void End(bool cancelled = true)
     {
+        WasCancelled = cancelled;
         _ended = true;
     }
 

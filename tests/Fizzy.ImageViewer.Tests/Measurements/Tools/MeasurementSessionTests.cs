@@ -121,8 +121,8 @@ public class MeasurementSessionTests
             using var queries = new PixelQueryScheduler(() => { acquisitions++; return null; },
                 NullLogger.Instance, new DispatcherQueryRuntime(layer.Overlay.Dispatcher));
             var owner = new MeasurementCollection(layer, new ViewerLifetime(), layer.Overlay.Dispatcher, () => null, queries, NullLogger.Instance);
-            var creation = new MeasurementCreationSession(owner);
-            var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQuery.Pixel });
+            var creation = new MeasurementCreationContext(owner);
+            var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryOptions.Pixel });
             completed.Complete();
             completed.OnDispose(() =>
             {
@@ -154,7 +154,7 @@ public class MeasurementSessionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var creation = new MeasurementCreationSession(viewer.Host.Measurements);
+            var creation = new MeasurementCreationContext(viewer.Host.Measurements);
             var item = creation.CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             int released = 0;

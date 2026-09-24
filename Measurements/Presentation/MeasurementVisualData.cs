@@ -14,7 +14,6 @@ internal sealed class MeasurementVisualData(OverlayScaleMode mode, bool usesFill
 
     private bool _appearanceCaptured;
     internal double StrokeThickness { get; private set; }
-    internal double FontSize { get; private set; }
     internal void CaptureAppearance(FrameworkElement visual)
     {
         if (_appearanceCaptured) return;
@@ -26,7 +25,6 @@ internal sealed class MeasurementVisualData(OverlayScaleMode mode, bool usesFill
         }
         if (visual is System.Windows.Controls.TextBlock text)
         {
-            FontSize = text.FontSize;
             OriginalBrush = text.Foreground;
         }
         if (OriginalBrush != null)

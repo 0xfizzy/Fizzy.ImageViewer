@@ -10,10 +10,10 @@ internal sealed class PointTool : IMeasurementTool
 
     private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
     {
-        public bool OnClick(Point point)
+        public MeasurementClickResult OnClick(Point point)
         {
             context.CreateMeasurement(MeasurementGeometry.Point(point)).Complete();
-            return true;
+            return MeasurementClickResult.Finish;
         }
 
         public void OnMouseMove(Point point) { }

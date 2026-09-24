@@ -7,7 +7,7 @@ namespace Fizzy.ImageViewer.Tests;
 internal sealed class TestMeasurementSession(
     Func<Point, bool> click, Action<Point> move, Action cancel, Action? dispose = null) : IMeasurementToolSession
 {
-    public bool OnClick(Point point) => click(point);
+    public MeasurementClickResult OnClick(Point point) => click(point) ? MeasurementClickResult.Finish : MeasurementClickResult.Continue;
     public void OnMouseMove(Point point) => move(point);
     public void Cancel() => cancel();
     public void Dispose() => dispose?.Invoke();

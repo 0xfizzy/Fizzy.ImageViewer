@@ -2,21 +2,21 @@ namespace Fizzy.ImageViewer.Measurements;
 
 public sealed record MeasurementOptions
 {
-    public MeasurementQuery Query { get; init; }
-    public bool ShowProfileWindow { get; init; }
+    public MeasurementQueryOptions Query { get; init; } = MeasurementQueryOptions.None;
     public MeasurementStyle? Style { get; init; }
 
     internal void Validate(MeasurementGeometry geometry)
     {
-        bool valid = Query switch
+        ArgumentNullException.ThrowIfNull(Query);
+        bool valid = Query.Kind switch
         {
             MeasurementQuery.None => true,
-            MeasurementQuery.Pixel => geometry.Kind is MeasurementKind.Point or MeasurementKind.Crosshair,
-            MeasurementQuery.LineProfile => geometry.Kind == MeasurementKind.Line,
-            MeasurementQuery.RegionStatistics => geometry.Kind == MeasurementKind.Rectangle,
+            MeasurementQuery.Pixel => geometry.Kind is MeasurementGeometryKind.Point or MeasurementGeometryKind.Crosshair,
+            MeasurementQuery.LineProfile => geometry.Kind == MeasurementGeometryKind.Line,
+            MeasurementQuery.RegionStatistics => geometry.Kind == MeasurementGeometryKind.Rectangle,
             _ => false
         };
-        if (!valid || (ShowProfileWindow && Query != MeasurementQuery.LineProfile))
-            throw new ArgumentException("The query and presentation must match the measurement geometry.");
+        if (!valid)
+            throw new ArgumentException("The query must match the measurement geometry.");
     }
 }

@@ -5,7 +5,7 @@ namespace Fizzy.ImageViewer.Measurements;
 public sealed record CrosshairMeasurementGeometry : MeasurementGeometry
 {
     public Point Position { get; }
-    public override MeasurementKind Kind => MeasurementKind.Crosshair;
+    public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Crosshair;
     public override Rect Bounds => new(Position, Position);
     internal override Point Anchor => Position;
     internal override IReadOnlyList<Point> ControlPoints => [Position];

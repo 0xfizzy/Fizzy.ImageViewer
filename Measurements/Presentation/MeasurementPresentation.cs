@@ -73,16 +73,17 @@ internal sealed class MeasurementPresentation : IDisposable
     internal void ShowResult(MeasurementGeometry geometry, MeasurementResult result)
     {
         UpdateText(geometry);
-        if (result.Query == MeasurementQuery.Pixel && result.Samples.Count > 0)
-            Label.Text += $" | {result.Samples[0]}";
-        else if (result.Query == MeasurementQuery.RegionStatistics && result.Region is { } region)
+        if (result is MeasurementSampleResult { Query: MeasurementQuery.Pixel } pixel)
+            Label.Text += $" | {pixel.Samples[0]}";
+        else if (result is MeasurementRegionResult statistics)
         {
-            var names = result.Channels.Count == 1 ? new[] { "Gray" } : new[] { "R", "G", "B", "A" };
-            Label.Text = $"{region.Width} × {region.Height} px | " + string.Join(" | ", result.Channels.Select((s, i) =>
+            var region = statistics.Region;
+            var names = statistics.Channels.Count == 1 ? new[] { "Gray" } : new[] { "R", "G", "B", "A" };
+            Label.Text = $"{region.Width} × {region.Height} px | " + string.Join(" | ", statistics.Channels.Select((s, i) =>
                 $"{names[i]}: n={s.Count} min={s.Minimum:G7} max={s.Maximum:G7} mean={s.Mean:G7}"));
         }
-        else if (result.Query == MeasurementQuery.LineProfile)
-            _plot?.ShowProfile(result.Samples);
+        else if (result is MeasurementSampleResult { Query: MeasurementQuery.LineProfile } profile)
+            _plot?.ShowProfile(profile.Samples);
     }
 
     public void Dispose()

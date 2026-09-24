@@ -119,7 +119,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
@@ -239,20 +239,20 @@ public class MeasurementInteractionTests
     }
 
     [Theory]
-    [InlineData(MeasurementKind.Point)]
-    [InlineData(MeasurementKind.Crosshair)]
-    [InlineData(MeasurementKind.Line)]
-    [InlineData(MeasurementKind.Rectangle)]
-    [InlineData(MeasurementKind.Circle)]
-    public async Task WorkerGeometryUpdatesRefreshEditingHandlesBeforePublicNotifications(MeasurementKind kind)
+    [InlineData(MeasurementGeometryKind.Point)]
+    [InlineData(MeasurementGeometryKind.Crosshair)]
+    [InlineData(MeasurementGeometryKind.Line)]
+    [InlineData(MeasurementGeometryKind.Rectangle)]
+    [InlineData(MeasurementGeometryKind.Circle)]
+    public async Task WorkerGeometryUpdatesRefreshEditingHandlesBeforePublicNotifications(MeasurementGeometryKind kind)
     {
         await using var viewer = Create();
         MeasurementGeometry Geometry(double offset) => kind switch
         {
-            MeasurementKind.Point => MeasurementGeometry.Point(new(offset, offset)),
-            MeasurementKind.Crosshair => MeasurementGeometry.Crosshair(new(offset, offset)),
-            MeasurementKind.Line => MeasurementGeometry.Line(new(offset, offset), new(offset + 5, offset + 7)),
-            MeasurementKind.Rectangle => MeasurementGeometry.Rectangle(new(offset, offset), new(offset + 5, offset + 7)),
+            MeasurementGeometryKind.Point => MeasurementGeometry.Point(new(offset, offset)),
+            MeasurementGeometryKind.Crosshair => MeasurementGeometry.Crosshair(new(offset, offset)),
+            MeasurementGeometryKind.Line => MeasurementGeometry.Line(new(offset, offset), new(offset + 5, offset + 7)),
+            MeasurementGeometryKind.Rectangle => MeasurementGeometry.Rectangle(new(offset, offset), new(offset + 5, offset + 7)),
             _ => MeasurementGeometry.Circle(new(offset, offset), 5)
         };
         IMeasurement handle = null!;
@@ -264,7 +264,7 @@ public class MeasurementInteractionTests
         }
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(Geometry(0));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(Geometry(0));
             handle = item;
             item.Complete();
             viewer.Host.Interaction.StartEditing(item);
@@ -360,7 +360,7 @@ public class MeasurementInteractionTests
             var capture = new FakeCapture { Succeeds = action != "failed" };
             using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
             var tool = new RectangleRoiTool();
-            var creation = new MeasurementCreationSession(context);
+            var creation = new MeasurementCreationContext(context);
             var session = tool.CreateSession(creation);
             session.OnClick(new(2, 2)); session.OnClick(new(6, 6));
             creation.End(); creation.ClearPreviews();

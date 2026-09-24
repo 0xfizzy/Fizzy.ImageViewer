@@ -6,7 +6,7 @@ namespace Fizzy.ImageViewer.Measurements;
 public abstract record MeasurementGeometry
 {
     private protected MeasurementGeometry() { }
-    public abstract MeasurementKind Kind { get; }
+    public abstract MeasurementGeometryKind Kind { get; }
     public abstract Rect Bounds { get; }
     internal abstract Point Anchor { get; }
     internal abstract IReadOnlyList<Point> ControlPoints { get; }

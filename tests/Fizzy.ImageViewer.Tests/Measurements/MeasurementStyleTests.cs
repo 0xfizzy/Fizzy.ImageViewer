@@ -18,8 +18,8 @@ public class MeasurementStyleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var rectangleItem = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
-            using var pointItem = new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
+            using var rectangleItem = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
+            using var pointItem = new MeasurementCreationContext(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
                 new() { Style = new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White } });
             var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).Presentation.PrimaryVisual;
             var label = ((MeasurementItem)rectangleItem).Presentation.Label;
@@ -30,7 +30,8 @@ public class MeasurementStyleTests
             Assert.Equal(1, rectangle.StrokeThickness);
             overlay.UpdateScale(2);
             Assert.Equal(0.5, rectangle.StrokeThickness);
-            Assert.Equal(7, label.FontSize);
+            Assert.Equal(14, label.FontSize);
+            Assert.Equal(0.5, Assert.IsType<ScaleTransform>(label.RenderTransform).ScaleX);
             pointItem.UpdateGeometry(MeasurementGeometry.Point(new(8, 9)));
             Assert.Equal(8, System.Windows.Controls.Canvas.GetLeft(point));
             viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(point));

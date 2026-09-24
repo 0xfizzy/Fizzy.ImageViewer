@@ -30,7 +30,7 @@ internal sealed class MeasurementEditController(MeasurementOverlay overlay)
             var points = session.Points;
             for (int i = 0; i < points.Count; i++)
             {
-                var handle = ControlPointHandle.CreateHandle(points[i]);
+                var handle = ControlPointVisualFactory.CreateHandle(points[i]);
                 _handles.Add(handle); overlay.AddVisual(handle);
                 System.Windows.Controls.Panel.SetZIndex(handle, 1000);
             }
@@ -42,7 +42,12 @@ internal sealed class MeasurementEditController(MeasurementOverlay overlay)
     {
         if (EditingMeasurement == null || _session == null) return false;
         var points = _session.Points;
-        var nearest = Enumerable.Range(0, points.Count).MinBy(i => (point - points[i]).LengthSquared);
+        // Later controls are drawn on top. Resolve exact ties in the same order,
+        // so a collapsed circle selects its radius rather than its center.
+        var nearest = 0;
+        for (int i = 1; i < points.Count; i++)
+            if ((point - points[i]).LengthSquared <= (point - points[nearest]).LengthSquared)
+                nearest = i;
         if ((point - points[nearest]).Length * scale >= 10) return false;
         _session.BeginDrag(nearest);
         return true;

@@ -7,13 +7,15 @@ namespace Fizzy.ImageViewer.Measurements;
 internal sealed class MeasurementItem : IMeasurement
 {
     private readonly MeasurementCollection _owner;
+    private readonly MeasurementRuntime _runtime;
     internal MeasurementPresentation Presentation { get; }
-    internal MeasurementCreationSession Session { get; }
+    internal MeasurementCreationContext Session { get; }
     private readonly MeasurementOptions _options;
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
     private QuerySubscription? _subscription;
     internal MeasurementQueryClient QueryClient { get; }
+    public MeasurementOrigin Origin { get; }
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }
     public long GeometryVersion { get; private set; }
@@ -27,39 +29,40 @@ internal sealed class MeasurementItem : IMeasurement
     public event Action<MeasurementResult?>? ResultChanged;
 
     // Public handles dispatch; model, query and cleanup paths already own the STA.
-    MeasurementGeometry IMeasurement.Geometry => _owner.Invoke(() => Geometry);
-    long IMeasurement.GeometryVersion => _owner.Invoke(() => GeometryVersion);
-    MeasurementResult? IMeasurement.Result => _owner.Invoke(() => Result);
-    bool IMeasurement.IsComplete => _owner.Invoke(() => IsComplete);
-    void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _owner.Invoke(() => UpdateGeometry(geometry));
-    void IMeasurement.Complete() => _owner.Invoke(Complete);
-    void IMeasurement.AddResource(IDisposable resource) => _owner.Invoke(() => AddResource(resource));
-    void IMeasurement.OnDispose(Action callback) => _owner.Invoke(() => OnDispose(callback));
-    void IDisposable.Dispose() => _owner.InvokeRemoval(Dispose);
+    MeasurementGeometry IMeasurement.Geometry => _runtime.Invoke(() => Geometry);
+    long IMeasurement.GeometryVersion => _runtime.Invoke(() => GeometryVersion);
+    MeasurementResult? IMeasurement.Result => _runtime.Invoke(() => Result);
+    bool IMeasurement.IsComplete => _runtime.Invoke(() => IsComplete);
+    void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _runtime.Invoke(() => UpdateGeometry(geometry));
+    void IMeasurement.Complete() => _runtime.Invoke(Complete);
+    void IMeasurement.AddResource(IDisposable resource) => _runtime.Invoke(() => AddResource(resource));
+    void IMeasurement.OnDispose(Action callback) => _runtime.Invoke(() => OnDispose(callback));
+    void IDisposable.Dispose() => _runtime.InvokeRemoval(Dispose);
     event Action<MeasurementGeometry>? IMeasurement.GeometryChanged
     {
-        add => _owner.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
-        remove => _owner.InvokeRemoval(() => GeometryChanged -= value);
+        add => _runtime.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
+        remove => _runtime.InvokeRemoval(() => GeometryChanged -= value);
     }
     event Action<MeasurementResult?>? IMeasurement.ResultChanged
     {
-        add => _owner.Invoke(() => { EnsureAlive(); ResultChanged += value; });
-        remove => _owner.InvokeRemoval(() => ResultChanged -= value);
+        add => _runtime.Invoke(() => { EnsureAlive(); ResultChanged += value; });
+        remove => _runtime.InvokeRemoval(() => ResultChanged -= value);
     }
 
-    internal MeasurementItem(MeasurementCollection owner, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
+    internal MeasurementItem(MeasurementCollection owner, MeasurementRuntime runtime, MeasurementOverlay layer, MeasurementStyle style, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationContext session)
     {
         _owner = owner;
+        _runtime = runtime;
         Geometry = geometry;
         Session = session;
+        Origin = session.Origin;
         _options = options with { Style = null };
-        QueryClient = new(this, options.Query);
-        var style = (options.Style ?? owner.Style).Snapshot();
-        Presentation = new(owner.Layer, geometry, style, Dispose);
+        QueryClient = new(this, options.Query.Kind);
+        Presentation = new(layer, geometry, style, () => runtime.RunUiCallback(Dispose));
     }
     private void EnsureAlive()
     {
-        _owner.VerifyAccess();
+        _runtime.VerifyAccess();
         ObjectDisposedException.ThrowIf(IsDisposed, this);
     }
 
@@ -79,6 +82,7 @@ internal sealed class MeasurementItem : IMeasurement
 
     public void UpdateGeometry(MeasurementGeometry geometry)
     {
+        using var notificationScope = _runtime.Notifications.Defer();
         EnsureAlive();
         ArgumentNullException.ThrowIfNull(geometry);
         if (geometry.Kind != Geometry.Kind) throw new ArgumentException("Geometry kind cannot change.", nameof(geometry));
@@ -91,47 +95,51 @@ internal sealed class MeasurementItem : IMeasurement
         ClearResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
         _owner.NotifyChanged(this);
-        if (!IsDisposed && GeometryVersion == version) _owner.Notify(GeometryChanged, geometry);
+        if (!IsDisposed && GeometryVersion == version) _runtime.Notifications.Notify(GeometryChanged, geometry);
     }
     public void Complete()
     {
+        using var notificationScope = _runtime.Notifications.Defer();
         EnsureAlive();
         if (IsComplete) return;
         IsComplete = true;
         Session.Release(this);
         try
         {
-            Presentation.Complete(_options.ShowProfileWindow);
-            if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _owner.Register(QueryClient);
+            Presentation.Complete(_options.Query is LineProfileMeasurementQueryOptions { ShowWindow: true });
+            if (!IsDisposed && _options.Query.Kind != MeasurementQuery.None) _subscription = _runtime.Register(QueryClient);
             if (!IsDisposed) _owner.NotifyCompleted(this);
         }
-        catch { Dispose(); throw; }
+        catch (Exception error) { MeasurementFailure.RethrowAfterCleanup(error, Dispose); throw; }
     }
     public void ClearResult() => ClearResult(notifyChanged: true);
 
     private void ClearResult(bool notifyChanged)
     {
+        using var notificationScope = _runtime.Notifications.Defer();
         var hadResult = Result != null;
         Result = null;
         Presentation.ClearResult(Geometry);
         if (hadResult && !IsDisposed)
         {
             if (notifyChanged) _owner.NotifyChanged(this);
-            if (!IsDisposed && Result == null) _owner.Notify(ResultChanged, (MeasurementResult?)null);
+            if (!IsDisposed && Result == null) _runtime.Notifications.Notify(ResultChanged, (MeasurementResult?)null);
         }
     }
     internal void PublishResult(MeasurementResult result)
     {
+        using var notificationScope = _runtime.Notifications.Defer();
         if (IsDisposed || result.GeometryVersion != GeometryVersion) return;
         Result = result;
         Presentation.ShowResult(Geometry, result);
         _owner.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(Result, result)) _owner.Notify(ResultChanged, result);
+        if (!IsDisposed && ReferenceEquals(Result, result)) _runtime.Notifications.Notify(ResultChanged, result);
     }
 
     public void Dispose()
     {
-        _owner.VerifyAccess();
+        using var notificationScope = _runtime.Notifications.Defer();
+        _runtime.VerifyAccess();
         if (IsDisposed) return;
         _disposed = true;
         Session.Release(this);

@@ -8,7 +8,7 @@ public sealed record RectangleMeasurementGeometry : MeasurementGeometry
 {
     public Point Start { get; }
     public Point End { get; }
-    public override MeasurementKind Kind => MeasurementKind.Rectangle;
+    public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Rectangle;
     public override Rect Bounds => new(Start, End);
     internal override Point Anchor => Start;
     internal override IReadOnlyList<Point> ControlPoints => [Start, new(End.X, Start.Y), End, new(Start.X, End.Y)];

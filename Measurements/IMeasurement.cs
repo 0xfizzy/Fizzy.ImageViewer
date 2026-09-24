@@ -2,10 +2,11 @@ namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>A viewer-owned measurement handle. Operations dispatch synchronously to the viewer STA;
 /// callbacks run on that STA. Dispose is idempotent and safe after viewer closure.
-/// Id and IsDisposed remain readable after closure; other access requires a running viewer.</summary>
+/// Id, Origin and IsDisposed remain readable after closure; other access requires a running viewer.</summary>
 public interface IMeasurement : IDisposable
 {
     Guid Id { get; }
+    MeasurementOrigin Origin { get; }
     MeasurementGeometry Geometry { get; }
     long GeometryVersion { get; }
     bool IsComplete { get; }

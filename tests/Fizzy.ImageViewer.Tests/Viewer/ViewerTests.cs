@@ -296,7 +296,7 @@ public class ViewerTests
     {
         await using var viewer = Create();
         var measurement = new TestMeasurement();
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Measurements.Register(measurement));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Queries.Register(measurement));
         var result = await viewer.SubmitFrameAsync(Frame(71));
         var info = await measurement.Published.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(info);

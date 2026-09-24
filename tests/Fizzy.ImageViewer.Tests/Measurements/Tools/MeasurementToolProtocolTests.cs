@@ -13,6 +13,8 @@ public class MeasurementToolProtocolTests
 {
     private sealed class PublicContext : IMeasurementToolContext
     {
+        public MeasurementOrigin Origin { get; } = new("test", Guid.NewGuid());
+        public bool Finish() => false;
         public MeasurementStyle Style { get; } = new();
         public FrameLease? AcquireCurrentFrame() => null;
         public IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options = null) => throw new NotSupportedException();
@@ -43,9 +45,9 @@ public class MeasurementToolProtocolTests
         var context = new PublicContext(); var method = new Probe();
         var tool = method.CreateSession(context);
         Assert.NotSame(tool, method.CreateSession(context));
-        Assert.False(tool.OnClick(new(1, 2)));
+        Assert.Equal(MeasurementClickResult.Continue, tool.OnClick(new(1, 2)));
         Assert.Same(context, method.Context); Assert.Equal(new Point(1, 2), method.Point);
-        method.Finish = true; Assert.True(tool.OnClick(new(3, 4)));
+        method.Finish = true; Assert.Equal(MeasurementClickResult.Finish, tool.OnClick(new(3, 4)));
         method.Context = null; tool.OnMouseMove(new(5, 6));
         Assert.Same(context, method.Context); Assert.Equal(new Point(5, 6), method.Point);
         method.Context = null; tool.Cancel(); Assert.Same(context, method.Context);

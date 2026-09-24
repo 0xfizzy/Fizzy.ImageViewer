@@ -97,12 +97,13 @@ internal class MeasurementOverlay : UserControl
                 break;
 
             case OverlayScaleMode.FixedSize:
+            case OverlayScaleMode.AnchoredLabel:
+                // Invert the complete visual, including text, padding and background.
+                // Its image anchor remains in canvas coordinates; only the screen
+                // offset is converted into image units.
                 var inverseScale = 1.0 / scale;
-
-                // 使用缓存的 ScaleTransform，避免每次类型检查和创建
                 if (transform.CachedScaleTransform == null)
                 {
-                    // 几何中心在 (0,0)，逆缩放必须围绕原点，否则放大时点标记会偏移
                     element.RenderTransformOrigin = new Point(0, 0);
                     transform.CachedScaleTransform = new ScaleTransform(inverseScale, inverseScale);
                     element.RenderTransform = transform.CachedScaleTransform;
@@ -112,21 +113,10 @@ internal class MeasurementOverlay : UserControl
                     transform.CachedScaleTransform.ScaleX = inverseScale;
                     transform.CachedScaleTransform.ScaleY = inverseScale;
                 }
-
-                Canvas.SetLeft(element, transform.AnchorPoint.X);
-                Canvas.SetTop(element, transform.AnchorPoint.Y);
-                break;
-
-            case OverlayScaleMode.AnchoredLabel:
-                if (shape is TextBlock t)
-                {
-                    double newSize = data.FontSize / scale;
-                    t.FontSize = Math.Max(1, newSize);
-                    double finalX = transform.AnchorPoint.X + (transform.ScreenOffset.X / scale);
-                    double finalY = transform.AnchorPoint.Y + (transform.ScreenOffset.Y / scale);
-                    Canvas.SetLeft(t, finalX);
-                    Canvas.SetTop(t, finalY);
-                }
+                var offset = transform.Mode == OverlayScaleMode.AnchoredLabel
+                    ? transform.ScreenOffset : new Vector();
+                Canvas.SetLeft(element, transform.AnchorPoint.X + offset.X * inverseScale);
+                Canvas.SetTop(element, transform.AnchorPoint.Y + offset.Y * inverseScale);
                 break;
         }
     }

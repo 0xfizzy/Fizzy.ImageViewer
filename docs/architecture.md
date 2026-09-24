@@ -91,10 +91,21 @@ the active tool, session version, mode and selected measurement, and decides edi
 transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
 `IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
 that activation's mutable state. The coordinator disposes each callback session once on every terminal path and owns its explicit
-`MeasurementCreationSession` context; MeasurementCollection stores no ambient current session.
-Every preview must be created through its owning context.
-Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
-through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
+`MeasurementCreationContext` context; MeasurementCollection stores no ambient current session.
+Every preview must be created through its owning context. Ended contexts reject creation,
+including from callbacks interrupted by a newer session. An activation aggregates its
+registration identity, creation context and callback session; callback reentry validates
+that activation before continuing. Context-scoped finishing cannot affect replacements.
+
+MeasurementCollection owns membership, visual lookup, creation policy and viewer style.
+MeasurementRuntime supplies handle STA dispatch, query registration and shared notification
+execution; MeasurementItem receives the runtime, presentation layer and style explicitly.
+The collection is not the item's service locator. A per-viewer MeasurementNotificationQueue
+serializes immutable viewer and handle notifications, including mutations made reentrantly
+by subscribers. Internal geometry application remains synchronous so editing controls are
+consistent before any public notification is queued.
+
+Display controls do not call controllers through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
 `ViewerLayers` composes default layers and exposes consumer capabilities. Its internal
 `LayerCollection` owns attachment, transforms, input suppression and lifecycle without
 depending on concrete drawing or measurement types. Concrete layers depend on that
@@ -114,11 +125,11 @@ visuals, their attachment/detachment, labels and optional plot. Plot closure req
 detaches that callback before closing the plot.
 MeasurementQueryClient builds and caches requests independently of the handle. Each request
 captures its geometry version and coordinates for immutable result provenance.
-MeasurementCollection receives ViewerLifetime and Dispatcher directly; model dispatch and shutdown
-admission do not depend on the visual container.
-MeasurementCollection owns a primary set of model-driven items and a separate visual lookup index,
-and borrows query scheduling. The host creates and closes it independently of the
-tool registry. Hit testing resolves a visual to its registered measurement before selection.
+MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
+query clients with the shared scheduler; model dispatch and shutdown admission do not
+depend on the visual container. MeasurementCollection owns a primary set of model-driven
+items and a separate visual lookup index. The host creates and closes the collection
+independently of the tool registry. Hit testing resolves a visual to its registered measurement before selection.
 The measurement edit controller receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and
 query runtime are internal imaging capabilities, not public measurement extension points.
@@ -126,7 +137,7 @@ A validated query publishes frame identity and its payload in one synchronous ca
 clients never stage samples awaiting a second publication notification.
 The query runtime controls time, worker execution and UI publication for deterministic tests.
 LineSampling computes clipped sample coordinates independently of display. The optional plot
-consumes immutable MeasurementResult samples and owns its channel buffers; data-only line
+consumes immutable MeasurementSampleResult samples and owns its channel buffers; data-only line
 queries allocate no plot or intermediate RGB buffers.
 
 MeasurementEditController directly owns a MeasurementEditSession and its control-point visuals.

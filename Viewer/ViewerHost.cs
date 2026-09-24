@@ -33,6 +33,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private readonly ViewerLifetime _lifetime = new();
     private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _closed;
+    private bool _closedNotified;
 
     private readonly TaskCompletionSource _disposeCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _disposeRequested;
@@ -82,7 +83,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editor = new MeasurementEditController(win.MeasurementOverlay);
-                _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay),
+                _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, logger: _logger),
                     win.MeasurementOverlay, editor, _tools, _measurements, win.Layers);
                 _tools.RegisterTool(new LengthTool());
                 _tools.RegisterTool(new PointTool());
@@ -118,6 +119,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 CleanupOnWindowClosed();
                 if (_presentation == null) Cleanup(() => presenter?.Dispose());
                 if (win != null) Cleanup(win.CloseProgrammatically);
+                if (tcs.Task.IsCompletedSuccessfully) NotifyClosedOnce(EventArgs.Empty);
                 Cleanup(Dispatcher.CurrentDispatcher.InvokeShutdown);
                 _windowStopped.TrySetResult();
                 _ = BeginDisposal();
@@ -157,9 +159,17 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         {
             CleanupOnWindowClosed();
             _ = BeginDisposal();
-            _owner.NotifyClosed(e);
+            NotifyClosedOnce(e);
         }
         finally { Dispatcher.CurrentDispatcher.InvokeShutdown(); }
+    }
+
+    private void NotifyClosedOnce(EventArgs e)
+    {
+        if (_closedNotified) return;
+        _closedNotified = true;
+        if (_measurements != null) _measurements.Notifications.Post(() => _owner.NotifyClosed(e));
+        else _owner.NotifyClosed(e);
     }
 
     private void CleanupOnWindowClosed()

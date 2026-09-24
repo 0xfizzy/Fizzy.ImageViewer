@@ -16,10 +16,15 @@ internal sealed class InteractionCoordinator : IDisposable
     private readonly MeasurementEditController _edit;
     private readonly MeasurementToolRegistry _tools;
     private readonly MeasurementCollection _measurements;
-    private IMeasurementToolSession? _active;
-    private MeasurementCreationSession? _session;
+    private sealed class Activation(MeasurementToolRegistry.Registration registration, MeasurementCreationContext context)
+    {
+        internal MeasurementToolRegistry.Registration Registration { get; } = registration;
+        internal MeasurementCreationContext Context { get; } = context;
+        internal IMeasurementToolSession? Callback { get; set; }
+    }
+    private Activation? _activation;
     private long _sessionVersion;
-    internal string? ActiveId { get; private set; }
+    internal string? ActiveId => _activation?.Registration.Id;
     private readonly ViewerLayers _layers;
     private bool _disposed;
     public InteractionMode Mode { get; private set; }
@@ -27,17 +32,17 @@ internal sealed class InteractionCoordinator : IDisposable
     internal MeasurementEditController Editor => _edit;
 
     internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, MeasurementEditController edit,
-        MeasurementToolRegistry tools, MeasurementCollection store, ViewerLayers layers)
+        MeasurementToolRegistry tools, MeasurementCollection measurements, ViewerLayers layers)
     {
         _input = input;
         _overlay = overlay;
         _edit = edit;
         _tools = tools;
-        _measurements = store;
+        _measurements = measurements;
         _layers = layers;
         layers.Measurements.Clearing += CancelForClear;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
-        store.ItemRemoving += ItemRemoving;
+        measurements.ItemRemoving += ItemRemoving;
         input.Connect(this);
     }
     internal bool Hit(UIElement shape)
@@ -68,32 +73,60 @@ internal sealed class InteractionCoordinator : IDisposable
     {
         if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
         if (_disposed || !_layers.Measurements.IsVisible) return;
-        var tool = _tools.Find(toolId);
-        if (tool == null) return;
+        var registration = _tools.FindRegistration(toolId);
+        if (registration == null) return;
         var version = _sessionVersion;
         try
         {
             _input.EndPan();
             version = ++_sessionVersion;
             CancelTool();
-            if (version != _sessionVersion || _disposed) return;
-            ActiveId = toolId;
-            var creation = new MeasurementCreationSession(_measurements);
-            _session = creation;
-            ClearSelection();
-            if (version != _sessionVersion || _disposed) return;
-            var active = tool.CreateSession(creation) ?? throw new InvalidOperationException("Tool returned no session.");
-            if (version != _sessionVersion || _disposed)
+            if (!CanActivate(version, registration))
             {
-                ReleaseSession(active, cancelled: true);
+                if (version == _sessionVersion) RestoreInput();
                 return;
             }
-            _active = active;
+            var context = new MeasurementCreationContext(_measurements,
+                new MeasurementOrigin(registration.Id, Guid.NewGuid()), Finish);
+            var activation = new Activation(registration, context);
+            _activation = activation;
+            ClearSelection();
+            if (!IsCurrent(activation)) return;
+            var callback = registration.Tool.CreateSession(context)
+                ?? throw new InvalidOperationException("Tool returned no session.");
+            if (!IsCurrent(activation))
+            {
+                ReleaseSession(callback, cancelled: context.WasCancelled);
+                return;
+            }
+            activation.Callback = callback;
             Mode = InteractionMode.Measuring;
             _layers.Collection.SuppressInput(true);
             _input.ShowMeasurementCursor();
         }
-        catch { if (version == _sessionVersion) Cancel(); throw; }
+        catch (Exception error) { CancelAfterFailure(error, version); throw; }
+    }
+
+    private bool CanActivate(long version, MeasurementToolRegistry.Registration registration)
+        => version == _sessionVersion && !_disposed && !_layers.Measurements.IsClearing &&
+            _layers.Measurements.IsVisible && _tools.Contains(registration);
+    private bool IsCurrent(Activation activation)
+        => !_disposed && ReferenceEquals(_activation, activation) && _tools.Contains(activation.Registration);
+
+    private bool Finish(MeasurementCreationContext context)
+    {
+        var activation = _activation;
+        if (activation == null || !ReferenceEquals(activation.Context, context) || !IsCurrent(activation)) return false;
+        var version = _sessionVersion;
+        try { EndTool(cancelled: false); }
+        finally { if (version == _sessionVersion) RestoreInput(); }
+        return true;
+    }
+
+    private void CancelAfterFailure(Exception error, long version)
+    {
+        if (version != _sessionVersion) return;
+        MeasurementFailure.RethrowAfterCleanup(error, Cancel);
     }
     internal void StartEditing(MeasurementItem? item)
     {
@@ -105,7 +138,7 @@ internal sealed class InteractionCoordinator : IDisposable
         Select(item);
         if (version != _sessionVersion || _disposed) return;
         try { if (_edit.StartEditing(item)) Mode = InteractionMode.Editing; }
-        catch { if (version == _sessionVersion) Cancel(); throw; }
+        catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
     internal void StopEditing()
     {
@@ -145,15 +178,12 @@ internal sealed class InteractionCoordinator : IDisposable
 
     private void EndTool(bool cancelled)
     {
-        var tool = _active;
-        var session = _session;
-        _session = null;
-        session?.End();
-        _active = null;
-        ActiveId = null;
+        var activation = _activation;
+        _activation = null;
+        activation?.Context.End(cancelled);
         if (Mode == InteractionMode.Measuring) Mode = InteractionMode.Idle;
-        try { if (tool != null) ReleaseSession(tool, cancelled); }
-        finally { session?.ClearPreviews(); }
+        try { if (activation?.Callback is { } callback) ReleaseSession(callback, cancelled); }
+        finally { activation?.Context.ClearPreviews(); }
     }
 
     private static void ReleaseSession(IMeasurementToolSession tool, bool cancelled)
@@ -191,17 +221,18 @@ internal sealed class InteractionCoordinator : IDisposable
         var version = _sessionVersion;
         try
         {
-            if (_active == null || !_active.OnClick(new(x, y)) || version != _sessionVersion) return;
+            var activation = _activation;
+            if (activation?.Callback == null || activation.Callback.OnClick(new(x, y)) != MeasurementClickResult.Finish || !IsCurrent(activation)) return;
             EndTool(cancelled: false);
             if (version == _sessionVersion) RestoreInput();
         }
-        catch { if (version == _sessionVersion) Cancel(); throw; }
+        catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
     internal void ImageMove(double x, double y)
     {
         if (Mode != InteractionMode.Measuring) return;
         var version = _sessionVersion;
-        try { _active?.OnMouseMove(new(x, y)); } catch { if (version == _sessionVersion) Cancel(); throw; }
+        try { _activation?.Callback?.OnMouseMove(new(x, y)); } catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
     private void InputPolicyChanged()
     {
@@ -232,8 +263,9 @@ internal sealed class InteractionCoordinator : IDisposable
     internal bool UpdateDrag(Point point)
     {
         if (!_edit.IsDragging) return false;
+        var version = _sessionVersion;
         try { _edit.UpdateDrag(point); return true; }
-        catch { Cancel(); throw; }
+        catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
     internal bool EndDrag()
     {

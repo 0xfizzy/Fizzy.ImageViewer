@@ -108,7 +108,10 @@ count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating
 with null statistics when no finite values exist. Premultiplied channels stay premultiplied.
 
 One pixel query scheduler per viewer captures geometry on STA and queries off STA, with at most
-one batch in flight. Mouse and line coordinates share one gather. Line clipping, rounded endpoints,
+one batch in flight. Each batch executes and publishes either one ROI or a shared gather
+for due mouse and line coordinates. Oldest-due selection serves pending work fairly;
+unselected requests retain no frame lease and capture fresh geometry/frame on a later tick.
+Slow ROI queries therefore do not age one another or delay publication of a completed gather. Line clipping, rounded endpoints,
 Bresenham order and distances are unchanged. ROI geometry uses floor(left/top), ceil(right/bottom),
 then image intersection; empty regions are not queried. Shape editors preserve statistics labels.
 The separate interaction coordinator manages selection, editing and creation sessions.
@@ -116,7 +119,8 @@ See [measurement ownership and interaction](measurements.md) for geometry and ex
 
 `Viewer.QueryOptions` accepts `PixelQueryOptions`: PixelRate=30, LineRate=30, RegionRate=10 Hz,
 MaxResultAge=100 ms, all positive. Due requests are served in due order; pending geometry is replaced
-by its latest state. Monotonic age starts at the frame/geometry snapshot, not camera capture time.
+by its latest state without resetting the execution interval, including during edits and resizes.
+Monotonic age starts at the frame/geometry snapshot, not camera capture time.
 Geometry changes, deletion, disabling and closing invalidate old work. Results may describe a
 recent prior frame within the age limit; advancing video clears expired values, while an unchanged
 paused frame keeps its valid result. FrameId stays in API results/logging and is never a HUD label.

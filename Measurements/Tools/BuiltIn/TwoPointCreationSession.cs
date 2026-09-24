@@ -8,17 +8,17 @@ internal sealed class TwoPointCreationSession(IMeasurementToolContext context,
     private Point _start;
     private IMeasurement? _item;
 
-    public bool OnClick(Point point)
+    public MeasurementClickResult OnClick(Point point)
     {
         if (_item is null or { IsDisposed: true })
         {
             _start = point;
             _item = context.CreateMeasurement(geometry(point, point), options);
-            return false;
+            return MeasurementClickResult.Continue;
         }
         OnMouseMove(point);
         _item.Complete();
-        return true;
+        return MeasurementClickResult.Finish;
     }
 
     public void OnMouseMove(Point point)

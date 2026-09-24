@@ -69,7 +69,7 @@ measurements and edits already applied.
 `MeasurementCompleted` reports all completed measurements, including custom tools;
 previews are excluded. `MeasurementRemoved` reports only previously completed items,
 including clear and closure. `MeasurementSnapshot` carries the stable ID, immutable
-geometry and owner-maintained geometry version. Completion captures geometry at completion;
+geometry, origin and owner-maintained geometry version. Completion captures geometry at completion;
 removal captures the latest geometry. Circle snapshots include their radius.
 
 `MeasurementChanged` reports geometry edits, successful query publication and result
@@ -82,7 +82,25 @@ on other threads. Callbacks run on the viewer STA and subscriber failures are is
 The event's `IMeasurement Measurement` is the same live handle returned to its tool.
 Use it to update geometry or dispose the item from any thread; disposal is safe after
 closure. Removal may occur reentrantly during a completion subscriber.
-Subscriber failures are logged and isolated. Completion does not promise pixel-query readiness.
+Completion does not promise pixel-query readiness.
+
+Viewer and handle notifications share an ordered STA queue. Reentrant mutations append
+notifications without reversing versions or delivering changes after removal. Event payloads
+are immutable snapshots; their live handles can already reflect later changes. `Closed`
+follows queued removal notifications. Explicit calls preserve operation and cleanup failures;
+framework input/window callbacks log failures so one tool cannot terminate the viewer.
+
+Tools implement `IMeasurementToolSession.OnClick` with `MeasurementClickResult.Continue`
+or `Finish`. `IMeasurement.Complete()` commits one item; `IMeasurementToolContext.Finish()`
+ends only the originating activation and is safe to call from asynchronous work. Contexts,
+handles and snapshots retain `MeasurementOrigin` (`ToolId`, `SessionId`). `Kind` describes
+geometry through `MeasurementGeometryKind`, independently of the originating tool.
+
+`MeasurementOptions.Query` takes a closed `MeasurementQueryOptions` configuration.
+Use its `None`, `Pixel`, `LineProfile` and `RegionStatistics` presets, or
+`new LineProfileMeasurementQueryOptions(showWindow: true)` for a profile window.
+`MeasurementResult` contains common provenance; pattern-match `MeasurementSampleResult`
+for coordinate/sample pairs or `MeasurementRegionResult` for region/channel statistics.
 
 Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
 Every activation must return a fresh `IMeasurementToolSession`; its `OnClick`, `OnMouseMove`
@@ -103,7 +121,7 @@ observe `ResultChanged` for immutable query results or invalidation. `Complete` 
 a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
 and context creation run on the viewer STA. `IMeasurement` reads, updates and subscription
 changes synchronously dispatch to that STA. `Dispose` and event unsubscription are safe
-after viewer closure; `Id` and `IsDisposed` remain readable. Other access requires a running
+after viewer closure; `Id`, `Origin` and `IsDisposed` remain readable. Other access requires a running
 viewer, and mutations reject disposed items. Notifications still run on STA: never block
 them waiting for worker code that is calling the handle. Retained event snapshots remain
 immutable even when another subscriber updates or disposes the live handle.
