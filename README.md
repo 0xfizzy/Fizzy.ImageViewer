@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="112" height="110">
+  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108">
 </p>
 
 <h1 align="center">Fizzy.ImageViewer</h1>
