@@ -26,12 +26,13 @@ public class MeasurementNotificationsTests
                         new() { Query = MeasurementQuery.RegionStatistics });
                     return false;
                 }
-                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_preview.Geometry.Start, point));
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_preview.Geometry).Start, point));
                 _preview.Complete();
                 return true;
             }
             public void OnMouseMove(Point point) { }
             public void Cancel() { }
+            public void Dispose() { }
         }
     }
 
@@ -60,7 +61,7 @@ public class MeasurementNotificationsTests
         api.RegisterMeasurementTool(tool);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            api.StartMeasurement(custom ? tool.Id : MeasurementToolIds.ROI);
+            api.StartMeasurement(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
             viewer.Host.Interaction.ImageDown(0, 0);
             viewer.Host.Interaction.ImageMove(2, 2);
             Assert.Empty(events); // Previews never enter the public result stream.

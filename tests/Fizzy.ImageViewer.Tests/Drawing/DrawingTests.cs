@@ -1,7 +1,7 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -101,7 +101,7 @@ public class DrawingTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var original = viewer.Layers.CreateLayer("original");
+            var original = viewer.Layers.CreateDrawingLayer("original");
             var originalBatch = original.Add([Circle()]);
             DrawingLayer? replacement = null;
             DrawingHandle? replacementBatch = null;
@@ -110,12 +110,12 @@ public class DrawingTests
             {
                 removed++;
                 if (removeLayer) viewer.Layers.RemoveLayer(original);
-                replacement = viewer.Layers.CreateLayer("replacement");
+                replacement = viewer.Layers.CreateDrawingLayer("replacement");
                 replacementBatch = replacement.Add([Circle()]);
             };
             viewer.StartMeasurement(MeasurementToolIds.Point);
             viewer.Host.Interaction.ImageDown(1, 1);
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
             Assert.Equal(1, removed);
             Assert.NotNull(replacement);
             Assert.Contains(replacement, viewer.Layers.Items);
@@ -123,7 +123,7 @@ public class DrawingTests
             replacementBatch!.Replace([Circle(30, 30)]);
             Assert.Throws<ObjectDisposedException>(() => originalBatch.Replace([Circle()]));
             Assert.Equal(!removeLayer, viewer.Layers.Items.Contains(original));
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
             Assert.Equal(0, replacement.Host.Count);
             Assert.Throws<ObjectDisposedException>(() => replacementBatch.Replace([Circle()]));
         });
@@ -324,7 +324,7 @@ public class DrawingTests
             markers.IsVisible = false; Assert.Null(markers.HitDrawing(new(20, 20)));
             Assert.NotSame(markers.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.IsVisible = true;
-            var top = layers.CreateLayer("top"); top.IsHitTestVisible = true;
+            var top = layers.CreateDrawingLayer("top"); top.IsHitTestVisible = true;
             top.Add([Circle()]); Arrange(layers);
             Assert.Same(top.Host, layers.Collection.Root.InputHitTest(new(20, 20)));
             markers.ZIndex = top.ZIndex;
@@ -338,7 +338,7 @@ public class DrawingTests
     public async Task MeasurementSuppressionRestoresConfiguredFlagsIncludingNewLayers()
     {
         await using var viewer = Create();
-        var enabled = viewer.Layers.CreateLayer("enabled"); enabled.IsHitTestVisible = true;
+        var enabled = viewer.Layers.CreateDrawingLayer("enabled"); enabled.IsHitTestVisible = true;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.StartMeasurement("Length");
@@ -346,17 +346,17 @@ public class DrawingTests
             Assert.False(enabled.Root.IsHitTestVisible);
             Assert.True(enabled.IsHitTestVisible);
             Assert.False(viewer.Layers.Markers.IsHitTestVisible);
-            var during = viewer.Layers.CreateLayer("during"); during.IsHitTestVisible = true;
+            var during = viewer.Layers.CreateDrawingLayer("during"); during.IsHitTestVisible = true;
             Assert.False(during.Root.IsHitTestVisible);
             viewer.Layers.Measurements.IsHitTestVisible = false;
-            viewer.CancelMeasurement();
+            viewer.EndInteraction();
             Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
             Assert.True(during.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Markers.Root.IsHitTestVisible);
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Collection.Root);
-            var image = parent.Children.OfType<ImageLayer>().Single();
+            var image = parent.Children.OfType<ImageViewport>().Single();
             viewer.StartMeasurement("Point");
             image.Container.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(
                 System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
@@ -402,8 +402,8 @@ public class DrawingTests
         await using var other = Create();
         try
         {
-            var custom = viewer.Layers.CreateLayer("custom");
-            Assert.Throws<ArgumentException>(() => viewer.Layers.CreateLayer("custom"));
+            var custom = viewer.Layers.CreateDrawingLayer("custom");
+            Assert.Throws<ArgumentException>(() => viewer.Layers.CreateDrawingLayer("custom"));
             Assert.Throws<ArgumentException>(() => other.Layers.RemoveLayer(custom));
             Assert.Throws<InvalidOperationException>(() => viewer.Layers.RemoveLayer(viewer.Layers.Markers));
             var batch = custom.Add([Circle()]);
@@ -418,7 +418,7 @@ public class DrawingTests
                 return item;
             });
             using var hud = viewer.DrawHudText("HUD", Brushes.White);
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
             hud.Update("HUD 2", Brushes.White);
             Assert.Throws<ObjectDisposedException>(() => marker.Replace([Circle()]));
             Assert.True(measure.IsDisposed);
@@ -426,7 +426,7 @@ public class DrawingTests
             await viewer.DisposeAsync();
             Assert.Throws<ObjectDisposedException>(() => last.Replace([Circle()]));
             last.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateLayer("closed"));
+            Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateDrawingLayer("closed"));
         }
         finally { await viewer.DisposeAsync(); }
     }
@@ -438,12 +438,12 @@ public class DrawingTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
-            foreach (var geometry in new[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
+            foreach (var geometry in new MeasurementGeometry[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
                 var item = (MeasurementItem)new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(geometry);
                 var shape = item.Presentation.PrimaryVisual; item.Complete();
                 viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!);
-                var data = OverlayShapeData.Get(shape)!;
+                var data = MeasurementVisualData.Get(shape)!;
                 Assert.NotEmpty(viewer.Host.Interaction.Editor.Handles);
                 var editor = viewer.Host.Interaction.Editor;
                 Assert.True(editor.BeginDrag(geometry.Anchor, 1));
@@ -499,7 +499,7 @@ public class DrawingTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var image = new ImageLayer();
+            var image = new ImageViewport();
             var layers = new ViewerLayers(image.TransformGroup);
             image.ScaleChanged += layers.Collection.UpdateScale;
             var root = new Grid(); root.Children.Add(image); root.Children.Add(layers.Collection.Root);

@@ -1,6 +1,8 @@
 # Drawing and business layers
 
 `Viewer.Layers` (also on `IViewer`) owns image-coordinate business layers.
+`CreateDrawingLayer` creates a custom drawing layer. `ClearContents` clears content
+while retaining the layers; `RemoveLayer` removes a custom layer and its content.
 `Markers` starts at ZIndex 0 with hit testing disabled; `Measurements` starts at
 1000 with hit testing enabled. Custom layers start at 100 with hit testing disabled.
 Higher ZIndex draws on top; equal values use creation order. Image and HUD remain
@@ -51,12 +53,12 @@ using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
 
-var markers = viewer.Layers.CreateLayer("detections");
+var markers = viewer.Layers.CreateDrawingLayer("detections");
 using var batch = markers.Add(Enumerable.Range(0, 10000).Select(i =>
     new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
         Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, ROI, LineProfile IDs.
+viewer.StartMeasurement(MeasurementToolIds.Length); // Also: Point, RectangleRoi, LineProfile IDs.
 // Measurement results and their editing controls belong to Measurements.
 // Marker visuals do not intercept input by default.
 
@@ -103,7 +105,7 @@ do not put the initialization or cleanup in the per-frame callback:
 
 ```csharp
 // Initialization: retain these handles for the display session.
-var detections = viewer.Layers.CreateLayer("camera-detections");
+var detections = viewer.Layers.CreateDrawingLayer("camera-detections");
 var batch = detections.Add(Array.Empty<DrawingElement>());
 
 // Display update: call from ONE serialized consumer at the chosen display rate.
@@ -167,8 +169,8 @@ physical presentation; it does not establish sustained camera-stream GC performa
   thickness uses screen DIPs. `ScaleWithImage` scales both geometry and thickness.
 - Circle additionally supports `FixedSize`: radius and thickness use screen DIPs,
   while the center remains in image coordinates.
-- Crosshair defaults to `FixedSize`, supports `FixedStroke` and `ScaleWithImage`; `Size` is
-  the half-length of an arm, with a center ring of radius `Size / 2`.
+- Crosshair defaults to `FixedSize`, supports `FixedStroke` and `ScaleWithImage`; `ArmLength` is
+  the distance from the center to each endpoint, with a center ring of radius `ArmLength / 2`.
 - Text defaults to `AnchoredLabel`: font size and offset use screen DIPs. `ScaleWithImage`
   scales them with the image. Its default typeface is Segoe UI.
 - Pan updates only the shared transform. Scale-dependent batches are redrawn once
@@ -216,7 +218,7 @@ models for public access. WPF shape factories and their positioning metadata are
 standalone WPF elements cannot be attached through the public drawing API.
 See [measurement contracts](measurements.md).
 
-`viewer.Layers.Clear()` and the Clear All Shapes menu cancel measurement and clear every
+`viewer.Layers.ClearContents()` and the Clear All Shapes menu cancel measurement and clear every
 business layer, including measurement results, while retaining the HUD. Clearing
 uses a snapshot of layers taken before cancellation: layers created by callbacks
 survive this clear, and layers removed by callbacks are skipped (removal already
@@ -229,6 +231,12 @@ Snapshot export still exports image data, not overlay layers.
 The image-coordinate `Draw*` helpers return replaceable `DrawingHandle` instances.
 
 ## HUD text
+
+`viewer.HudLabel` sets the upper-right label. `viewer.IsPixelInfoEnabled` enables or
+disables pixel inspection independently of application HUD text and can be set before `Show()`.
+
+
+`HudTextHandle` and `AnchorAlignment` belong to `Fizzy.ImageViewer.Hud`.
 
 `DrawHudText(text, brush, anchor, alignment, fontSize)` returns a typed
 `HudTextHandle`. Keep this handle to update text and color; position, alignment and

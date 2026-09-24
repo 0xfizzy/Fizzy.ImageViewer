@@ -9,29 +9,60 @@ public facade, drawing handles and measurement handles.
 | Directory | Responsibility |
 | --- | --- |
 | Viewer | Public facade, host composition, window and lifetime |
-| Frames | Immutable storage, leases, frame submission queue and committed state |
-| Rendering | CPU preparation/presentation and D3D surface presentation |
-| Imaging | Original-pixel access, regions, query results and display conversion |
+| Frames | Immutable storage, frame descriptors, leases and submission contracts |
+| Rendering | Submission queue, committed display state, CPU preparation/presentation and D3D presentation |
+| Imaging | Original-pixel access, regions, query results and display conversion shared by rendering and snapshots |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
-| Layers | Public layer composition and an internal container for transforms, input and lifetime |
-| Drawing | Batch drawing descriptions, marker layers and HUD handles |
-| Measurements | Tool protocols, creation sessions, geometry, styles and resource owners |
-| Interaction | Interaction session ownership, selection and WPF input binding |
+| Layers | Public layer composition and the container for transforms, input and lifetime |
+| Drawing | Drawing elements, marker layers, drawing handles and batch rendering |
+| Measurements | Measurement handles, collection, options, results, notifications, style and query integration |
+| Measurements/Geometry | Closed immutable geometry family and geometry kinds |
+| Measurements/Tools | Tool contracts, registrations and creation contexts |
+| Measurements/Tools/BuiltIn | Built-in tools and their shared creation session |
 | Measurements/Editing | Measurement edit sessions and control-point interaction |
-| Controls | WPF image/HUD surfaces and coordinate transforms |
-| PixelInfo | Pixel HUD sampling and display state |
+| Measurements/Presentation | Overlay, visual metadata, shape projection, labels and line-profile windows |
+| Interaction | Measurement interaction coordination, WPF input binding and shared mouse capture |
+| Viewport | ImageViewport, image-coordinate transforms, zoom and viewport pan |
+| Hud | Screen-space surface, text handles, pixel sampling and display state |
 | Snapshots | Captured frame/region ownership and encoding |
-| Menus | Registration ownership, WPF bindings, viewer menu policy and save actions |
+| Menus | Menu contracts, actions, registration, WPF bindings and captured menu targets |
 
-Files belong to their feature, including interfaces and enums. Public and internal namespaces
-follow feature ownership; only the Viewer facade and its lifetime/composition helpers live
-in the root namespace. Built-in tools live under Measurements/BuiltIn.
-Measurements/Presentation owns the measurement overlay, visual metadata, shape creation, geometry projection, labels and line-profile windows.
-Tests follow the same capability folders under tests/Fizzy.ImageViewer.Tests; shared test namespaces remain stable.
+### Placement rules
+
+Place code with the feature that owns its behavior and lifetime, including interfaces,
+enums and controls. Shared code stays with its owning feature; a second caller does not
+justify a generic Controls, Models, Services or Helpers directory. Display conversion
+belongs to Imaging because both presentation and snapshot encoding use it.
+
+Each public top-level type has a same-named file. Independent internal implementations
+and contracts follow the same rule. Keep private implementation types nested in their
+owner. The small internal request and result families stay together in QueryRequest.cs
+and QueryResult.cs so their alternatives can be read as one protocol. Do not split
+nested helper types or create a directory for a single type merely to satisfy a pattern.
+
+Subdirectories group established responsibilities, rather than visibility or type kind.
+Measurements/Geometry and Measurements/Tools retain the public Measurements namespace:
+source navigation does not require a different consumer namespace for each subgroup.
+Built-in tools use Measurements.BuiltIn; editing and presentation have their own internal
+namespaces. Viewer files use the root namespace; other top-level feature directories use
+their feature namespace. Namespace changes require a separate API decision.
+
+Tests belong to the capability under test, not its historical implementation location.
+Rendering tests cover presentation; Viewport tests cover pan; Imaging/Queries tests cover
+scheduling. Measurement geometry, tool-session and presentation tests use matching
+subdirectories. Tests spanning measurement ownership, notifications or interaction stay
+at the Measurements level. Test namespaces remain stable so existing filters continue
+to work. Test-only helpers live beside their callers; benchmarks remain under tools.
+
+Keep the single library project at the repository root. Viewer partial files organize
+one facade by capability; they are not independently owned services. Documentation in
+docs describes current component contracts; plans/archive contains historical plans.
+Update this map when introducing or removing a feature boundary, not for ordinary files.
+
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.
 Integration tests access composed internals through Viewer.Host; component tests construct
 their owners directly. Viewer has no menu-freeze or snapshot-target forwarding methods.
-Viewer partial files organize one facade; they are not independently owned services.
+Viewer.Queries contains the shared pixel-query configuration; Viewer.Hud contains screen-space text APIs and pixel inspection settings.
 The facade is sealed. Application adapters own a Viewer instance, create it hidden
 when setup must precede display, and converge closure and disposal on their own
 idempotent cleanup before awaiting the viewer's disposal completion.
@@ -42,7 +73,7 @@ Viewer exposes the complete public facade and raises public notifications. Host 
 frame notifications in submission-callback, public-event order;
 subscriber failures are isolated at each boundary.
 ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
-query scheduler, measurement store, tool registry, interaction coordinator and HUD.
+query scheduler, measurement collection, tool registry, interaction coordinator and HUD.
 The facade assigns the host before starting its STA. Startup failure uses the same
 idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
 Disposal waits for outstanding frame and query work and the actual STA exit.
@@ -59,8 +90,8 @@ The interaction coordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
 transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
 `IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
-that activation's mutable state. The coordinator owns this callback session and its explicit
-`MeasurementCreationSession` context; MeasurementStore stores no ambient current session.
+that activation's mutable state. The coordinator disposes each callback session once on every terminal path and owns its explicit
+`MeasurementCreationSession` context; MeasurementCollection stores no ambient current session.
 Every preview must be created through its owning context.
 Ended contexts reject creation, including from callbacks interrupted by a newer session. Display controls do not call controllers
 through stored references. `ViewerLayer` owns common visibility, hit testing and clear policy.
@@ -68,23 +99,27 @@ through stored references. `ViewerLayer` owns common visibility, hit testing and
 `LayerCollection` owns attachment, transforms, input suppression and lifecycle without
 depending on concrete drawing or measurement types. Concrete layers depend on that
 container rather than the public composition facade.
-`DrawingLayer` owns batches; `MeasurementLayer` owns the WPF measurement overlay and exposes
-a content-clearing notification. MeasurementStore subscribes to clear its owned items and
-unsubscribes on shutdown; the layer has no reference to the concrete store. Clear enters the
+`DrawingLayer` owns drawings with one or many elements through the same `DrawingHandle`; `MeasurementLayer` owns the WPF measurement overlay and exposes
+a content-clearing notification. MeasurementCollection subscribes to clear its owned items and
+unsubscribes on shutdown; the layer has no reference to the concrete collection. Clear enters the
 layer's clearing gate, cancels input and selection, then always notifies content cleanup and
 removes remaining visuals in finally blocks. Model, query and resource cleanup does not depend on a coordinator being present.
 The same layer gate rejects creation and interaction starts throughout cancellation and cleanup.
 MeasurementLayer exposes no batch creation or batch-click events.
 
 MeasurementItem implements the public IMeasurement handle with STA dispatch and owns
-model state, queries and disposal, and directly disposes its presentation
+model state, query subscription and disposal, and directly disposes its presentation
 after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
-MeasurementStore owns a primary set of model-driven items and a separate visual lookup index,
+MeasurementQueryClient builds and caches requests independently of the handle. Each request
+captures its geometry version and coordinates for immutable result provenance.
+MeasurementCollection receives ViewerLifetime and Dispatcher directly; model dispatch and shutdown
+admission do not depend on the visual container.
+MeasurementCollection owns a primary set of model-driven items and a separate visual lookup index,
 and borrows query scheduling. The host creates and closes it independently of the
 tool registry. Hit testing resolves a visual to its registered measurement before selection.
-The edit manager receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
+The measurement edit controller receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and
 query runtime are internal imaging capabilities, not public measurement extension points.
 A validated query publishes frame identity and its payload in one synchronous call;
@@ -94,9 +129,11 @@ LineSampling computes clipped sample coordinates independently of display. The o
 consumes immutable MeasurementResult samples and owns its channel buffers; data-only line
 queries allocate no plot or intermediate RGB buffers.
 
-EditManager directly owns a MeasurementEditSession and its control-point visuals.
-The session captures drag-start geometry and writes through MeasurementItem; geometry
-operations live in MeasurementGeometry. Capability checks do not create sessions.
+MeasurementEditController directly owns a MeasurementEditSession and its control-point visuals.
+The session observes internal geometry application before public notifications and refreshes
+control points for both pointer and programmatic updates. It preserves the drag-start fixed
+anchor across corner crossing; an external update during a drag replaces that baseline.
+Geometry operations belong to the closed MeasurementGeometry family, with one file per concrete geometry. Capability checks do not create sessions.
 There is no editor factory or dynamic editor registration contract.
 
 MenuManager owns registrations and WPF click bindings. Each registration has an

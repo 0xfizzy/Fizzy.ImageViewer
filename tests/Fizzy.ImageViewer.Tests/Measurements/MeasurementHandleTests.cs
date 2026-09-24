@@ -23,17 +23,17 @@ public class MeasurementHandleTests
             handle.GeometryChanged += geometry =>
             {
                 viewer.Host.Window.Dispatcher.VerifyAccess();
-                Assert.Equal(new Point(3, 4), geometry.Position);
+                Assert.Equal(new Point(3, 4), Assert.IsType<PointMeasurementGeometry>(geometry).Position);
                 changes++;
             };
             handle.OnDispose(() => { viewer.Host.Window.Dispatcher.VerifyAccess(); disposed++; });
             handle.UpdateGeometry(MeasurementGeometry.Point(new(3, 4)));
-            Assert.Equal(new Point(3, 4), handle.Geometry.Position);
+            Assert.Equal(new Point(3, 4), Assert.IsType<PointMeasurementGeometry>(handle.Geometry).Position);
             Assert.Equal(1, handle.GeometryVersion);
             Assert.True(handle.IsComplete);
         });
         Assert.Equal(1, changes);
-        Assert.Equal(new Point(1, 2), completed.Snapshot.Geometry.Position);
+        Assert.Equal(new Point(1, 2), Assert.IsType<PointMeasurementGeometry>(completed.Snapshot.Geometry).Position);
         await Task.Run(handle.Dispose);
         Assert.True(handle.IsDisposed);
         Assert.Equal(1, disposed);
@@ -54,10 +54,10 @@ public class MeasurementHandleTests
         viewer.StartMeasurement("async");
         await Task.Run(() => { preview!.UpdateGeometry(MeasurementGeometry.Point(new(5, 6))); preview.Complete(); });
         Assert.True(preview!.IsComplete);
-        viewer.CancelMeasurement();
+        viewer.EndInteraction();
         Assert.False(preview.IsDisposed);
         viewer.StartMeasurement("async");
-        viewer.CancelMeasurement();
+        viewer.EndInteraction();
         Assert.True(preview.IsDisposed);
         await Assert.ThrowsAsync<ObjectDisposedException>(() => Task.Run(() => preview.Complete()));
         await viewer.DisposeAsync();
@@ -79,6 +79,7 @@ public class MeasurementHandleTests
             public bool OnClick(Point point) => false;
             public void OnMouseMove(Point point) { }
             public void Cancel() { }
+            public void Dispose() { }
         }
     }
 }

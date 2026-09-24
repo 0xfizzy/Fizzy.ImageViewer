@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
 using Fizzy.ImageViewer;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 
 internal static class Program
@@ -57,7 +57,7 @@ internal static class Program
             {
                 var shape = MeasurementVisualFactory.CreateCircle(circle.Center, circle.Radius);
                 shape.Stroke = circle.Stroke; shape.Fill = circle.Fill;
-                legacy.AddShape(shape);
+                legacy.AddVisual(shape);
             }
         }
         create = Time(() => { AddLegacy(); Layout(legacy); });

@@ -1,12 +1,12 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using System.Windows;
 using System.Windows.Input;
 
 namespace Fizzy.ImageViewer.Interaction;
 
 /// <summary>Adapts WPF input and pointer effects without owning interaction state.</summary>
-internal sealed class ViewerInputBinding(ImageLayer input, MeasurementOverlay overlay, IMouseCapture? capture = null) : IDisposable
+internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay overlay, IMouseCapture? capture = null) : IDisposable
 {
     private readonly MouseCaptureSession _capture = new(capture ?? new ElementMouseCapture(overlay.Canvas));
     private InteractionCoordinator? _coordinator;

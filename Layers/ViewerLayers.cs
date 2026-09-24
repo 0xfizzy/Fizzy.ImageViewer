@@ -19,8 +19,10 @@ public sealed class ViewerLayers
         Measurements = Collection.Add(new MeasurementLayer(Collection));
     }
 
-    public DrawingLayer CreateLayer(string name) => Collection.Invoke(() =>
+    /// <summary>Creates a custom image-coordinate drawing layer.</summary>
+    public DrawingLayer CreateDrawingLayer(string name) => Collection.Invoke(() =>
         Collection.Add(new DrawingLayer(Collection, name, 100, false)));
     public void RemoveLayer(ViewerLayer layer) => Collection.RemoveLayer(layer);
-    public void Clear() => Collection.Clear();
+    /// <summary>Clears all business-layer content while retaining layers and HUD text.</summary>
+    public void ClearContents() => Collection.Clear();
 }

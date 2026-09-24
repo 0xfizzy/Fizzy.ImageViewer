@@ -2,7 +2,7 @@
 
 Built-in and custom tools create the same model-owned measurements through
 `IMeasurementToolContext.CreateMeasurement`. Built-in IDs are `Point`, `Length`,
-`ROI` and `LineProfile`. Batch markers continue to use `DrawingElement` and
+`RectangleRoi` and `LineProfile`. Batch markers continue to use `DrawingElement` and
 `DrawingVisual`; the two rendering paths have independent purposes.
 
 ## Ownership and geometry
@@ -14,7 +14,7 @@ overrides the viewer default for a new measurement and is snapshotted on creatio
 
 Each measurement owns immutable `MeasurementGeometry`, a framework-generated primary
 visual and label, an optional pixel query subscription and its registered resources.
-MeasurementStore registers measurement owners independently of visuals; a separate visual index
+MeasurementCollection registers measurement owners independently of visuals; a separate visual index
 resolves hit testing. Each tool session owns its own unfinished measurements. A preview is
 already an owned measurement; `Complete` retains it and enables queries. Cancelling
 creation disposes unfinished measurements.
@@ -26,8 +26,11 @@ label formatting and the optional plot window.
 Every actual geometry change increments `IMeasurement.GeometryVersion` and clears results.
 An equal geometry update is a no-op. Geometry kind cannot change after creation.
 During a rectangle drag, the opposite corner comes from the drag-start snapshot,
-so crossing it does not change which corner is fixed. Labels follow geometry
-immediately, even when queries are slow or fail.
+so crossing it does not change which corner is fixed. Programmatic updates refresh
+the primary visual, label and editing control points before public notifications.
+An external update during dragging replaces the drag baseline; subsequent pointer
+moves use the same control-point index in that new geometry, preserving its fixed anchor.
+Labels follow geometry immediately, even when queries are slow or fail.
 
 ROI statistics and menu export use the same `PixelRegion.Clip` conversion of the
 selected item's geometry. The menu freezes the frame lease and region together;
@@ -46,15 +49,15 @@ leases, including sources that do not immediately honor cancellation.
 
 The internal coordinator owns the selected measurement, Idle/Editing/Measuring mode,
 active measurement tool and session version. The tool registry only stores registrations.
-The edit manager receives a MeasurementItem directly and owns its MeasurementEditSession
-and control-point visuals. Hit testing resolves visuals through the store before selection;
+MeasurementEditController receives a MeasurementItem directly and owns its MeasurementEditSession
+and control-point visuals. Hit testing resolves visuals through the collection before selection;
 unregistered visuals cannot become measurement interaction targets. The session retains
 drag-start geometry and writes changes through the measurement model; capability checks do not allocate a session.
 ViewerInputBinding translates WPF input and applies pointer effects
 without storing interaction state.
 The overlay only performs display, hit testing and selection styling.
 It holds no coordinator or measurement-owner reference. The coordinator receives
-translated input and layer lifecycle notifications. MeasurementStore subscribes to MeasurementLayer content cleanup without exposing the store to the layer. Clearing first cancels input and selection, then always releases measurement
+translated input and layer lifecycle notifications. MeasurementCollection subscribes to MeasurementLayer content cleanup without exposing the collection to the layer. Clearing first cancels input and selection, then always releases measurement
 owners and their queries/resources, even if cancellation throws or no coordinator exists.
 The layer remains in its clearing state throughout both phases. Batch layers independently
 invalidate their batches.
@@ -86,7 +89,7 @@ are logged and later subscribers still run.
 
 Cancellation ends the outgoing creation context before invoking the tool and then releases
 that session's unfinished items. Normal completion also ends the context and releases only
-its unfinished items. Completed items belong to the measurement store until removal.
+its unfinished items. Completed items belong to the measurement collection until removal.
 A callback interrupted by a newer session cannot create through its old context; creation
 throws `ObjectDisposedException`. Measurements created by the new session survive cleanup,
 even when a disposal callback starts it. Cleanup attempts every owned preview and logs
@@ -98,7 +101,7 @@ shutdown cleans both completed and unfinished measurements and waits for owned q
 
 `PixelQueryScheduler` runs one batch at a time. It captures typed pixel, line and
 region requests on the viewer STA, performs all pixel-source operations off STA,
-and publishes results on STA. Viewer owns this shared imaging service. MeasurementStore
+and publishes results on STA. Viewer owns this shared imaging service. MeasurementCollection
 and pixel HUD subscribe independently; disposing a measurement owner does not
 stop other query clients. Pixel and line coordinates share one gather call;
 region statistics execute individually so an unsupported region operation does
@@ -137,12 +140,12 @@ completed measurement items intact. Menus are backed by the same registry and ar
 updated for subsequent openings when tools are registered or unregistered.
 
 Use `viewer.StartMeasurement(MeasurementToolIds.Length)` for built-in tools; the other
-constants are `Point`, `ROI` and `LineProfile`. Custom tools implement both `Id`
+constants are `Point`, `RectangleRoi` and `LineProfile`. Custom tools implement both `Id`
 and `DisplayName`, and are installed with `RegisterMeasurementTool`. IDs are
 case-sensitive; blank IDs or display names are rejected. `StartMeasurement` throws
 `KeyNotFoundException` for an unknown ID and `InvalidOperationException` when the
 measurement layer is hidden. `UnregisterMeasurementTool(id)` returns whether an entry
-was removed. Call `CancelMeasurement()` to end the active interaction session.
+was removed. Call `EndInteraction()` to cancel creation or end editing; completed measurements and applied edits remain.
 
 Built-in and custom registrations implement `IMeasurementTool`: `Id`, `DisplayName`, and
 `CreateSession(IMeasurementToolContext)`. Each activation calls the factory on the viewer STA
@@ -155,6 +158,11 @@ its own creation context. Returning `true` from `OnClick` ends input; call `Comp
 measurement to retain it. Unfinished measurements are released automatically. Normal completion
 does not call `Cancel`; interruption calls it once after ending the creation context and releases
 previews even if cancellation throws.
+Every returned session is disposed exactly once on the STA, including normal completion,
+callback failure and factory supersession. Put session-only resource cleanup in `Dispose`;
+keep `Cancel` for cancellation-specific behavior. The creation context ends before either
+callback. A disposal callback can start a replacement during normal operation; the old
+session's cleanup cannot end that replacement.
 
 Factories may create previews and may reenter viewer APIs. A newer activation takes precedence.
 If a factory returns after its activation was interrupted, its returned session is cancelled
@@ -166,8 +174,10 @@ A retained context cannot create measurements after its activation ends.
 
 Create geometry with `MeasurementGeometry.Point`, `Crosshair`, `Line`, `Rectangle` or
 `Circle`. Point and crosshair use `Position`; lines use `Start`/`End`; rectangles normalize
-opposite corners. Circles use `Center` and `Radius`. Reading a coordinate or radius
-accessor that does not apply to the geometry kind throws `InvalidOperationException`.
+opposite corners. Circles use `Center` and `Radius`. Factories return the sealed concrete
+records `PointMeasurementGeometry`, `CrosshairMeasurementGeometry`, `LineMeasurementGeometry`,
+`RectangleMeasurementGeometry` and `CircleMeasurementGeometry`. Pattern-match these types
+when reading a handle or event snapshot; unsupported coordinate properties do not exist.
 Kinds use the measurement-specific `MeasurementKind` enum. `Bounds` returns normalized
 image-space bounds: endpoint bounds for lines and rectangles, diameter bounds for circles,
 and zero extent for points and crosshairs. Line endpoints retain their original order.
@@ -202,7 +212,7 @@ viewer.MeasurementChanged += (_, e) =>
     var result = e.Result; // Null means the measurement currently has no valid pixel result.
     // Retain these immutable values or dispatch them to the application's UI.
 };
-viewer.StartMeasurement(MeasurementToolIds.ROI);
+viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
 ```
 
 Callbacks run on the viewer STA and subscriber exceptions are isolated. The event's `Measurement` can be disposed from any thread. Removal is terminal for that item; a callback may
@@ -233,6 +243,13 @@ immutable `MeasurementResult`, or null when a previous result becomes invalid. T
 includes measurement ID, geometry version, source `FrameInfo`, query kind and read-only
 copies of samples, coordinates or channel statistics. It is safe to retain the result
 after another frame, editing or removal. Collections never borrow scheduler buffers.
+
+Results are a closed family selected by `Query`. `Pixel` has one coordinate/sample pair;
+`LineProfile` has equally sized ordered `Coordinates` and `Samples`; both have null
+`Region` and empty `Channels`. `RegionStatistics` has a non-null clipped `Region` and
+channel statistics, with empty coordinate/sample collections. `None` produces no result.
+Branch on `Query` before reading the corresponding payload.
+
 Labels and plots update before notification. Geometry changes invalidate immediately;
 query failure, descriptor change, missing targets and expiration clear obsolete results.
 The scheduler and query protocol remain internal.
@@ -303,6 +320,7 @@ public sealed class CustomRoi : IMeasurementTool
 
         // The framework releases unfinished measurements after cancellation.
         public void Cancel() { }
+        public void Dispose() { }
     }
 }
 ```

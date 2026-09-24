@@ -1,20 +1,4 @@
-using System.Windows;
-
 namespace Fizzy.ImageViewer.Interaction;
-
-internal interface IMouseCapture
-{
-    bool IsCaptured { get; }
-    bool Capture();
-    void Release();
-}
-
-internal sealed class ElementMouseCapture(UIElement element) : IMouseCapture
-{
-    public bool IsCaptured => element.IsMouseCaptured;
-    public bool Capture() => element.CaptureMouse();
-    public void Release() => element.ReleaseMouseCapture();
-}
 
 /// <summary>Shared capture admission and termination for viewport and measurement drags.</summary>
 internal sealed class MouseCaptureSession(IMouseCapture capture)

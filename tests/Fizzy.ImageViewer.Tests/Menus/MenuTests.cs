@@ -55,6 +55,26 @@ public class MenuTests
         Assert.Throws<ObjectDisposedException>(() => viewer.RegisterMenu(item));
     }
 
+    [Fact]
+    public async Task PixelInfoMenuAndPublicApiShareState()
+    {
+        await using var viewer = Create();
+        viewer.IsPixelInfoEnabled = false;
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var menu = viewer.Host.Window.ContextMenu;
+            Open(menu);
+            var item = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Pixel Info"));
+            Assert.False(item.IsChecked);
+            item.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
+            Assert.True(viewer.IsPixelInfoEnabled);
+            Close(menu);
+            Open(menu);
+            Assert.True(menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Pixel Info")).IsChecked);
+            Close(menu);
+        });
+    }
+
     private sealed class DisposableItem : IMenuItem, IDisposable
     {
         public string Header => "owned by caller";

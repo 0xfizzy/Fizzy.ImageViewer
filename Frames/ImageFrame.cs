@@ -52,24 +52,3 @@ public sealed class ImageFrame : IDisposable
     }
     public void Dispose() => Interlocked.Exchange(ref _storage, null)?.Release();
 }
-
-internal sealed class FrameStorage(FrameDescriptor descriptor, ReadOnlyMemory<byte> data, Action release,
-    nint surface = 0, IFramePixelSource? pixelSource = null)
-{
-    private int _references = 1;
-    public FrameDescriptor Descriptor { get; } = descriptor;
-    public ReadOnlyMemory<byte> CpuPixels { get; } = data;
-    public IFramePixelSource PixelSource { get; } = pixelSource ?? new CpuFramePixelSource(descriptor, data);
-    public nint Surface { get; } = surface;
-    public FrameLease Acquire()
-    {
-        int count;
-        do
-        {
-            count = Volatile.Read(ref _references);
-            if (count == 0) throw new ObjectDisposedException(nameof(ImageFrame));
-        } while (Interlocked.CompareExchange(ref _references, checked(count + 1), count) != count);
-        return new(this);
-    }
-    public void Release() { if (Interlocked.Decrement(ref _references) == 0) release(); }
-}

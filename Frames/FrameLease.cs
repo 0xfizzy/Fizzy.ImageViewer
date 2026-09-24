@@ -37,7 +37,7 @@ public sealed class FrameLease : IDisposable
         var format = lease.Descriptor.Format;
         int channels = format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float ? 1 :
             format is FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32 ? 4 : 3;
-        if (result.Format != format || result.Channels.Length != channels)
+        if (result.Format != format || result.Channels.Count != channels)
             throw new InvalidOperationException("Pixel source returned invalid statistics.");
         return new(lease.Info,region,result);
     }

@@ -42,7 +42,7 @@ public class LayerInteractionTests
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             switch (operation)
             {
-                case "all": viewer.Layers.Clear(); break;
+                case "all": viewer.Layers.ClearContents(); break;
                 case "measurements": viewer.Layers.Measurements.Clear(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
                 default: viewer.Layers.Measurements.IsHitTestVisible = false; break;
@@ -66,13 +66,13 @@ public class LayerInteractionTests
             {
                 Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement(tool.Id));
                 Assert.Throws<InvalidOperationException>(() => context.CreateMeasurement(MeasurementGeometry.Point(new())));
-                viewer.Layers.Clear(); // Reentrant bulk cleanup is idempotent.
+                viewer.Layers.ClearContents(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
-            var layer = viewer.Layers.CreateLayer("after measurements");
+            var layer = viewer.Layers.CreateDrawingLayer("after measurements");
             using var batch = layer.Add([new CircleElement(new(), 2, Brushes.Red)]);
-            Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.Clear));
+            Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.ClearContents));
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([]));
             Assert.Equal(1, tool.Cancellations);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);

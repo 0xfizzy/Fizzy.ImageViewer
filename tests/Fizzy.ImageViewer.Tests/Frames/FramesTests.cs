@@ -73,6 +73,6 @@ public class FramesTests
         Assert.Equal(new byte[] { 0, 0, 255, 128 }, Enumerable.Range(0, 4).Select(i => display.Bytes[i * 4]).ToArray());
         var coordinates = LineSampling.GetCoordinates(lease.Descriptor, -1e9, 0, 1e9, 0);
         var samples = (await lease.ReadPixelsAsync(coordinates, default)).Samples;
-        Assert.Equal(4, samples.Length); Assert.True(double.IsNaN(samples[0].Gray));
+        Assert.Equal(4, samples.Count); Assert.True(double.IsNaN(samples[0].Gray));
     }
 }

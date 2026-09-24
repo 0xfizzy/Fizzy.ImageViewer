@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Imaging;
 using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
@@ -40,7 +39,7 @@ public partial class Viewer
         });
     }
 
-    public void CancelMeasurement()
+    public void EndInteraction()
     {
         InvokeAlive(() => _host.Interaction.Cancel());
     }
@@ -68,10 +67,4 @@ public partial class Viewer
             catch (Exception ex) { _logger.LogWarning(ex, "Measurement subscriber failed"); }
     }
 
-    public PixelQueryOptions QueryOptions
-    {
-        get => InvokeAlive(() => _host.Queries.QueryOptions);
-        set => InvokeAlive(() => _host.Queries.QueryOptions = value);
-    }
-    public PixelQueryMetrics QueryMetrics => InvokeAlive(() => _host.Queries.QueryMetrics);
 }

@@ -4,19 +4,18 @@ using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
+using System.Runtime.ExceptionServices;
 
 namespace Fizzy.ImageViewer.Interaction;
-
-internal enum InteractionMode { Idle, Editing, Measuring }
 
 /// <summary>Owns selection and every input-state transition on the viewer's UI thread.</summary>
 internal sealed class InteractionCoordinator : IDisposable
 {
     private readonly ViewerInputBinding _input;
     private readonly MeasurementOverlay _overlay;
-    private readonly EditManager _edit;
+    private readonly MeasurementEditController _edit;
     private readonly MeasurementToolRegistry _tools;
-    private readonly MeasurementStore _measurements;
+    private readonly MeasurementCollection _measurements;
     private IMeasurementToolSession? _active;
     private MeasurementCreationSession? _session;
     private long _sessionVersion;
@@ -25,10 +24,10 @@ internal sealed class InteractionCoordinator : IDisposable
     private bool _disposed;
     public InteractionMode Mode { get; private set; }
     public MeasurementItem? SelectedMeasurement { get; private set; }
-    internal EditManager Editor => _edit;
+    internal MeasurementEditController Editor => _edit;
 
-    internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, EditManager edit,
-        MeasurementToolRegistry tools, MeasurementStore store, ViewerLayers layers)
+    internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, MeasurementEditController edit,
+        MeasurementToolRegistry tools, MeasurementCollection store, ViewerLayers layers)
     {
         _input = input;
         _overlay = overlay;
@@ -86,7 +85,7 @@ internal sealed class InteractionCoordinator : IDisposable
             var active = tool.CreateSession(creation) ?? throw new InvalidOperationException("Tool returned no session.");
             if (version != _sessionVersion || _disposed)
             {
-                active.Cancel();
+                ReleaseSession(active, cancelled: true);
                 return;
             }
             _active = active;
@@ -142,7 +141,9 @@ internal sealed class InteractionCoordinator : IDisposable
         }
         return version == _sessionVersion;
     }
-    private void CancelTool()
+    private void CancelTool() => EndTool(cancelled: true);
+
+    private void EndTool(bool cancelled)
     {
         var tool = _active;
         var session = _session;
@@ -151,8 +152,19 @@ internal sealed class InteractionCoordinator : IDisposable
         _active = null;
         ActiveId = null;
         if (Mode == InteractionMode.Measuring) Mode = InteractionMode.Idle;
-        try { if (tool != null && session != null) tool.Cancel(); }
+        try { if (tool != null) ReleaseSession(tool, cancelled); }
         finally { session?.ClearPreviews(); }
+    }
+
+    private static void ReleaseSession(IMeasurementToolSession tool, bool cancelled)
+    {
+        Exception? cancellationError = null;
+        try { if (cancelled) tool.Cancel(); }
+        catch (Exception error) { cancellationError = error; }
+        try { tool.Dispose(); }
+        catch (Exception disposalError) when (cancellationError != null)
+        { throw new AggregateException("Tool cancellation and disposal failed.", cancellationError, disposalError); }
+        if (cancellationError != null) ExceptionDispatchInfo.Capture(cancellationError).Throw();
     }
     private void RestoreInput()
     {
@@ -180,13 +192,7 @@ internal sealed class InteractionCoordinator : IDisposable
         try
         {
             if (_active == null || !_active.OnClick(new(x, y)) || version != _sessionVersion) return;
-            var session = _session;
-            _session = null;
-            session?.End();
-            _active = null;
-            ActiveId = null;
-            Mode = InteractionMode.Idle;
-            session?.ClearPreviews();
+            EndTool(cancelled: false);
             if (version == _sessionVersion) RestoreInput();
         }
         catch { if (version == _sessionVersion) Cancel(); throw; }
@@ -211,7 +217,7 @@ internal sealed class InteractionCoordinator : IDisposable
     }
     internal bool PointerDown(FrameworkElement? shape, Point point)
     {
-        if (Mode != InteractionMode.Editing && shape != null && OverlayShapeData.Get(shape) != null)
+        if (Mode != InteractionMode.Editing && shape != null && MeasurementVisualData.Get(shape) != null)
             return Hit(shape);
         return BeginDrag(point);
     }

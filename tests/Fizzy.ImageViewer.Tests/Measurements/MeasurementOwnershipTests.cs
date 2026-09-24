@@ -24,11 +24,11 @@ public class MeasurementOwnershipTests
             viewer.Host.Window.MeasurementOverlay.UpdateScale(2);
             owner.UpdateGeometry(MeasurementGeometry.Point(new(3, 4)));
             Assert.Equal(5.5, System.Windows.Controls.Canvas.GetLeft(item.Presentation.Label));
-            Assert.Equal(new Point(3, 4), item.Geometry.Position);
+            Assert.Equal(new Point(3, 4), Assert.IsType<PointMeasurementGeometry>(item.Geometry).Position);
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Point(new(double.NaN, 1)));
         });
         await Task.Run(() => owner!.UpdateGeometry(MeasurementGeometry.Point(new(8, 9))));
-        Assert.Equal(new Point(8, 9), owner!.Geometry.Position);
+        Assert.Equal(new Point(8, 9), Assert.IsType<PointMeasurementGeometry>(owner!.Geometry).Position);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             owner!.Dispose();
@@ -92,10 +92,10 @@ public class MeasurementOwnershipTests
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
             tool.Finish = false;
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(4, 5);
-            Assert.Throws<InvalidOperationException>(() => viewer.CancelMeasurement());
+            Assert.Throws<InvalidOperationException>(() => viewer.EndInteraction());
             Assert.Equal(1, tool.Disposals);
             Assert.Equal(2, viewer.Host.Window.MeasurementOverlay.Canvas.Children.Count);
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
             Assert.Equal(2, tool.Disposals);
         });
     }
@@ -152,7 +152,7 @@ public class MeasurementOwnershipTests
             completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(viewer.Host.Measurements).CreateMeasurement(MeasurementGeometry.Point(new()))));
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
             viewer.StartMeasurement(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
-            Assert.Throws<InvalidOperationException>(() => viewer.Layers.Clear());
+            Assert.Throws<InvalidOperationException>(() => viewer.Layers.ClearContents());
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
@@ -215,7 +215,7 @@ public class MeasurementOwnershipTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = viewer.Host.Window.MeasurementOverlay;
-            var shape = MeasurementVisualFactory.CreatePoint(new()); viewer.Host.Window.MeasurementOverlay.AddShape(shape);
+            var shape = MeasurementVisualFactory.CreatePoint(new()); viewer.Host.Window.MeasurementOverlay.AddVisual(shape);
             viewer.Host.Interaction.Dispose();
             viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.DeleteSelected();
             Assert.Null(viewer.Host.Interaction.SelectedMeasurement); Assert.False(viewer.Host.Interaction.Editor.IsEditing);
@@ -234,7 +234,7 @@ public class MeasurementOwnershipTests
             var item = (MeasurementItem)new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new(2, 3)));
             item.Complete();
             var orphan = MeasurementVisualFactory.CreatePoint(new(5, 6));
-            viewer.Host.Window.MeasurementOverlay.AddShape(orphan);
+            viewer.Host.Window.MeasurementOverlay.AddVisual(orphan);
             interaction.Select(item);
             Assert.False(interaction.Hit(orphan));
             Assert.Same(item, interaction.SelectedMeasurement);

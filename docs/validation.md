@@ -82,7 +82,9 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 batching, independent rates, expiration, failed queries, stale geometry,
 re-registration and cancellation ownership. `MeasurementInteractionTests` cover
 corner crossing, model/query/export consistency, label updates, invalid editing,
-mode interruption, preview cancellation and reentrant removal. `LineProfileTests`
+mode interruption, preview cancellation and reentrant removal. They also verify worker
+geometry updates refresh every supported shape's editing controls before public notifications,
+and that external or reentrant updates during a rectangle drag rebase all four corners. `LineProfileTests`
 and `QuerySchedulingTests` cover plot-window ownership and slow in-flight queries
 on real STA dispatchers. See [measurement contracts](measurements.md).
 `ViewportPanTests` verify failed/lost capture, restart, screen-coordinate deltas and
@@ -134,7 +136,7 @@ after the viewer dispatcher exits.
 selection colors. `ViewerInitializationTests` inject startup/cleanup failures and verify
 frame/measurement/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
 cover routed selection input, one cancellation per layer operation and complete bulk cleanup
-after failures. `PixelInfoOverlayTests` run HUD sampling without a Viewer or measurement
+after failures. `PixelInfoControllerTests` run HUD sampling without a Viewer or measurement
 context. MeasurementGeometryTests verify normalized bounds, endpoint order, zero extents and invalid
 coordinates/radii. ViewerTests verify submission callbacks and public frame-notification
 order despite callback failures. The public API baseline test detects exported type/member changes; its update
@@ -177,10 +179,15 @@ viewers, factory reentry and failure cleanup, and rejection of ended creation co
 They also clear model-owned content and query subscriptions without an interaction coordinator,
 and after coordinator disposal. Existing reentry tests cover interrupted clicks, moves,
 cancellation, completion and editing using explicit session contexts.
-Test source files are grouped by capability (Measurements, Interaction, Layers, Drawing, Frames, Imaging,
-PixelInfo, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.
+Test source files are grouped by capability (Measurements, Interaction, Layers, Drawing, Frames, Rendering, Imaging,
+Viewport, Hud, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.
 
 `LineSamplingTests` verify clipping and endpoint order without presentation state.
 `LineProfileTests` cover data-only results without plot windows and visual cleanup after
 store callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
 handles after shutdown and preservation of callback failures when shutdown starts reentrantly.
+
+`ToolSessionLifetimeTests` cover exactly-once STA session disposal on completion, cancellation,
+callback failure, shutdown and factory supersession, including replacement from a throwing
+disposal callback. `QueryResultSnapshotTests` verify independent immutable query collections.
+Public API/menu tests verify pixel HUD configuration before display and shared menu state.

@@ -1,6 +1,6 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Frames;
@@ -48,7 +48,7 @@ public class UnifiedMeasurementTests
         public readonly FrameLease Frame;
         public readonly Runtime Runtime;
         public readonly PixelQueryScheduler Queries;
-        public readonly MeasurementStore Context;
+        public readonly MeasurementCollection Context;
         public Harness(Source? source = null)
         {
             Frame = source == null ? ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()).Transfer()
@@ -56,7 +56,7 @@ public class UnifiedMeasurementTests
             Frame.Info = new(42, Frame.Descriptor, null);
             Runtime = new(Overlay.Dispatcher);
             Queries = new(() => Frame.Acquire(), NullLogger.Instance, Runtime);
-            Context = new(Layers.Measurements, () => Frame.Acquire(), Queries, NullLogger.Instance);
+            Context = new(Layers.Measurements, new ViewerLifetime(), Overlay.Dispatcher, () => Frame.Acquire(), Queries, NullLogger.Instance);
         }
         public void Dispose() { Context.Shutdown(); Queries.Dispose(); Frame.Dispose(); }
     }
@@ -77,12 +77,13 @@ public class UnifiedMeasurementTests
                         new() { Query = MeasurementQuery.RegionStatistics });
                     return false;
                 }
-                _item.UpdateGeometry(MeasurementGeometry.Rectangle(_item.Geometry.Start, point));
+                _item.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_item.Geometry).Start, point));
                 _item.Complete();
                 return true;
             }
             public void OnMouseMove(Point point) { }
             public void Cancel() { }
+            public void Dispose() { }
         }
     }
 
@@ -101,7 +102,7 @@ public class UnifiedMeasurementTests
             viewer.RegisterMeasurementTool(tool);
             viewer.MeasurementCompleted += (_, e) => { completed++; Assert.Equal(MeasurementKind.Rectangle, e.Snapshot.Geometry.Kind); };
             viewer.MeasurementRemoved += (_, _) => removed++;
-            viewer.StartMeasurement(custom ? tool.Id : MeasurementToolIds.ROI);
+            viewer.StartMeasurement(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
             viewer.Host.Interaction.ImageDown(0, 0); viewer.Host.Interaction.ImageDown(2, 2);
             var shape = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
             item = viewer.Host.Measurements.Find(shape)!;
@@ -119,10 +120,10 @@ public class UnifiedMeasurementTests
             Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(0, 0), 1));
             viewer.Host.Interaction.Editor.UpdateDrag(new(3, 3));
             Assert.Null(item.Result); Assert.DoesNotContain("mean=", item.Presentation.Label.Text); Assert.Equal(1, changes);
-            Assert.Equal(item.Geometry.Start, OverlayShapeData.Get(item.Presentation.Label)!.AnchorPoint);
+            Assert.Equal(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).Start, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
             Assert.Equal(2.5, result.Channels[0].Mean);
             Assert.Throws<NotSupportedException>(() => ((IList<ChannelStatistics>)result.Channels)[0] = default);
-            viewer.Layers.Clear(); Assert.Equal(1, removed);
+            viewer.Layers.ClearContents(); Assert.Equal(1, removed);
         });
     }
     [Theory]
@@ -219,9 +220,9 @@ public class UnifiedMeasurementTests
             item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(2, 3), 1)); editor.UpdateDrag(new(5, 6)); editor.EndDrag();
-            Assert.Equal(new Point(5, 6), item.Geometry.Center); Assert.Equal(4, item.Geometry.Radius);
+            Assert.Equal(new Point(5, 6), Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Center); Assert.Equal(4, Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Radius);
             Assert.True(editor.BeginDrag(new(9, 6), 1)); editor.UpdateDrag(new(5, 9)); editor.EndDrag();
-            Assert.Equal(3, item.Geometry.Radius);
+            Assert.Equal(3, Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Radius);
             var ellipse = (System.Windows.Media.EllipseGeometry)((System.Windows.Shapes.Path)item.Presentation.PrimaryVisual).Data;
             Assert.Equal(3, ellipse.RadiusX);
             item.GeometryChanged += _ => throw new Exception("isolated");
@@ -244,7 +245,7 @@ public class UnifiedMeasurementTests
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
             var item = new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
             item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationSession(context).CreateMeasurement(MeasurementGeometry.Point(new()))));
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
         });
     }
 }

@@ -6,11 +6,9 @@ using Fizzy.ImageViewer.Measurements.BuiltIn;
 using Fizzy.ImageViewer.Menus;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
-using Fizzy.ImageViewer.PixelInfo;
+using Fizzy.ImageViewer.Hud;
 
 namespace Fizzy.ImageViewer;
-
-internal enum ViewerInitializationStage { WindowCreated, PipelineCreated, MeasurementsCreated, MenusCreated }
 
 /// <summary>Owns the viewer STA, component composition and shutdown.</summary>
 internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
@@ -20,10 +18,10 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private readonly bool _showWindow = showWindow;
     private Thread _windowThread = null!;
     private ViewerWindow _window = null!;
-    private Frames.FramePipeline _pipeline = null!;
+    private Rendering.FramePipeline _pipeline = null!;
     private Rendering.FramePresentation _presentation = null!;
     private MeasurementToolRegistry _tools = null!;
-    private MeasurementStore _measurements = null!;
+    private MeasurementCollection _measurements = null!;
     private InteractionCoordinator _interaction = null!;
     private MenuManager _menuManager = null!;
     private ViewerMenuController? _menuController;
@@ -31,7 +29,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private Menus.MenuSnapshotSession _menuSession = null!;
     private readonly Snapshots.SnapshotCapture _snapshotCapture = new();
     private HudTextCollection _hud = null!;
-    private PixelInfoOverlay? _pixelInfoOverlay;
+    private PixelInfoController? _pixelInfo;
     private readonly ViewerLifetime _lifetime = new();
     private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _closed;
@@ -39,11 +37,12 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private readonly TaskCompletionSource _disposeCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _disposeRequested;
 
+    internal PixelInfoController PixelInfo => _pixelInfo!;
     internal ViewerLifetime Lifetime => _lifetime;
     internal ViewerWindow Window => _window;
-    internal Frames.FramePipeline Pipeline => _pipeline;
+    internal Rendering.FramePipeline Pipeline => _pipeline;
     internal MeasurementToolRegistry Tools => _tools;
-    internal MeasurementStore Measurements => _measurements;
+    internal MeasurementCollection Measurements => _measurements;
     internal InteractionCoordinator Interaction => _interaction;
     internal MenuManager Menus => _menuManager;
     internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
@@ -66,34 +65,34 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
                 _window = win;
                 checkpoint?.Invoke(ViewerInitializationStage.WindowCreated);
-                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageLayer,
+                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageViewport,
                     presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
-                _pipeline = new Frames.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
+                _pipeline = new Rendering.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
                 checkpoint?.Invoke(ViewerInitializationStage.PipelineCreated);
                 _hud = new HudTextCollection(win.HudLayer, _lifetime);
                 _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                _measurements = new MeasurementStore(win.Layers.Measurements, TryAcquireCurrentFrame, _queryScheduler, _logger);
+                _measurements = new MeasurementCollection(win.Layers.Measurements, _lifetime, win.Dispatcher, TryAcquireCurrentFrame, _queryScheduler, _logger);
                 _tools = new MeasurementToolRegistry();
                 _measurements.ItemCompleted += _owner.NotifyMeasurementCompleted;
                 _measurements.ItemRemoved += _owner.NotifyMeasurementRemoved;
                 _measurements.ItemChanged += _owner.NotifyMeasurementChanged;
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
-                var editMgr = new EditManager(win.MeasurementOverlay);
-                _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageLayer, win.MeasurementOverlay),
-                    win.MeasurementOverlay, editMgr, _tools, _measurements, win.Layers);
+                var editor = new MeasurementEditController(win.MeasurementOverlay);
+                _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay),
+                    win.MeasurementOverlay, editor, _tools, _measurements, win.Layers);
                 _tools.RegisterTool(new LengthTool());
                 _tools.RegisterTool(new PointTool());
                 _tools.RegisterTool(new RectangleRoiTool());
                 _tools.RegisterTool(new LineProfileTool());
-                _pixelInfoOverlay = new PixelInfoOverlay(win.ImageLayer, win.HudLayer, _queryScheduler);
-                _pixelInfoOverlay.Enable();
+                _pixelInfo = new PixelInfoController(win.ImageViewport, win.HudLayer, _queryScheduler);
+                _pixelInfo.Enable();
                 _menuManager = new MenuManager(win, _lifetime, _logger);
                 _menuController = new ViewerMenuController(_menuManager, _interaction, _tools, win.Layers,
-                    _menuSession, _snapshotCapture, _pixelInfoOverlay);
+                    _menuSession, _snapshotCapture, _pixelInfo);
                 checkpoint?.Invoke(ViewerInitializationStage.MenusCreated);
 
                 // Set window position before showing (if provided)
@@ -174,7 +173,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         Cleanup(() => _menuSession?.Dispose());
 
         Cleanup(() => _interaction?.Dispose());
-        Cleanup(() => _pixelInfoOverlay?.Disable());
+        Cleanup(() => _pixelInfo?.Disable());
         Cleanup(() => _queryScheduler?.Dispose());
         Cleanup(() => _measurements?.Shutdown());
         Cleanup(() => _tools?.Clear());

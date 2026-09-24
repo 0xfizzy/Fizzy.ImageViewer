@@ -1,7 +1,7 @@
 # Supported public API
 
 `Viewer` constructs an independent STA window. `IViewer` is its complete consumer
-contract, including `Label`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
+contract, including `HudLabel`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
 application adapters own an instance and use its public API. Raw-window access is not supported.
 
 | Capability | Supported entry points |
@@ -9,17 +9,18 @@ application adapters own an instance and use its public API. Raw-window access i
 | Window | `Show`, `Hide`, `Minimize`, `IsVisible`, `IsMinimized`, title, bounds, borderless mode, `CanUserClose`, `Closed` |
 | Lifetime | `DisposeAsync` |
 | Frames | `SubmitFrameAsync`, `AcquireCurrentFrame`, `FrameCommitted`, frame descriptors, leases and submission results |
-| Pixels | CPU readers, external `IFramePixelSource`, query data and display range |
+| Pixels | CPU readers, external `IFramePixelSource`, query data, shared query configuration/metrics and display range |
 | Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
 | Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
-| HUD | `Label`, `DrawHudText`, `HudTextHandle` |
-| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, query configuration and metrics, completion/change/removal events |
+| HUD | `HudLabel`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
+| Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
 
 The root namespace contains `Viewer` and `IViewer`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
 `DrawingLayer`, drawing handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
 `MeasurementLayer` and notifications belong
 to `.Measurements`; menu contracts and helpers belong to `.Menus`.
+HUD text handles and anchor alignment belong to `.Hud`.
 
 ## Threads and window lifetime
 
@@ -57,6 +58,12 @@ after closure consumes the frame and returns `Closed`, rather than using the win
 property exception policy. Drawing and HUD handle disposal is idempotent after closure.
 See [frame contracts](frame-pipeline.md) and [drawing contracts](drawing-layers.md).
 
+`HudLabel` controls the upper-right HUD text. `IsPixelInfoEnabled` defaults to true and
+controls bottom-left pixel inspection and its query subscription; the context menu uses
+the same state. Both properties can be configured before showing the window.
+`EndInteraction()` cancels unfinished creation or ends editing, preserving completed
+measurements and edits already applied.
+
 ## Measurement notifications and extensions
 
 `MeasurementCompleted` reports all completed measurements, including custom tools;
@@ -80,6 +87,11 @@ Subscriber failures are logged and isolated. Completion does not promise pixel-q
 Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
 Every activation must return a fresh `IMeasurementToolSession`; its `OnClick`, `OnMouseMove`
 and `Cancel` callbacks retain that context and keep all temporary interaction state in the session.
+The framework calls the session's `Dispose` exactly once on the STA after completion,
+interruption or callback failure, including a superseded factory's returned session.
+The context ends before cancellation/disposal; unfinished measurements are released even
+if either callback throws. Session disposal owns temporary subscriptions and timers;
+measurement resources instead survive successful completion until the item is removed.
 Registrations may be shared across viewers when their configuration and factory support concurrent
 calls on those viewers' STAs. Sessions and contexts must never be shared between activations.
 Tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
@@ -96,14 +108,17 @@ viewer, and mutations reject disposed items. Notifications still run on STA: nev
 them waiting for worker code that is calling the handle. Retained event snapshots remain
 immutable even when another subscriber updates or disposes the live handle.
 
-Geometry is a closed family identified by `MeasurementKind`: point, crosshair, line,
-rectangle and circle. Point/crosshair coordinates use `Position`, circles use `Center`
-and `Radius`, and lines/rectangles use `Start`/`End`. Accessors for another kind throw
-`InvalidOperationException`. `MeasurementGeometry.Bounds` is the normalized image-space bounding
+Geometry is a closed family of immutable records: `PointMeasurementGeometry`,
+`CrosshairMeasurementGeometry`, `LineMeasurementGeometry`, `RectangleMeasurementGeometry`
+and `CircleMeasurementGeometry`. The `MeasurementGeometry` factories return these concrete
+types. Pattern-match the geometry to access `Position`, `Start`/`End` or `Center`/`Radius`;
+the base exposes only common `Kind` and `Bounds` properties. `MeasurementGeometry.Bounds` is the normalized image-space bounding
 rectangle. Lines retain their endpoint order; circles use diameter bounds; points and
 crosshairs have zero extent, excluding their screen-space marker size. Query options
 compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
 combinations fail on creation. The framework owns primary visuals, labels and control points.
+Programmatic geometry updates synchronize editing control points before public notifications; updates during
+a drag replace its geometric baseline while preserving the active control-point index.
 Arbitrary WPF attachment, geometry implementations and query algorithms are not extension
 contracts. See [measurement contracts and example](measurements.md).
 
@@ -165,19 +180,19 @@ using var registration = viewer.RegisterMenu(
 
 ## Layer capabilities
 
-`Layers.Markers` and `CreateLayer` return `DrawingLayer`, which supports `Add` and
-`DrawingClicked`. `Layers.Measurements` returns `MeasurementLayer`; measurement tools create
-its content. Both derive from the closed `ViewerLayer` family, which exposes `Name`,
-`IsVisible`, `IsHitTestVisible`, `ZIndex` and `Clear`. `Layers.Items` returns a snapshot of
-these common layer handles. Built-in layers cannot be removed; the layer base cannot be
-subclassed by consumers.
+`Layers.Markers` and `CreateDrawingLayer` return `DrawingLayer`, which supports `Add(DrawingElement)`,
+`Add(IEnumerable<DrawingElement>)` and `DrawingClicked`. Both creation overloads and
+the image-coordinate `Viewer.Draw*` helpers return `DrawingHandle`, with symmetric
+`Replace` overloads for one element or a collection. Replacement changes the whole
+content while preserving handle identity and stacking order; shape and element count
+may change. Click events identify the whole handle through `DrawingClickedEventArgs.Drawing`.
 
-Image-coordinate `Draw*` helpers and both `DrawingLayer.Add` overloads return
-`DrawingHandle`. `Add` and `Replace` accept one `DrawingElement` or an
-`IEnumerable<DrawingElement>`. Replacement changes the entire content while
-preserving visual identity and stacking order, including transitions between single,
-collection and empty content. `DrawingClickedEventArgs.Drawing` identifies the whole
-handle. See [drawing handles](drawing-layers.md#drawing-handles).
+`Layers.Measurements` returns `MeasurementLayer`; measurement tools create
+its content. Both derive from the closed `ViewerLayer` family, which exposes `Name`,
+`IsVisible`, `IsHitTestVisible`, `ZIndex` and `Clear`. `Layers.ClearContents` clears content
+while preserving the layer collection. `Layers.Items` returns a snapshot of these common
+layer handles. Built-in layers cannot be removed; the layer base cannot be
+subclassed by consumers.
 
 ## API baseline
 

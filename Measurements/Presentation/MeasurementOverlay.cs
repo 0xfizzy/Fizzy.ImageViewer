@@ -11,11 +11,11 @@ internal class MeasurementOverlay : UserControl
 {
     private readonly Canvas _canvas;
     private double _currentScale = 1;
-    private UIElement? _selectedShape;
+    private UIElement? _selectedVisual;
     private readonly List<UIElement> _selectionVisuals = [];
     internal Canvas Canvas => _canvas;
     internal event Action<UIElement>? VisualAdded;
-    public event Action<UIElement>? ShapeRemoved;
+    public event Action<UIElement>? VisualRemoved;
 
     internal MeasurementOverlay()
     {
@@ -26,13 +26,13 @@ internal class MeasurementOverlay : UserControl
     internal void SetSelection(UIElement? primary, IEnumerable<UIElement> visuals)
     {
         foreach (var visual in _selectionVisuals) ApplySelectionStyle(visual, false);
-        _selectionVisuals.Clear(); _selectedShape = primary;
+        _selectionVisuals.Clear(); _selectedVisual = primary;
         foreach (var visual in visuals) { _selectionVisuals.Add(visual); ApplySelectionStyle(visual, true); }
         if (primary != null) _canvas.Focus();
     }
     private static void ApplySelectionStyle(UIElement element, bool selected)
     {
-        if (OverlayShapeData.Get(element) is not { } data) return;
+        if (MeasurementVisualData.Get(element) is not { } data) return;
         var brush = selected ? data.SelectedBrush : data.OriginalBrush;
         if (element is Shape shape)
         {
@@ -41,19 +41,19 @@ internal class MeasurementOverlay : UserControl
         }
         else if (element is TextBlock text) text.Foreground = brush;
     }
-    internal void AddShape(UIElement shape)
+    internal void AddVisual(UIElement shape)
     {
         if (_canvas.Children.Contains(shape)) return;
-        ApplyScaleToShape(shape, _currentScale); _canvas.Children.Add(shape);
+        ApplyScaleToVisual(shape, _currentScale); _canvas.Children.Add(shape);
         VisualAdded?.Invoke(shape);
     }
     internal void RemoveVisual(UIElement shape)
     {
         if (!_canvas.Children.Contains(shape)) return;
-        if (ReferenceEquals(_selectedShape, shape)) SetSelection(null, []);
+        if (ReferenceEquals(_selectedVisual, shape)) SetSelection(null, []);
         // Remove before notifying observers, so re-entrant removal is harmless.
         _canvas.Children.Remove(shape);
-        ShapeRemoved?.Invoke(shape);
+        VisualRemoved?.Invoke(shape);
     }
     internal void ClearVisuals()
     {
@@ -62,10 +62,10 @@ internal class MeasurementOverlay : UserControl
     }
     internal void UpdateAnchor(UIElement element, Point newAnchor)
     {
-        if (element is FrameworkElement fe && OverlayShapeData.Get(fe) is { } data)
+        if (element is FrameworkElement fe && MeasurementVisualData.Get(fe) is { } data)
         {
             data.AnchorPoint = newAnchor;
-            ApplyScaleToShape(fe, _currentScale);
+            ApplyScaleToVisual(fe, _currentScale);
         }
     }
 
@@ -76,13 +76,13 @@ internal class MeasurementOverlay : UserControl
         _currentScale = scale;
         foreach (UIElement child in _canvas.Children)
         {
-            ApplyScaleToShape(child, scale);
+            ApplyScaleToVisual(child, scale);
         }
     }
 
-    private void ApplyScaleToShape(UIElement shape, double scale)
+    private void ApplyScaleToVisual(UIElement shape, double scale)
     {
-        if (shape is not FrameworkElement element || OverlayShapeData.Get(element) is not { } data) return;
+        if (shape is not FrameworkElement element || MeasurementVisualData.Get(element) is not { } data) return;
 
         data.CaptureAppearance(element);
         var transform = data;

@@ -23,8 +23,11 @@ public class PublicApiTests
         IViewer api = viewer;
         await Task.Run(async () =>
         {
-            api.Label = "camera";
-            Assert.Equal("camera", api.Label);
+            api.HudLabel = "camera";
+            Assert.Equal("camera", api.HudLabel);
+            Assert.True(api.IsPixelInfoEnabled);
+            api.IsPixelInfoEnabled = false;
+            Assert.False(api.IsPixelInfoEnabled);
             api.QueryOptions = new();
             Assert.NotNull(api.QueryOptions);
             _ = api.QueryMetrics;
@@ -50,7 +53,9 @@ public class PublicApiTests
         Assert.Throws<ObjectDisposedException>(api.Show);
         Assert.Throws<ObjectDisposedException>(() => api.IsVisible);
         Assert.Throws<ObjectDisposedException>(() => api.IsMinimized);
-        Assert.Throws<ObjectDisposedException>(() => api.Label);
+        Assert.Throws<ObjectDisposedException>(() => api.HudLabel);
+        Assert.Throws<ObjectDisposedException>(() => api.IsPixelInfoEnabled);
+        Assert.Throws<ObjectDisposedException>(() => api.IsPixelInfoEnabled = true);
         Assert.Throws<ObjectDisposedException>(() => api.QueryOptions);
         Assert.Throws<ObjectDisposedException>(() => api.QueryMetrics);
         Assert.Throws<ObjectDisposedException>(() => api.DrawLine(new(), new(1, 1), Brushes.Red));
@@ -98,7 +103,7 @@ public class PublicApiTests
             viewer.StartMeasurement(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
-            viewer.CancelMeasurement();
+            viewer.EndInteraction();
             Assert.Empty(removed);
             viewer.StartMeasurement(MeasurementToolIds.Length);
             viewer.Host.Interaction.ImageDown(1, 2);
@@ -108,11 +113,11 @@ public class PublicApiTests
                 .Select(s => viewer.Host.Measurements.Find(s)).Single(i => i != null)!;
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });
-        Assert.Equal(new Point(5, 6), completed[0].Snapshot.Geometry.End);
+        Assert.Equal(new Point(5, 6), Assert.IsType<LineMeasurementGeometry>(completed[0].Snapshot.Geometry).End);
         await Task.Run(() => completed[0].Measurement.Dispose());
         Assert.Single(removed);
         Assert.Equal(completed[0].Snapshot.Id, removed[0].Snapshot.Id);
-        Assert.Equal(new Point(7, 8), removed[0].Snapshot.Geometry.End);
+        Assert.Equal(new Point(7, 8), Assert.IsType<LineMeasurementGeometry>(removed[0].Snapshot.Geometry).End);
         completed[0].Measurement.Dispose();
         Assert.Single(removed);
         await viewer.DisposeAsync();

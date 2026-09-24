@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Hud;
 using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Measurements;
@@ -69,7 +70,9 @@ public interface IViewer : IAsyncDisposable
     /// </summary>
     bool Borderless { get; set; }
     /// <summary>右上角 HUD 标签，通过查看器 STA 读写。关闭或释放开始后抛出 ObjectDisposedException。</summary>
-    string? Label { get; set; }
+    string? HudLabel { get; set; }
+    /// <summary>Enables pixel inspection in the HUD; defaults to true.</summary>
+    bool IsPixelInfoEnabled { get; set; }
     /// <summary>测量及像素 HUD 的查询配置，通过查看器 STA 读写。</summary>
     Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { get; set; }
     /// <summary>内置查询调度器的统计快照，通过查看器 STA 读取。</summary>
@@ -102,7 +105,7 @@ public interface IViewer : IAsyncDisposable
     /// <summary>
     /// 在默认不参与命中测试的 Markers 图层创建初始内容为准星的绘图；返回句柄可整体替换为单个元素或集合。
     /// </summary>
-    DrawingHandle DrawCrosshair(Point center, Brush brush, double size = 20, double thickness = 2);
+    DrawingHandle DrawCrosshair(Point center, Brush brush, double armLength = 20, double thickness = 2);
 
     /// <summary>
     /// 在默认不参与命中测试的 Markers 图层创建初始内容为矩形框的绘图；返回句柄可整体替换为单个元素或集合。
@@ -130,9 +133,9 @@ public interface IViewer : IAsyncDisposable
     void StartMeasurement(string toolId);
 
     /// <summary>
-    /// 取消当前进行中的测量。
+    /// 结束当前创建或编辑交互，保留已完成的测量及已应用的编辑。
     /// </summary>
-    void CancelMeasurement();
+    void EndInteraction();
     /// <summary>Completed measurements only; raised on the viewer STA, excluding previews.</summary>
     event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
     /// <summary>Removal of completed measurements; raised on the viewer STA, including closure.</summary>

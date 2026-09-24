@@ -1,5 +1,5 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Windows.Media;
@@ -24,7 +24,7 @@ internal static class ControlPointHandle
         var geometry = new EllipseGeometry(new Point(0, 0), HandleRadius, HandleRadius);
 
         // Use FixedSize mode so handle stays constant size during zoom
-        var data = new OverlayShapeData(OverlayScaleMode.FixedSize, usesFill: true)
+        var data = new MeasurementVisualData(OverlayScaleMode.FixedSize, usesFill: true)
         {
             AnchorPoint = position
         };
@@ -38,7 +38,7 @@ internal static class ControlPointHandle
             Cursor = System.Windows.Input.Cursors.Hand
         };
 
-        OverlayShapeData.Attach(path, data);
+        MeasurementVisualData.Attach(path, data);
         return path;
     }
 }

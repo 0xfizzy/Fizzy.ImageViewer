@@ -2,7 +2,7 @@ using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.PixelInfo;
+using Fizzy.ImageViewer.Hud;
 using Fizzy.ImageViewer.Snapshots;
 
 namespace Fizzy.ImageViewer.Menus;
@@ -16,12 +16,12 @@ internal sealed class ViewerMenuController : IDisposable
     private readonly ViewerLayers _layers;
     private readonly MenuSnapshotSession _session;
     private readonly SnapshotCapture _capture;
-    private readonly PixelInfoOverlay _pixelInfo;
+    private readonly PixelInfoController _pixelInfo;
     private IDisposable? _registration;
 
     internal ViewerMenuController(MenuManager menus, InteractionCoordinator interaction,
         MeasurementToolRegistry tools, ViewerLayers layers, MenuSnapshotSession session,
-        SnapshotCapture capture, PixelInfoOverlay pixelInfo)
+        SnapshotCapture capture, PixelInfoController pixelInfo)
     {
         _menus = menus; _interaction = interaction; _tools = tools; _layers = layers;
         _session = session; _capture = capture; _pixelInfo = pixelInfo;
@@ -35,8 +35,8 @@ internal sealed class ViewerMenuController : IDisposable
     }
 
     internal void CaptureTarget() => _session.Open(descriptor =>
-        _interaction.SelectedMeasurement is { IsComplete: true, Geometry.Kind: MeasurementKind.Rectangle } item
-            ? item.Geometry.ToRegion(descriptor) : null);
+        _interaction.SelectedMeasurement is { IsComplete: true, Geometry: RectangleMeasurementGeometry } item
+            ? ((RectangleMeasurementGeometry)item.Geometry).ToRegion(descriptor) : null);
 
     private void CloseTarget() => _session.Close();
 
@@ -44,7 +44,7 @@ internal sealed class ViewerMenuController : IDisposable
     {
         foreach (var item in CreateInteractionItems()) yield return item;
         yield return SeparatorMenuItem.Instance;
-        yield return new MenuItem("Clear All Shapes", _layers.Clear);
+        yield return new MenuItem("Clear All Shapes", _layers.ClearContents);
         yield return new SaveImageMenuItem(_session, _capture, false);
         yield return new SaveImageMenuItem(_session, _capture, true);
         yield return new SaveImageMenuItem(_session, _capture, false, true);
@@ -52,7 +52,7 @@ internal sealed class ViewerMenuController : IDisposable
         yield return SeparatorMenuItem.Instance;
         yield return new CheckableMenuItem("Pixel Info", () => _pixelInfo.IsEnabled, () =>
         {
-            if (_pixelInfo.IsEnabled) _pixelInfo.Disable(); else _pixelInfo.Enable();
+            _pixelInfo.IsEnabled = !_pixelInfo.IsEnabled;
         });
     }
 

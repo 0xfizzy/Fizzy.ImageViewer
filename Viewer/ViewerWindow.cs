@@ -1,6 +1,7 @@
+using Fizzy.ImageViewer.Hud;
 using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
-using Fizzy.ImageViewer.Controls;
+using Fizzy.ImageViewer.Viewport;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,7 +11,7 @@ namespace Fizzy.ImageViewer
     internal class ViewerWindow : Window
     {
         // 公开图层供 Manager 使用
-        public ImageLayer ImageLayer { get; }
+        public ImageViewport ImageViewport { get; }
         internal MeasurementOverlay MeasurementOverlay => Layers.Measurements.Overlay;
         public HudLayer HudLayer { get; }
         public Layers.ViewerLayers Layers { get; }
@@ -27,17 +28,17 @@ namespace Fizzy.ImageViewer
             WindowStartupLocation = WindowStartupLocation.Manual;
 
             // === 实例化图层 ===
-            ImageLayer = new ImageLayer();
-            Layers = new Layers.ViewerLayers(ImageLayer.TransformGroup, lifetime);
+            ImageViewport = new ImageViewport();
+            Layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, lifetime);
             HudLayer = new HudLayer();
 
 
-            ImageLayer.ScaleChanged += Layers.Collection.UpdateScale;
+            ImageViewport.ScaleChanged += Layers.Collection.UpdateScale;
 
             var grid = new Grid();
 
             // 叠加顺序很重要：0在底，2在顶
-            grid.Children.Add(ImageLayer);
+            grid.Children.Add(ImageViewport);
             grid.Children.Add(Layers.Collection.Root);
             grid.Children.Add(HudLayer);
 

@@ -1,23 +1,19 @@
-using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements.Presentation;
 
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>The single owner for preview, model, presentation, query and external resources.</summary>
-internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
+internal sealed class MeasurementItem : IMeasurement
 {
-    private readonly MeasurementStore _store;
+    private readonly MeasurementCollection _owner;
     internal MeasurementPresentation Presentation { get; }
     internal MeasurementCreationSession Session { get; }
     private readonly MeasurementOptions _options;
     private readonly List<IDisposable> _resources = [];
     private readonly List<Action> _callbacks = [];
     private QuerySubscription? _subscription;
-    private QueryRequest? _cached;
-    private (long Version, FrameDescriptor Descriptor)? _cacheKey;
-    private PixelCoordinate[] _coordinates = [];
+    internal MeasurementQueryClient QueryClient { get; }
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }
     public long GeometryVersion { get; private set; }
@@ -26,42 +22,44 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
     public bool IsDisposed => _disposed;
     public bool IsComplete { get; private set; }
     internal bool CompletionNotified { get; set; }
+    internal event Action<MeasurementGeometry>? GeometryApplied;
     public event Action<MeasurementGeometry>? GeometryChanged;
     public event Action<MeasurementResult?>? ResultChanged;
 
     // Public handles dispatch; model, query and cleanup paths already own the STA.
-    MeasurementGeometry IMeasurement.Geometry => _store.Invoke(() => Geometry);
-    long IMeasurement.GeometryVersion => _store.Invoke(() => GeometryVersion);
-    MeasurementResult? IMeasurement.Result => _store.Invoke(() => Result);
-    bool IMeasurement.IsComplete => _store.Invoke(() => IsComplete);
-    void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _store.Invoke(() => UpdateGeometry(geometry));
-    void IMeasurement.Complete() => _store.Invoke(Complete);
-    void IMeasurement.AddResource(IDisposable resource) => _store.Invoke(() => AddResource(resource));
-    void IMeasurement.OnDispose(Action callback) => _store.Invoke(() => OnDispose(callback));
-    void IDisposable.Dispose() => _store.InvokeRemoval(Dispose);
+    MeasurementGeometry IMeasurement.Geometry => _owner.Invoke(() => Geometry);
+    long IMeasurement.GeometryVersion => _owner.Invoke(() => GeometryVersion);
+    MeasurementResult? IMeasurement.Result => _owner.Invoke(() => Result);
+    bool IMeasurement.IsComplete => _owner.Invoke(() => IsComplete);
+    void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _owner.Invoke(() => UpdateGeometry(geometry));
+    void IMeasurement.Complete() => _owner.Invoke(Complete);
+    void IMeasurement.AddResource(IDisposable resource) => _owner.Invoke(() => AddResource(resource));
+    void IMeasurement.OnDispose(Action callback) => _owner.Invoke(() => OnDispose(callback));
+    void IDisposable.Dispose() => _owner.InvokeRemoval(Dispose);
     event Action<MeasurementGeometry>? IMeasurement.GeometryChanged
     {
-        add => _store.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
-        remove => _store.InvokeRemoval(() => GeometryChanged -= value);
+        add => _owner.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
+        remove => _owner.InvokeRemoval(() => GeometryChanged -= value);
     }
     event Action<MeasurementResult?>? IMeasurement.ResultChanged
     {
-        add => _store.Invoke(() => { EnsureAlive(); ResultChanged += value; });
-        remove => _store.InvokeRemoval(() => ResultChanged -= value);
+        add => _owner.Invoke(() => { EnsureAlive(); ResultChanged += value; });
+        remove => _owner.InvokeRemoval(() => ResultChanged -= value);
     }
 
-    internal MeasurementItem(MeasurementStore store, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
+    internal MeasurementItem(MeasurementCollection owner, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationSession session)
     {
-        _store = store;
+        _owner = owner;
         Geometry = geometry;
         Session = session;
         _options = options with { Style = null };
-        var style = (options.Style ?? store.Style).Snapshot();
-        Presentation = new(store.Layer, geometry, style, Dispose);
+        QueryClient = new(this, options.Query);
+        var style = (options.Style ?? owner.Style).Snapshot();
+        Presentation = new(owner.Layer, geometry, style, Dispose);
     }
     private void EnsureAlive()
     {
-        _store.VerifyAccess();
+        _owner.VerifyAccess();
         ObjectDisposedException.ThrowIf(IsDisposed, this);
     }
 
@@ -87,13 +85,13 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         if (geometry == Geometry) return;
         Geometry = geometry;
         var version = ++GeometryVersion;
-        _cached = null;
-        _cacheKey = null;
+        QueryClient.Reset();
         Presentation.Apply(geometry);
+        GeometryApplied?.Invoke(geometry);
         ClearResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
-        _store.NotifyChanged(this);
-        if (!IsDisposed && GeometryVersion == version) _store.Notify(GeometryChanged, geometry);
+        _owner.NotifyChanged(this);
+        if (!IsDisposed && GeometryVersion == version) _owner.Notify(GeometryChanged, geometry);
     }
     public void Complete()
     {
@@ -104,8 +102,8 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         try
         {
             Presentation.Complete(_options.ShowProfileWindow);
-            if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _store.Register(this);
-            if (!IsDisposed) _store.NotifyCompleted(this);
+            if (!IsDisposed && _options.Query != MeasurementQuery.None) _subscription = _owner.Register(QueryClient);
+            if (!IsDisposed) _owner.NotifyCompleted(this);
         }
         catch { Dispose(); throw; }
     }
@@ -118,54 +116,22 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         Presentation.ClearResult(Geometry);
         if (hadResult && !IsDisposed)
         {
-            if (notifyChanged) _store.NotifyChanged(this);
-            if (!IsDisposed && Result == null) _store.Notify(ResultChanged, (MeasurementResult?)null);
+            if (notifyChanged) _owner.NotifyChanged(this);
+            if (!IsDisposed && Result == null) _owner.Notify(ResultChanged, (MeasurementResult?)null);
         }
     }
-    public QueryRequest? Capture(FrameDescriptor descriptor)
+    internal void PublishResult(MeasurementResult result)
     {
-        if (IsDisposed || !IsComplete || _options.Query == MeasurementQuery.None) return null;
-        var key = (GeometryVersion, descriptor);
-        if (_cacheKey == key) return _cached;
-        _cacheKey = key;
-        var identity = new QueryIdentity(Id, GeometryVersion);
-        switch (_options.Query)
-        {
-            case MeasurementQuery.RegionStatistics:
-                var region = Geometry.ToRegion(descriptor);
-                return _cached = region.IsEmpty ? null : new RegionStatisticsQueryRequest(identity, region,
-                    (frame, stats) => PublishResult(new(Id, identity.GeometryVersion, frame, _options.Query,
-                        [], [], region, (ChannelStatistics[])stats.Channels.Clone())));
-            case MeasurementQuery.Pixel:
-                var x = Math.Floor(Geometry.Position.X);
-                var y = Math.Floor(Geometry.Position.Y);
-                if (x < 0 || y < 0 || x >= descriptor.Width || y >= descriptor.Height) return _cached = null;
-                _coordinates = [new((int)x, (int)y)];
-                return _cached = new PixelQueryRequest(identity, _coordinates, PublishSamples);
-            case MeasurementQuery.LineProfile:
-                _coordinates = LineSampling.GetCoordinates(descriptor, Geometry.Start.X, Geometry.Start.Y, Geometry.End.X, Geometry.End.Y);
-                return _cached = _coordinates.Length == 0 ? null : new LineProfileQueryRequest(identity, _coordinates, PublishSamples);
-            default: return null;
-        }
-    }
-    private void PublishSamples(FrameInfo frame, ReadOnlySpan<PixelSample> samples)
-    {
-        if (IsDisposed) return;
-        PublishResult(new(Id, GeometryVersion, frame, _options.Query, _coordinates, samples.ToArray(), null, []));
-    }
-
-    private void PublishResult(MeasurementResult result)
-    {
-        if (IsDisposed) return;
+        if (IsDisposed || result.GeometryVersion != GeometryVersion) return;
         Result = result;
         Presentation.ShowResult(Geometry, result);
-        _store.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(Result, result)) _store.Notify(ResultChanged, result);
+        _owner.NotifyChanged(this);
+        if (!IsDisposed && ReferenceEquals(Result, result)) _owner.Notify(ResultChanged, result);
     }
 
     public void Dispose()
     {
-        _store.VerifyAccess();
+        _owner.VerifyAccess();
         if (IsDisposed) return;
         _disposed = true;
         Session.Release(this);
@@ -175,14 +141,14 @@ internal sealed class MeasurementItem : IMeasurement, IFrameQueryClient
         _subscription = null;
         foreach (var callback in _callbacks) Release(callback);
         foreach (var resource in _resources) Release(resource.Dispose);
-        Release(() => _store.Detach(this));
+        Release(() => _owner.Detach(this));
         Release(Presentation.Dispose);
-        Release(() => _store.NotifyRemoved(this));
+        Release(() => _owner.NotifyRemoved(this));
         _callbacks.Clear();
         _resources.Clear();
-        _cached = null;
+        QueryClient.Reset();
         Result = null;
-        _coordinates = [];
+        GeometryApplied = null;
         GeometryChanged = null;
         ResultChanged = null;
         if (errors.Count > 0) throw new AggregateException("Measurement cleanup failed.", errors);

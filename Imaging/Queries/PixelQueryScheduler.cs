@@ -130,11 +130,11 @@ internal sealed class PixelQueryScheduler : IDisposable
                 destination += points.Length;
             }
         }
-        PixelSample[]? samples = [];
+        ReadOnlyMemory<PixelSample>? samples = ReadOnlyMemory<PixelSample>.Empty;
         try
         {
-            if (coordinates.Length != 0) samples = (await frame.ReadPixelsAsync(coordinates, _token)).Samples;
-            if (samples.Length != coordinates.Length) throw new InvalidOperationException("Incorrect sample count.");
+            if (coordinates.Length != 0) samples = (await frame.ReadPixelsAsync(coordinates, _token)).SampleMemory;
+            if (samples.Value.Length != coordinates.Length) throw new InvalidOperationException("Incorrect sample count.");
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { samples = null; _logger.LogWarning(ex, "Pixel gather failed"); }
@@ -153,7 +153,7 @@ internal sealed class PixelQueryScheduler : IDisposable
             else
             {
                 var count = Coordinates(request).Length;
-                output[i] = samples == null ? new FailedQueryResult() : new SamplesResult(samples.AsMemory(offset, count));
+                output[i] = samples == null ? new FailedQueryResult() : new SamplesResult(samples.Value.Slice(offset, count));
                 offset += count;
             }
         }

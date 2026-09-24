@@ -21,7 +21,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 Stroke = style.NormalBrush,
                 StrokeThickness = BaseStrokeThickness
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
+            MeasurementVisualData.Attach(visual, new MeasurementVisualData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -38,7 +38,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 FontSize = BaseFontSize,
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.AnchoredLabel)
+            MeasurementVisualData.Attach(visual, new MeasurementVisualData(OverlayScaleMode.AnchoredLabel)
             {
                 AnchorPoint = anchor,
                 ScreenOffset = new Vector(offsetX, offsetY),
@@ -60,7 +60,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 Fill = style.PointBrush,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize, usesFill: true)
+            MeasurementVisualData.Attach(path, new MeasurementVisualData(OverlayScaleMode.FixedSize, usesFill: true)
             {
                 AnchorPoint = position,
                 SelectedBrush = style.SelectedBrush
@@ -69,13 +69,13 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
         }
 
         // 4. 创建准星 (FixedSize)
-        public static Path CreateCrosshair(Point position, double size = 20, double thickness = 2, MeasurementStyle? style = null)
+        public static Path CreateCrosshair(Point position, double armLength = 20, double thickness = 2, MeasurementStyle? style = null)
         {
             style = (style ?? MeasurementStyle.Default).Snapshot();
             var geometry = new GeometryGroup();
-            geometry.Children.Add(new LineGeometry(new Point(-size, 0), new Point(size, 0)));
-            geometry.Children.Add(new LineGeometry(new Point(0, -size), new Point(0, size)));
-            geometry.Children.Add(new EllipseGeometry(new Point(0, 0), size / 2, size / 2));
+            geometry.Children.Add(new LineGeometry(new Point(-armLength, 0), new Point(armLength, 0)));
+            geometry.Children.Add(new LineGeometry(new Point(0, -armLength), new Point(0, armLength)));
+            geometry.Children.Add(new EllipseGeometry(new Point(0, 0), armLength / 2, armLength / 2));
 
             var path = new Path
             {
@@ -83,7 +83,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 StrokeThickness = thickness,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedSize)
+            MeasurementVisualData.Attach(path, new MeasurementVisualData(OverlayScaleMode.FixedSize)
             {
                 AnchorPoint = position,
                 SelectedBrush = style.SelectedBrush
@@ -103,7 +103,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 StrokeThickness = 1.0,
                 StrokeDashArray = new DoubleCollection { 4, 2 }
             };
-            OverlayShapeData.Attach(visual, new OverlayShapeData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
+            MeasurementVisualData.Attach(visual, new MeasurementVisualData(OverlayScaleMode.FixedStroke) { SelectedBrush = style.SelectedBrush });
             return visual;
         }
 
@@ -119,7 +119,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 StrokeThickness = BaseStrokeThickness,
                 Data = geometry
             };
-            OverlayShapeData.Attach(path, new OverlayShapeData(OverlayScaleMode.FixedStroke)
+            MeasurementVisualData.Attach(path, new MeasurementVisualData(OverlayScaleMode.FixedStroke)
             {
                 AnchorPoint = center,
                 SelectedBrush = style.SelectedBrush

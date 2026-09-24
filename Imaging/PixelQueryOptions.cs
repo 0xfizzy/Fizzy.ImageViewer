@@ -11,4 +11,3 @@ public sealed record PixelQueryOptions
         if (!double.IsFinite(PixelRate) || PixelRate<=0 || !double.IsFinite(LineRate) || LineRate<=0 || !double.IsFinite(RegionRate) || RegionRate<=0 || MaxResultAge<=TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(PixelQueryOptions));
     }
 }
-public readonly record struct PixelQueryMetrics(long Batches, long ExpiredResults, double LastDurationMilliseconds);

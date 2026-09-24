@@ -277,7 +277,7 @@ public class ViewerTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var layer = new Controls.ImageLayer();
+            var layer = new Viewport.ImageViewport();
             var bitmap = BitmapSource.Create(2, 1, 192, 192, PixelFormats.Gray8, null, new byte[] { 0, 255 }, 2);
             layer.SetImage(bitmap, 2, 1);
             layer.Measure(new System.Windows.Size(100, 100));
@@ -316,7 +316,7 @@ public class ViewerTests
             await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
             Assert.Throws<ObjectDisposedException>(() => viewer.Show());
             Assert.Throws<ObjectDisposedException>(() => viewer.Title = "closed");
-            Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateLayer("after-close"));
+            Assert.Throws<ObjectDisposedException>(() => viewer.Layers.CreateDrawingLayer("after-close"));
             Assert.Equal(FrameSubmitStatus.Closed, (await viewer.SubmitFrameAsync(Frame(8))).Status);
         }
         finally { await viewer.DisposeAsync(); }

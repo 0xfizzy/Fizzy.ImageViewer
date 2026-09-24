@@ -4,6 +4,8 @@
 
 `ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
 public API calls and raises notifications. It does not own rendering queue or menu-target state.
+`FramePipeline` and presentation implementations belong to Rendering; Frames contains
+storage, leases and submission contracts.
 
 | Component | State and responsibility |
 | --- | --- |
@@ -86,7 +88,10 @@ Use `FrameLease.ReadPixelsAsync(coordinates, token)`, `ComputeRegionStatisticsAs
 token)` and `ReadRegionAsync(region, token)` for backend-independent access. Coordinates use
 `ReadOnlyMemory<PixelCoordinate>` and results preserve input order, raw units and format.
 Each call acquires its own lease before asynchronous work and retains storage through completion.
-Pixel and statistics results carry the queried lease's `FrameInfo`. `FrameLease.Info.Descriptor`
+Pixel and statistics results carry the queried lease's `FrameInfo`. `PixelQueryResult`
+and `RegionStatistics` copy constructor inputs and expose read-only collections that
+can be retained and shared. Pixel providers transfer their returned sample arrays to the
+caller and must not reuse or mutate them after returning. `FrameLease.Info.Descriptor`
 always describes its own pixels. Unsubmitted frames, including derived pixel buffers, have
 FrameId 0 and no source timestamp. Submission assigns a viewer-local ID to the submitted lease;
 leases acquired before submission remain unsubmitted.
@@ -102,7 +107,7 @@ CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. St
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
 with null statistics when no finite values exist. Premultiplied channels stay premultiplied.
 
-One measurement scheduler per viewer captures geometry on STA and queries off STA, with at most
+One pixel query scheduler per viewer captures geometry on STA and queries off STA, with at most
 one batch in flight. Mouse and line coordinates share one gather. Line clipping, rounded endpoints,
 Bresenham order and distances are unchanged. ROI geometry uses floor(left/top), ceil(right/bottom),
 then image intersection; empty regions are not queried. Shape editors preserve statistics labels.

@@ -56,15 +56,6 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 右上角 HUD 标签文本。
-    /// </summary>
-    public string? Label
-    {
-        get => InvokeAlive(() => _host.Window.HudLayer.Label);
-        set => InvokeAlive(() => _host.Window.HudLayer.Label = value);
-    }
-
-    /// <summary>
     /// 是否启用无边框模式。
     /// </summary>
     public bool Borderless
@@ -96,6 +87,6 @@ public partial class Viewer
 
     public void FitImageToContainer()
     {
-        InvokeAlive(() => _host.Window.ImageLayer.FitImageToContainer());
+        InvokeAlive(() => _host.Window.ImageViewport.FitImageToContainer());
     }
 }

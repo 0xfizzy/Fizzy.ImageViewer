@@ -13,6 +13,8 @@ public interface IMeasurement : IDisposable
     MeasurementResult? Result { get; }
     event Action<MeasurementGeometry>? GeometryChanged;
     event Action<MeasurementResult?>? ResultChanged;
+    /// <summary>Updates the model, visuals and editing controls before notification.
+    /// During dragging, programmatic changes replace the drag baseline.</summary>
     void UpdateGeometry(MeasurementGeometry geometry);
     void Complete();
     void AddResource(IDisposable resource);

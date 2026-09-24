@@ -3,9 +3,6 @@ using Fizzy.ImageViewer.Frames;
 
 namespace Fizzy.ImageViewer.Snapshots;
 
-public enum SnapshotKind { Raw, Display }
-public enum SnapshotEncoding { Tiff, Png, Jpeg, Bmp }
-
 /// <summary>Independent immutable pixels. Owns its storage until disposed.</summary>
 public sealed class ImageSnapshot : IDisposable
 {

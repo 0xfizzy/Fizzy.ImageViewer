@@ -121,7 +121,7 @@ public class MeasurementStyleTests
             viewer.Host.Interaction.ImageDown(3, 4);
             var shape = Assert.Single(viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
             Assert.Same(Brushes.Purple, shape.Stroke);
-            viewer.Layers.Clear();
+            viewer.Layers.ClearContents();
         });
         Assert.Throws<ArgumentNullException>(() => viewer.MeasurementStyle = null!);
         Assert.Throws<ArgumentNullException>(() => viewer.MeasurementStyle = new() { NormalBrush = null! });
