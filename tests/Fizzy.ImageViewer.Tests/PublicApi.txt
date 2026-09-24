@@ -68,7 +68,6 @@ Fizzy.ImageViewer.Drawing.LineElement: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Drawing.LineElement: public virtual System.String ToString()
 Fizzy.ImageViewer.Drawing.LineElement: virtual System.Type EqualityContract { protected get; }
 Fizzy.ImageViewer.Drawing.OverlayScaleMode: public System.Int32 value__
-Fizzy.ImageViewer.Drawing.OverlayScaleMode: public const Fizzy.ImageViewer.Drawing.OverlayScaleMode AnchoredLabel = 3
 Fizzy.ImageViewer.Drawing.OverlayScaleMode: public const Fizzy.ImageViewer.Drawing.OverlayScaleMode FixedSize = 2
 Fizzy.ImageViewer.Drawing.OverlayScaleMode: public const Fizzy.ImageViewer.Drawing.OverlayScaleMode FixedStroke = 1
 Fizzy.ImageViewer.Drawing.OverlayScaleMode: public const Fizzy.ImageViewer.Drawing.OverlayScaleMode ScaleWithImage = 0

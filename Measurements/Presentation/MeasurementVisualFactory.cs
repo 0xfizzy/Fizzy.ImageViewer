@@ -25,7 +25,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
             return visual;
         }
 
-        // 2. 创建文字标签 (AnchoredLabel)
+        // 2. 创建文字标签 (FixedSize)
         public static TextBlock CreateLabel(Point anchor, string text = "", double offsetX = 10, double offsetY = 10, MeasurementStyle? style = null)
         {
             style = (style ?? MeasurementStyle.Default).Snapshot();
@@ -38,7 +38,7 @@ namespace Fizzy.ImageViewer.Measurements.Presentation
                 FontSize = BaseFontSize,
                 IsHitTestVisible = false, // 标签不可点击，通过主形状选中
             };
-            MeasurementVisualData.Attach(visual, new MeasurementVisualData(OverlayScaleMode.AnchoredLabel)
+            MeasurementVisualData.Attach(visual, new MeasurementVisualData(OverlayScaleMode.FixedSize)
             {
                 AnchorPoint = anchor,
                 ScreenOffset = new Vector(offsetX, offsetY),

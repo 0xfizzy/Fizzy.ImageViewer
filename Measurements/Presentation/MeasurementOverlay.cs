@@ -97,7 +97,6 @@ internal class MeasurementOverlay : UserControl
                 break;
 
             case OverlayScaleMode.FixedSize:
-            case OverlayScaleMode.AnchoredLabel:
                 // Invert the complete visual, including text, padding and background.
                 // Its image anchor remains in canvas coordinates; only the screen
                 // offset is converted into image units.
@@ -113,8 +112,7 @@ internal class MeasurementOverlay : UserControl
                     transform.CachedScaleTransform.ScaleX = inverseScale;
                     transform.CachedScaleTransform.ScaleY = inverseScale;
                 }
-                var offset = transform.Mode == OverlayScaleMode.AnchoredLabel
-                    ? transform.ScreenOffset : new Vector();
+                var offset = transform.ScreenOffset;
                 Canvas.SetLeft(element, transform.AnchorPoint.X + offset.X * inverseScale);
                 Canvas.SetTop(element, transform.AnchorPoint.Y + offset.Y * inverseScale);
                 break;

@@ -165,13 +165,18 @@ physical presentation; it does not establish sustained camera-stream GC performa
 
 ## Coordinates, size and input
 
+`OverlayScaleMode` describes scaling, independently of element positioning.
+Each element supports the modes listed below; unsupported modes are rejected by
+`Add` or `Replace` before content changes. Fixed screen dimensions use WPF DIPs,
+not physical display pixels.
+
 - Line, rectangle and circle default to `FixedStroke`: geometry uses image pixels,
   thickness uses screen DIPs. `ScaleWithImage` scales both geometry and thickness.
 - Circle additionally supports `FixedSize`: radius and thickness use screen DIPs,
   while the center remains in image coordinates.
 - Crosshair defaults to `FixedSize`, supports `FixedStroke` and `ScaleWithImage`; `ArmLength` is
   the distance from the center to each endpoint, with a center ring of radius `ArmLength / 2`.
-- Text defaults to `AnchoredLabel`: font size and offset use screen DIPs. `ScaleWithImage`
+- Text defaults to `FixedSize`: font size and offset use screen DIPs. `ScaleWithImage`
   scales them with the image. Its default typeface is Segoe UI.
 - Pan updates only the shared transform. Scale-dependent batches are redrawn once
   per rendering cycle; DPI changes also refresh text drawing.

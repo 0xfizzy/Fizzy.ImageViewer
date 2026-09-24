@@ -172,7 +172,7 @@ public class DrawingTests
         });
         Assert.Throws<ArgumentOutOfRangeException>(() => batch.Replace([Circle() with { Radius = -1 }]));
         Assert.Throws<ArgumentException>(() => batch.Replace([new LineElement(new(double.NaN, 1), new(), Brushes.Red)]));
-        Assert.Throws<ArgumentException>(() => batch.Replace([new TextElement(new(), "x", Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }]));
+        Assert.Throws<ArgumentException>(() => batch.Replace([new TextElement(new(), "x", Brushes.Red) { ScaleMode = OverlayScaleMode.FixedStroke }]));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Single(batch.Elements));
         batch.Replace([]);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { Assert.Empty(batch.Elements); Assert.True(batch.Visual.ContentBounds.IsEmpty); Assert.Equal(1, viewer.Layers.Markers.Host.Count); });
