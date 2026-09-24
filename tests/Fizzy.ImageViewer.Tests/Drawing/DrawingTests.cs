@@ -357,13 +357,20 @@ public class DrawingTests
             Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
             var parent = (Grid)VisualTreeHelper.GetParent(viewer.Layers.Collection.Root);
             var image = parent.Children.OfType<ImageViewport>().Single();
+            Assert.Throws<InvalidOperationException>(() => viewer.StartMeasurement("Point"));
+            Assert.False(viewer.Layers.Collection.InputSuppressed);
+            Assert.False(viewer.Layers.Measurements.IsHitTestVisible);
+            viewer.Layers.Measurements.IsHitTestVisible = true;
             viewer.StartMeasurement("Point");
+            Assert.True(viewer.Layers.Collection.InputSuppressed);
+            Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
+            Assert.True(viewer.Layers.Measurements.IsHitTestVisible);
             image.Container.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(
                 System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
                 { RoutedEvent = UIElement.MouseLeftButtonDownEvent });
             Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.True(enabled.Root.IsHitTestVisible);
-            Assert.False(viewer.Layers.Measurements.Root.IsHitTestVisible);
+            Assert.True(viewer.Layers.Measurements.Root.IsHitTestVisible);
             viewer.StartMeasurement("Length");
             viewer.Layers.Measurements.Clear();
             Assert.False(viewer.Layers.Collection.InputSuppressed);

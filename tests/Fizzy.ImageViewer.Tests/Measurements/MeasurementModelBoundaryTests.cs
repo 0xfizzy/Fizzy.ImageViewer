@@ -44,7 +44,7 @@ public class MeasurementModelBoundaryTests
         var frame = new FrameInfo(1, new(1, 1, 1, FramePixelFormat.Gray8), null);
         PixelCoordinate[] coordinates = [new(0, 0)];
         PixelSample[] samples = [new(FramePixelFormat.Gray8, 7, 0, 0, 0, 255)];
-        var pixels = new MeasurementSampleResult(Guid.NewGuid(), 0, frame, MeasurementQuery.Pixel, coordinates, samples);
+        var pixels = new MeasurementSampleResult(Guid.NewGuid(), 0, frame, MeasurementQueryKind.Pixel, coordinates, samples);
         coordinates[0] = new(9, 9);
         samples[0] = samples[0] with { Gray = 99 };
         Assert.Equal(new PixelCoordinate(0, 0), pixels.Coordinates[0]);

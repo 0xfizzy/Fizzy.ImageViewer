@@ -61,7 +61,7 @@ internal sealed class MeasurementCollection
         return item;
     }
     private static MeasurementEventArgs Snapshot(MeasurementItem item) =>
-        new(new(item.Id, item.Geometry, item.GeometryVersion, item.Origin), item, item.Result);
+        new(new(item.Id, item.Geometry, item.GeometryVersion, item.Origin), item, item.QueryResult);
     public void VerifyAccess() => _runtime.VerifyAccess();
     internal T Invoke<T>(Func<T> action) => _runtime.Invoke(action);
     internal void Invoke(Action action) => _runtime.Invoke(action);

@@ -34,6 +34,7 @@ public partial class Viewer
             ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
             if (!_host.Tools.HasTool(toolId)) throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
             if (!Layers.Measurements.IsVisible) throw new InvalidOperationException("Measurement layer is hidden.");
+            if (!Layers.Measurements.IsHitTestVisible) throw new InvalidOperationException("Measurement layer hit testing is disabled.");
             _host.Interaction.StartMeasurement(toolId);
         });
     }

@@ -19,7 +19,28 @@ namespace Fizzy.ImageViewer.Tests;
 public class LineProfileTests
 {
     [Fact]
-    public async Task DataOnlyProfilePublishesRetainedResultsWithoutOpeningAPlot()
+    public async Task LengthIsGeometricAndDoesNotRequireAQueryResult()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
+                .CreateMeasurement(MeasurementGeometry.Line(new(), new(3, 4)));
+            item.Complete();
+            Assert.Equal(5, ((LineMeasurementGeometry)item.Geometry).Length);
+            Assert.Contains("5", item.Presentation.Label.Text);
+            Assert.Null(item.QueryResult);
+            item.UpdateGeometry(MeasurementGeometry.Line(new(), new(6, 8)));
+            Assert.Equal(10, ((LineMeasurementGeometry)item.Geometry).Length);
+            Assert.Contains("10", item.Presentation.Label.Text);
+            Assert.Null(item.QueryResult);
+            item.Dispose();
+        });
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProfileQueryPublishesResultsWithIndependentWindowOption(bool showWindow)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -27,21 +48,22 @@ public class LineProfileTests
             var before = Windows();
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
                 .CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 0)),
-                    new() { Query = MeasurementQueryOptions.LineProfile });
+                    new() { Query = MeasurementQueryKind.LineProfile, ShowProfileWindow = showWindow });
             item.Complete();
             var descriptor = new FrameDescriptor(2, 1, 2, FramePixelFormat.Gray8);
             var request = Assert.IsType<LineProfileQueryRequest>(item.QueryClient.Capture(descriptor));
             PixelSample[] samples = [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255),
                 new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)];
             request.Publish(new(1, descriptor, null), samples);
-            var retained = Assert.IsType<MeasurementSampleResult>(item.Result);
+            var retained = Assert.IsType<MeasurementSampleResult>(item.QueryResult);
             samples[0] = samples[0] with { Gray = 30 };
             request.Publish(new(2, descriptor, null), samples);
             Assert.Equal(10, retained.Samples[0].Gray);
-            Assert.Equal(30, Assert.IsType<MeasurementSampleResult>(item.Result).Samples[0].Gray);
-            Assert.Empty(Windows().Except(before));
+            Assert.Equal(30, Assert.IsType<MeasurementSampleResult>(item.QueryResult).Samples[0].Gray);
+            Assert.Equal(showWindow ? 1 : 0, Windows().Except(before).Count());
             item.Dispose();
             Assert.Equal(20, retained.Samples[1].Gray);
+            Assert.Empty(Windows().Except(before));
         });
     }
 

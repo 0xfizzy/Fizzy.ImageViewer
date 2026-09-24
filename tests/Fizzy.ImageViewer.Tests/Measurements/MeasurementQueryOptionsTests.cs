@@ -1,3 +1,6 @@
+using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Imaging;
+using Fizzy.ImageViewer.Imaging.Queries;
 using Fizzy.ImageViewer.Measurements;
 using Xunit;
 
@@ -6,57 +9,78 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementQueryOptionsTests
 {
     [Fact]
-    public void QueryConfigurationOwnsOnlyApplicablePresentationOptions()
+    public void ProfileWindowRequiresAnExplicitLineQuery()
     {
-        Assert.Equal(MeasurementQuery.None, new MeasurementOptions().Query.Kind);
-        Assert.False(MeasurementQueryOptions.LineProfile.ShowWindow);
-        var profile = new LineProfileMeasurementQueryOptions(showWindow: true);
-        Assert.Equal(MeasurementQuery.LineProfile, profile.Kind);
-        Assert.True(profile.ShowWindow);
-        new MeasurementOptions { Query = profile }.Validate(MeasurementGeometry.Line(new(), new(1, 1)));
-        Assert.Throws<ArgumentException>(() => new MeasurementOptions { Query = profile }
-            .Validate(MeasurementGeometry.Point(new())));
-        Assert.Throws<ArgumentNullException>(() => new MeasurementOptions { Query = null! }
-            .Validate(MeasurementGeometry.Point(new())));
+        Assert.Equal(MeasurementQueryKind.None, new MeasurementOptions().Query);
+        Assert.False(new MeasurementOptions().ShowProfileWindow);
+        var line = MeasurementGeometry.Line(new(), new(1, 1));
+        new MeasurementOptions { Query = MeasurementQueryKind.LineProfile, ShowProfileWindow = true }.Validate(line);
+        foreach (var query in new[] { MeasurementQueryKind.None, MeasurementQueryKind.Pixel, MeasurementQueryKind.RegionStatistics })
+            Assert.Throws<ArgumentException>(() => new MeasurementOptions { Query = query, ShowProfileWindow = true }.Validate(line));
+        Assert.Throws<ArgumentException>(() => new MeasurementOptions { Query = (MeasurementQueryKind)999 }.Validate(line));
     }
 
     [Fact]
-    public void EveryQueryAcceptsItsGeometryAndRejectsIncompatibleShapes()
+    public void GeometryValidationAndRequestsAgreeForEverySupportedPair()
     {
-        var point = MeasurementGeometry.Point(new());
-        var crosshair = MeasurementGeometry.Crosshair(new());
-        var line = MeasurementGeometry.Line(new(), new(1, 1));
-        var rectangle = MeasurementGeometry.Rectangle(new(), new(1, 1));
-        var circle = MeasurementGeometry.Circle(new(), 1);
+        var point = MeasurementGeometry.Point(new(1, 1));
+        var crosshair = MeasurementGeometry.Crosshair(new(1, 1));
+        var line = MeasurementGeometry.Line(new(), new(2, 0));
+        var rectangle = MeasurementGeometry.Rectangle(new(), new(2, 2));
+        var circle = MeasurementGeometry.Circle(new(1, 1), 1);
         var geometries = new MeasurementGeometry[] { point, crosshair, line, rectangle, circle };
-        var queries = new[] { MeasurementQueryOptions.None, MeasurementQueryOptions.Pixel,
-            MeasurementQueryOptions.LineProfile, MeasurementQueryOptions.RegionStatistics };
-        foreach (var query in queries)
+        var descriptor = new FrameDescriptor(4, 4, 4, FramePixelFormat.Gray8);
+        var identity = new QueryIdentity(Guid.NewGuid(), 7);
+        foreach (var query in Enum.GetValues<MeasurementQueryKind>())
         foreach (var geometry in geometries)
         {
-            var options = new MeasurementOptions { Query = query };
-            bool supported = query.Kind switch
+            bool supported = query switch
             {
-                MeasurementQuery.None => true,
-                MeasurementQuery.Pixel => geometry == point || geometry == crosshair,
-                MeasurementQuery.LineProfile => geometry == line,
-                _ => geometry == rectangle
+                MeasurementQueryKind.None => true,
+                MeasurementQueryKind.Pixel => geometry == point || geometry == crosshair,
+                MeasurementQueryKind.LineProfile => geometry == line,
+                MeasurementQueryKind.RegionStatistics => geometry == rectangle,
+                _ => false
             };
-            if (supported) options.Validate(geometry);
-            else Assert.Throws<ArgumentException>(() => options.Validate(geometry));
+            var options = new MeasurementOptions { Query = query };
+            if (!supported)
+            {
+                Assert.Throws<ArgumentException>(() => options.Validate(geometry));
+                Assert.Throws<ArgumentException>(() => MeasurementQueryDefinition.CreateRequest(query, geometry, descriptor, identity, _ => { }));
+                continue;
+            }
+            options.Validate(geometry);
+            MeasurementQueryResult? result = null;
+            var request = MeasurementQueryDefinition.CreateRequest(query, geometry, descriptor, identity, value => result = value);
+            var frame = new FrameInfo(3, descriptor, null);
+            switch (query)
+            {
+                case MeasurementQueryKind.None:
+                    Assert.Null(request);
+                    continue;
+                case MeasurementQueryKind.Pixel:
+                    var pixel = Assert.IsType<PixelQueryRequest>(request);
+                    Assert.Equal(new PixelCoordinate(1, 1), Assert.Single(pixel.Coordinates));
+                    pixel.Publish(frame, [new(FramePixelFormat.Gray8, 12, 0, 0, 0, 255)]);
+                    Assert.Equal(12, Assert.Single(Assert.IsType<MeasurementSampleResult>(result).Samples).Gray);
+                    break;
+                case MeasurementQueryKind.LineProfile:
+                    var profile = Assert.IsType<LineProfileQueryRequest>(request);
+                    Assert.Equal(new PixelCoordinate[] { new(0, 0), new(1, 0), new(2, 0) }, profile.Coordinates);
+                    profile.Publish(frame, new PixelSample[3]);
+                    Assert.Equal(3, Assert.IsType<MeasurementSampleResult>(result).Samples.Count);
+                    break;
+                case MeasurementQueryKind.RegionStatistics:
+                    var region = Assert.IsType<RegionStatisticsQueryRequest>(request);
+                    Assert.Equal(new PixelRegion(0, 0, 2, 2), region.Region);
+                    region.Publish(frame, new RegionStatistics(FramePixelFormat.Gray8, []));
+                    Assert.Equal(region.Region, Assert.IsType<MeasurementRegionResult>(result).Region);
+                    break;
+            }
+            Assert.Equal(query, result!.Query);
+            Assert.Equal(identity.ClientId, result.MeasurementId);
+            Assert.Equal(identity.GeometryVersion, result.GeometryVersion);
+            Assert.Equal(frame, result.Frame);
         }
-    }
-
-    [Fact]
-    public void QueryConfigurationCannotBeExtendedOrMutatedByConsumers()
-    {
-        var constructors = typeof(MeasurementQueryOptions).GetConstructors(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
-            System.Reflection.BindingFlags.NonPublic);
-        Assert.NotEmpty(constructors);
-        Assert.All(constructors, constructor => Assert.True(constructor.IsFamilyAndAssembly));
-        Assert.True(typeof(LineProfileMeasurementQueryOptions).IsSealed);
-        Assert.Null(typeof(LineProfileMeasurementQueryOptions).GetProperty(nameof(LineProfileMeasurementQueryOptions.ShowWindow))!.SetMethod);
-        Assert.Null(typeof(MeasurementQueryOptions).GetProperty(nameof(MeasurementQueryOptions.Kind))!.SetMethod);
     }
 }

@@ -1,5 +1,7 @@
 # Measurements and interaction
 
+There is no standalone measurement creation or saved-ROI restoration API. Noninteractive drawings use drawing layers; editable measurements belong to tool sessions.
+
 Built-in and custom tools create the same model-owned measurements through
 `IMeasurementToolContext.CreateMeasurement`. Built-in IDs are `Point`, `Length`,
 `RectangleRoi` and `LineProfile`. Batch markers continue to use `DrawingElement` and
@@ -153,7 +155,7 @@ constants are `Point`, `RectangleRoi` and `LineProfile`. Custom tools implement 
 and `DisplayName`, and are installed with `RegisterMeasurementTool`. IDs are
 case-sensitive; blank IDs or display names are rejected. `StartMeasurement` throws
 `KeyNotFoundException` for an unknown ID and `InvalidOperationException` when the
-measurement layer is hidden. `UnregisterMeasurementTool(id)` returns whether an entry
+measurement layer is hidden or its configured hit testing is disabled. `UnregisterMeasurementTool(id)` returns whether an entry
 was removed. Call `EndInteraction()` to cancel creation or end editing; completed measurements and applied edits remain.
 
 Built-in and custom registrations implement `IMeasurementTool`: `Id`, `DisplayName`, and
@@ -221,7 +223,7 @@ is idempotent and safe after closure.
 Use `Viewer.MeasurementChanged` (also on `IViewer`) to observe completed items without
 implementing a tool or accessing WPF visuals. Geometry edits, query publication and result
 invalidation all carry the measurement ID, immutable geometry/version and current immutable
-`Result`. `Result` is null after geometry changes, query failure or expiration. Previews do
+`QueryResult`. `QueryResult` is null after geometry changes, query failure or expiration. Previews do
 not emit this event, and an unchanged geometry or already-empty result does not emit it.
 
 ```csharp
@@ -229,7 +231,7 @@ viewer.MeasurementChanged += (_, e) =>
 {
     var id = e.Snapshot.Id;
     var geometry = e.Snapshot.Geometry;
-    var result = e.Result; // Null means the measurement currently has no valid pixel result.
+    var result = e.QueryResult; // Null means the measurement currently has no valid pixel result.
     // Retain these immutable values or dispatch them to the application's UI.
 };
 viewer.StartMeasurement(MeasurementToolIds.RectangleRoi);
@@ -244,11 +246,11 @@ Closing from a subscriber preserves queued measurement events and emits `Closed`
 removals. Subscriber exceptions are logged and isolated. The event's `Measurement` can be
 disposed from any thread, including reentrantly from a callback. Completion and removal events carry the same result snapshot field,
 but completion does not promise query readiness. Custom tools may additionally subscribe to
-`IMeasurement.GeometryChanged` and `ResultChanged` on their own items.
+`IMeasurement.GeometryChanged` and `QueryResultChanged` on their own items.
 
 ### Queries and retained results
 
-`MeasurementOptions.Query` accepts the closed `MeasurementQueryOptions` family:
+`MeasurementOptions.Query` selects a `MeasurementQueryKind`:
 
 | Query | Supported geometry | Result |
 | --- | --- | --- |
@@ -260,14 +262,16 @@ but completion does not promise query readiness. Custom tools may additionally s
 Incompatible combinations are rejected before any visual attaches. Pixel queries use
 floor coordinates and reject points outside the frame. Line profiles clip to the frame;
 ROI queries and export share `PixelRegion.Clip`. Empty targets have no result.
-Use `MeasurementQueryOptions.Pixel`, `LineProfile`, `RegionStatistics` or `None`.
-Only `new LineProfileMeasurementQueryOptions(showWindow: true)` requests an owned plot
-window on completion. Closing that window removes the measurement. Built-in LineProfile
-enables it; `MeasurementQueryOptions.LineProfile` is data only. Geometry compatibility
-is validated before attachment; unrelated query types have no window option.
+Use `MeasurementQueryKind.Pixel`, `LineProfile`, `RegionStatistics` or `None`.
+Set `ShowProfileWindow = true` independently to request an owned plot window on completion.
+Closing that window removes the measurement. This option requires a line-profile query.
+The built-in line-profile tool enables it; explicit queries default to data only. Geometry compatibility
+and the window/query combination are validated before attachment.
 
-`IMeasurement.Result` is null until successful publication. `ResultChanged` provides an
-immutable `MeasurementResult`, or null when a previous result becomes invalid. The result
+`LineMeasurementGeometry.Length` provides the geometric length in image pixels without reading a frame. A length-only measurement therefore has no query result.
+
+`IMeasurement.QueryResult` is null until successful publication. `QueryResultChanged` provides an
+immutable `MeasurementQueryResult`, or null when a previous result becomes invalid. The result
 includes measurement ID, geometry version, source `FrameInfo`, query kind and read-only
 copies of samples, coordinates or channel statistics. It is safe to retain the result
 after another frame, editing or removal. Collections never borrow scheduler buffers.
@@ -275,7 +279,7 @@ after another frame, editing or removal. Collections never borrow scheduler buff
 Results are a closed class family. Pattern-match `MeasurementSampleResult` to read
 `Coordinates` and `Samples`: `Query` is `Pixel` for one pair or `LineProfile` for ordered
 pairs. `MeasurementRegionResult` exposes a non-null clipped `Region` and `Channels`.
-Common `MeasurementResult` properties contain only provenance and `Query`, so unrelated
+Common `MeasurementQueryResult` properties contain only provenance and `Query`, so unrelated
 payload fields cannot be accidentally read. `None` produces no result.
 
 Labels and plots update before notification. Geometry changes invalidate immediately;
@@ -332,7 +336,7 @@ public sealed class CustomRoi : IMeasurementTool
                 _start = point;
                 _preview = context.CreateMeasurement(
                     MeasurementGeometry.Rectangle(point, point),
-                    new() { Query = MeasurementQueryOptions.RegionStatistics });
+                    new() { Query = MeasurementQueryKind.RegionStatistics });
                 return MeasurementClickResult.Continue;
             }
             OnMouseMove(point);

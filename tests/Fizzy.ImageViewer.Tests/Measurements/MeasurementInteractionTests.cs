@@ -358,7 +358,9 @@ public class MeasurementInteractionTests
             var tools = new MeasurementToolRegistry();
             var editor = new MeasurementEditController(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };
-            using var coordinator = new InteractionCoordinator(new ViewerInputBinding(image, overlay, capture), overlay, editor, tools, context, layers);
+            var binding = new ViewerInputBinding(image, overlay, context, capture);
+            using var coordinator = new InteractionCoordinator(binding, editor, tools, context, layers);
+            binding.Connect(coordinator);
             var tool = new RectangleRoiTool();
             var creation = new MeasurementCreationContext(context);
             var session = tool.CreateSession(creation);

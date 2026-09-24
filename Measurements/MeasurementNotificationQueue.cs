@@ -6,6 +6,7 @@ namespace Fizzy.ImageViewer.Measurements;
 internal sealed class MeasurementNotificationQueue(ILogger logger)
 {
     private readonly Queue<Action> _pending = [];
+    private readonly Queue<Action> _afterNotifications = [];
     private int _depth;
     private bool _draining;
 
@@ -18,6 +19,15 @@ internal sealed class MeasurementNotificationQueue(ILogger logger)
     internal void Post(Action notification)
     {
         _pending.Enqueue(notification);
+        Drain();
+    }
+
+    // Shutdown waits for in-progress mutations as well as already queued events.
+    // Cleanup callbacks may pump messages and close the window before their outer
+    // measurement disposal has captured its terminal removal notification.
+    internal void AfterNotifications(Action action)
+    {
+        _afterNotifications.Enqueue(action);
         Drain();
     }
 
@@ -34,9 +44,12 @@ internal sealed class MeasurementNotificationQueue(ILogger logger)
         _draining = true;
         try
         {
-            while (_pending.TryDequeue(out var notification))
+            while (_pending.Count != 0 || _afterNotifications.Count != 0)
+            {
+                var notification = _pending.Count != 0 ? _pending.Dequeue() : _afterNotifications.Dequeue();
                 try { notification(); }
                 catch (Exception ex) { logger.LogWarning(ex, "Measurement subscriber failed"); }
+            }
         }
         finally { _draining = false; }
     }

@@ -122,7 +122,7 @@ public class MeasurementSessionTests
                 NullLogger.Instance, new DispatcherQueryRuntime(layer.Overlay.Dispatcher));
             var owner = new MeasurementCollection(layer, new ViewerLifetime(), layer.Overlay.Dispatcher, () => null, queries, NullLogger.Instance);
             var creation = new MeasurementCreationContext(owner);
-            var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryOptions.Pixel });
+            var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryKind.Pixel });
             completed.Complete();
             completed.OnDispose(() =>
             {

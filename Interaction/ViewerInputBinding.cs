@@ -1,4 +1,5 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
+using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Viewport;
 using System.Windows;
 using System.Windows.Input;
@@ -8,7 +9,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Fizzy.ImageViewer.Interaction;
 
 /// <summary>Adapts WPF input and pointer effects without owning interaction state.</summary>
-internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay overlay, IMouseCapture? capture = null, ILogger? logger = null) : IDisposable
+internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay overlay, MeasurementCollection measurements,
+    IMouseCapture? capture = null, ILogger? logger = null) : IInteractionView
 {
     private readonly MouseCaptureSession _capture = new(capture ?? new ElementMouseCapture(overlay.Canvas));
     private InteractionCoordinator? _coordinator;
@@ -26,12 +28,14 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
         overlay.Canvas.MouseLeftButtonUp += MouseUp;
         overlay.Canvas.LostMouseCapture += LostCapture;
     }
-    internal bool Capture() => _capture.Begin();
-    internal void EndPan() => input.EndPan();
-    internal void ShowMeasurementCursor() { input.Container.Cursor = Cursors.Pen; input.Container.Focus(); }
-    internal void ShowDragCursor() => input.Container.Cursor = Cursors.Hand;
-    internal void ShowDefaultCursor() => input.Container.Cursor = Cursors.Cross;
-    internal void Restore()
+    public bool Capture() => _capture.Begin();
+    public void EndPan() => input.EndPan();
+    public void ShowMeasurementCursor() { input.Container.Cursor = Cursors.Pen; input.Container.Focus(); }
+    public void ShowDragCursor() => input.Container.Cursor = Cursors.Hand;
+    public void ShowDefaultCursor() => input.Container.Cursor = Cursors.Cross;
+    public void SetSelection(MeasurementItem? item)
+        => overlay.SetSelection(item?.Presentation.PrimaryVisual, item?.Presentation.Visuals ?? []);
+    public void Restore()
     {
         _capture.End();
         input.EndPan();
@@ -54,7 +58,7 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
     private Point ImagePoint(MouseEventArgs e) => input.ContainerToImage(e.GetPosition(input.Container));
     private void MouseDown(object sender, MouseButtonEventArgs e)
     {
-        Dispatch(() => e.Handled = _coordinator!.PointerDown(e.OriginalSource as FrameworkElement, ImagePoint(e)));
+        Dispatch(() => e.Handled = _coordinator!.PointerDown(measurements.Find(e.OriginalSource as UIElement), ImagePoint(e)));
     }
     private void MouseMove(object sender, MouseEventArgs e)
     {

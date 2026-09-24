@@ -23,7 +23,7 @@ public class MeasurementNotificationsTests
                 if (_preview == null)
                 {
                     _preview = context.CreateMeasurement(MeasurementGeometry.Rectangle(point, point),
-                        new() { Query = MeasurementQueryOptions.RegionStatistics });
+                        new() { Query = MeasurementQueryKind.RegionStatistics });
                     return MeasurementClickResult.Continue;
                 }
                 _preview.UpdateGeometry(MeasurementGeometry.Rectangle(Assert.IsType<RectangleMeasurementGeometry>(_preview.Geometry).Start, point));
@@ -55,7 +55,7 @@ public class MeasurementNotificationsTests
         {
             callbackThreads.Add(Environment.CurrentManagedThreadId);
             events.Add(e);
-            if (e.Result != null) ready.TrySetResult(e);
+            if (e.QueryResult != null) ready.TrySetResult(e);
         };
         var tool = new RoiTool();
         api.RegisterMeasurementTool(tool);
@@ -68,14 +68,14 @@ public class MeasurementNotificationsTests
             viewer.Host.Interaction.ImageDown(2, 2);
         });
         Assert.NotNull(completed);
-        Assert.Null(completed.Result);
+        Assert.Null(completed.QueryResult);
         var submission = await api.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8),
             Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
         var published = await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(completed.Snapshot.Id, published.Snapshot.Id);
-        Assert.Equal(submission.FrameId, published.Result!.Frame.FrameId);
-        Assert.Equal(published.Snapshot.GeometryVersion, published.Result.GeometryVersion);
-        Assert.Equal(2.5, Assert.Single(Assert.IsType<MeasurementRegionResult>(published.Result).Channels).Mean);
+        Assert.Equal(submission.FrameId, published.QueryResult!.Frame.FrameId);
+        Assert.Equal(published.Snapshot.GeometryVersion, published.QueryResult.GeometryVersion);
+        Assert.Equal(2.5, Assert.Single(Assert.IsType<MeasurementRegionResult>(published.QueryResult).Channels).Mean);
 
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -88,12 +88,12 @@ public class MeasurementNotificationsTests
             Assert.Equal(completed.Snapshot.Id, edited.Snapshot.Id);
             Assert.Equal(completed.Snapshot.GeometryVersion + 1, edited.Snapshot.GeometryVersion);
             Assert.Equal(MeasurementGeometry.Rectangle(new(2, 2), new(3, 3)), edited.Snapshot.Geometry);
-            Assert.Null(edited.Result);
+            Assert.Null(edited.QueryResult);
             Assert.All(callbackThreads, id => Assert.Equal(Environment.CurrentManagedThreadId, id));
         });
         // Both geometry and samples remain snapshots after editing and cross-thread removal.
         Assert.Equal(completed.Snapshot.GeometryVersion, published.Snapshot.GeometryVersion);
-        Assert.Equal(2.5, Assert.IsType<MeasurementRegionResult>(published.Result).Channels[0].Mean);
+        Assert.Equal(2.5, Assert.IsType<MeasurementRegionResult>(published.QueryResult).Channels[0].Mean);
         await Task.Run(published.Measurement.Dispose);
         Assert.NotNull(removed);
         Assert.Equal(completed.Snapshot.GeometryVersion + 1, removed.Snapshot.GeometryVersion);
@@ -196,14 +196,14 @@ public class MeasurementNotificationsTests
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
-            item.ResultChanged += result =>
+            item.QueryResultChanged += result =>
             {
                 first.Add(result == null ? "invalid" : "published");
                 if (result != null) item.UpdateGeometry(MeasurementGeometry.Point(new(1, 0)));
             };
-            item.ResultChanged += result => second.Add(result == null ? "invalid" : "published");
-            item.PublishResult(new MeasurementSampleResult(item.Id, 0,
-                new(1, new(2, 1, 2, FramePixelFormat.Gray8), null), MeasurementQuery.Pixel,
+            item.QueryResultChanged += result => second.Add(result == null ? "invalid" : "published");
+            item.PublishQueryResult(new MeasurementSampleResult(item.Id, 0,
+                new(1, new(2, 1, 2, FramePixelFormat.Gray8), null), MeasurementQueryKind.Pixel,
                 [new(0, 0)], [new(FramePixelFormat.Gray8, 7, 0, 0, 0, 255)]));
         });
         Assert.Equal(new[] { "published", "invalid" }, first);
@@ -229,5 +229,46 @@ public class MeasurementNotificationsTests
         });
         await viewer.DisposeAsync();
         Assert.Equal(new[] { "changed:1", "geometry", "removed", "closed" }, order);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublicShutdownReenteredFromDisposalPreservesRemovalBeforeClosed(bool resource)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var order = new List<string>();
+        Task? disposal = null;
+        viewer.MeasurementRemoved += (_, _) => order.Add("removed");
+        viewer.Closed += (_, _) => order.Add("closed:first");
+        viewer.Closed += (_, _) => order.Add("closed:second");
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            IMeasurement item = new MeasurementCreationContext(viewer.Host.Measurements)
+                .CreateMeasurement(MeasurementGeometry.Point(new()));
+            item.Complete();
+            void CloseDuringCleanup()
+            {
+                disposal = viewer.DisposeAsync().AsTask();
+                // Model a resource's modal/nested message loop: the publicly requested
+                // asynchronous close executes before this disposal callback returns.
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                _ = viewer.Host.Window.Dispatcher.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(() => frame.Continue = false));
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+            }
+            if (resource) item.AddResource(new CallbackResource(CloseDuringCleanup));
+            else item.OnDispose(CloseDuringCleanup);
+            item.Dispose();
+        });
+        Assert.NotNull(disposal);
+        await disposal.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(new[] { "removed", "closed:first", "closed:second" }, order);
+    }
+
+    private sealed class CallbackResource(Action callback) : IDisposable
+    {
+        public void Dispose() => callback();
     }
 }

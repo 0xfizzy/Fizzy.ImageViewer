@@ -236,7 +236,7 @@ public class MeasurementOwnershipTests
             var orphan = MeasurementVisualFactory.CreatePoint(new(5, 6));
             viewer.Host.Window.MeasurementOverlay.AddVisual(orphan);
             interaction.Select(item);
-            Assert.False(interaction.Hit(orphan));
+            Assert.False(interaction.PointerDown(context.Find(orphan), new()));
             Assert.Same(item, interaction.SelectedMeasurement);
             interaction.StartEditing(context.Find(orphan));
             Assert.False(interaction.Editor.IsEditing);
@@ -246,7 +246,7 @@ public class MeasurementOwnershipTests
             interaction.DeleteSelected();
             Assert.True(item.IsDisposed);
             Assert.Contains(orphan, viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
-            Assert.False(interaction.Hit(orphan));
+            Assert.False(interaction.PointerDown(context.Find(orphan), new()));
             Assert.Null(interaction.SelectedMeasurement);
         });
     }

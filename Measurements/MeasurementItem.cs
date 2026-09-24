@@ -19,19 +19,19 @@ internal sealed class MeasurementItem : IMeasurement
     public Guid Id { get; } = Guid.NewGuid();
     public MeasurementGeometry Geometry { get; private set; }
     public long GeometryVersion { get; private set; }
-    public MeasurementResult? Result { get; private set; }
+    public MeasurementQueryResult? QueryResult { get; private set; }
     private volatile bool _disposed;
     public bool IsDisposed => _disposed;
     public bool IsComplete { get; private set; }
     internal bool CompletionNotified { get; set; }
     internal event Action<MeasurementGeometry>? GeometryApplied;
     public event Action<MeasurementGeometry>? GeometryChanged;
-    public event Action<MeasurementResult?>? ResultChanged;
+    public event Action<MeasurementQueryResult?>? QueryResultChanged;
 
     // Public handles dispatch; model, query and cleanup paths already own the STA.
     MeasurementGeometry IMeasurement.Geometry => _runtime.Invoke(() => Geometry);
     long IMeasurement.GeometryVersion => _runtime.Invoke(() => GeometryVersion);
-    MeasurementResult? IMeasurement.Result => _runtime.Invoke(() => Result);
+    MeasurementQueryResult? IMeasurement.QueryResult => _runtime.Invoke(() => QueryResult);
     bool IMeasurement.IsComplete => _runtime.Invoke(() => IsComplete);
     void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _runtime.Invoke(() => UpdateGeometry(geometry));
     void IMeasurement.Complete() => _runtime.Invoke(Complete);
@@ -43,10 +43,10 @@ internal sealed class MeasurementItem : IMeasurement
         add => _runtime.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
         remove => _runtime.InvokeRemoval(() => GeometryChanged -= value);
     }
-    event Action<MeasurementResult?>? IMeasurement.ResultChanged
+    event Action<MeasurementQueryResult?>? IMeasurement.QueryResultChanged
     {
-        add => _runtime.Invoke(() => { EnsureAlive(); ResultChanged += value; });
-        remove => _runtime.InvokeRemoval(() => ResultChanged -= value);
+        add => _runtime.Invoke(() => { EnsureAlive(); QueryResultChanged += value; });
+        remove => _runtime.InvokeRemoval(() => QueryResultChanged -= value);
     }
 
     internal MeasurementItem(MeasurementCollection owner, MeasurementRuntime runtime, MeasurementOverlay layer, MeasurementStyle style, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationContext session)
@@ -57,7 +57,7 @@ internal sealed class MeasurementItem : IMeasurement
         Session = session;
         Origin = session.Origin;
         _options = options with { Style = null };
-        QueryClient = new(this, options.Query.Kind);
+        QueryClient = new(this, options.Query);
         Presentation = new(layer, geometry, style, () => runtime.RunUiCallback(Dispose));
     }
     private void EnsureAlive()
@@ -92,7 +92,7 @@ internal sealed class MeasurementItem : IMeasurement
         QueryClient.Reset();
         Presentation.Apply(geometry);
         GeometryApplied?.Invoke(geometry);
-        ClearResult(notifyChanged: false);
+        ClearQueryResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
         _owner.NotifyChanged(this);
         if (!IsDisposed && GeometryVersion == version) _runtime.Notifications.Notify(GeometryChanged, geometry);
@@ -106,34 +106,34 @@ internal sealed class MeasurementItem : IMeasurement
         Session.Release(this);
         try
         {
-            Presentation.Complete(_options.Query is LineProfileMeasurementQueryOptions { ShowWindow: true });
-            if (!IsDisposed && _options.Query.Kind != MeasurementQuery.None) _subscription = _runtime.Register(QueryClient);
+            Presentation.Complete(_options.ShowProfileWindow);
+            if (!IsDisposed && _options.Query != MeasurementQueryKind.None) _subscription = _runtime.Register(QueryClient);
             if (!IsDisposed) _owner.NotifyCompleted(this);
         }
         catch (Exception error) { MeasurementFailure.RethrowAfterCleanup(error, Dispose); throw; }
     }
-    public void ClearResult() => ClearResult(notifyChanged: true);
+    public void ClearQueryResult() => ClearQueryResult(notifyChanged: true);
 
-    private void ClearResult(bool notifyChanged)
+    private void ClearQueryResult(bool notifyChanged)
     {
         using var notificationScope = _runtime.Notifications.Defer();
-        var hadResult = Result != null;
-        Result = null;
+        var hadResult = QueryResult != null;
+        QueryResult = null;
         Presentation.ClearResult(Geometry);
         if (hadResult && !IsDisposed)
         {
             if (notifyChanged) _owner.NotifyChanged(this);
-            if (!IsDisposed && Result == null) _runtime.Notifications.Notify(ResultChanged, (MeasurementResult?)null);
+            if (!IsDisposed && QueryResult == null) _runtime.Notifications.Notify(QueryResultChanged, (MeasurementQueryResult?)null);
         }
     }
-    internal void PublishResult(MeasurementResult result)
+    internal void PublishQueryResult(MeasurementQueryResult result)
     {
         using var notificationScope = _runtime.Notifications.Defer();
         if (IsDisposed || result.GeometryVersion != GeometryVersion) return;
-        Result = result;
+        QueryResult = result;
         Presentation.ShowResult(Geometry, result);
         _owner.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(Result, result)) _runtime.Notifications.Notify(ResultChanged, result);
+        if (!IsDisposed && ReferenceEquals(QueryResult, result)) _runtime.Notifications.Notify(QueryResultChanged, result);
     }
 
     public void Dispose()
@@ -155,10 +155,10 @@ internal sealed class MeasurementItem : IMeasurement
         _callbacks.Clear();
         _resources.Clear();
         QueryClient.Reset();
-        Result = null;
+        QueryResult = null;
         GeometryApplied = null;
         GeometryChanged = null;
-        ResultChanged = null;
+        QueryResultChanged = null;
         if (errors.Count > 0) throw new AggregateException("Measurement cleanup failed.", errors);
     }
 }

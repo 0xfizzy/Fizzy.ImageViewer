@@ -14,7 +14,7 @@ application adapters own an instance and use its public API. Raw-window access i
 | Drawing | `Layers`, `ViewerLayers`, `ViewerLayer`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
 | HUD | `HudLabel`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
 | Measurements | instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
-| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementResult` |
+| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
 
 The root namespace contains `Viewer` and `IViewer`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
 `DrawingLayer`, drawing handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
@@ -74,7 +74,7 @@ removal captures the latest geometry. Circle snapshots include their radius.
 
 `MeasurementChanged` reports geometry edits, successful query publication and result
 invalidation for completed items, both built-in and custom. Each event includes `Snapshot`
-and `Result`; a null result means no valid query result is currently available. A geometry
+and `QueryResult`; a null result means no valid query result is currently available. A geometry
 change reports its new version and clears the old result. Completion precedes change
 notifications; previews do not emit changes. Snapshots and result arrays can be retained
 on other threads. Callbacks run on the viewer STA and subscriber failures are isolated.
@@ -96,10 +96,9 @@ ends only the originating activation and is safe to call from asynchronous work.
 handles and snapshots retain `MeasurementOrigin` (`ToolId`, `SessionId`). `Kind` describes
 geometry through `MeasurementGeometryKind`, independently of the originating tool.
 
-`MeasurementOptions.Query` takes a closed `MeasurementQueryOptions` configuration.
-Use its `None`, `Pixel`, `LineProfile` and `RegionStatistics` presets, or
-`new LineProfileMeasurementQueryOptions(showWindow: true)` for a profile window.
-`MeasurementResult` contains common provenance; pattern-match `MeasurementSampleResult`
+`MeasurementOptions.Query` selects a `MeasurementQueryKind`. The independent `ShowProfileWindow` option requests an owned plot and requires a line-profile query. Geometry/query compatibility is checked before attachment.
+`IMeasurement.QueryResult` and `MeasurementEventArgs.QueryResult` expose frame-dependent results; `QueryResultChanged` reports publication or invalidation. `LineMeasurementGeometry.Length` is a frame-independent geometric value.
+`MeasurementQueryResult` contains common provenance; pattern-match `MeasurementSampleResult`
 for coordinate/sample pairs or `MeasurementRegionResult` for region/channel statistics.
 
 Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
@@ -117,7 +116,7 @@ The context belongs to one creation session. Once that session completes, is can
 is replaced, creating another preview through its retained context throws `ObjectDisposedException`.
 The returned `IMeasurement` owns geometry, display, queries and registered resources.
 Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
-observe `ResultChanged` for immutable query results or invalidation. `Complete` retains
+observe `QueryResultChanged` for immutable query results or invalidation. `Complete` retains
 a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
 and context creation run on the viewer STA. `IMeasurement` reads, updates and subscription
 changes synchronously dispatch to that STA. `Dispose` and event unsubscription are safe

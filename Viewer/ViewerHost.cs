@@ -83,8 +83,9 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 
                 checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
                 var editor = new MeasurementEditController(win.MeasurementOverlay);
-                _interaction = new InteractionCoordinator(new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, logger: _logger),
-                    win.MeasurementOverlay, editor, _tools, _measurements, win.Layers);
+                var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, logger: _logger);
+                _interaction = new InteractionCoordinator(input, editor, _tools, _measurements, win.Layers);
+                input.Connect(_interaction);
                 _tools.RegisterTool(new LengthTool());
                 _tools.RegisterTool(new PointTool());
                 _tools.RegisterTool(new RectangleRoiTool());
@@ -120,6 +121,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 if (_presentation == null) Cleanup(() => presenter?.Dispose());
                 if (win != null) Cleanup(win.CloseProgrammatically);
                 if (tcs.Task.IsCompletedSuccessfully) NotifyClosedOnce(EventArgs.Empty);
+                else _owner.ClearNotifications();
                 Cleanup(Dispatcher.CurrentDispatcher.InvokeShutdown);
                 _windowStopped.TrySetResult();
                 _ = BeginDisposal();
@@ -168,8 +170,13 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     {
         if (_closedNotified) return;
         _closedNotified = true;
-        if (_measurements != null) _measurements.Notifications.Post(() => _owner.NotifyClosed(e));
-        else _owner.NotifyClosed(e);
+        void FinishNotifications()
+        {
+            _owner.ClearNotifications();
+            _owner.NotifyClosed(e);
+        }
+        if (_measurements != null) _measurements.Notifications.AfterNotifications(FinishNotifications);
+        else FinishNotifications();
     }
 
     private void CleanupOnWindowClosed()
@@ -190,7 +197,6 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         Cleanup(() => _window?.Layers.Collection.Close());
         Cleanup(() => _hud?.Dispose());
         Cleanup(() => _presentation?.Dispose());
-        _owner.ClearNotifications();
     }
 
     private void Cleanup(Action action)

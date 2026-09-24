@@ -11,9 +11,9 @@ public interface IMeasurement : IDisposable
     long GeometryVersion { get; }
     bool IsComplete { get; }
     bool IsDisposed { get; }
-    MeasurementResult? Result { get; }
+    MeasurementQueryResult? QueryResult { get; }
     event Action<MeasurementGeometry>? GeometryChanged;
-    event Action<MeasurementResult?>? ResultChanged;
+    event Action<MeasurementQueryResult?>? QueryResultChanged;
     /// <summary>Updates the model, visuals and editing controls before notification.
     /// During dragging, programmatic changes replace the drag baseline.</summary>
     void UpdateGeometry(MeasurementGeometry geometry);

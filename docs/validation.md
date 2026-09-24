@@ -197,7 +197,5 @@ notifications, result invalidation ordering and closure from a subscriber, inclu
 removal before `Closed`. `MeasurementModelBoundaryTests` cover typed result payload ownership
 and original-operation failures combined with attachment/completion cleanup failures.
 
-`MeasurementQueryOptionsTests` check the geometry/configuration matrix, profile-window
-ownership and a closed immutable configuration family with no externally accessible base
-constructor. Tool protocol tests cover registration replacement, context-scoped asynchronous
+`MeasurementQueryOptionsTests` check the geometry/query matrix against actual requests and result provenance, and reject invalid window/query combinations. Profile tests verify independent data-only and window-enabled queries and window ownership. Tool protocol tests cover registration replacement, context-scoped asynchronous
 finishing, origin retention and original callback errors combined with cleanup failures.

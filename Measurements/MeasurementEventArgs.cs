@@ -7,7 +7,7 @@ public sealed class MeasurementEventArgs : EventArgs
     /// <summary>The live handle for updates and removal. It may already be disposed by an earlier subscriber.</summary>
     public IMeasurement Measurement { get; }
     /// <summary>Current immutable query result, or null before publication and after invalidation.</summary>
-    public MeasurementResult? Result { get; }
-    internal MeasurementEventArgs(MeasurementSnapshot snapshot, IMeasurement measurement, MeasurementResult? result)
-    { Snapshot = snapshot; Measurement = measurement; Result = result; }
+    public MeasurementQueryResult? QueryResult { get; }
+    internal MeasurementEventArgs(MeasurementSnapshot snapshot, IMeasurement measurement, MeasurementQueryResult? result)
+    { Snapshot = snapshot; Measurement = measurement; QueryResult = result; }
 }

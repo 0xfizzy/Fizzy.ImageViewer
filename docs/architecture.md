@@ -80,15 +80,21 @@ Disposal waits for outstanding frame and query work and the actual STA exit.
 ViewerLifetime provides the shared stopping gate and shutdown-safe STA removal dispatch for measurement, drawing and HUD handles. HudTextCollection owns HUD text
 visuals and invalidates their handles on shutdown.
 
-ViewerInputBinding translates measurement input and applies cursor, focus
-and capture effects without owning tool-session state. ViewportPan owns middle-button
+ViewerInputBinding resolves WPF event sources through the measurement collection and
+passes measurement identities and image coordinates to the coordinator. It implements
+the small IInteractionView boundary for selection appearance, cursor, focus and capture
+effects without owning tool-session state. ViewerHost connects the input adapter to the
+coordinator; the coordinator depends on these effects rather than concrete WPF visuals
+or the input adapter. ViewportPan owns middle-button
 pan state in screen coordinates;
 it and measurement editing use MouseCaptureSession for capture admission, loss and
 idempotent release. Failed capture never starts a drag. Cancellation, interaction
 switching, hiding/unloading the image surface and shutdown end viewport capture.
 The interaction coordinator alone owns
 the active tool, session version, mode and selected measurement, and decides editing and measurement
-transitions. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
+transitions. Tool and edit admission share the layer's configured visibility and hit-test
+policy, including admission after reentrant cancellation. Temporary input suppression
+does not change that configured policy. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
 `IMeasurementTool.CreateSession(context)` returns a fresh `IMeasurementToolSession` containing
 that activation's mutable state. The coordinator disposes each callback session once on every terminal path and owns its explicit
 `MeasurementCreationContext` context; MeasurementCollection stores no ambient current session.
@@ -123,7 +129,7 @@ model state, query subscription and disposal, and directly disposes its presenta
 after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
 detaches that callback before closing the plot.
-MeasurementQueryClient builds and caches requests independently of the handle. Each request
+MeasurementQueryDefinition owns the supported query/geometry pairs and request construction. MeasurementQueryClient caches those requests independently of the handle. Each request
 captures its geometry version and coordinates for immutable result provenance.
 MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
 query clients with the shared scheduler; model dispatch and shutdown admission do not

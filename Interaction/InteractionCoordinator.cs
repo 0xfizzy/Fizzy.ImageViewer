@@ -1,8 +1,6 @@
-using Fizzy.ImageViewer.Measurements.Presentation;
 using Fizzy.ImageViewer.Layers;
 using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Drawing;
 using System.Windows;
 using System.Runtime.ExceptionServices;
 
@@ -11,8 +9,7 @@ namespace Fizzy.ImageViewer.Interaction;
 /// <summary>Owns selection and every input-state transition on the viewer's UI thread.</summary>
 internal sealed class InteractionCoordinator : IDisposable
 {
-    private readonly ViewerInputBinding _input;
-    private readonly MeasurementOverlay _overlay;
+    private readonly IInteractionView _input;
     private readonly MeasurementEditController _edit;
     private readonly MeasurementToolRegistry _tools;
     private readonly MeasurementCollection _measurements;
@@ -31,11 +28,10 @@ internal sealed class InteractionCoordinator : IDisposable
     public MeasurementItem? SelectedMeasurement { get; private set; }
     internal MeasurementEditController Editor => _edit;
 
-    internal InteractionCoordinator(ViewerInputBinding input, MeasurementOverlay overlay, MeasurementEditController edit,
+    internal InteractionCoordinator(IInteractionView input, MeasurementEditController edit,
         MeasurementToolRegistry tools, MeasurementCollection measurements, ViewerLayers layers)
     {
         _input = input;
-        _overlay = overlay;
         _edit = edit;
         _tools = tools;
         _measurements = measurements;
@@ -43,15 +39,12 @@ internal sealed class InteractionCoordinator : IDisposable
         layers.Measurements.Clearing += CancelForClear;
         layers.Measurements.InputPolicyChanged += InputPolicyChanged;
         measurements.ItemRemoving += ItemRemoving;
-        input.Connect(this);
     }
-    internal bool Hit(UIElement shape)
+    private bool Hit(MeasurementItem item)
     {
-        if (_disposed) return false;
+        if (_disposed || item.IsDisposed || !_measurements.Contains(item)) return false;
         if (Mode == InteractionMode.Editing) return false;
         if (Mode == InteractionMode.Measuring) return true;
-        var item = _measurements.Find(shape);
-        if (item == null) return false;
         Select(item); return true;
     }
     internal void Select(MeasurementItem? item)
@@ -61,18 +54,18 @@ internal sealed class InteractionCoordinator : IDisposable
         StopEditing();
         if (item.IsDisposed) return;
         SelectedMeasurement = item;
-        _overlay.SetSelection(item.Presentation.PrimaryVisual, item.Presentation.Visuals);
+        _input.SetSelection(item);
     }
     internal void ClearSelection()
     {
         StopEditing();
         SelectedMeasurement = null;
-        _overlay.SetSelection(null, []);
+        _input.SetSelection(null);
     }
     internal void StartMeasurement(string toolId)
     {
         if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start a measurement during layer cleanup.");
-        if (_disposed || !_layers.Measurements.IsVisible) return;
+        if (!CanInteract) return;
         var registration = _tools.FindRegistration(toolId);
         if (registration == null) return;
         var version = _sessionVersion;
@@ -107,9 +100,10 @@ internal sealed class InteractionCoordinator : IDisposable
         catch (Exception error) { CancelAfterFailure(error, version); throw; }
     }
 
+    private bool CanInteract => !_disposed && !_layers.Measurements.IsClearing &&
+        _layers.Measurements.IsVisible && _layers.Measurements.IsHitTestVisible;
     private bool CanActivate(long version, MeasurementToolRegistry.Registration registration)
-        => version == _sessionVersion && !_disposed && !_layers.Measurements.IsClearing &&
-            _layers.Measurements.IsVisible && _tools.Contains(registration);
+        => version == _sessionVersion && CanInteract && _tools.Contains(registration);
     private bool IsCurrent(Activation activation)
         => !_disposed && ReferenceEquals(_activation, activation) && _tools.Contains(activation.Registration);
 
@@ -131,8 +125,7 @@ internal sealed class InteractionCoordinator : IDisposable
     internal void StartEditing(MeasurementItem? item)
     {
         if (_layers.Measurements.IsClearing) throw new InvalidOperationException("Cannot start editing during layer cleanup.");
-        if (_disposed || item is null || !_measurements.Contains(item) || !_edit.CanEdit(item) ||
-            !_layers.Measurements.IsVisible || !_layers.Measurements.IsHitTestVisible) return;
+        if (!CanInteract || item is null || !_measurements.Contains(item) || !_edit.CanEdit(item)) return;
         if (!CancelCore()) return;
         var version = _sessionVersion;
         Select(item);
@@ -246,10 +239,10 @@ internal sealed class InteractionCoordinator : IDisposable
         try { Cancel(); }
         finally { ClearSelection(); }
     }
-    internal bool PointerDown(FrameworkElement? shape, Point point)
+    internal bool PointerDown(MeasurementItem? item, Point point)
     {
-        if (Mode != InteractionMode.Editing && shape != null && MeasurementVisualData.Get(shape) != null)
-            return Hit(shape);
+        if (Mode != InteractionMode.Editing && item != null)
+            return Hit(item);
         return BeginDrag(point);
     }
     internal bool BeginDrag(Point point)

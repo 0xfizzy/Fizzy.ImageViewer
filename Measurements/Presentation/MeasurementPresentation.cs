@@ -56,7 +56,7 @@ internal sealed class MeasurementPresentation : IDisposable
 
     private void UpdateText(MeasurementGeometry geometry) => Label.Text = geometry switch
     {
-        LineMeasurementGeometry line => $"{(line.End - line.Start).Length:F1} px",
+        LineMeasurementGeometry line => $"{line.Length:F1} px",
         PointMeasurementGeometry point => PositionText(point.Position),
         CrosshairMeasurementGeometry crosshair => PositionText(crosshair.Position),
         CircleMeasurementGeometry circle => $"r={circle.Radius:F1} px",
@@ -70,10 +70,10 @@ internal sealed class MeasurementPresentation : IDisposable
         _plot?.Clear();
     }
 
-    internal void ShowResult(MeasurementGeometry geometry, MeasurementResult result)
+    internal void ShowResult(MeasurementGeometry geometry, MeasurementQueryResult result)
     {
         UpdateText(geometry);
-        if (result is MeasurementSampleResult { Query: MeasurementQuery.Pixel } pixel)
+        if (result is MeasurementSampleResult { Query: MeasurementQueryKind.Pixel } pixel)
             Label.Text += $" | {pixel.Samples[0]}";
         else if (result is MeasurementRegionResult statistics)
         {
@@ -82,7 +82,7 @@ internal sealed class MeasurementPresentation : IDisposable
             Label.Text = $"{region.Width} × {region.Height} px | " + string.Join(" | ", statistics.Channels.Select((s, i) =>
                 $"{names[i]}: n={s.Count} min={s.Minimum:G7} max={s.Maximum:G7} mean={s.Mean:G7}"));
         }
-        else if (result is MeasurementSampleResult { Query: MeasurementQuery.LineProfile } profile)
+        else if (result is MeasurementSampleResult { Query: MeasurementQueryKind.LineProfile } profile)
             _plot?.ShowProfile(profile.Samples);
     }
 
