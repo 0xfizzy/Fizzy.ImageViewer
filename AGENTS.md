@@ -48,6 +48,9 @@
 - 使用 `type(scope): description` 格式，scope 可省略；type、scope 及英文描述均以小写开头，破坏性变更用 `!` 标记。
 - 示例：`refactor(viewer): simplify frame ownership`、`chore: update dependencies`、`refactor(api)!: remove legacy interface`。
 
-## 本地计划
+## 临时文件与任务产物
 
 - 任务计划仅保存在已忽略的根目录 `plans/` 或仓库外，不纳入 Git 提交。
+- 开发任务产生的临时日志、备份、验证报告和一次性脚本统一放入所属仓库的 `artifacts/`；禁止在仓库根目录生成 `.log`、`.bak` 等临时文件。命令重定向及新增、修改脚本的默认输出路径也须遵循此规则。
+- `artifacts/` 是可清理的产物目录，不存放未另行保存的唯一副本、需长期保留的资料或本机配置；需保留的补丁、基准数据和实验记录应放入适当的受版本管理位置或仓库外的持久存储。
+- 此规则不改变既有 `bin/`、`obj/`、`build/`、应用运行日志及本地配置的位置，也不自动授权删除已有文件。清理前核对范围及正在使用的产物。
