@@ -174,7 +174,7 @@ geometry through `MeasurementGeometryKind`, independently of the originating too
 `MeasurementOptions.Query` selects a `MeasurementQueryKind`. The independent `ShowProfileWindow` option requests an owned plot and requires a line-profile query. Geometry/query compatibility is checked before attachment.
 `IMeasurement.QueryResult` and `MeasurementEventArgs.QueryResult` expose frame-dependent results; `QueryResultChanged` reports publication or invalidation. `LineMeasurementGeometry.Length` is a frame-independent geometric value.
 `MeasurementQueryResult` contains common provenance; pattern-match `MeasurementSampleResult`
-for coordinate/sample pairs or `MeasurementRegionResult` for region/channel statistics.
+for coordinate/sample pairs or `MeasurementRegionStatisticsResult` for region/channel statistics.
 
 Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
 Every activation must return a fresh `IMeasurementToolSession`; its `OnClick`, `OnMouseMove`
@@ -252,7 +252,8 @@ for separators; the renderer removes leading, repeated and trailing separators.
 `MenuItem` and `CheckableMenuItem` require a nonempty, non-whitespace header and
 non-null action (and checked-state getter where applicable); constructors reject
 invalid arguments before registration. Valid headers are preserved as supplied.
-Built-in interaction actions capture their target when the menu opens.
+Built-in interaction actions capture their target when the menu opens. Cancel Measurement
+only cancels that activation; a replacement activation, including the same tool, is unaffected.
 
 ## Menu registration lifetime
 

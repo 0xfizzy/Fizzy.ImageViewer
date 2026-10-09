@@ -7,6 +7,38 @@ namespace Fizzy.ImageViewer.Tests;
 public class LineSamplingTests
 {
     [Theory]
+    [InlineData(4294967295d)]
+    [InlineData(4294967296d)]
+    [InlineData(1e20)]
+    [InlineData(double.MaxValue)]
+    public void ExtremeClippingPreservesRowsColumnsAndDiagonalsInBothDirections(double extent)
+    {
+        var descriptor = new FrameDescriptor(10, 10, 10, FramePixelFormat.Gray8);
+        Check(-extent, 5, extent, 5, Enumerable.Range(0, 10).Select(i => new PixelCoordinate(i, 5)));
+        Check(5, -extent, 5, extent, Enumerable.Range(0, 10).Select(i => new PixelCoordinate(5, i)));
+        Check(-extent, -extent, extent, extent, Enumerable.Range(0, 10).Select(i => new PixelCoordinate(i, i)));
+        Check(-extent, extent, extent, -extent, [new PixelCoordinate(0, 0)]);
+        Assert.Empty(LineSampling.GetCoordinates(descriptor, -extent, 10, extent, 10));
+        Assert.Empty(LineSampling.GetCoordinates(descriptor, 10, -extent, 10, extent));
+
+        void Check(double x0, double y0, double x1, double y1, IEnumerable<PixelCoordinate> expected)
+        {
+            Assert.Equal(expected, LineSampling.GetCoordinates(descriptor, x0, y0, x1, y1));
+            Assert.Equal(expected.Reverse(), LineSampling.GetCoordinates(descriptor, x1, y1, x0, y0));
+        }
+    }
+
+    [Fact]
+    public void ExactClippingRejectsExclusiveCornerOnlyAndOutsideSegments()
+    {
+        var descriptor = new FrameDescriptor(10, 10, 10, FramePixelFormat.Gray8);
+        double extent = 4294967296d;
+        Assert.Empty(LineSampling.GetCoordinates(descriptor, -extent, extent + 20, extent, -extent + 20));
+        Assert.Empty(LineSampling.GetCoordinates(descriptor, extent, -extent + 20, -extent, extent + 20));
+        Assert.Empty(LineSampling.GetCoordinates(descriptor, -extent, -extent, -extent / 2, -extent / 2));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void FractionalCoordinatesCoverSingleRowAndColumnInBothDirections(bool vertical)

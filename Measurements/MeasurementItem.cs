@@ -6,8 +6,10 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>The single owner for preview, model, presentation, query and external resources.</summary>
 internal sealed class MeasurementItem : IMeasurement
 {
-    private readonly MeasurementCollection _owner;
-    private readonly MeasurementRuntime _runtime;
+    private MeasurementCollection? _owner;
+    private MeasurementRuntime? _activeRuntime;
+    private readonly ViewerLifetime _lifetime;
+    private MeasurementRuntime _runtime => _activeRuntime ?? throw new ObjectDisposedException(nameof(MeasurementItem));
     internal MeasurementPresentation Presentation { get; }
     private MeasurementCreationContext? _creationContext;
     private readonly MeasurementOptions _options;
@@ -29,30 +31,31 @@ internal sealed class MeasurementItem : IMeasurement
     public event Action<MeasurementQueryResult?>? QueryResultChanged;
 
     // Public handles dispatch; model, query and cleanup paths already own the STA.
-    MeasurementGeometry IMeasurement.Geometry => _runtime.Invoke(() => Geometry);
-    long IMeasurement.GeometryVersion => _runtime.Invoke(() => GeometryVersion);
-    MeasurementQueryResult? IMeasurement.QueryResult => _runtime.Invoke(() => QueryResult);
-    bool IMeasurement.IsComplete => _runtime.Invoke(() => IsComplete);
+    MeasurementGeometry IMeasurement.Geometry => Read(() => Geometry);
+    long IMeasurement.GeometryVersion => Read(() => GeometryVersion);
+    MeasurementQueryResult? IMeasurement.QueryResult => Read(() => QueryResult);
+    bool IMeasurement.IsComplete => Read(() => IsComplete);
     void IMeasurement.UpdateGeometry(MeasurementGeometry geometry) => _runtime.Invoke(() => UpdateGeometry(geometry));
     void IMeasurement.Complete() => _runtime.Invoke(Complete);
     void IMeasurement.AddResource(IDisposable resource) => _runtime.Invoke(() => AddResource(resource));
     void IMeasurement.OnDispose(Action callback) => _runtime.Invoke(() => OnDispose(callback));
-    void IDisposable.Dispose() => _runtime.InvokeRemoval(Dispose);
+    void IDisposable.Dispose() => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(Dispose);
     event Action<MeasurementGeometry>? IMeasurement.GeometryChanged
     {
         add => _runtime.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
-        remove => _runtime.InvokeRemoval(() => GeometryChanged -= value);
+        remove => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(() => GeometryChanged -= value);
     }
     event Action<MeasurementQueryResult?>? IMeasurement.QueryResultChanged
     {
         add => _runtime.Invoke(() => { EnsureAlive(); QueryResultChanged += value; });
-        remove => _runtime.InvokeRemoval(() => QueryResultChanged -= value);
+        remove => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(() => QueryResultChanged -= value);
     }
 
     internal MeasurementItem(MeasurementCollection owner, MeasurementRuntime runtime, MeasurementOverlay layer, MeasurementStyle style, MeasurementGeometry geometry, MeasurementOptions options, MeasurementCreationContext creationContext)
     {
         _owner = owner;
-        _runtime = runtime;
+        _activeRuntime = runtime;
+        _lifetime = runtime.Lifetime;
         Geometry = geometry;
         _creationContext = creationContext;
         Origin = creationContext.Origin;
@@ -60,6 +63,15 @@ internal sealed class MeasurementItem : IMeasurement
         QueryClient = new(this, options.Query);
         Presentation = new(layer, geometry, style, () => runtime.RunUiCallback(Dispose));
     }
+    private T Read<T>(Func<T> read)
+    {
+        var runtime = Volatile.Read(ref _activeRuntime);
+        if (runtime != null) return runtime.Invoke(read);
+        // Disposed model values are stable, but their readability still ends with the Viewer.
+        _lifetime.ThrowIfStopping();
+        return read();
+    }
+
     private void ReleaseCreationContext()
     {
         var context = _creationContext;
@@ -91,7 +103,8 @@ internal sealed class MeasurementItem : IMeasurement
 
     public void UpdateGeometry(MeasurementGeometry geometry)
     {
-        using var notificationScope = _runtime.Notifications.Defer();
+        var runtime = _runtime;
+        using var notificationScope = runtime.Notifications.Defer();
         EnsureAlive();
         ArgumentNullException.ThrowIfNull(geometry);
         if (geometry.Kind != Geometry.Kind) throw new ArgumentException("Geometry kind cannot change.", nameof(geometry));
@@ -103,12 +116,13 @@ internal sealed class MeasurementItem : IMeasurement
         GeometryApplied?.Invoke(geometry);
         ClearQueryResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
-        _owner.NotifyChanged(this);
-        if (!IsDisposed && GeometryVersion == version) _runtime.Notifications.Notify(GeometryChanged, geometry);
+        _owner!.NotifyChanged(this);
+        if (!IsDisposed && GeometryVersion == version) runtime.Notifications.Notify(GeometryChanged, geometry);
     }
     public void Complete()
     {
-        using var notificationScope = _runtime.Notifications.Defer();
+        var runtime = _runtime;
+        using var notificationScope = runtime.Notifications.Defer();
         EnsureAlive();
         if (IsComplete) return;
         IsComplete = true;
@@ -117,7 +131,7 @@ internal sealed class MeasurementItem : IMeasurement
         {
             Presentation.Complete(_options.ShowProfileWindow);
             if (!IsDisposed && _options.Query != MeasurementQueryKind.None) _subscription = _runtime.Register(QueryClient);
-            if (!IsDisposed) _owner.NotifyCompleted(this);
+            if (!IsDisposed) _owner!.NotifyCompleted(this);
         }
         catch (Exception error) { MeasurementFailure.RethrowAfterCleanup(error, Dispose); throw; }
     }
@@ -125,31 +139,36 @@ internal sealed class MeasurementItem : IMeasurement
 
     private void ClearQueryResult(bool notifyChanged)
     {
-        using var notificationScope = _runtime.Notifications.Defer();
+        if (IsDisposed) return;
+        var runtime = _runtime;
+        using var notificationScope = runtime.Notifications.Defer();
         var hadResult = QueryResult != null;
         QueryResult = null;
         Presentation.ClearResult(Geometry);
         if (hadResult && !IsDisposed)
         {
-            if (notifyChanged) _owner.NotifyChanged(this);
-            if (!IsDisposed && QueryResult == null) _runtime.Notifications.Notify(QueryResultChanged, (MeasurementQueryResult?)null);
+            if (notifyChanged) _owner!.NotifyChanged(this);
+            if (!IsDisposed && QueryResult == null) runtime.Notifications.Notify(QueryResultChanged, (MeasurementQueryResult?)null);
         }
     }
     internal void PublishQueryResult(MeasurementQueryResult result)
     {
-        using var notificationScope = _runtime.Notifications.Defer();
+        if (IsDisposed) return;
+        var runtime = _runtime;
+        using var notificationScope = runtime.Notifications.Defer();
         if (IsDisposed || result.GeometryVersion != GeometryVersion) return;
         QueryResult = result;
         Presentation.ShowResult(Geometry, result);
-        _owner.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(QueryResult, result)) _runtime.Notifications.Notify(QueryResultChanged, result);
+        _owner!.NotifyChanged(this);
+        if (!IsDisposed && ReferenceEquals(QueryResult, result)) runtime.Notifications.Notify(QueryResultChanged, result);
     }
 
     public void Dispose()
     {
-        using var notificationScope = _runtime.Notifications.Defer();
-        _runtime.VerifyAccess();
         if (IsDisposed) return;
+        var runtime = _runtime;
+        using var notificationScope = runtime.Notifications.Defer();
+        _runtime.VerifyAccess();
         _disposed = true;
         ReleaseCreationContext();
         List<Exception> errors = [];
@@ -158,9 +177,10 @@ internal sealed class MeasurementItem : IMeasurement
         _subscription = null;
         foreach (var callback in _callbacks) Release(callback);
         foreach (var resource in _resources) Release(resource.Dispose);
-        Release(() => _owner.Detach(this));
+        Release(() => _owner!.Detach(this));
         Release(Presentation.Dispose);
-        Release(() => _owner.NotifyRemoved(this));
+        Release(() => _owner!.NotifyRemoved(this));
+        _owner = null;
         _callbacks.Clear();
         _resources.Clear();
         QueryClient.Reset();
@@ -168,6 +188,7 @@ internal sealed class MeasurementItem : IMeasurement
         GeometryApplied = null;
         GeometryChanged = null;
         QueryResultChanged = null;
+        Volatile.Write(ref _activeRuntime, null);
         if (errors.Count > 0) throw new AggregateException("Measurement cleanup failed.", errors);
     }
 }

@@ -28,6 +28,9 @@ namespace Fizzy.ImageViewer.Viewport
         /// </summary>
         public Canvas Container { get; }
 
+        /// <summary>The shared viewport surface, including image-space overlays.</summary>
+        internal FrameworkElement InputSurface { get; }
+
         /// <summary>
         /// 图像显示控件。
         /// </summary>
@@ -70,7 +73,7 @@ namespace Fizzy.ImageViewer.Viewport
         /// </summary>
         public event Action<double, double>? ImageMouseMove;
 
-        public ImageViewport()
+        public ImageViewport(FrameworkElement? inputSurface = null, IMouseCapture? capture = null)
         {
             // 1. 初始化变换
             Scaler = new ScaleTransform();
@@ -97,7 +100,8 @@ namespace Fizzy.ImageViewer.Viewport
                 ClipToBounds = true
             };
             Container.Children.Add(ImageDisplay);
-            _pan = new ViewportPan(new ElementMouseCapture(Container));
+            InputSurface = inputSurface ?? Container;
+            _pan = new ViewportPan(capture ?? new ElementMouseCapture(InputSurface));
 
             Content = Container;
 
@@ -114,15 +118,15 @@ namespace Fizzy.ImageViewer.Viewport
 
         private void SetupInteraction()
         {
-            Container.MouseWheel += OnMouseWheel;
+            InputSurface.AddHandler(Mouse.MouseWheelEvent, new MouseWheelEventHandler(OnMouseWheel), true);
             Container.MouseLeftButtonDown += OnMouseLeftDown;
-            Container.MouseDown += OnMouseDown;
-            Container.MouseMove += OnMouseMove;
-            Container.MouseUp += OnMouseUp;
-            Container.MouseLeave += (s, e) => EndPan();
-            Container.LostMouseCapture += (s, e) => _pan.LostCapture();
-            Container.IsVisibleChanged += (s, e) => { if (!Container.IsVisible) EndPan(); };
-            Container.Unloaded += (s, e) => EndPan();
+            InputSurface.AddHandler(Mouse.MouseDownEvent, new MouseButtonEventHandler(OnMouseDown), true);
+            InputSurface.AddHandler(Mouse.MouseMoveEvent, new MouseEventHandler(OnMouseMove), true);
+            InputSurface.AddHandler(Mouse.MouseUpEvent, new MouseButtonEventHandler(OnMouseUp), true);
+            InputSurface.MouseLeave += (s, e) => EndPan();
+            InputSurface.LostMouseCapture += (s, e) => _pan.LostCapture();
+            InputSurface.IsVisibleChanged += (s, e) => { if (!InputSurface.IsVisible) EndPan(); };
+            InputSurface.Unloaded += (s, e) => EndPan();
             Container.SizeChanged += (s, e) => FitToViewport();
         }
 
@@ -132,6 +136,7 @@ namespace Fizzy.ImageViewer.Viewport
         {
             var point = e.GetPosition(ImageDisplay); // 获取相对于图片的坐标
             DoScale(point, e.Delta);
+            e.Handled = true;
         }
 
         private void OnMouseLeftDown(object sender, MouseButtonEventArgs e)

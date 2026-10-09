@@ -8,6 +8,46 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementHandleTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RetiredHandleDoesNotRetainItsCollectionOrOverlayEvenWhenCleanupFails(bool fail)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var retained = await viewer.Host.Window.Dispatcher.InvokeAsync(() => CreateRetiredHandle(viewer, fail));
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(retained.Owner.IsAlive);
+        Assert.False(retained.Overlay.IsAlive);
+        Assert.False(retained.Runtime.IsAlive);
+        Assert.Equal(new Point(1, 2), retained.Handle.Geometry.Anchor);
+        retained.Handle.Dispose();
+        await viewer.DisposeAsync();
+        Assert.Throws<ObjectDisposedException>(() => retained.Handle.Geometry);
+        retained.Handle.GeometryChanged -= IgnoreGeometry;
+        retained.Handle.Dispose();
+        GC.KeepAlive(retained.Handle);
+    }
+
+    private static void IgnoreGeometry(MeasurementGeometry geometry) { }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static (IMeasurement Handle, WeakReference Owner, WeakReference Overlay, WeakReference Runtime) CreateRetiredHandle(Viewer viewer, bool fail)
+    {
+        var layers = new Fizzy.ImageViewer.Layers.ViewerLayers(new System.Windows.Media.ScaleTransform());
+        var runtime = new MeasurementRuntime(viewer.Host.MeasurementRuntime.Lifetime, viewer.Host.Window.Dispatcher, viewer.Host.Queries, NullLogger.Instance);
+        var owner = new MeasurementCollection(layers.Measurements, runtime);
+        var context = new MeasurementCreationContext(owner, runtime, () => null);
+        var handle = context.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+        handle.Complete();
+        if (fail) handle.OnDispose(() => throw new InvalidOperationException("cleanup failed"));
+        if (fail) Assert.Throws<AggregateException>(handle.Dispose);
+        else handle.Dispose();
+        Assert.Empty(layers.Measurements.Overlay.Canvas.Children);
+        return (handle, new(owner), new(layers.Measurements.Overlay), new(runtime));
+    }
+
     [Fact]
     public async Task RetainedHandleUpdatesAndDisposesFromWorkerWithStaNotifications()
     {

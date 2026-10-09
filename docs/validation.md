@@ -252,3 +252,11 @@ zoom recovery from fit scales outside wheel limits, isolated drawing/menu callba
 single-sample profile markers, stable geometry distances and duplicate resource ownership.
 Shutdown tests verify fixed failures, combined session/preview cleanup errors, retained
 external leases, subscriber release and STA exit even when cleanup fails.
+
+Navigation tests route handled input through sibling overlays; HUD tests retain the pixel
+session when leaving the image control for an overlay. Menu tests verify that retained
+cancel actions cannot cancel a replacement activation. Extreme line sampling tests cover
+both directions, exclusive edges and finite coordinates whose subtraction overflows.
+Snapshot tests verify bounded admission before lease acquisition, fixed waiting targets,
+capacity reuse and operation/cleanup error aggregation, including failure after file replacement.
+Weak-reference tests check retired handle ownership and displayed-bitmap release after cleanup.

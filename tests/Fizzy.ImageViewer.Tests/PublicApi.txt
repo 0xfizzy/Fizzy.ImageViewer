@@ -259,7 +259,6 @@ Fizzy.ImageViewer.Frames.RegionPixels: Fizzy.ImageViewer.Frames.FrameInfo Source
 Fizzy.ImageViewer.Frames.RegionPixels: Fizzy.ImageViewer.Frames.PixelRegion Region { public get; }
 Fizzy.ImageViewer.Frames.RegionPixels: public Fizzy.ImageViewer.Frames.FrameLease AcquirePixels()
 Fizzy.ImageViewer.Frames.RegionPixels: public System.Void Dispose()
-Fizzy.ImageViewer.Frames.RegionPixels: public ctor(Fizzy.ImageViewer.Frames.FrameInfo sourceFrame, Fizzy.ImageViewer.Frames.PixelRegion region, Fizzy.ImageViewer.Frames.ImageFrame pixels)
 Fizzy.ImageViewer.Frames.RegionStatistics: Fizzy.ImageViewer.Frames.FramePixelFormat Format { public get; }
 Fizzy.ImageViewer.Frames.RegionStatistics: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Frames.ChannelStatistics> Channels { public get; }
 Fizzy.ImageViewer.Frames.RegionStatistics: public ctor(Fizzy.ImageViewer.Frames.FramePixelFormat format, System.Collections.Generic.IEnumerable<Fizzy.ImageViewer.Frames.ChannelStatistics> channels)
@@ -485,8 +484,8 @@ Fizzy.ImageViewer.Measurements.MeasurementQueryResult: Fizzy.ImageViewer.Frames.
 Fizzy.ImageViewer.Measurements.MeasurementQueryResult: Fizzy.ImageViewer.Measurements.MeasurementQueryKind Query { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementQueryResult: System.Guid MeasurementId { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementQueryResult: System.Int64 GeometryVersion { public get; }
-Fizzy.ImageViewer.Measurements.MeasurementRegionResult: Fizzy.ImageViewer.Frames.PixelRegion Region { public get; }
-Fizzy.ImageViewer.Measurements.MeasurementRegionResult: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Frames.ChannelStatistics> Channels { public get; }
+Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult: Fizzy.ImageViewer.Frames.PixelRegion Region { public get; }
+Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Frames.ChannelStatistics> Channels { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementSampleResult: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Frames.PixelCoordinate> Coordinates { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementSampleResult: System.Collections.Generic.IReadOnlyList<Fizzy.ImageViewer.Frames.PixelSample> Samples { public get; }
 Fizzy.ImageViewer.Measurements.MeasurementSnapshot: Fizzy.ImageViewer.Measurements.MeasurementGeometry Geometry { public get; public init; }
@@ -688,7 +687,7 @@ sealed class Fizzy.ImageViewer.Measurements.MeasurementEventArgs : System.EventA
 sealed class Fizzy.ImageViewer.Measurements.MeasurementLayer : Fizzy.ImageViewer.Layers.ViewerLayer
 sealed class Fizzy.ImageViewer.Measurements.MeasurementOptions : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementOptions>
 sealed class Fizzy.ImageViewer.Measurements.MeasurementOrigin : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementOrigin>
-sealed class Fizzy.ImageViewer.Measurements.MeasurementRegionResult : Fizzy.ImageViewer.Measurements.MeasurementQueryResult
+sealed class Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult : Fizzy.ImageViewer.Measurements.MeasurementQueryResult
 sealed class Fizzy.ImageViewer.Measurements.MeasurementSampleResult : Fizzy.ImageViewer.Measurements.MeasurementQueryResult
 sealed class Fizzy.ImageViewer.Measurements.MeasurementSnapshot : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementSnapshot>
 sealed class Fizzy.ImageViewer.Measurements.MeasurementStyle : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementStyle>

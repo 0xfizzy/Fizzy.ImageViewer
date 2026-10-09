@@ -61,7 +61,7 @@ internal static class MeasurementQueryDefinition
     {
         var region = GetRegion((RectangleMeasurementGeometry)geometry, descriptor);
         return region.IsEmpty ? null : new RegionStatisticsQueryRequest(identity, region,
-            (frame, stats) => publish(new MeasurementRegionResult(identity.ClientId, identity.GeometryVersion,
+            (frame, stats) => publish(new MeasurementRegionStatisticsResult(identity.ClientId, identity.GeometryVersion,
                 frame, region, stats.Channels.ToArray())));
     }
 }

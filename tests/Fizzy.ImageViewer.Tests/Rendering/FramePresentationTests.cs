@@ -9,6 +9,51 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class FramePresentationTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisposalUnlinksDisplayedBitmapEvenWhenPresenterCleanupFails(bool fail)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, null, false);
+        var retained = await viewer.Host.Window.Dispatcher.InvokeAsync(() => CreateDisposedPresentation(viewer, fail));
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(retained.Bitmap.IsAlive);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            Assert.Null(retained.Viewport.ImageDisplay.Source);
+            retained.Presentation.Dispose();
+        });
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static (FramePresentation Presentation, ImageViewport Viewport, WeakReference Bitmap) CreateDisposedPresentation(Viewer viewer, bool fail)
+    {
+        var viewport = new ImageViewport();
+        var presenter = new CleanupPresenter(fail);
+        var presentation = new FramePresentation(viewer.Host.Window.Dispatcher, viewport, presenter, NullLogger.Instance);
+        var bitmap = new System.Windows.Media.Imaging.WriteableBitmap(2, 2, 96, 96, System.Windows.Media.PixelFormats.Gray8, null);
+        presentation.SetImage(bitmap, new(2, 2, 2, FramePixelFormat.Gray8));
+        if (fail) Assert.Throws<InvalidOperationException>(presentation.Dispose);
+        else presentation.Dispose();
+        Assert.Equal(1, presenter.Disposals);
+        presentation.Dispose();
+        Assert.Equal(1, presenter.Disposals);
+        return (presentation, viewport, new(bitmap));
+    }
+
+    private sealed class CleanupPresenter(bool fail) : ICpuImagePresenter
+    {
+        internal int Disposals;
+        public System.Windows.Media.ImageSource Present(Fizzy.ImageViewer.Imaging.DisplayBuffer pixels) => throw new NotSupportedException();
+        public void Dispose()
+        {
+            Disposals++;
+            if (fail) throw new InvalidOperationException("presenter cleanup failed");
+        }
+    }
+
     [Fact]
     public async Task GpuPreparationDoesNotReadPixelsAndRejectsDisplayMapping()
     {

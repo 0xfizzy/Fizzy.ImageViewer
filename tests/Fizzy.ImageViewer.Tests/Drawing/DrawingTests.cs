@@ -20,6 +20,47 @@ public class DrawingTests
     private static CircleElement Circle(double x = 20, double y = 20) => new(new(x, y), 5, Brushes.Red, 2, Brushes.Red);
 
     [Fact]
+    public async Task RetiredDrawingDoesNotRetainItsLayer()
+    {
+        await using var viewer = Create();
+        var retained = await viewer.Host.Window.Dispatcher.InvokeAsync(CreateRetiredDrawing);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(retained.Layer.IsAlive);
+        retained.Handle.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => retained.Handle.Replace(Circle()));
+        GC.KeepAlive(retained.Handle);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static (DrawingHandle Handle, WeakReference Layer) CreateRetiredDrawing()
+    {
+        var layers = new ViewerLayers(new ScaleTransform());
+        var layer = layers.CreateDrawingLayer("retired");
+        var handle = layer.Add(Circle());
+        handle.Dispose();
+        Assert.Equal(0, layer.Host.Count);
+        return (handle, new(layer));
+    }
+
+    [Fact]
+    public async Task ClickSubscriptionRejectsRemovedAndClosedLayersButUnsubscriptionRemainsSafe()
+    {
+        await using var viewer = Create();
+        var layer = viewer.Layers.CreateDrawingLayer("clicks");
+        EventHandler<DrawingClickedEventArgs> handler = (_, _) => { };
+        await Task.Run(() => layer.DrawingClicked += handler);
+        viewer.Layers.RemoveLayer(layer);
+        Assert.Throws<ObjectDisposedException>(() => layer.DrawingClicked += handler);
+        layer.DrawingClicked -= handler;
+        var markers = viewer.Layers.Markers;
+        await viewer.DisposeAsync();
+        Assert.Throws<ObjectDisposedException>(() => markers.DrawingClicked += handler);
+        markers.DrawingClicked -= handler;
+    }
+
+    [Fact]
     public async Task ClickSubscriberFailureIsLoggedWithoutSkippingLaterSubscribersOrLosingTheHit()
     {
         var log = new ClickLog();

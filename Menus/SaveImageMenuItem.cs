@@ -24,7 +24,7 @@ internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCap
             };
             if (dialog.ShowDialog() != true) return;
             var raw = dialog.FilterIndex == 4;
-            using var snapshot = await capture.CaptureAsync(target.View.Acquire(), raw ? SnapshotKind.Raw : SnapshotKind.Display, target.Region).ConfigureAwait(false);
+            using var snapshot = await capture.CaptureAsync(target.View.Acquire, raw ? SnapshotKind.Raw : SnapshotKind.Display, target.Region).ConfigureAwait(false);
             await snapshot.SaveAsync(dialog.FileName, raw ? SnapshotEncoding.Tiff : dialog.FilterIndex switch
             { 1 => SnapshotEncoding.Png, 2 => SnapshotEncoding.Jpeg, _ => SnapshotEncoding.Bmp }).ConfigureAwait(false);
         }

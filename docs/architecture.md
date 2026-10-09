@@ -148,7 +148,9 @@ image scale and temporary layer input suppression without owning tool-session st
 The adapter borrows LayerCollection; the coordinator borrows MeasurementLayer directly
 for admission policy and lifecycle events, without depending on ViewerLayers or its container.
 ViewerHost connects the input adapter to the coordinator; the coordinator depends on these effects rather than concrete WPF visuals
-or the input adapter. ViewportPan owns middle-button
+or the input adapter. ImageViewport receives navigation and pointer movement from the common
+viewport surface, so sibling overlays do not block navigation or pixel inspection. Left-button
+selection and creation retain their separate input bindings. ViewportPan owns middle-button
 pan state in screen coordinates;
 it and measurement editing use MouseCaptureSession for capture admission, loss and
 idempotent release. Failed capture never starts a drag. Cancellation, interaction
@@ -196,7 +198,11 @@ model state, query subscription and disposal. Completion and disposal release it
 reference before presentation or external callbacks; only immutable Origin survives as session provenance.
 The item directly disposes its presentation after deregistration and before removal notification. MeasurementPresentation owns its WPF
 visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
-detaches that callback before closing the plot.
+detaches that callback before closing the plot. Disposed items release their collection and
+runtime references; presentation releases its overlay and close callback. Retained terminal
+model reads use only stable data and the lightweight Viewer lifetime gate. Invalidated drawing
+handles similarly release their layer reference. Presentation shutdown clears the image source
+on the STA; uncertain native attachments remain independently quarantined.
 MeasurementQueryDefinition owns the supported query/geometry pairs and request construction. MeasurementQueryClient caches those requests independently of the handle. Each request
 captures its geometry version and coordinates for immutable result provenance.
 ROI clipping also belongs to MeasurementQueryDefinition and is shared by queries and menus.

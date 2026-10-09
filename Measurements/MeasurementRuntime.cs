@@ -8,6 +8,7 @@ namespace Fizzy.ImageViewer.Measurements;
 internal sealed class MeasurementRuntime(ViewerLifetime lifetime, Dispatcher dispatcher,
     PixelQueryScheduler scheduler, ILogger logger)
 {
+    internal ViewerLifetime Lifetime => lifetime;
     private bool _stopped;
     internal MeasurementNotificationQueue Notifications { get; } = new(logger);
     internal void RunUiCallback(Action action)

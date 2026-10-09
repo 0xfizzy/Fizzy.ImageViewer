@@ -103,7 +103,7 @@ public class MeasurementInteractionTests
             viewer.Host.MenuSession.Close();
         });
         using var target = frozen!;
-        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target.View.Acquire(), SnapshotKind.Raw, target.Region);
+        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target.View.Acquire, SnapshotKind.Raw, target.Region);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(frozen!.Region!.Value.Width, pixels.Descriptor.Width);
         Assert.Equal(frozen.Region.Value.Height, pixels.Descriptor.Height);

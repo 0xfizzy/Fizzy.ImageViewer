@@ -182,6 +182,8 @@ not physical display pixels.
   scales them with the image. Its default typeface is Segoe UI.
 - Pan updates only the shared transform. Scale-dependent batches are redrawn once
   per rendering cycle; DPI changes also refresh text drawing.
+- Wheel zoom and middle-button pan use the common viewport input surface, including
+  over hit-testable drawings and measurements. Pixel inspection uses that same surface.
 - Hit testing uses actual drawing geometry (including fill and text glyphs), not
   batch bounds. An unfilled circle's interior and blank space pass input through.
   Overlapping batches resolve to the last-added batch in the topmost enabled layer.
@@ -213,6 +215,8 @@ Built-in layers cannot be removed. Names are nonempty and unique (case-sensitive
 Layer handles belong to one viewer and cannot be passed to another viewer's manager.
 `Layers.Items` returns a membership snapshot containing mutable layer handles. Clear preserves layer settings and subscriptions;
 removal and closure release subscriptions and drawing resources.
+Adding a `DrawingClicked` subscription dispatches to the viewer STA and rejects a removed
+layer or stopping viewer. Unsubscription remains safe after removal or closure.
 
 Global layer composition is available through `IViewer.Layers`. Borrowing
 `IViewerDrawing` exposes only the default `Markers` layer and its `Draw*` helpers;

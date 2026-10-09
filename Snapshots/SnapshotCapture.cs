@@ -8,10 +8,23 @@ internal sealed class SnapshotCapture
 {
     // Acquired work can outlive Viewer shutdown. Do not dispose this semaphore at shutdown.
     private readonly SemaphoreSlim _exportGate = new(1, 1);
+    private readonly SemaphoreSlim _capacity = new(2, 2);
 
-    /// <summary>Consumes view, including on cancellation or failure.</summary>
-    internal Task<ImageSnapshot> CaptureAsync(CommittedViewLease view, SnapshotKind kind,
-        PixelRegion? region = null, CancellationToken ct = default) => Task.Run(async () =>
+    /// <summary>Reserves one of two export slots before synchronously acquiring an owned view.
+    /// The acquired view is consumed on every outcome; rejected requests never acquire it.</summary>
+    internal Task<ImageSnapshot> CaptureAsync(Func<CommittedViewLease> acquireView, SnapshotKind kind,
+        PixelRegion? region = null, CancellationToken ct = default)
+    {
+        if (!_capacity.Wait(0))
+            throw new InvalidOperationException("Snapshot capture capacity is full (one executing and one waiting).");
+        CommittedViewLease view;
+        try { view = acquireView(); }
+        catch { _capacity.Release(); throw; }
+        return CaptureOwnedAsync(view, kind, region, ct);
+    }
+
+    private Task<ImageSnapshot> CaptureOwnedAsync(CommittedViewLease view, SnapshotKind kind,
+        PixelRegion? region, CancellationToken ct) => Task.Run(async () =>
     {
         RegionPixels? read = null;
         ImageSnapshot? snapshot = null;
@@ -47,6 +60,10 @@ internal sealed class SnapshotCapture
             if (errors.Count > 1) throw new AggregateException(errors);
             throw;
         }
-        finally { if (entered) _exportGate.Release(); }
+        finally
+        {
+            if (entered) _exportGate.Release();
+            _capacity.Release();
+        }
     });
 }

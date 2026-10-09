@@ -30,27 +30,28 @@ public class SnapshotCaptureTests
             (nint)1, source, () => Interlocked.Increment(ref released));
         using var owner = new CommittedViewLease(frame.Acquire(), null, 7);
         frame.Dispose();
-        var first = capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw);
+        var first = capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw);
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
         using var stop = new CancellationTokenSource();
         using var cancelledFrame = ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             new byte[] { 8 }, () => Interlocked.Increment(ref cancelledReleased));
-        var cancelled = capture.CaptureAsync(new(cancelledFrame.Acquire(), null, 7), SnapshotKind.Raw, ct: stop.Token);
+        var cancelled = capture.CaptureAsync(() => new(cancelledFrame.Acquire(), null, 7), SnapshotKind.Raw, ct: stop.Token);
         cancelledFrame.Dispose();
-        var second = capture.CaptureAsync(owner.Acquire(), SnapshotKind.Display);
-        owner.Dispose();
+        Task<ImageSnapshot>? second = null;
         try
         {
             stop.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled.WaitAsync(TimeSpan.FromSeconds(5)));
             Assert.Equal(1, cancelledReleased);
+            second = capture.CaptureAsync(owner.Acquire, SnapshotKind.Display);
+            owner.Dispose();
             Assert.Equal(1, source.Calls);
             Assert.Equal(0, released);
             Assert.False(second.IsCompleted);
         }
         finally { source.Release.TrySetResult(); }
         using var raw = await first.WaitAsync(TimeSpan.FromSeconds(5));
-        using var display = await second.WaitAsync(TimeSpan.FromSeconds(5));
+        using var display = await second!.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(2, source.Calls);
         Assert.Equal(1, source.MaxConcurrent);
         Assert.Equal(1, released);
@@ -59,6 +60,60 @@ public class SnapshotCaptureTests
         Assert.Equal(42, pixels.CpuPixels.Span[0]);
         owner.Dispose();
         Assert.Equal(1, released);
+    }
+
+    [Fact]
+    public async Task FullCapacityRejectsBeforeAcquisitionAndWaitingCaptureKeepsItsFrame()
+    {
+        var capture = new SnapshotCapture();
+        var source = new BlockingRegionSource();
+        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+            (nint)1, source, () => { });
+        using var owner = new CommittedViewLease(frame.Acquire(), null, 0);
+        var first = capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw);
+        await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        int released = 0, rejectedAcquisitions = 0;
+        using var waitingFrame = ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
+            new byte[] { 91 }, () => released++);
+        var waiting = capture.CaptureAsync(() => new(waitingFrame.Acquire(), null, 3), SnapshotKind.Raw);
+        waitingFrame.Dispose();
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                _ = capture.CaptureAsync(() =>
+                {
+                    rejectedAcquisitions++;
+                    return owner.Acquire();
+                }, SnapshotKind.Raw);
+            });
+            Assert.Equal(0, rejectedAcquisitions);
+            Assert.Equal(0, released);
+            Assert.False(waiting.IsCompleted);
+        }
+        finally { source.Release.TrySetResult(); }
+        using var firstSnapshot = await first.WaitAsync(TimeSpan.FromSeconds(5));
+        using var waitingSnapshot = await waiting.WaitAsync(TimeSpan.FromSeconds(5));
+        using var pixels = waitingSnapshot.AcquirePixels();
+        Assert.Equal(91, pixels.CpuPixels.Span[0]);
+        Assert.Equal(3, waitingSnapshot.DisplayVersion);
+        Assert.Equal(1, released);
+        using var next = await capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw);
+    }
+
+    [Fact]
+    public async Task AcquisitionFailureDoesNotConsumeCapacity()
+    {
+        var capture = new SnapshotCapture();
+        for (int i = 0; i < 3; i++)
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                _ = capture.CaptureAsync(() => throw new ObjectDisposedException("source"), SnapshotKind.Raw);
+            });
+        using var frame = ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 });
+        using var snapshot = await capture.CaptureAsync(() => new(frame.Acquire(), null, 0), SnapshotKind.Raw);
+        using var pixels = snapshot.AcquirePixels();
+        Assert.Equal(42, pixels.CpuPixels.Span[0]);
     }
 
     [Fact]
@@ -72,8 +127,8 @@ public class SnapshotCaptureTests
             (nint)1, source, () => released++);
         using var owner = new CommittedViewLease(frame.Acquire(), null, 0);
         frame.Dispose();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw));
-        using var snapshot = await capture.CaptureAsync(owner.Acquire(), SnapshotKind.Raw).WaitAsync(TimeSpan.FromSeconds(5));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw));
+        using var snapshot = await capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw).WaitAsync(TimeSpan.FromSeconds(5));
         owner.Dispose();
         Assert.Equal(1, released);
         Assert.Equal(2, source.Calls);

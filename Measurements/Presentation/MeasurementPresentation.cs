@@ -8,8 +8,8 @@ namespace Fizzy.ImageViewer.Measurements.Presentation;
 /// <summary>Owns measurement visuals, labels and the optional plot; model changes flow into presentation.</summary>
 internal sealed class MeasurementPresentation : IDisposable
 {
-    private readonly MeasurementOverlay _layer;
-    private readonly Action _closed;
+    private MeasurementOverlay? _layer;
+    private Action? _closed;
     private LineProfileWindow? _plot;
     private bool _disposed;
     internal IEnumerable<UIElement> Visuals => [PrimaryVisual, Label];
@@ -39,7 +39,7 @@ internal sealed class MeasurementPresentation : IDisposable
         foreach (var visual in Visuals)
         {
             if (_disposed) break;
-            _layer.AddVisual(visual);
+            _layer!.AddVisual(visual);
         }
     }
 
@@ -51,7 +51,7 @@ internal sealed class MeasurementPresentation : IDisposable
         _plot.Window.Show();
     }
 
-    private void PlotClosed(object? sender, EventArgs args) => _closed();
+    private void PlotClosed(object? sender, EventArgs args) => _closed?.Invoke();
 
     private void UpdateText(MeasurementGeometry geometry) => Label.Text = geometry switch
     {
@@ -74,7 +74,7 @@ internal sealed class MeasurementPresentation : IDisposable
         UpdateText(geometry);
         if (result is MeasurementSampleResult { Query: MeasurementQueryKind.Pixel } pixel)
             Label.Text += $" | {pixel.Samples[0]}";
-        else if (result is MeasurementRegionResult statistics)
+        else if (result is MeasurementRegionStatisticsResult statistics)
         {
             var region = statistics.Region;
             var names = statistics.Channels.Count == 1 ? new[] { "Gray" } : new[] { "R", "G", "B", "A" };
@@ -90,7 +90,10 @@ internal sealed class MeasurementPresentation : IDisposable
         if (_disposed) return;
         _disposed = true;
         var plot = _plot;
+        var layer = _layer!;
         _plot = null;
+        _layer = null;
+        _closed = null;
         try
         {
             if (plot != null)
@@ -102,33 +105,34 @@ internal sealed class MeasurementPresentation : IDisposable
         finally
         {
             // Labels leave first so removal callbacks cannot see an orphaned label.
-            try { _layer.RemoveVisual(Label); }
-            finally { _layer.RemoveVisual(PrimaryVisual); }
+            try { layer.RemoveVisual(Label); }
+            finally { layer.RemoveVisual(PrimaryVisual); }
         }
     }
 
     public void Apply(MeasurementGeometry geometry)
     {
+        var layer = _layer ?? throw new ObjectDisposedException(nameof(MeasurementPresentation));
         var shape = PrimaryVisual;
         switch (geometry)
         {
             case CircleMeasurementGeometry circle when shape is Path { Data: System.Windows.Media.EllipseGeometry ellipse }:
                 ellipse.RadiusX = ellipse.RadiusY = circle.Radius;
-                _layer.UpdateAnchor(shape, circle.Center);
+                layer.UpdateAnchor(shape, circle.Center);
                 break;
             case RectangleMeasurementGeometry rectangle when shape is Rectangle visual:
                 visual.Width = rectangle.Bounds.Width;
                 visual.Height = rectangle.Bounds.Height;
-                _layer.UpdateAnchor(visual, rectangle.TopLeft);
+                layer.UpdateAnchor(visual, rectangle.TopLeft);
                 break;
             case LineMeasurementGeometry line when shape is Line visual:
                 visual.X1 = line.Start.X; visual.Y1 = line.Start.Y;
                 visual.X2 = line.End.X; visual.Y2 = line.End.Y;
                 break;
             default:
-                _layer.UpdateAnchor(shape, geometry.Anchor);
+                layer.UpdateAnchor(shape, geometry.Anchor);
                 break;
         }
-        _layer.UpdateAnchor(Label, geometry is LineMeasurementGeometry segment ? segment.End : geometry.Anchor);
+        layer.UpdateAnchor(Label, geometry is LineMeasurementGeometry segment ? segment.End : geometry.Anchor);
     }
 }

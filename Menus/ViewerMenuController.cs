@@ -59,7 +59,7 @@ internal sealed class ViewerMenuController : IDisposable
         var selected = _interaction.SelectedMeasurement;
         if (_interaction.Mode == InteractionMode.Measuring)
         {
-            yield return new MenuItem("Cancel Measurement", _interaction.Cancel);
+            yield return new MenuItem("Cancel Measurement", _interaction.CaptureMeasurementCancellation());
             yield break;
         }
         if (selected != null)

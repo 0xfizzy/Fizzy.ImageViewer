@@ -13,8 +13,15 @@ public sealed class DrawingLayer : ViewerLayer
     private readonly List<DrawingHandle> _drawings = [];
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
     /// <summary>Raised on the viewer thread for a drawing hit. Subscriber failures are logged
-    /// independently; a hit consumes the mouse event even if a subscriber fails.</summary>
-    public event EventHandler<DrawingClickedEventArgs>? DrawingClicked;
+    /// independently; a hit consumes the mouse event even if a subscriber fails.
+    /// Adding handlers dispatches to the viewer STA and rejects removed layers or a stopping viewer.
+    /// Removing handlers remains safe after layer removal or viewer closure.</summary>
+    public event EventHandler<DrawingClickedEventArgs>? DrawingClicked
+    {
+        add => Owner.Invoke(() => { EnsureAlive(); _drawingClicked += value; });
+        remove => Owner.InvokeRemoval(() => _drawingClicked -= value);
+    }
+    private EventHandler<DrawingClickedEventArgs>? _drawingClicked;
 
     internal DrawingLayer(LayerCollection owner, string name, int zIndex, bool builtIn)
         : base(owner, name, zIndex, builtIn, hitTest: false)
@@ -28,7 +35,7 @@ public sealed class DrawingLayer : ViewerLayer
     {
         var drawing = HitDrawing(imagePoint);
         if (drawing == null) return false;
-        var handlers = DrawingClicked;
+        var handlers = _drawingClicked;
         if (handlers != null)
         {
             var args = new DrawingClickedEventArgs(drawing, imagePoint, button);
@@ -83,7 +90,7 @@ public sealed class DrawingLayer : ViewerLayer
     }
     internal override void ReleaseHandlers()
     {
-        DrawingClicked = null;
+        _drawingClicked = null;
         Host.DpiChanged = null;
     }
 }

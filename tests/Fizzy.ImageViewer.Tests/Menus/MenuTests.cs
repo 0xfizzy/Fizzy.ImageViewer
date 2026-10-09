@@ -413,6 +413,29 @@ public class MenuTests
     }
 
     [Fact]
+    public async Task RetainedCancelTargetsOnlyTheCapturedActivationEvenForTheSameTool()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
+            var menu = viewer.Host.Window.ContextMenu;
+            Open(menu);
+            var cancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));
+            Close(menu);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
+            cancel.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
+            Assert.Equal(Interaction.InteractionMode.Measuring, viewer.Host.Interaction.Mode);
+            Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
+            Open(menu);
+            var currentCancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));
+            Close(menu);
+            currentCancel.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
+            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
+        });
+    }
+
+    [Fact]
     public async Task InteractionMenuReflectsMeasurementStateAtOpening()
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);

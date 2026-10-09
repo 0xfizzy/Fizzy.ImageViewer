@@ -91,7 +91,7 @@ public class ViewerTests
             Assert.Equal(1, presenter.Disposals);
             Assert.Equal(ApartmentState.STA, presenter.PresentApartment);
             Assert.Equal(ApartmentState.STA, presenter.DisposeApartment);
-            using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire(), SnapshotKind.Raw, target.Region);
+            using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
             using var pixels = snapshot.AcquirePixels();
             Assert.Equal(63, pixels.CpuPixels.Span[0]);
             target.Dispose();
@@ -192,7 +192,7 @@ public class ViewerTests
         using var target = viewer.Host.MenuSession.AcquireTarget();
         await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.MenuSession.Close);
         await viewer.SubmitFrameAsync(Frame(25));
-        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire(), SnapshotKind.Raw, target.Region);
+        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(first.FrameId, snapshot.SourceFrame.FrameId); Assert.Equal(17, pixels.CpuPixels.Span[0]);
     }

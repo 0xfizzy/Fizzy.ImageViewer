@@ -144,7 +144,9 @@ Their `Region` is expressed in that input frame's coordinates. `AcquirePixels()`
 independent lease describing the cropped or converted pixels, without copying source metadata
 onto it. Queries on that lease use local coordinates and describe the derived pixels; retain
 the containing region/snapshot when source provenance is needed. `RegionPixels` owns its
-independent CPU image and must be disposed. Unsupported capabilities fail without download fallback.
+independent CPU image and must be disposed. It is created by `FrameLease.ReadRegionAsync`
+after validating the provider result; consumers cannot construct it directly.
+Unsupported capabilities fail without download fallback.
 
 CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. Statistics return
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
@@ -163,7 +165,9 @@ Slow ROI queries therefore do not age one another or delay publication of a comp
 Point and line coordinates use the half-open pixel coverage rectangle
 `[0, Width) × [0, Height)`: pixel `(x, y)` covers `[x, x+1) × [y, y+1)`.
 Lines are clipped to that coverage, their endpoints are floored to pixel indices,
-and Bresenham samples retain the input direction and both endpoint pixels. A crossing
+and Bresenham samples retain the input direction and both endpoint pixels. Very large finite
+coordinates use exact clipping of the supplied binary values to avoid losing the pixel interval;
+this cannot recover precision already lost before calling the API. A crossing
 endpoint on the outer right/bottom boundary is clamped to the last covered pixel;
 a line lying on or only touching those exclusive edges has no samples.
 ROI geometry uses floor(left/top), ceil(right/bottom),
@@ -217,7 +221,10 @@ returns independent immutable storage. `Raw` preserves input values; `Display` a
 committed display mapping without annotations, HUD or viewport scaling.
 The overload accepting PixelRegion reads only that region. Snapshots record `SourceFrame` and
 region origin. Full snapshots explicitly request the entire region; GPU results are never cached
-back into source storage. One export read per Viewer executes at a time.
+back into source storage. One export read per Viewer executes at a time, with at most one
+additional capture admitted to wait. Further calls throw `InvalidOperationException`
+synchronously before acquiring a frame lease. Accepted captures retain the frame current
+at the call, including while waiting. Completion, cancellation or failure frees the slot.
 The ROI save menu pins both frame and integer region before opening the file dialog.
 Dispose snapshots when finished. A save retains its own lease until completion.
 Raw capture takes ownership of the independently read CPU region without copying it
@@ -231,6 +238,9 @@ directory and replaces the target only after successful encoding. Cancellation i
 before replacement and between TIFF rows; WPF PNG/JPEG/BMP encoding itself is not interruptible.
 Display exports support PNG, JPEG, BMP and TIFF. JPEG composites transparency onto black.
 Raw exports require TIFF and never silently quantize high-bit-depth values.
+Encoding/cancellation and cleanup failures are preserved together, with the operation failure
+first. Cleanup can fail after the target was successfully replaced; a failed save task does
+not by itself prove that the destination is unchanged.
 The context menu's **Save Image As...** action selects display PNG/JPEG/BMP or raw TIFF
 through the file dialog's file type. **Save Region Image As...** offers the same choices
 when a completed rectangular measurement is selected.

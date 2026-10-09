@@ -5,7 +5,7 @@ namespace Fizzy.ImageViewer.Drawing;
 /// <summary>Owns one drawing containing zero or more elements. Replacement preserves its visual identity and stacking order.</summary>
 public sealed class DrawingHandle : IDisposable
 {
-    private readonly DrawingLayer _layer;
+    private DrawingLayer? _layer;
     private volatile bool _disposed;
     internal DrawingVisual Visual { get; } = new();
     internal DrawingElement[] Elements { get; private set; }
@@ -48,21 +48,24 @@ public sealed class DrawingHandle : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var snapshot = Snapshot(elements);
-        _layer.Owner.Invoke(() =>
+        var layer = _layer;
+        ObjectDisposedException.ThrowIf(layer == null, this);
+        layer.Owner.Invoke(() =>
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            _layer.EnsureAlive();
-            Commit(snapshot, _layer.Owner.Scale, _layer.PixelsPerDip);
+            layer.EnsureAlive();
+            Commit(snapshot, layer.Owner.Scale, layer.PixelsPerDip);
         });
     }
     public void Dispose()
     {
         if (_disposed) return;
-        _layer.Owner.InvokeRemoval(() => _layer.Remove(this));
+        var layer = _layer;
+        layer?.Owner.InvokeRemoval(() => layer.Remove(this));
     }
     internal void Invalidate()
     {
-        _disposed = true; Elements = [];
+        _disposed = true; _layer = null; Elements = [];
         using var context = Visual.RenderOpen();
     }
 }

@@ -163,6 +163,15 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
         CancelCore();
     }
 
+    internal Action CaptureMeasurementCancellation()
+    {
+        var activation = _activation;
+        return () =>
+        {
+            if (activation != null && IsCurrent(activation)) Cancel();
+        };
+    }
+
     internal bool UnregisterMeasurementTool(string id)
         => _tools.FindRegistration(id) is { } registration && RevokeMeasurementTool(registration);
 

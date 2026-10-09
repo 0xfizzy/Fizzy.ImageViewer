@@ -21,7 +21,12 @@ internal static class SnapshotEncoder
             ct.ThrowIfCancellationRequested();
             File.Move(temp, path, true);
         }
-        finally { if (File.Exists(temp)) File.Delete(temp); }
+        catch (Exception error)
+        {
+            try { File.Delete(temp); }
+            catch (Exception cleanup) { throw new AggregateException(error, cleanup); }
+            throw;
+        }
     }
     private static void WriteDisplay(FrameLease frame, string path, SnapshotEncoding encoding, CancellationToken ct)
     {

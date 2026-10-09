@@ -110,7 +110,7 @@ public class UnifiedMeasurementTests
             item.QueryResultChanged += result => { if (result != null) ready.TrySetResult(result); };
         });
         await viewer.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
-        var result = Assert.IsType<MeasurementRegionResult>(await ready.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        var result = Assert.IsType<MeasurementRegionStatisticsResult>(await ready.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.Equal(1, completed); Assert.Equal(item!.Id, result.MeasurementId);

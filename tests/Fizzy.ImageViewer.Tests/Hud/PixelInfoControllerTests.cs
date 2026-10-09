@@ -133,6 +133,33 @@ public class PixelInfoControllerTests
     }
 
     [Fact]
+    public async Task LeavingImageForSiblingOverlayDoesNotInvalidateHudSession()
+    {
+        await OnSta(() =>
+        {
+            var root = new Grid();
+            var image = new ImageViewport(root);
+            var overlay = new Canvas();
+            root.Children.Add(image);
+            root.Children.Add(overlay);
+            root.Measure(new Size(100, 100));
+            root.Arrange(new Rect(0, 0, 100, 100));
+            using var scheduler = new PixelQueryScheduler(() => null, NullLogger.Instance, new InlineRuntime());
+            using var controller = new PixelInfoController(image, new HudLayer(), scheduler, () => new Point(5, 5));
+            controller.Enable();
+            var client = (IFrameQueryClient)controller;
+            var descriptor = new FrameDescriptor(10, 10, 10, FramePixelFormat.Gray8);
+            var before = Assert.IsType<CoordinateQueryRequest>(client.Capture(descriptor));
+            image.Container.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseLeaveEvent });
+            var overOverlay = Assert.IsType<CoordinateQueryRequest>(client.Capture(descriptor));
+            Assert.Equal(before.Identity.SessionVersion, overOverlay.Identity.SessionVersion);
+            root.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseLeaveEvent });
+            var reentered = Assert.IsType<CoordinateQueryRequest>(client.Capture(descriptor));
+            Assert.NotEqual(before.Identity.SessionVersion, reentered.Identity.SessionVersion);
+        });
+    }
+
+    [Fact]
     public async Task UnloadedViewportDoesNotQueryEvenAfterSyntheticMouseMove()
     {
         await OnSta(() =>

@@ -40,7 +40,7 @@ internal sealed class PixelInfoController : IDisposable, IFrameQueryClient
         _enabled = true;
         _state.Enable();
         _image.ImageMouseMove += Move;
-        _image.Container.MouseLeave += Leave;
+        _image.InputSurface.MouseLeave += Leave;
     }
 
     public void Disable()
@@ -49,7 +49,7 @@ internal sealed class PixelInfoController : IDisposable, IFrameQueryClient
         _enabled = false;
         _state.Disable();
         _image.ImageMouseMove -= Move;
-        _image.Container.MouseLeave -= Leave;
+        _image.InputSurface.MouseLeave -= Leave;
         _subscription?.Dispose();
         _subscription = null;
     }
@@ -76,7 +76,8 @@ internal sealed class PixelInfoController : IDisposable, IFrameQueryClient
     private Point? ReadPointer()
     {
         var container = _image.Container;
-        if (!container.IsLoaded || !container.IsVisible || !container.IsMouseOver) return null;
+        var surface = _image.InputSurface;
+        if (!surface.IsLoaded || !surface.IsVisible || !surface.IsMouseOver) return null;
         var point = Mouse.GetPosition(container);
         return point.X >= 0 && point.Y >= 0 && point.X < container.ActualWidth && point.Y < container.ActualHeight
             ? point : null;

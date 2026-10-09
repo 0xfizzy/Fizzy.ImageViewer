@@ -49,11 +49,11 @@ public class MeasurementModelBoundaryTests
         Assert.Equal(new PixelCoordinate(0, 0), pixels.Coordinates[0]);
         Assert.Equal(7, pixels.Samples[0].Gray);
         ChannelStatistics[] channels = [new(1, 7, 7, 7)];
-        var region = new MeasurementRegionResult(Guid.NewGuid(), 0, frame, new(0, 0, 1, 1), channels);
+        var region = new MeasurementRegionStatisticsResult(Guid.NewGuid(), 0, frame, new(0, 0, 1, 1), channels);
         channels[0] = default;
         Assert.Equal(7, region.Channels[0].Mean);
         Assert.Null(typeof(MeasurementSampleResult).GetProperty("Region"));
-        Assert.Null(typeof(MeasurementRegionResult).GetProperty("Samples"));
+        Assert.Null(typeof(MeasurementRegionStatisticsResult).GetProperty("Samples"));
         Assert.Throws<NotSupportedException>(() => ((IList<ChannelStatistics>)region.Channels)[0] = default);
     }
 }

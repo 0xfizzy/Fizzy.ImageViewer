@@ -325,7 +325,7 @@ after another frame, editing or removal. Collections never borrow scheduler buff
 
 Results are a closed class family. Pattern-match `MeasurementSampleResult` to read
 `Coordinates` and `Samples`: `Query` is `Pixel` for one pair or `LineProfile` for ordered
-pairs. `MeasurementRegionResult` exposes a non-null clipped `Region` and `Channels`.
+pairs. `MeasurementRegionStatisticsResult` exposes a non-null clipped `Region` and `Channels`.
 Common `MeasurementQueryResult` properties contain only provenance and `Query`, so unrelated
 payload fields cannot be accidentally read. `None` produces no result.
 
@@ -351,8 +351,9 @@ call does not change ownership: a new resource remains the caller's responsibili
 re-registering the same instance is rejected and leaves the measurement's existing ownership
 intact. Do not share an owned resource across measurements. Unregistering a tool retains
 completed measurements. Selection and deletion
-target the measurement owner, which removes both its primary visual and label. Hiding cancels
-previews but retains completed items; clear and viewer closure dispose all items.
+target the measurement owner, which removes both its primary visual and label. Setting
+`Measurements.IsVisible = false` cancels previews but retains completed items.
+`Viewer.Hide()` retains the active tool session and previews; clear and viewer closure dispose all items.
 
 Disposal revokes queries, executes cleanup callbacks, disposes resources, closes the plot
 and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates

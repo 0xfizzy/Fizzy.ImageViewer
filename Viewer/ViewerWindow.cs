@@ -29,14 +29,13 @@ namespace Fizzy.ImageViewer
             WindowStartupLocation = WindowStartupLocation.Manual;
 
             // === 实例化图层 ===
-            ImageViewport = new ImageViewport();
+            var grid = new Grid();
+            ImageViewport = new ImageViewport(grid);
             Layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, lifetime, logger);
             HudLayer = new HudLayer();
 
 
             ImageViewport.ScaleChanged += Layers.Collection.UpdateScale;
-
-            var grid = new Grid();
 
             // 叠加顺序很重要：0在底，2在顶
             grid.Children.Add(ImageViewport);

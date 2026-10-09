@@ -65,6 +65,8 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         if (_disposed) return;
         _disposed = true;
         List<Exception> errors = [];
+        // Unlink the visual on its STA. Failed native detach is independently quarantined by D3DImagePresenter.
+        try { layer.ImageDisplay.Source = null; } catch (Exception ex) { errors.Add(ex); }
         try { presenter.Dispose(); } catch (Exception ex) { errors.Add(ex); }
         try { _d3dPresenter?.Dispose(); } catch (Exception ex) { errors.Add(ex); }
         _d3dPresenter = null;

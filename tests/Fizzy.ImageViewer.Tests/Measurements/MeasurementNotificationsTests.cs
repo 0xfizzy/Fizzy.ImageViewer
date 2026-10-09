@@ -75,7 +75,7 @@ public class MeasurementNotificationsTests
         Assert.Equal(completed.Snapshot.Id, published.Snapshot.Id);
         Assert.Equal(submission.FrameId, published.QueryResult!.Frame.FrameId);
         Assert.Equal(published.Snapshot.GeometryVersion, published.QueryResult.GeometryVersion);
-        Assert.Equal(2.5, Assert.Single(Assert.IsType<MeasurementRegionResult>(published.QueryResult).Channels).Mean);
+        Assert.Equal(2.5, Assert.Single(Assert.IsType<MeasurementRegionStatisticsResult>(published.QueryResult).Channels).Mean);
 
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
@@ -93,7 +93,7 @@ public class MeasurementNotificationsTests
         });
         // Both geometry and samples remain snapshots after editing and cross-thread removal.
         Assert.Equal(completed.Snapshot.GeometryVersion, published.Snapshot.GeometryVersion);
-        Assert.Equal(2.5, Assert.IsType<MeasurementRegionResult>(published.QueryResult).Channels[0].Mean);
+        Assert.Equal(2.5, Assert.IsType<MeasurementRegionStatisticsResult>(published.QueryResult).Channels[0].Mean);
         await Task.Run(published.Measurement.Dispose);
         Assert.NotNull(removed);
         Assert.Equal(completed.Snapshot.GeometryVersion + 1, removed.Snapshot.GeometryVersion);
