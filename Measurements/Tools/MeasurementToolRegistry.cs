@@ -14,6 +14,10 @@ internal sealed class MeasurementToolRegistry
     {
         ArgumentNullException.ThrowIfNull(tool);
         var id = tool.Id; var name = tool.DisplayName;
+        return RegisterTool(tool, id, name);
+    }
+    internal Registration RegisterTool(IMeasurementTool tool, string id, string name)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         var registration = new Registration(id, name, tool);

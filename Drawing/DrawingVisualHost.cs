@@ -3,10 +3,10 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
-internal sealed class BatchVisualHost : FrameworkElement
+internal sealed class DrawingVisualHost : FrameworkElement
 {
     private readonly VisualCollection _visuals;
-    internal BatchVisualHost() => _visuals = new VisualCollection(this);
+    internal DrawingVisualHost() => _visuals = new VisualCollection(this);
     internal Action? DpiChanged { get; set; }
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {

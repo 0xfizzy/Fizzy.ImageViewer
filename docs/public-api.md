@@ -15,7 +15,7 @@ application adapters own an instance and use its public API. Raw-window access i
 | Drawing | `Markers`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
 | HUD | `HudLabelText`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
 | Measurements | `Measurements` layer, instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
-| Display | `FitToViewport`, `DisplayRange` |
+| Display | `FitToViewport`, read-only requested `DisplayRange`, `SetDisplayRangeAsync` |
 | Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
 
 The root namespace contains `Viewer`, `IViewer` and `IViewerWindow`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
@@ -26,7 +26,7 @@ HUD text handles and anchor alignment belong to `.Hud`.
 
 Frame storage and original-pixel access share `.Frames`: `IFramePixelSource`,
 `CpuFramePixelReader`, `PixelCoordinate`, `PixelRegion`, `PixelSample`, `ChannelStatistics`,
-`RegionStatistics`, `PixelQueryResult`, `RegionStatisticsResult` and `RegionPixels`.
+`RegionStatistics`, `PixelSamplesResult`, `RegionStatisticsResult` and `RegionPixels`.
 `.Imaging` contains display range and shared query configuration/metrics, rather than
 the pixel-source protocol. See [module dependencies](architecture.md#frame-and-imaging-dependencies).
 
@@ -132,6 +132,12 @@ measurements and edits already applied.
 `FitToViewport` centers the full image and may choose a scale outside the ordinary
 wheel range of 0.01–100. At such a scale, the wheel permits steps toward that range
 and rejects steps farther away, so very large or small images remain navigable.
+
+Use `await SetDisplayRangeAsync(range)` to change the requested grayscale mapping
+and observe rendering failures. `DisplayRange` reads that request; snapshots retain
+the last successfully committed mapping. A newer request or closure cancels an
+outstanding update. Without a current frame the call configures future submissions
+and completes immediately. See [display contracts](frame-pipeline.md#submission-and-display).
 
 ## Measurement notifications and extensions
 
@@ -243,6 +249,9 @@ use `CreateMeasurement`. Built-in save actions receive snapshot services directl
 Menu visibility is determined by `IMenuItem.IsVisible`, evaluated on each opening.
 Action-based helpers accept an optional visibility predicate. Use `SeparatorMenuItem`
 for separators; the renderer removes leading, repeated and trailing separators.
+`MenuItem` and `CheckableMenuItem` require a nonempty, non-whitespace header and
+non-null action (and checked-state getter where applicable); constructors reject
+invalid arguments before registration. Valid headers are preserved as supplied.
 Built-in interaction actions capture their target when the menu opens.
 
 ## Menu registration lifetime

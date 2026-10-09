@@ -6,10 +6,10 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
-/// <summary>A business layer in image coordinates. All public operations marshal to the viewer thread.</summary>
+/// <summary>A layer of image-coordinate drawings. All public operations marshal to the viewer thread.</summary>
 public sealed class DrawingLayer : ViewerLayer
 {
-    internal BatchVisualHost Host { get; } = new();
+    internal DrawingVisualHost Host { get; } = new();
     private readonly List<DrawingHandle> _drawings = [];
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
     /// <summary>Raised on the viewer thread for a drawing hit. Subscriber failures are logged

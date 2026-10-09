@@ -28,6 +28,8 @@ public sealed class ImageFrame : IDisposable
     }
 
     /// <summary>Transfers ownership, including on validation failure. Release is called exactly once.
+    /// Release runs synchronously on the final releasing thread, potentially the Viewer STA;
+    /// the producer must satisfy thread affinity and avoid blocking.
     /// If construction and release both fail, throws an AggregateException containing both errors.</summary>
     public static ImageFrame TakeOwnership(FrameDescriptor descriptor, ReadOnlyMemory<byte> data, Action release)
     {
@@ -51,6 +53,8 @@ public sealed class ImageFrame : IDisposable
     /// <summary>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
     /// The query provider reads only explicitly requested pixels and must return
     /// independent immutable CPU storage matching descriptor. Release runs after the last lease.
+    /// Release runs synchronously on the final releasing thread, potentially the Viewer STA;
+    /// the producer must satisfy thread affinity and avoid blocking.
     /// Ownership transfers even on construction failure. If construction and release both fail,
     /// throws an AggregateException containing both errors.</summary>
     public static ImageFrame TakeD3D9Surface(FrameDescriptor descriptor, nint surface,

@@ -6,7 +6,8 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <summary>Text displayed in the upper-right HUD label.</summary>
+    /// <summary>Text displayed in the upper-right HUD label. Null is normalized to an empty string;
+    /// an empty string hides the label.</summary>
     public string? HudLabelText
     {
         get => InvokeAlive(() => _host.Window.HudLayer.Label);

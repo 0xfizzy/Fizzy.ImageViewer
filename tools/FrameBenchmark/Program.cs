@@ -11,6 +11,12 @@ using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 
+if (args.FirstOrDefault() == "--snapshots")
+{
+    await SnapshotCopyBenchmark.RunAsync(args.Skip(1).FirstOrDefault() ?? "artifacts/snapshot-copy-benchmark.json");
+    return;
+}
+
 var results = new List<object>();
 foreach (var (width, height) in new[] { (1920, 1080), (3840, 2160) })
 foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })

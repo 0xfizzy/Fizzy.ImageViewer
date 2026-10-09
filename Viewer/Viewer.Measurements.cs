@@ -21,7 +21,12 @@ public partial class Viewer
 
     public IDisposable RegisterMeasurementTool(IMeasurementTool tool) => InvokeAlive(() =>
     {
-        var registration = _host.Tools.RegisterTool(tool);
+        ArgumentNullException.ThrowIfNull(tool);
+        var id = tool.Id;
+        var displayName = tool.DisplayName;
+        // Metadata getters are external callbacks and may pump shutdown on this STA.
+        _host.Lifetime.ThrowIfStopping();
+        var registration = _host.Tools.RegisterTool(tool, id, displayName);
         return registration.Handle = new MeasurementToolRegistration(() => _host.Lifetime.InvokeRemoval(_host.Window.Dispatcher,
             () => _host.Interaction.RevokeMeasurementTool(registration)));
     });

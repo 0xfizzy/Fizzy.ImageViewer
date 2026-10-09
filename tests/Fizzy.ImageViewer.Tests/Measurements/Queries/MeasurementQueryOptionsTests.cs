@@ -8,6 +8,28 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementQueryOptionsTests
 {
     [Fact]
+    public void PublicationsRetainIndependentSamplesAndImmutableCoordinateSnapshot()
+    {
+        var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
+        var results = new List<MeasurementSampleResult>();
+        var request = Assert.IsType<CoordinateQueryRequest>(MeasurementQueryDefinition.CreateRequest(
+            MeasurementQueryKind.LineProfile, MeasurementGeometry.Line(new(0.5, 0.5), new(3.5, 0.5)),
+            descriptor, new(Guid.NewGuid(), 0), result => results.Add(Assert.IsType<MeasurementSampleResult>(result))));
+        var samples = Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 7, 0, 0, 0, 255), 4).ToArray();
+        request.Publish(new(1, descriptor, null), samples);
+        samples[0] = samples[0] with { Gray = 99 };
+        request.Publish(new(2, descriptor, null), samples);
+        Array.Clear(samples);
+        request.Coordinates[0] = new(99, 99);
+        Assert.Equal(7, results[0].Samples[0].Gray);
+        Assert.Equal(99, results[1].Samples[0].Gray);
+        Assert.Equal(new PixelCoordinate(0, 0), results[0].Coordinates[0]);
+        Assert.Equal(results[0].Coordinates, results[1].Coordinates);
+        Assert.Throws<NotSupportedException>(() => ((IList<PixelCoordinate>)results[0].Coordinates)[0] = default);
+        Assert.Throws<NotSupportedException>(() => ((IList<PixelSample>)results[0].Samples)[0] = default);
+    }
+
+    [Fact]
     public void ProfileWindowRequiresAnExplicitLineQuery()
     {
         Assert.Equal(MeasurementQueryKind.None, new MeasurementOptions().Query);

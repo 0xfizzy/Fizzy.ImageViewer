@@ -11,6 +11,37 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementToolProtocolTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MetadataCannotRegisterAfterReentrantShutdown(bool closeFromName)
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        var tool = new ClosingMetadataTool(viewer, closeFromName);
+        Assert.Throws<ObjectDisposedException>(() => viewer.RegisterMeasurementTool(tool));
+        await viewer.DisposeAsync();
+        Assert.Empty(viewer.Host.Tools.RegisteredTools);
+        Assert.Equal(1, tool.IdReads);
+        Assert.Equal(1, tool.NameReads);
+    }
+
+    private sealed class ClosingMetadataTool(Viewer viewer, bool closeFromName) : IMeasurementTool
+    {
+        public int IdReads;
+        public int NameReads;
+        public string Id { get { IdReads++; if (!closeFromName) Close(); return "late"; } }
+        public string DisplayName { get { NameReads++; if (closeFromName) Close(); return "Late"; } }
+        private void Close()
+        {
+            _ = viewer.DisposeAsync();
+            var nested = new System.Windows.Threading.DispatcherFrame();
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(() => nested.Continue = false,
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            System.Windows.Threading.Dispatcher.PushFrame(nested);
+        }
+        public IMeasurementToolSession CreateSession(IMeasurementToolContext context) => throw new NotSupportedException();
+    }
+
     private sealed class PublicContext : IMeasurementToolContext
     {
         public MeasurementOrigin Origin { get; } = new("test", Guid.NewGuid());

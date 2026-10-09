@@ -18,56 +18,80 @@ public sealed class FrameLease : IDisposable
         return storage.Surface == 0;
     }
     internal ReadOnlyMemory<byte> CpuPixels => TryGetCpuPixels(out var pixels) ? pixels : throw new NotSupportedException("GPU pixels require an explicit asynchronous query.");
-    public async ValueTask<PixelQueryResult> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct = default)
+    /// <summary>Reads ordered original-pixel samples while retaining an independent source lease.
+    /// CPU queries may execute synchronously on the calling thread; async does not imply worker dispatch.
+    /// If querying and source cleanup both fail, an AggregateException preserves the query error first.</summary>
+    public async ValueTask<PixelSamplesResult> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct = default)
     {
-        using var lease = Acquire();
-        var copy = coordinates.ToArray();
-        foreach (var point in copy)
-            if ((uint)point.X >= (uint)lease.Descriptor.Width || (uint)point.Y >= (uint)lease.Descriptor.Height)
-                throw new ArgumentOutOfRangeException(nameof(coordinates));
-        ct.ThrowIfCancellationRequested();
-
-        var values = await lease.Storage.PixelSource.ReadPixelsAsync(copy, ct).ConfigureAwait(false);
-        ct.ThrowIfCancellationRequested();
-        if (values.Length != copy.Length || values.Any(p => p.Format != lease.Descriptor.Format))
-            throw new InvalidOperationException("Pixel source returned invalid samples.");
-        return new(lease.Info, values);
+        var lease = Acquire();
+        try
+        {
+            var copy = coordinates.ToArray();
+            foreach (var point in copy)
+                if ((uint)point.X >= (uint)lease.Descriptor.Width || (uint)point.Y >= (uint)lease.Descriptor.Height)
+                    throw new ArgumentOutOfRangeException(nameof(coordinates));
+            ct.ThrowIfCancellationRequested();
+            var values = await lease.Storage.PixelSource.ReadPixelsAsync(copy, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            if (values.Length != copy.Length || values.Any(p => p.Format != lease.Descriptor.Format))
+                throw new InvalidOperationException("Pixel source returned invalid samples.");
+            var result = new PixelSamplesResult(lease.Info, values);
+            lease.Dispose();
+            return result;
+        }
+        catch (Exception error) { DisposeAfterFailure(error, lease); throw; }
     }
+    /// <summary>Computes original-pixel statistics while retaining an independent source lease.
+    /// CPU queries may execute synchronously on the calling thread.
+    /// If querying and source cleanup both fail, an AggregateException preserves the query error first.</summary>
     public async ValueTask<RegionStatisticsResult> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct = default)
     {
-        using var lease = Acquire();
-        region.Validate(lease.Descriptor);
-        ct.ThrowIfCancellationRequested();
-
-        var result = await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region, ct).ConfigureAwait(false);
-        ct.ThrowIfCancellationRequested();
-        var format = lease.Descriptor.Format;
-        if (result.Format != format)
-            throw new InvalidOperationException("Pixel source returned invalid statistics.");
-        return new(lease.Info, region, result);
+        var lease = Acquire();
+        try
+        {
+            region.Validate(lease.Descriptor);
+            ct.ThrowIfCancellationRequested();
+            var statistics = await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            if (statistics.Format != lease.Descriptor.Format)
+                throw new InvalidOperationException("Pixel source returned invalid statistics.");
+            var result = new RegionStatisticsResult(lease.Info, region, statistics);
+            lease.Dispose();
+            return result;
+        }
+        catch (Exception error) { DisposeAfterFailure(error, lease); throw; }
     }
+    /// <summary>Returns independently owned CPU pixels while retaining a source lease through the read.
+    /// CPU queries may execute synchronously. If reading and cleanup fail, both errors are preserved,
+    /// with the operation error first. A result is transferred only after source cleanup succeeds.</summary>
     public async ValueTask<RegionPixels> ReadRegionAsync(PixelRegion region, CancellationToken ct = default)
     {
-        using var lease = Acquire();
-        region.Validate(lease.Descriptor);
-        ct.ThrowIfCancellationRequested();
-
-        var pixels = await lease.Storage.PixelSource.ReadRegionAsync(region, ct).ConfigureAwait(false);
-        if (ct.IsCancellationRequested)
+        var lease = Acquire();
+        ImageFrame? pixels = null;
+        try
         {
-            pixels.Dispose();
+            region.Validate(lease.Descriptor);
             ct.ThrowIfCancellationRequested();
+            pixels = await lease.Storage.PixelSource.ReadRegionAsync(region, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            using (var check = pixels.Acquire())
+                if (check.Descriptor.Width != region.Width || check.Descriptor.Height != region.Height ||
+                    check.Descriptor.Format != lease.Descriptor.Format || !check.TryGetCpuPixels(out _))
+                    throw new InvalidOperationException("Pixel source returned an invalid CPU region.");
+            lease.Dispose();
+            return new(lease.Info, region, pixels);
         }
-        using (var check = pixels.Acquire())
-        {
-            if (check.Descriptor.Width != region.Width || check.Descriptor.Height != region.Height ||
-                check.Descriptor.Format != lease.Descriptor.Format || !check.TryGetCpuPixels(out _))
-            {
-                pixels.Dispose();
-                throw new InvalidOperationException("Pixel source returned an invalid CPU region.");
-            }
-        }
-        return new(lease.Info, region, pixels);
+        catch (Exception error) { DisposeAfterFailure(error, pixels, lease); throw; }
+    }
+
+    // Failure-only path: each token is idempotent, including after a throwing final release.
+    private static void DisposeAfterFailure(Exception error, params IDisposable?[] resources)
+    {
+        List<Exception>? errors = null;
+        foreach (var resource in resources)
+            try { resource?.Dispose(); }
+            catch (Exception cleanup) { (errors ??= [error]).Add(cleanup); }
+        if (errors != null) throw new AggregateException(errors);
     }
     internal nint D3D9Surface => Storage.Surface;
     /// <summary>Describes this lease's pixels and submission identity. A standalone lease has
@@ -80,5 +104,8 @@ public sealed class FrameLease : IDisposable
         lease.Info = Info;
         return lease;
     }
+    /// <summary>Releases this token once. Final storage release runs synchronously on this thread,
+    /// which may be the Viewer STA; producers must satisfy any thread affinity and avoid blocking.
+    /// A throwing release is not retried by subsequent disposal.</summary>
     public void Dispose() => Interlocked.Exchange(ref _storage, null)?.Release();
 }

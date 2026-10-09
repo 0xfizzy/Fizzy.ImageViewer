@@ -35,6 +35,10 @@ Visuals attach once and are not replaced on completion.
 Geometry uses source-image coordinates. A rectangle stores normalized opposite
 corners. Editing updates the model first; MeasurementPresentation projects it to WPF and owns
 label formatting and the optional plot window.
+Point and line queries use half-open pixel coverage `[0, Width) × [0, Height)`.
+Line queries floor clipped endpoints to pixel indices, so fractional coordinates in
+the last row/column remain sampleable. Input direction and endpoint pixels are retained;
+lines lying on the exclusive right/bottom boundary are outside the image.
 Every actual geometry change increments `IMeasurement.GeometryVersion` and clears results.
 An equal geometry update is a no-op. Geometry kind cannot change after creation.
 During a rectangle drag, the opposite corner comes from the drag-start snapshot,
@@ -165,6 +169,10 @@ Disposal is idempotent and safe after viewer closure; completed measurements sur
 The caller owns the tool object, which is never disposed by the registration.
 Keep the handle for the installing component's lifetime. Ignoring it retains the
 registration until global unregistration or viewer closure.
+Registration captures `Id` and `DisplayName` once on the Viewer STA. After those
+external getters return, the viewer checks its lifetime again before accepting the
+registration. If a getter closes the viewer reentrantly, registration is rejected
+with `ObjectDisposedException` and no tool is retained.
 
 `UnregisterMeasurementTool(id)` is a viewer-wide management operation: it removes
 whichever registration currently has that ID. Component cleanup should instead dispose

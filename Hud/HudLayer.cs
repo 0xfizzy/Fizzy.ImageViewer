@@ -19,9 +19,6 @@ namespace Fizzy.ImageViewer.Hud
         private readonly Border _pixelInfoBorder;
         private readonly TextBlock _labelText;
 
-        // 缓存上一次的显示字符串，避免重复分配相同内容
-        private string? _lastPixelInfoString;
-
         public HudLayer()
         {
             var grid = new Grid
@@ -154,45 +151,30 @@ namespace Fizzy.ImageViewer.Hud
         }
 
         /// <summary>
-        /// 右上角标签文本。设为 null 或空字符串时隐藏。
+        /// 右上角标签文本。null 标准化为空字符串；空字符串隐藏标签。
         /// </summary>
         public string? Label
         {
             get => _labelText.Text;
             set
             {
+                _labelText.Text = value ?? string.Empty;
                 if (string.IsNullOrEmpty(value))
                 {
                     _labelText.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
-                    _labelText.Text = value;
                     _labelText.Visibility = Visibility.Visible;
                 }
             }
         }
 
         /// <summary>
-        /// 更新像素信息显示，尽量 0-GC 实现。
-        /// 仅当内容变化时才分配新 string。
+        /// 显示 PixelInfoState 已格式化并去重的不可变文本。
         /// </summary>
         /// <param name="text">格式化后的像素信息</param>
-        public void UpdatePixelInfo(ReadOnlySpan<char> text)
-        {
-            // 检查内容是否与上次相同
-            if (_lastPixelInfoString != null &&
-                _lastPixelInfoString.Length == text.Length &&
-                text.SequenceEqual(_lastPixelInfoString.AsSpan()))
-            {
-                // 内容相同，无需更新
-                return;
-            }
-
-            // 内容变化，创建新字符串
-            _lastPixelInfoString = new string(text);
-            _pixelInfoText.Text = _lastPixelInfoString;
-        }
+        public void UpdatePixelInfo(string text) => _pixelInfoText.Text = text;
 
         /// <summary>
         /// 设置像素信息的可见性。

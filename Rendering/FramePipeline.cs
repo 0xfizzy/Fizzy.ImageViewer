@@ -16,6 +16,8 @@ internal sealed class FramePipeline
     private readonly ILogger _logger;
     private readonly Action<FrameLease, FrameSubmissionOptions?> _onCommitted;
     private bool _closed;
+    private int _acceptedSubmissions;
+    private TaskCompletionSource? _submissionsDrained;
     private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _releaseErrors = new();
 
     internal FramePipeline(ViewerLifetime lifetime, Dispatcher dispatcher, FramePresentation presentation,
@@ -42,6 +44,7 @@ internal sealed class FramePipeline
         public FrameSubmissionOptions? Options { get; } = options;
         public CancellationToken Token { get; } = token;
         public long Epoch { get; } = epoch;
+        public bool Accepted { get; set; }
         public TaskCompletionSource<FrameSubmitResult> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
@@ -58,6 +61,8 @@ internal sealed class FramePipeline
             submission = new(lease, options, ct, _freezeEpoch);
             rejected = _lifetime.IsStopping ? FrameSubmitStatus.Closed : ct.IsCancellationRequested ? FrameSubmitStatus.Cancelled :
                 _isFrozen ? FrameSubmitStatus.Frozen : null;
+            submission.Accepted = !_lifetime.IsStopping;
+            if (submission.Accepted) _acceptedSubmissions++;
             replaced = rejected == null ? _pending : null;
             if (rejected == null)
             {
@@ -80,20 +85,32 @@ internal sealed class FramePipeline
         lock (_frameGate) return _lifetime.IsStopping ? null : _currentFrame?.Acquire();
     }
 
+    private TaskCompletionSource? _displayUpdate;
     internal GrayDisplayRange? DisplayRange
     {
         get { lock (_frameGate) { _lifetime.ThrowIfStopping(); return _grayRange; } }
-        set
+    }
+
+    internal Task SetDisplayRangeAsync(GrayDisplayRange? value)
+    {
+        if (value is { } range) _ = new GrayDisplayRange(range.Minimum, range.Maximum);
+        lock (_frameGate)
         {
-            if (value is { } range) _ = new GrayDisplayRange(range.Minimum, range.Maximum);
-            lock (_frameGate)
+            _lifetime.ThrowIfStopping();
+            if (value != null && _currentFrame is { } current && current.D3D9Surface != 0)
+                throw new NotSupportedException("GPU surface display mapping must be applied by the GPU producer.");
+            _displayUpdate?.TrySetCanceled();
+            _grayRange = value;
+            _displayVersion++;
+            if (_currentFrame == null)
             {
-                _lifetime.ThrowIfStopping();
-                _grayRange = value;
-                _displayVersion++;
-                _redraw = true;
-                StartRenderLoop();
+                _displayUpdate = null;
+                return Task.CompletedTask;
             }
+            _displayUpdate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _redraw = true;
+            StartRenderLoop();
+            return _displayUpdate.Task;
         }
     }
 
@@ -117,7 +134,7 @@ internal sealed class FramePipeline
                 submission = _pending;
                 _pending = null;
                 frame = submission?.Frame ?? (_redraw && !_closed ? _currentFrame?.Acquire() : null);
-                _redraw = false;
+                if (submission == null) _redraw = false;
                 range = _grayRange;
                 version = _displayVersion;
                 if (frame == null) { _running = false; return; }
@@ -140,7 +157,21 @@ internal sealed class FramePipeline
             finally
             {
                 if (submission != null) Finish(submission, status, error);
-                else ReleaseFrame(frame);
+                else
+                {
+                    var releaseError = ReleaseFrame(frame);
+                    if (releaseError != null) error = error == null ? releaseError : new AggregateException(error, releaseError);
+                }
+                lock (_frameGate)
+                {
+                    if (version == _displayVersion && _displayUpdate != null)
+                    {
+                        if (error != null) { _redraw = false; _displayUpdate.TrySetException(error); }
+                        else if (status == FrameSubmitStatus.Committed) _displayUpdate.TrySetResult();
+                        // A dropped submission still has a queued redraw of the current frame.
+                        else if (submission == null) _displayUpdate.TrySetCanceled();
+                    }
+                }
             }
         }
     }
@@ -168,6 +199,7 @@ internal sealed class FramePipeline
             _presentation.SetImage(source, frame.Descriptor);
             previous = _currentFrame;
             _currentFrame = frame.Acquire();
+            if (version == _displayVersion) _redraw = false;
             _committedDisplayVersion = version;
             _committedGrayRange = range;
         }
@@ -185,10 +217,14 @@ internal sealed class FramePipeline
             error = error == null ? releaseError : new AggregateException(error, releaseError);
         }
         submission.Completion.TrySetResult(new(submission.Frame.Info.FrameId, status, error));
+        if (submission.Accepted)
+            lock (_frameGate)
+                if (--_acceptedSubmissions == 0) _submissionsDrained?.TrySetResult();
     }
-    private void ReleaseFrame(FrameLease? frame)
+    private Exception? ReleaseFrame(FrameLease? frame)
     {
-        try { frame?.Dispose(); } catch (Exception ex) { _releaseErrors.Enqueue(ex); }
+        try { frame?.Dispose(); return null; }
+        catch (Exception ex) { _releaseErrors.Enqueue(ex); return ex; }
     }
 
     // The frame and display settings are captured under the same gate as publication.
@@ -243,18 +279,24 @@ internal sealed class FramePipeline
             current = _currentFrame;
             _currentFrame = null;
             _redraw = false;
+            _displayUpdate?.TrySetCanceled();
         }
         try { _shutdown.Cancel(); } catch (Exception ex) { _releaseErrors.Enqueue(ex); }
         if (pending != null) Finish(pending, FrameSubmitStatus.Closed);
         ReleaseFrame(current);
-        lock (_frameGate) _renderTask = CompleteStopAsync(_renderTask);
+        lock (_frameGate)
+        {
+            var drained = _acceptedSubmissions == 0 ? Task.CompletedTask :
+                (_submissionsDrained = new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+            _renderTask = CompleteStopAsync(_renderTask, drained);
+        }
     }
 
-    private async Task CompleteStopAsync(Task render)
+    private async Task CompleteStopAsync(Task render, Task submissionsDrained)
     {
         try
         {
-            await render.ConfigureAwait(false);
+            await Task.WhenAll(render, submissionsDrained).ConfigureAwait(false);
             if (!_releaseErrors.IsEmpty) throw new AggregateException("Frame release failed.", _releaseErrors);
         }
         finally { _shutdown.Dispose(); }

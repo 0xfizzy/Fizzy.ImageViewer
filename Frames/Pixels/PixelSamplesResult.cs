@@ -1,13 +1,15 @@
 namespace Fizzy.ImageViewer.Frames;
 
-/// <summary>Immutable pixel snapshot. Construction copies the supplied samples.</summary>
-public sealed class PixelQueryResult
+/// <summary>Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame
+/// provenance. Construction copies the supplied samples; retain the requested coordinates
+/// separately when their association is needed.</summary>
+public sealed class PixelSamplesResult
 {
     private readonly PixelSample[] _samples;
     public FrameInfo Frame { get; }
     public IReadOnlyList<PixelSample> Samples { get; }
     internal ReadOnlyMemory<PixelSample> SampleMemory => _samples;
-    public PixelQueryResult(FrameInfo frame, IEnumerable<PixelSample> samples)
+    public PixelSamplesResult(FrameInfo frame, IEnumerable<PixelSample> samples)
     {
         ArgumentNullException.ThrowIfNull(samples);
         Frame = frame;

@@ -53,9 +53,10 @@ public class ViewerTests
         int notifications = 0;
         viewer.FrameCommitted += _ => notifications++;
         Task<ImageSnapshot>? capture = null;
+        Task? redraw = null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.DisplayRange = new(0, 100);
+            redraw = viewer.SetDisplayRangeAsync(new(0, 100));
             // Redraw cannot commit while this dispatcher action is executing.
             capture = viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         });
@@ -63,7 +64,7 @@ public class ViewerTests
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(0, snapshot.DisplayVersion);
         Assert.Equal(100, pixels.CpuPixels.Span[0]);
-        await presenter.Redrawn.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await redraw!.WaitAsync(TimeSpan.FromSeconds(5));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { });
         using var redrawn = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         using var mapped = redrawn.AcquirePixels();
@@ -223,7 +224,7 @@ public class ViewerTests
         await using var viewer = Create();
         await viewer.SubmitFrameAsync(Frame(1));
         using var input = ImageFrame.Copy(new(2, 1, 4, FramePixelFormat.Gray16), new byte[] { 0xe8, 3, 0xff, 0xff });
-        viewer.DisplayRange = new(0, 1000);
+        await viewer.SetDisplayRangeAsync(new(0, 1000));
         var result = await viewer.SubmitFrameAsync(input);
         using var display = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         using var raw = await viewer.CaptureSnapshotAsync(SnapshotKind.Raw);

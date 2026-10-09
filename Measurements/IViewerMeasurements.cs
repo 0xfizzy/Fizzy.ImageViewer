@@ -36,6 +36,8 @@ public interface IViewerMeasurements
     /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
     /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
     /// </summary>
+    /// <remarks>Id and DisplayName are read once on the viewer STA and captured for the registration.
+    /// If a metadata getter initiates viewer shutdown, registration is rejected with ObjectDisposedException.</remarks>
     /// <returns>A thread-safe, idempotent handle revoking only this registration. Completed measurements survive.</returns>
     IDisposable RegisterMeasurementTool(IMeasurementTool tool);
 

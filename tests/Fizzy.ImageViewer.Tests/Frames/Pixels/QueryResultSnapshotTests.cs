@@ -12,7 +12,7 @@ public class QueryResultSnapshotTests
         using var lease = image.Acquire();
         var queried = await lease.ReadPixelsAsync(new PixelCoordinate[] { new(0, 0) });
         var input = queried.Samples.ToArray();
-        var result = new PixelQueryResult(queried.Frame, input);
+        var result = new PixelSamplesResult(queried.Frame, input);
         input[0] = default;
         Assert.Equal(42, result.Samples[0].Gray);
         Assert.Throws<NotSupportedException>(() => ((IList<PixelSample>)result.Samples)[0] = default);

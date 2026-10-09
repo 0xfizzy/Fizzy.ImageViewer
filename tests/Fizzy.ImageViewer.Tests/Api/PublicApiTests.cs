@@ -41,7 +41,7 @@ public class PublicApiTests
             queries.QueryOptions = new();
             Assert.NotNull(queries.QueryOptions);
             _ = queries.QueryMetrics;
-            display.DisplayRange = new(0, 255);
+            await display.SetDisplayRangeAsync(new(0, 255));
             Assert.Equal(display.DisplayRange, viewer.DisplayRange);
             registration = menus.RegisterMenuItem(new Fizzy.ImageViewer.Menus.MenuItem("Inspect", () => { }));
             window.Show();

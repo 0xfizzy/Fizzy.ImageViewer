@@ -14,10 +14,12 @@ batch drawing API. `ViewerLayers` and the shared `ViewerLayer` base belong to `F
 Both layer types share `ViewerLayer` settings (`Name`, visibility, hit testing,
 ZIndex and `Clear`); `Layers.Items` returns a snapshot of those shared handles.
 
-Each completed `LineProfile` measurement links its line, length label, and pixel
-curve window. Closing the window removes its line and label; deleting the line
-closes its window. Clearing measurements or disposing the viewer cleans up all
-associated windows. Other measurements remain independent.
+The built-in `LineProfile` tool enables `ShowProfileWindow`, linking its completed
+line, length label, and pixel curve window. Closing that window removes its line
+and label; deleting the line closes the window. Custom line-profile measurements
+can leave `ShowProfileWindow` false to return data without a window. Clearing
+measurements or disposing the viewer cleans up all associated windows. See
+[measurement options](measurements.md) for geometry and query composition.
 
 ## Drawing handles
 
@@ -251,6 +253,8 @@ The image-coordinate `Draw*` helpers return replaceable `DrawingHandle` instance
 
 `viewer.HudLabelText` sets the upper-right label. `viewer.IsPixelInfoEnabled` enables or
 disables pixel inspection independently of application HUD text and can be set before `Show()`.
+Setting `HudLabelText` to null or an empty string clears and hides the label;
+reading it then returns an empty string.
 
 
 `HudTextHandle` and `AnchorAlignment` belong to `Fizzy.ImageViewer.Hud`.

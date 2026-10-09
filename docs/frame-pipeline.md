@@ -55,6 +55,11 @@ in `FrameSubmitResult.Error`; release failures for viewer-owned current or redra
 are reported by `DisposeAsync`. Independent lease disposal propagates its release failure.
 Repeated disposal does not retry a release callback.
 
+Release callbacks execute synchronously on whichever thread releases the final
+reference: a submitting thread, rendering/query worker, or the Viewer STA. There is
+no dedicated release thread. Producers must satisfy their own thread-affinity
+requirements and keep synchronous release short; blocking it also blocks that thread.
+
 The viewer keeps the current original frame for sampling. Acquiring a snapshot/measurement
 can extend this lifetime. A frozen viewer can hold a frame indefinitely. Camera pools must
 allow retention, or their adapters must make a copy. Read-only access does not prevent other
@@ -85,10 +90,22 @@ their native layout; mapped grayscale and display snapshots use Pbgra32.
 Only the CPU presenter knows about mutable WPF bitmaps. GPU surface submissions use the D3DImage presenter described below.
 Image coordinates are source pixels, independent of DPI; WPF still handles pan/zoom/overlays.
 
-`DisplayRange` maps grayscale only. Defaults: Gray8 0–255, Gray16 0–65535, Gray32Float 0–1.
+`DisplayRange` is the latest requested grayscale mapping. Use
+`await viewer.SetDisplayRangeAsync(range)` to change it and observe redraw failures.
+Defaults: Gray8 0–255, Gray16 0–65535, Gray32Float 0–1.
 Finite increasing bounds are required. Values are clipped; NaN/negative infinity render black,
 positive infinity white. Range changes schedule a redraw with a separate display version.
-Snapshot capture uses the last committed range/version, not a range still awaiting redraw.
+When a current frame exists, the returned task completes after a redraw or submission
+commits that version; rendering failures fault the task. A newer range request or
+viewer closure cancels an outstanding update. With no current frame, the call only
+configures future submissions and completes immediately. A non-null range for a
+current GPU frame is rejected before changing the request. Do not synchronously wait
+for an update on the Viewer STA.
+An already preparing first submission can still commit the mapping it captured
+before that configuration call; await the first submission before requesting a redraw.
+Snapshot capture uses the last committed range/version, not a range still awaiting
+redraw or one whose update failed. A failed update leaves the requested value readable;
+call `SetDisplayRangeAsync` explicitly to request another update.
 
 ## Pixel access and measurements
 
@@ -107,7 +124,14 @@ Use `FrameLease.ReadPixelsAsync(coordinates, token)`, `ComputeRegionStatisticsAs
 token)` and `ReadRegionAsync(region, token)` for backend-independent access. Coordinates use
 `ReadOnlyMemory<PixelCoordinate>` and results preserve input order, raw units and format.
 Each call acquires its own lease before asynchronous work and retains storage through completion.
-Pixel and statistics results carry the queried lease's `FrameInfo`. `PixelQueryResult`
+The CPU backend can complete its calculation synchronously on the calling thread;
+these methods do not promise worker dispatch. The viewer scheduler and snapshot
+capture provide their own off-STA execution. Direct callers needing responsiveness
+must choose an appropriate execution thread.
+Operation and owned-resource cleanup failures are preserved together, with the
+operation failure first. Region ownership is handed to the caller only after source
+lease cleanup succeeds; an undeliverable region is disposed by the operation.
+Pixel and statistics results carry the queried lease's `FrameInfo`. `PixelSamplesResult`
 and `RegionStatistics` copy constructor inputs and expose read-only collections that
 can be retained and shared. Pixel providers transfer their returned sample arrays to the
 caller and must not reuse or mutate them after returning. `FrameLease.Info.Descriptor`
@@ -135,8 +159,14 @@ One pixel query scheduler per viewer captures geometry on STA and queries off ST
 one batch in flight. Each batch executes and publishes either one ROI or a shared gather
 for due mouse and line coordinates. Oldest-due selection serves pending work fairly;
 unselected requests retain no frame lease and capture fresh geometry/frame on a later tick.
-Slow ROI queries therefore do not age one another or delay publication of a completed gather. Line clipping, rounded endpoints,
-Bresenham order and distances are unchanged. ROI geometry uses floor(left/top), ceil(right/bottom),
+Slow ROI queries therefore do not age one another or delay publication of a completed gather.
+Point and line coordinates use the half-open pixel coverage rectangle
+`[0, Width) × [0, Height)`: pixel `(x, y)` covers `[x, x+1) × [y, y+1)`.
+Lines are clipped to that coverage, their endpoints are floored to pixel indices,
+and Bresenham samples retain the input direction and both endpoint pixels. A crossing
+endpoint on the outer right/bottom boundary is clamped to the last covered pixel;
+a line lying on or only touching those exclusive edges has no samples.
+ROI geometry uses floor(left/top), ceil(right/bottom),
 then image intersection; empty regions are not queried. Shape editors preserve statistics labels.
 The separate interaction coordinator manages selection, editing and creation sessions.
 See [measurement ownership and interaction](measurements.md) for geometry and extension contracts.
@@ -150,7 +180,12 @@ Monotonic age starts at the frame/geometry snapshot, not camera capture time.
 Geometry changes, deletion, disabling and closing invalidate old work. Results may describe a
 recent prior frame within the age limit; advancing video clears expired values, while an unchanged
 paused frame keeps its valid result. FrameId stays in API results/logging and is never a HUD label.
-`QueryMetrics` reports completed batches, expired results and last completion duration.
+`QueryMetrics.Batches` counts completed backend batches, including batches containing
+failed queries; it is not a successful-query or publication count. `ExpiredResults`
+counts individual completed results rejected at publication for exceeding `MaxResultAge`,
+not already displayed values later cleared by a scheduler tick.
+`LastDurationMilliseconds` spans frame/geometry capture through backend completion,
+including worker scheduling but excluding the wait for STA publication and its callbacks.
 
 The bottom-left pixel HUD has its own cap of `min(10, PixelQueryRateHz)` Hz, with a full
 interval after each completed query (including failures). Mouse moves coalesce to
@@ -165,6 +200,10 @@ the HUD or losing the frame hides it and prevents old work from reappearing.
 The non-interactive HUD has no background and uses invariant numeric formatting
 with a minimum of seven characters per value. Longer values remain complete;
 narrow viewports clip the HUD rather than wrapping or resizing.
+Each target capture recomputes the image coordinate from the current container
+pointer and viewport transform, including when fit, layout or image dimensions change
+without mouse movement. Hidden/unloaded viewports and pointers outside the container
+have no query target.
 
 ## Freeze, snapshot and save
 
@@ -181,6 +220,11 @@ region origin. Full snapshots explicitly request the entire region; GPU results 
 back into source storage. One export read per Viewer executes at a time.
 The ROI save menu pins both frame and integer region before opening the file dialog.
 Dispose snapshots when finished. A save retains its own lease until completion.
+Raw capture takes ownership of the independently read CPU region without copying it
+again. That region's release callback runs when the snapshot's final pixel reference
+is released, including independent pixel leases retained after snapshot disposal.
+Capture cleans up a candidate snapshot if another owned resource fails to
+release before delivery; operation and cleanup failures are preserved together.
 
 `ImageSnapshot.SaveAsync(path, encoding, token)` writes a temporary file in the destination
 directory and replaces the target only after successful encoding. Cancellation is checked
@@ -204,7 +248,9 @@ to wait for those operations to finish and release their frame leases.
 Once closed the Viewer cannot be reopened.
 
 Disposal is idempotent and waits for rendering, in-flight measurement queries and
-the window thread to finish. Pixel sources that ignore cancellation can delay this
+the window thread to finish. Submission calls admitted before shutdown are also
+drained through final release and public result completion, including calls replaced
+on another caller's thread or dropped while frozen/cancelled. Pixel sources that ignore cancellation can delay this
 completion until their operations release their leases. Programmatic closure is
 not blocked by `CanUserClose` or a cancelling window-closing handler.
 Repeated calls share the same completion and failure result. Owned-resource cleanup

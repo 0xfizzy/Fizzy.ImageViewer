@@ -35,9 +35,10 @@ internal static class MeasurementQueryDefinition
         var y = Math.Floor(geometry.Anchor.Y);
         if (x < 0 || y < 0 || x >= descriptor.Width || y >= descriptor.Height) return null;
         PixelCoordinate[] coordinates = [new((int)x, (int)y)];
+        var snapshot = Array.AsReadOnly((PixelCoordinate[])coordinates.Clone());
         return new CoordinateQueryRequest(QueryRateCategory.Pixel, identity, coordinates, (frame, samples) =>
             publish(new MeasurementSampleResult(identity.ClientId, identity.GeometryVersion, frame,
-                MeasurementQueryKind.Pixel, coordinates, samples.ToArray())));
+                MeasurementQueryKind.Pixel, snapshot, samples)));
     }
 
     private static QueryRequest? LineProfile(MeasurementGeometry geometry, FrameDescriptor descriptor,
@@ -46,9 +47,10 @@ internal static class MeasurementQueryDefinition
         var line = (LineMeasurementGeometry)geometry;
         var coordinates = LineSampling.GetCoordinates(descriptor, line.Start.X, line.Start.Y, line.End.X, line.End.Y);
         if (coordinates.Length == 0) return null;
+        var snapshot = Array.AsReadOnly((PixelCoordinate[])coordinates.Clone());
         return new CoordinateQueryRequest(QueryRateCategory.Line, identity, coordinates, (frame, samples) =>
             publish(new MeasurementSampleResult(identity.ClientId, identity.GeometryVersion, frame,
-                MeasurementQueryKind.LineProfile, coordinates, samples.ToArray())));
+                MeasurementQueryKind.LineProfile, snapshot, samples)));
     }
 
     internal static PixelRegion GetRegion(RectangleMeasurementGeometry geometry, FrameDescriptor descriptor) =>

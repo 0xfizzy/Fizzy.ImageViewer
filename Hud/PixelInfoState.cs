@@ -41,12 +41,30 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
 
     public QueryRequest? Capture(FrameDescriptor descriptor)
     {
+        UpdateDescriptor(descriptor);
+        return CreateRequest(descriptor);
+    }
+
+    public QueryRequest? Capture(FrameDescriptor descriptor, double x, double y)
+    {
+        // Bounds must belong to this frame before validating the freshly mapped pointer.
+        UpdateDescriptor(descriptor);
+        Move(x, y);
+        return CreateRequest(descriptor);
+    }
+
+    private void UpdateDescriptor(FrameDescriptor descriptor)
+    {
         if (_descriptor != descriptor)
         {
             _descriptor = descriptor;
             _sessionVersion++;
             _hasValue = false;
         }
+    }
+
+    private QueryRequest? CreateRequest(FrameDescriptor descriptor)
+    {
         if (!_enabled || !_inside) return null;
         if (_x >= descriptor.Width || _y >= descriptor.Height) { Leave(); return null; }
         if (!_hasValue) ShowWaiting();

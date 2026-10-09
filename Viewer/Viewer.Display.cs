@@ -4,11 +4,11 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    public GrayDisplayRange? DisplayRange
-    {
-        get => _host.Pipeline.DisplayRange;
-        set => _host.Pipeline.DisplayRange = value;
-    }
+    /// <inheritdoc />
+    public GrayDisplayRange? DisplayRange => _host.Pipeline.DisplayRange;
+
+    /// <inheritdoc />
+    public Task SetDisplayRangeAsync(GrayDisplayRange? range) => _host.Pipeline.SetDisplayRangeAsync(range);
 
     public void FitToViewport()
     {

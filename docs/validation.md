@@ -180,6 +180,7 @@ premultiplied channels. They also check invalid statistics channel counts and un
 
 ```powershell
 dotnet run --project tools/LineProfileBenchmark -c Release
+dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
 ```
 
 The STA benchmark warms buffers, then reports managed bytes and time per update
@@ -188,6 +189,19 @@ WPF drawing commands and offscreen `RenderTargetBitmap` rendering. One red sampl
 changes per update; RGB changes rebuild all channels to preserve shared scaling.
 Drawing measurements include the harness drawing context; they exclude sampling,
 window composition and native allocations. They do not establish a zero-GC frame pipeline.
+
+The `--query-publication` mode compares cached line-request publication with the
+previous duplicate-copy pattern at 1024/4096 samples. It reports managed allocation
+and elapsed time per result, excluding provider reads, request creation and STA
+dispatch. Results must remain independently immutable in either path.
+
+```powershell
+dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+```
+
+The snapshot mode compares independent region reads followed by another copy with
+ownership transfer into a Raw snapshot. It measures elapsed time and managed
+allocations; logical pixel-storage sizes are not process peak-memory measurements.
 
 ## Tool sessions and layer ownership
 

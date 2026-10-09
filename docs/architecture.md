@@ -116,6 +116,10 @@ its own lease, validates requests and results, and supplies frame provenance. Re
 return an independently owned CPU ImageFrame; RegionPixels adds the source frame and region
 without assigning source identity to the derived pixels. The producer's release callback
 owns external query resources until the final source lease is released.
+Raw snapshot capture transfers the independently owned region image into its
+snapshot; snapshot pixel leases can retain that region beyond snapshot disposal.
+Query and snapshot owners complete necessary cleanup before handing a result to
+the caller, and dispose an undeliverable result if cleanup fails.
 
 ## Ownership and direction
 
@@ -127,6 +131,10 @@ query scheduler, measurement collection, tool registry, interaction coordinator 
 The facade assigns the host before starting its STA. Startup failure uses the same
 idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
 Disposal waits for outstanding frame and query work and the actual STA exit.
+FramePipeline accounts for admitted submissions until their release and public result
+are complete, including replacement cleanup on submitting threads outside the render
+loop. Display-range changes have a separate awaitable result for the requested version;
+newer settings and shutdown cancel pending updates.
 The shared disposal result retains resource-cleanup and drain failures after safe cleanup;
 notification failures are isolated at their event boundaries. A GPU attachment that cannot
 be safely detached retains its presenter and surface leases for process lifetime.

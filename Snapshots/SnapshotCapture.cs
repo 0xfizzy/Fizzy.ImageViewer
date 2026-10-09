@@ -13,24 +13,40 @@ internal sealed class SnapshotCapture
     internal Task<ImageSnapshot> CaptureAsync(CommittedViewLease view, SnapshotKind kind,
         PixelRegion? region = null, CancellationToken ct = default) => Task.Run(async () =>
     {
-        using (view)
+        RegionPixels? read = null;
+        ImageSnapshot? snapshot = null;
+        bool entered = false;
+        try
         {
             if (kind is not SnapshotKind.Raw and not SnapshotKind.Display)
                 throw new ArgumentOutOfRangeException(nameof(kind));
             await _exportGate.WaitAsync(ct).ConfigureAwait(false);
-            try
+            entered = true;
+            ct.ThrowIfCancellationRequested();
+            var crop = region ?? PixelRegion.Full(view.Frame.Descriptor);
+            read = await view.Frame.ReadRegionAsync(crop, ct).ConfigureAwait(false);
+            if (kind == SnapshotKind.Raw)
+                snapshot = new ImageSnapshot(read.TransferPixels(), view.Frame.Info, kind, view.Version, crop);
+            else
             {
-                ct.ThrowIfCancellationRequested();
-                var crop = region ?? PixelRegion.Full(view.Frame.Descriptor);
-                using var read = await view.Frame.ReadRegionAsync(crop, ct).ConfigureAwait(false);
                 using var cpu = read.AcquirePixels();
-                if (kind == SnapshotKind.Raw)
-                    return new ImageSnapshot(ImageFrame.Copy(cpu.Descriptor, cpu.CpuPixels.Span), view.Frame.Info, kind, view.Version, crop);
                 using var pixels = DisplayConverter.Convert(cpu, view.Range, ct, normalize: true);
-                return new ImageSnapshot(ImageFrame.Copy(new(pixels.Width, pixels.Height, pixels.Stride, FramePixelFormat.Pbgra32),
+                snapshot = new ImageSnapshot(ImageFrame.Copy(new(pixels.Width, pixels.Height, pixels.Stride, FramePixelFormat.Pbgra32),
                     pixels.Bytes.AsSpan(0, pixels.Length)), view.Frame.Info, kind, view.Version, crop);
             }
-            finally { _exportGate.Release(); }
+            read.Dispose();
+            view.Dispose();
+            return snapshot;
         }
+        catch (Exception error)
+        {
+            List<Exception> errors = [error];
+            try { snapshot?.Dispose(); } catch (Exception cleanup) { errors.Add(cleanup); }
+            try { read?.Dispose(); } catch (Exception cleanup) { errors.Add(cleanup); }
+            try { view.Dispose(); } catch (Exception cleanup) { errors.Add(cleanup); }
+            if (errors.Count > 1) throw new AggregateException(errors);
+            throw;
+        }
+        finally { if (entered) _exportGate.Release(); }
     });
 }
