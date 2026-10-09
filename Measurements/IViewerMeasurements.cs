@@ -3,7 +3,8 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Measurement tools, interaction, style and notifications on the viewer STA.</summary>
 public interface IViewerMeasurements
 {
-    /// <summary>The entire measurement layer. Clearing it cancels interaction and removes all measurements.</summary>
+    /// <summary>The entire measurement layer. Clearing it cancels interaction and removes all measurements.
+    /// Cleanup attempts every item and propagates failures to the caller.</summary>
     MeasurementLayer Measurements { get; }
 
     /// <summary>Style for future measurements. Brushes are copied and frozen before UI dispatch.</summary>
@@ -17,6 +18,8 @@ public interface IViewerMeasurements
     /// <summary>
     /// 结束当前创建或编辑交互，保留已完成的测量及已应用的编辑。
     /// </summary>
+    /// <remarks>Session and unfinished-measurement cleanup are all attempted. Failures propagate
+    /// to the caller, aggregated when multiple stages fail; cleanup is not retried.</remarks>
     void EndInteraction();
 
     /// <summary>Completed measurements only; raised on the viewer STA, excluding previews.</summary>

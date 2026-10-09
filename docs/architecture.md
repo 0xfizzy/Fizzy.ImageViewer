@@ -127,6 +127,9 @@ query scheduler, measurement collection, tool registry, interaction coordinator 
 The facade assigns the host before starting its STA. Startup failure uses the same
 idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
 Disposal waits for outstanding frame and query work and the actual STA exit.
+The shared disposal result retains resource-cleanup and drain failures after safe cleanup;
+notification failures are isolated at their event boundaries. A GPU attachment that cannot
+be safely detached retains its presenter and surface leases for process lifetime.
 ViewerLifetime provides the shared stopping gate and shutdown-safe STA removal dispatch for measurement, drawing and HUD handles. HudTextCollection owns HUD text
 visuals and invalidates their handles on shutdown.
 
@@ -188,6 +191,10 @@ visuals, their attachment/detachment, labels and optional plot. Plot closure req
 detaches that callback before closing the plot.
 MeasurementQueryDefinition owns the supported query/geometry pairs and request construction. MeasurementQueryClient caches those requests independently of the handle. Each request
 captures its geometry version and coordinates for immutable result provenance.
+ROI clipping also belongs to MeasurementQueryDefinition and is shared by queries and menus.
+Geometry records contain immutable geometric facts; MeasurementGeometryEditing owns control
+point ordering and drag behavior. LineProfileWindow wraps the optional plot window, while
+its nested control renders the samples.
 MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
 query clients with the shared scheduler; model dispatch and shutdown admission do not
 depend on the visual container. MeasurementCollection owns a primary set of model-driven

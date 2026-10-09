@@ -36,6 +36,8 @@ lease and export gate and may finish after the Viewer closes.
 `ImageFrame.Copy(descriptor, bytes)` copies synchronously; the caller keeps its storage.
 `ImageFrame.TakeOwnership(descriptor, memory, release)` takes immutable storage and calls
 `release` exactly once when the final frame/lease is disposed, including validation failure.
+If construction and release both fail, an `AggregateException` preserves the construction
+error first and the release error second. Release is not retried.
 Width/height must be positive, stride must be positive and at least the valid row size.
 Row padding and non-contiguous source rows are supported. Data is top-down, single plane;
 Gray16 and Gray32Float are little endian. Unsupported formats fail explicitly.
@@ -48,7 +50,10 @@ respectively.
 or mutate transferred storage. `ImageFrame` cannot be submitted twice. Each `FrameLease`
 is an independent ownership token with idempotent disposal. Acquire a separate lease before
 starting asynchronous work. Do not dispose a lease concurrently with reading its memory.
-External release callbacks should not throw; Viewer logs callback failures at its boundary.
+External release callbacks should not throw. A submission's own release failure is returned
+in `FrameSubmitResult.Error`; release failures for viewer-owned current or redraw leases
+are reported by `DisposeAsync`. Independent lease disposal propagates its release failure.
+Repeated disposal does not retry a release callback.
 
 The viewer keeps the current original frame for sampling. Acquiring a snapshot/measurement
 can extend this lifetime. A frozen viewer can hold a frame indefinitely. Camera pools must
@@ -60,6 +65,9 @@ owners from mutating memory: immutability is part of the producer contract.
 Each viewer has an independent STA and one background rendering loop. At most one submission
 is processing and one waits. New submissions replace the waiting frame (`Superseded`).
 Results are `Committed`, `Superseded`, `Frozen`, `Cancelled`, `Closed`, or `Failed`.
+`Status` describes the submission outcome; `Error` can also contain a cleanup failure for
+a dropped submission. Inspect both fields. A cleanup failure does not undo a commit or
+change a drop reason; when processing and cleanup both fail, both errors are retained.
 Cancellation is best effort until the UI commit boundary; cancellation after commit does not
 undo it. A request's token is observed while processing and before commit. A waiting cancelled
 frame terminates when dequeued/replaced/frozen/closed rather than using a per-frame callback.
@@ -85,13 +93,15 @@ Snapshot capture uses the last committed range/version, not a range still awaiti
 ## Pixel access and measurements
 
 Original-pixel access belongs to `Fizzy.ImageViewer.Frames`, alongside storage and leases.
-It includes `IFramePixelSource`, `FramePixelReader`, pixel coordinates/regions, samples,
+It includes `IFramePixelSource`, `CpuFramePixelReader`, pixel coordinates/regions, samples,
 statistics and read results. `Fizzy.ImageViewer.Imaging` consumes these contracts for
 display conversion, line sampling and query scheduling; Frames has no Imaging dependency.
 
 `AcquireCurrentFrame()` returns an owned lease. `TryGetCpuPixels` exposes only existing
 CPU memory and returns false for GPU storage. There is no general `Data` accessor.
-`FramePixelReader` is a CPU-only decoding helper; it never downloads GPU pixels.
+`CpuFramePixelReader` is a CPU-only decoding helper; it never downloads GPU pixels.
+Its `TryRead` returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
+`NotSupportedException`. Use lease asynchronous reads for backend-independent access.
 
 Use `FrameLease.ReadPixelsAsync(coordinates, token)`, `ComputeRegionStatisticsAsync(region,
 token)` and `ReadRegionAsync(region, token)` for backend-independent access. Coordinates use
@@ -132,7 +142,9 @@ The separate interaction coordinator manages selection, editing and creation ses
 See [measurement ownership and interaction](measurements.md) for geometry and extension contracts.
 
 `Viewer.QueryOptions` accepts `PixelQueryOptions`: PixelQueryRateHz=30, LineQueryRateHz=30, RegionQueryRateHz=10 Hz,
-MaxResultAge=100 ms, all positive. Due requests are served in due order; pending geometry is replaced
+MaxResultAge=100 ms, all positive. Each rate must produce a representable interval of at
+least one `TimeSpan` tick and less than `TimeSpan.MaxValue`; invalid settings are rejected
+when assigned. Due requests are served in due order; pending geometry is replaced
 by its latest state without resetting the execution interval, including during edits and resizes.
 Monotonic age starts at the frame/geometry snapshot, not camera capture time.
 Geometry changes, deletion, disabling and closing invalidate old work. Results may describe a
@@ -195,6 +207,13 @@ Disposal is idempotent and waits for rendering, in-flight measurement queries an
 the window thread to finish. Pixel sources that ignore cancellation can delay this
 completion until their operations release their leases. Programmatic closure is
 not blocked by `CanUserClose` or a cancelling window-closing handler.
+Repeated calls share the same completion and failure result. Owned-resource cleanup
+failures are reported after the remaining safe cleanup and actual STA exit; notification
+subscriber failures remain isolated and logged. Failure does not prove all resources were
+released. Resources that cannot be safely detached must not be reused.
+Cleanup failures from internally owned query leases and menu snapshot pins are retained
+until shutdown, even if later queries or menu sessions succeed. Ordinary query/provider
+failures remain query failures and do not become shutdown failures.
 
 Once disposal begins, viewer properties, window commands, measurement registration,
 frame acquisition, snapshot capture and layer operations reject new work with
@@ -230,8 +249,16 @@ and source format. Coordinates in that image start at the region's origin; `Fram
 adds source provenance in `RegionPixels`. A provider must finish access to source resources
 before its operation returns or throws, including cancellation. The frame's release callback
 owns the provider's resources; the library does not separately dispose the provider.
+This completion rule applies to every provider method. Independent leases, direct reads,
+the query scheduler and snapshot capture can call the same provider concurrently, including
+different methods. The provider must support that concurrency or serialize its own backend
+access. The scheduler's single batch and the export gate do not serialize all provider calls.
 
 DisplayRange is unsupported for GPU surfaces; producers must apply their GPU mapping before
 submission. Consumers are responsible for converting source formats to the supported frame contract.
 Surface loss due to a driver reset is distinct from WPF front-buffer availability and is not
 recovered by recreating the producer's device here. No software rendering fallback is enabled.
+If surface attachment fails, presentation stops using that presenter. A successful detach
+permits lease release; if detachment cannot be confirmed, the presenter and potentially
+attached leases are retained for process lifetime. This deliberate isolation prevents
+native use after release and is reported as a failure, not automatic recovery.

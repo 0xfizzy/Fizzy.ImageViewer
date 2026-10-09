@@ -125,17 +125,77 @@ public class ViewerInitializationTests
         var presenter = new Presenter(failDispose: true);
         var failure = new InvalidOperationException("partial composition failure");
         Thread? sta = null;
-        var observed = await Task.Run(() => Assert.Throws<InvalidOperationException>(() =>
+        var observed = await Task.Run(() => Assert.Throws<AggregateException>(() =>
             new Viewer(NullLogger<Viewer>.Instance, presenter, false, checkpoint: current =>
             {
                 if ((int)current != stage) return;
                 sta = Thread.CurrentThread;
                 throw failure;
             }))).WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.Same(failure, observed);
+        Assert.Contains(failure, observed.Flatten().InnerExceptions);
+        Assert.Contains(observed.Flatten().InnerExceptions, error => error.Message == "cleanup failure");
         Assert.False(sta!.IsAlive);
         Assert.Equal(1, presenter.Disposals);
         Assert.Equal(ApartmentState.STA, presenter.Apartment);
+    }
+
+    [Fact]
+    public async Task CleanupFailureIsSharedAndDoesNotSkipStaExitOrClosedNotification()
+    {
+        var presenter = new Presenter(failDispose: true);
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        int closed = 0;
+        viewer.Closed += (_, _) => closed++;
+        var first = viewer.DisposeAsync().AsTask();
+        var second = viewer.DisposeAsync().AsTask();
+        Assert.Same(first, second);
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => first);
+        Assert.Equal("cleanup failure", failure.Message);
+        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.DisposeAsync().AsTask()));
+        Assert.False(sta.IsAlive);
+        Assert.Equal(1, presenter.Disposals);
+        Assert.Equal(1, closed);
+        Assert.Null(typeof(Viewer).GetField("Closed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewer));
+    }
+
+    [Fact]
+    public async Task FailedFrameDrainAndPresenterCleanupAreBothReportedAfterStaExit()
+    {
+        var presenter = new DisposingPresenter();
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var frameFailure = new InvalidOperationException("frame release");
+        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+            ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }, () => throw frameFailure))).Status);
+        var failure = await Assert.ThrowsAsync<AggregateException>(() => viewer.DisposeAsync().AsTask());
+        Assert.Contains(frameFailure, failure.Flatten().InnerExceptions);
+        Assert.Contains(presenter.Failure, failure.Flatten().InnerExceptions);
+        Assert.False(sta.IsAlive);
+        Assert.Equal(1, presenter.Disposals);
+        Assert.Same(failure, await Assert.ThrowsAsync<AggregateException>(() => viewer.DisposeAsync().AsTask()));
+    }
+
+    [Fact]
+    public async Task RejectedSubmissionReportsItsOwnReleaseFailureWithoutChangingCloseResult()
+    {
+        var viewer = new Viewer(showWindow: false);
+        await viewer.DisposeAsync();
+        var failure = new InvalidOperationException("submission release");
+        var result = await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
+            new byte[] { 42 }, () => throw failure));
+        Assert.Equal(FrameSubmitStatus.Closed, result.Status);
+        Assert.Same(failure, result.Error);
+        await viewer.DisposeAsync();
+    }
+
+    private sealed class DisposingPresenter : ICpuImagePresenter
+    {
+        private readonly WriteableBitmapPresenter _inner = new();
+        public readonly Exception Failure = new InvalidOperationException("presenter release");
+        public int Disposals;
+        public ImageSource Present(DisplayBuffer pixels) => _inner.Present(pixels);
+        public void Dispose() { Disposals++; _inner.Dispose(); throw Failure; }
     }
 
     private sealed class Presenter(bool failDispose = false) : ICpuImagePresenter
@@ -176,7 +236,7 @@ public class ViewerInitializationTests
         Thread? sta = null;
         Viewer? partial = null;
         int releasedScopes = 0, releasedFrames = 0, closedWindows = 0;
-        var observed = Assert.Throws<InvalidOperationException>(() => new Viewer(NullLogger<Viewer>.Instance,
+        var observed = Record.Exception(() => new Viewer(NullLogger<Viewer>.Instance,
             presenter, false, initialize: viewer =>
             {
                 partial = viewer;
@@ -191,7 +251,13 @@ public class ViewerInitializationTests
                     new byte[] { 42 }, () => Interlocked.Increment(ref releasedFrames)));
                 throw failure;
             }));
-        Assert.Same(failure, observed);
+        if (cleanupFails)
+        {
+            var aggregate = Assert.IsType<AggregateException>(observed);
+            Assert.Contains(failure, aggregate.Flatten().InnerExceptions);
+            Assert.Contains(aggregate.Flatten().InnerExceptions, error => error.Message == "cleanup failure");
+        }
+        else Assert.Same(failure, observed);
         Assert.False(sta!.IsAlive);
         Assert.True(partial!.Host.Window.Dispatcher.HasShutdownFinished);
         Assert.Equal(1, releasedScopes);
@@ -200,7 +266,9 @@ public class ViewerInitializationTests
         Assert.Equal(1, presenter.Disposals);
         Assert.Equal(ApartmentState.STA, presenter.Apartment);
         Assert.Throws<ObjectDisposedException>(() => partial.ActivateMeasurementTool(MeasurementToolIds.Point));
-        await partial.DisposeAsync();
+        if (cleanupFails)
+            Assert.Equal("cleanup failure", (await Assert.ThrowsAsync<InvalidOperationException>(() => partial.DisposeAsync().AsTask())).Message);
+        else await partial.DisposeAsync();
         Assert.Equal(1, presenter.Disposals);
     }
 }

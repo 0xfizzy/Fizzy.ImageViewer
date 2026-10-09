@@ -36,7 +36,7 @@ internal sealed class ViewerMenuController : IDisposable
 
     internal void CaptureTarget() => _session.Open(descriptor =>
         _interaction.SelectedMeasurement is { IsComplete: true, Geometry: RectangleMeasurementGeometry } item
-            ? ((RectangleMeasurementGeometry)item.Geometry).ToRegion(descriptor) : null);
+            ? MeasurementQueryDefinition.GetRegion((RectangleMeasurementGeometry)item.Geometry, descriptor) : null);
 
     private void CloseTarget() => _session.Close();
 

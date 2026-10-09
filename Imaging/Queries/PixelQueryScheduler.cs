@@ -13,6 +13,7 @@ internal sealed class PixelQueryScheduler : IDisposable
     private readonly Dictionary<IFrameQueryClient, State> _states = [];
     private readonly CancellationTokenSource _stop = new();
     private readonly CancellationToken _token;
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _cleanupErrors = new();
     private bool _disposed;
     private long _batches, _expired;
     private double _duration;
@@ -31,7 +32,11 @@ internal sealed class PixelQueryScheduler : IDisposable
     private readonly record struct Entry(IFrameQueryClient Item, QueryRequest Request, State State);
     public PixelQueryOptions QueryOptions { get => _options; set { value.Validate(); _options = value; } }
     public PixelQueryMetrics QueryMetrics => new(Interlocked.Read(ref _batches), Interlocked.Read(ref _expired), Volatile.Read(ref _duration));
-    public Task Completion { get; private set; } = Task.CompletedTask;
+    private Task _batch = Task.CompletedTask;
+    private Task? _closeCompletion;
+    private int _captureDepth;
+    private TaskCompletionSource? _captureDrained;
+    public Task Completion => _closeCompletion ?? _batch;
 
     public PixelQueryScheduler(Func<FrameLease?> acquire, ILogger logger, IQueryRuntime runtime)
     {
@@ -50,11 +55,23 @@ internal sealed class PixelQueryScheduler : IDisposable
     internal void Tick()
     {
         if (_disposed || _states.Count == 0) return;
-        using var current = _acquire();
+        _captureDepth++;
+        FrameLease? current = null;
+        try { current = _acquire(); Tick(current); }
+        finally
+        {
+            ReleaseFrame(current);
+            if (--_captureDepth == 0) _captureDrained?.TrySetResult();
+        }
+    }
+
+    private void Tick(FrameLease? current)
+    {
         var now = _runtime.Now;
         List<Entry>? due = null;
         foreach (var pair in _states.ToArray())
         {
+            if (_disposed) return;
             var item = pair.Key; var state = pair.Value;
             try
             {
@@ -83,7 +100,7 @@ internal sealed class PixelQueryScheduler : IDisposable
             }
             catch (Exception ex) { state.Valid = false; _logger.LogWarning(ex, "Pixel query capture failed"); }
         }
-        if (current == null || !Completion.IsCompleted || due == null) return;
+        if (_disposed || current == null || !_batch.IsCompleted || due == null) return;
         due.Sort((a, b) => a.State.Due.CompareTo(b.State.Due));
         // Publish each independently executable group before admitting another. A
         // batch contains either one ROI or a merged coordinate gather, never a serial
@@ -94,8 +111,8 @@ internal sealed class PixelQueryScheduler : IDisposable
             ? new List<Entry> { due[0] }
             : due.Where(entry => entry.Request is not RegionStatisticsQueryRequest).ToList();
         foreach (var entry in selected)
-            entry.State.Due = now + Interval(entry);
-        Completion = RunAsync(current.Acquire(), selected, now);
+            entry.State.Due = NextDue(now, Interval(entry));
+        _batch = RunAsync(current.Acquire(), selected, now);
     }
 
     private TimeSpan Interval(Entry entry)
@@ -108,8 +125,11 @@ internal sealed class PixelQueryScheduler : IDisposable
             _ => throw new InvalidOperationException("Unknown query rate category.")
         };
         if (entry.Item.Policy.MaximumRate is double maximum) rate = Math.Min(rate, maximum);
-        return TimeSpan.FromSeconds(1 / rate);
+        return PixelQueryOptions.RateInterval(rate, nameof(rate));
     }
+
+    private static TimeSpan NextDue(TimeSpan now, TimeSpan interval)
+        => now.Ticks > long.MaxValue - interval.Ticks ? TimeSpan.MaxValue : now + interval;
 
     private static PixelCoordinate[] Coordinates(QueryRequest request) => request switch
     {
@@ -183,18 +203,24 @@ internal sealed class PixelQueryScheduler : IDisposable
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { _logger.LogWarning(ex, "Pixel query batch failed"); }
-        finally { frame.Dispose(); }
+        finally { ReleaseFrame(frame); }
     }
 
     private void Publish(FrameLease frame, List<Entry> entries, QueryResult[] results, TimeSpan started)
     {
         if (_disposed) return;
-        using var current = _acquire();
+        var current = _acquire();
+        try { Publish(frame, current, entries, results, started); }
+        finally { ReleaseFrame(current); }
+    }
+
+    private void Publish(FrameLease frame, FrameLease? current, List<Entry> entries, QueryResult[] results, TimeSpan started)
+    {
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
             if (!_states.TryGetValue(entry.Item, out var state) || !ReferenceEquals(state, entry.State)) continue;
-            if (entry.Item.Policy.IntervalOrigin == QueryIntervalOrigin.Completion) state.Due = _runtime.Now + Interval(entry);
+            if (entry.Item.Policy.IntervalOrigin == QueryIntervalOrigin.Completion) state.Due = NextDue(_runtime.Now, Interval(entry));
             try
             {
                 if (current == null)
@@ -233,8 +259,27 @@ internal sealed class PixelQueryScheduler : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _disposed = true; _ticks.Dispose(); _stop.Cancel(); _states.Clear();
+        _disposed = true;
+        // A capture callback may close the Viewer reentrantly while Tick still owns
+        // a lease. Allocate a drain signal only for this closing boundary.
+        if (_captureDepth != 0) _captureDrained = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        try { _ticks.Dispose(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+        try { _stop.Cancel(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+        _states.Clear();
         // The token source outlives all work that may still register cancellation callbacks.
-        _ = Completion.ContinueWith(_ => _stop.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        _closeCompletion = CompleteStopAsync();
+    }
+
+    private void ReleaseFrame(FrameLease? frame)
+    {
+        try { frame?.Dispose(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+    }
+
+    private async Task CompleteStopAsync()
+    {
+        if (_captureDrained != null) await _captureDrained.Task.ConfigureAwait(false);
+        try { await _batch.ConfigureAwait(false); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+        try { _stop.Dispose(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+        if (!_cleanupErrors.IsEmpty) throw new AggregateException("Pixel query cleanup failed.", _cleanupErrors);
     }
 }

@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Measurements.Editing;
 using Fizzy.ImageViewer.Measurements;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -49,14 +50,14 @@ public class MeasurementDegenerateGeometryTests
                 case RectangleMeasurementGeometry rectangle:
                     Assert.True(rectangle.Bounds.Width > 0);
                     Assert.True(rectangle.Bounds.Height > 0);
-                    Assert.Contains(new Point(5, 7), rectangle.ControlPoints);
+                    Assert.Contains(new Point(5, 7), MeasurementGeometryEditing.GetControlPoints(rectangle));
                     break;
             }
-            Assert.Equal(handle.Geometry.ControlPoints.Count, editor.Handles.Count);
+            Assert.Equal(MeasurementGeometryEditing.GetControlPoints(handle.Geometry).Count, editor.Handles.Count);
             for (int index = 0; index < editor.Handles.Count; index++)
             {
-                Assert.Equal(handle.Geometry.ControlPoints[index].X, System.Windows.Controls.Canvas.GetLeft(editor.Handles[index]));
-                Assert.Equal(handle.Geometry.ControlPoints[index].Y, System.Windows.Controls.Canvas.GetTop(editor.Handles[index]));
+                Assert.Equal(MeasurementGeometryEditing.GetControlPoints(handle.Geometry)[index].X, System.Windows.Controls.Canvas.GetLeft(editor.Handles[index]));
+                Assert.Equal(MeasurementGeometryEditing.GetControlPoints(handle.Geometry)[index].Y, System.Windows.Controls.Canvas.GetTop(editor.Handles[index]));
             }
         });
     }

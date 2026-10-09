@@ -52,7 +52,7 @@ public class MeasurementReentryTests
             Overlay = Layers.Measurements.Overlay;
             Queries = new(() => null, NullLogger.Instance, new DispatcherQueryRuntime(Overlay.Dispatcher));
             Runtime = new(new ViewerLifetime(), Overlay.Dispatcher, Queries, NullLogger.Instance);
-            Context = new(Layers.Measurements, Runtime, NullLogger.Instance);
+            Context = new(Layers.Measurements, Runtime);
             Tools = new();
             var binding = new ViewerInputBinding(Input, Overlay, Context, Layers.Collection);
             Coordinator = new(binding, new MeasurementEditController(Overlay), Tools, Context, Layers.Measurements, Runtime, () => null);
@@ -257,17 +257,25 @@ public class MeasurementReentryTests
     public async Task ClosingViewerRejectsPublicStartAndReleasesAllScopes()
     {
         var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var failure = new InvalidOperationException("closing cancellation failed");
+        int closed = 0;
+        viewer.Closed += (_, _) => closed++;
         var rejected = false; var released = 0;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var tool = new Tool("closing");
-            tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.ActivateMeasurementTool(tool.Id)); rejected = true; throw new InvalidOperationException(); };
+            tool.Cancelled = _ => { Assert.Throws<ObjectDisposedException>(() => viewer.ActivateMeasurementTool(tool.Id)); rejected = true; throw failure; };
             viewer.RegisterMeasurementTool(tool); viewer.ActivateMeasurementTool(tool.Id);
             var completed = tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())); completed.OnDispose(() => released++); completed.Complete();
             tool.Context.CreateMeasurement(MeasurementGeometry.Point(new())).OnDispose(() => released++);
         });
-        await viewer.DisposeAsync(); await viewer.DisposeAsync();
+        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.DisposeAsync().AsTask()));
+        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.DisposeAsync().AsTask()));
         Assert.True(rejected); Assert.Equal(2, released);
+        Assert.Equal(1, closed);
+        Assert.False(sta.IsAlive);
+        Assert.True(viewer.Host.Window.Dispatcher.HasShutdownFinished);
     }
 
     [Theory]

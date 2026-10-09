@@ -1,4 +1,5 @@
 using Fizzy.ImageViewer.Layers;
+using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,6 +12,8 @@ public sealed class DrawingLayer : ViewerLayer
     internal BatchVisualHost Host { get; } = new();
     private readonly List<DrawingHandle> _drawings = [];
     internal double PixelsPerDip => VisualTreeHelper.GetDpi(Host).PixelsPerDip;
+    /// <summary>Raised on the viewer thread for a drawing hit. Subscriber failures are logged
+    /// independently; a hit consumes the mouse event even if a subscriber fails.</summary>
     public event EventHandler<DrawingClickedEventArgs>? DrawingClicked;
 
     internal DrawingLayer(LayerCollection owner, string name, int zIndex, bool builtIn)
@@ -25,7 +28,14 @@ public sealed class DrawingLayer : ViewerLayer
     {
         var drawing = HitDrawing(imagePoint);
         if (drawing == null) return false;
-        DrawingClicked?.Invoke(this, new(drawing, imagePoint, button));
+        var handlers = DrawingClicked;
+        if (handlers != null)
+        {
+            var args = new DrawingClickedEventArgs(drawing, imagePoint, button);
+            foreach (EventHandler<DrawingClickedEventArgs> handler in handlers.GetInvocationList())
+                try { handler(this, args); }
+                catch (Exception error) { Owner.Logger.LogWarning(error, "Drawing click notification failed"); }
+        }
         return true;
     }
     /// <summary>Creates a drawing initially containing one element.</summary>

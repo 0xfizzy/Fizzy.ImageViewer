@@ -1,6 +1,7 @@
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Measurements;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer.Layers;
 
@@ -13,9 +14,9 @@ public sealed class ViewerLayers
     /// <summary>A membership snapshot containing live, mutable layer handles.</summary>
     public IReadOnlyList<ViewerLayer> Items => Collection.Items;
 
-    internal ViewerLayers(Transform transform, ViewerLifetime? lifetime = null)
+    internal ViewerLayers(Transform transform, ViewerLifetime? lifetime = null, ILogger? logger = null)
     {
-        Collection = new(transform, lifetime);
+        Collection = new(transform, lifetime, logger);
         Markers = Collection.Add(new DrawingLayer(Collection, "Markers", 0, true));
         Measurements = Collection.Add(new MeasurementLayer(Collection));
     }

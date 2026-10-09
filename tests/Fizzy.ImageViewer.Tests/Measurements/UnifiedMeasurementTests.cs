@@ -57,7 +57,7 @@ public class UnifiedMeasurementTests
             Runtime = new(Overlay.Dispatcher);
             Queries = new(() => Frame.Acquire(), NullLogger.Instance, Runtime);
             MeasurementsRuntime = new(new ViewerLifetime(), Overlay.Dispatcher, Queries, NullLogger.Instance);
-            Context = new(Layers.Measurements, MeasurementsRuntime, NullLogger.Instance);
+            Context = new(Layers.Measurements, MeasurementsRuntime);
         }
         public void Dispose() { Context.Shutdown(); Queries.Dispose(); Frame.Dispose(); }
     }

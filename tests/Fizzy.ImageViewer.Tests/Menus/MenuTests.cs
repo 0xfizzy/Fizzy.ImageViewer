@@ -3,6 +3,7 @@ using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Menus;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -191,20 +192,96 @@ public class MenuTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Empty(menu!.Items));
     }
 
-    [Fact]
-    public async Task FailedOpeningUnfreezesFramesAndDiscardsPartialBindings()
+    [Theory]
+    [InlineData("Header")]
+    [InlineData("IsVisible")]
+    [InlineData("IsChecked")]
+    public async Task FailedOpeningUnfreezesFramesDiscardsPartialBindingsAndAllowsReopening(string property)
     {
-        await using var viewer = Create();
-        var failure = new InvalidOperationException("visibility failed");
-        using var registration = viewer.RegisterMenuItem(new ActionMenuItem("bad", () => { }, () => throw failure));
+        var log = new OpeningLog();
+        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), false);
+        var item = new FailingStateItem(property);
+        using var registration = viewer.RegisterMenuItem(item);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var menu = viewer.Host.Window.ContextMenu;
-            Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => Open(menu)));
+            Open(menu);
             Assert.Empty(menu.Items);
+            Assert.False(menu.IsOpen);
+            Assert.Contains(item.Failure, log.Errors);
         });
         var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
         Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            item.Fail = false;
+            var menu = viewer.Host.Window.ContextMenu;
+            Open(menu);
+            var visual = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "stateful"));
+            Assert.True(visual.IsChecked);
+            visual.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
+            Assert.Equal(1, item.Calls);
+            Close(menu);
+        });
+    }
+
+    [Theory]
+    [InlineData("Header")]
+    [InlineData("IsVisible")]
+    [InlineData("IsChecked")]
+    public async Task ActualPopupClosesAfterStateCallbackFailure(string property)
+    {
+        var log = new OpeningLog();
+        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), false);
+        var item = new FailingStateItem(property);
+        using var registration = viewer.RegisterMenuItem(item);
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool observedOpen = false;
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            // Create a test HWND without showing the viewer. Absolute placement and
+            // StaysOpen avoid physical mouse input, capture and focus dependencies.
+            new System.Windows.Interop.WindowInteropHelper(viewer.Host.Window).EnsureHandle();
+            var menu = viewer.Host.Window.ContextMenu;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.AbsolutePoint;
+            menu.HorizontalOffset = menu.VerticalOffset = 0;
+            menu.StaysOpen = true;
+            viewer.Host.Menus.Opening += () => observedOpen = menu.IsOpen;
+            menu.Closed += (_, _) => closed.TrySetResult();
+            menu.IsOpen = true;
+        });
+        await closed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            Assert.True(observedOpen);
+            Assert.False(viewer.Host.Window.ContextMenu.IsOpen);
+            Assert.Empty(viewer.Host.Window.ContextMenu.Items);
+            Assert.Contains(item.Failure, log.Errors);
+        }, DispatcherPriority.ApplicationIdle);
+        var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+        Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+    }
+
+    private sealed class FailingStateItem(string property) : ICheckableMenuItem
+    {
+        public bool Fail = true;
+        public int Calls;
+        public Exception Failure { get; } = new InvalidOperationException("state callback failed");
+        private void Check(string name) { if (Fail && property == name) throw Failure; }
+        public string Header { get { Check(nameof(Header)); return "stateful"; } }
+        public bool IsVisible { get { Check(nameof(IsVisible)); return true; } }
+        public bool IsChecked { get { Check(nameof(IsChecked)); return true; } }
+        public ValueTask ExecuteAsync() { Calls++; return ValueTask.CompletedTask; }
+    }
+
+    private sealed class OpeningLog : ILogger<Viewer>
+    {
+        public List<Exception> Errors { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        { if (exception != null) Errors.Add(exception); }
     }
 
     [Fact]

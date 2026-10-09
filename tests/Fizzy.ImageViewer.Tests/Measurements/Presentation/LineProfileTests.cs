@@ -17,6 +17,39 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class LineProfileTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task IsolatedSamplesRenderVisibleMarkersWithoutBridgingGaps(bool separatedByGaps)
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var plot = new LineProfileWindow.LineProfilePlotControl();
+            double[] values = separatedByGaps ? [1, double.NaN, 1] : [1];
+            plot.SetProfile(values.Select(value => new PixelSample(FramePixelFormat.Gray8, value, 0, 0, 0, 255)).ToArray());
+            plot.Measure(new(600, 400));
+            plot.Arrange(new(0, 0, 600, 400));
+            var render = (Action<System.Windows.Media.DrawingContext>)plot.GetType()
+                .GetMethod("OnRender", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .CreateDelegate(typeof(Action<System.Windows.Media.DrawingContext>), plot);
+            var visual = new System.Windows.Media.DrawingVisual();
+            using (var dc = visual.RenderOpen()) render(dc);
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(600, 400, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            var pixels = new byte[600 * 400 * 4];
+            bitmap.CopyPixels(pixels, 600 * 4, 0);
+            bool HasRedNear(int x) => Enumerable.Range(0, pixels.Length / 4).Any(i =>
+                Math.Abs(i % 600 - x) <= 4 && pixels[4 * i + 2] > pixels[4 * i + 1] + 40 && pixels[4 * i + 2] > pixels[4 * i] + 40);
+            Assert.True(HasRedNear(36));
+            if (separatedByGaps)
+            {
+                Assert.True(HasRedNear(580));
+                Assert.False(HasRedNear(308));
+            }
+        });
+    }
+
     [Fact]
     public async Task LengthIsGeometricAndDoesNotRequireAQueryResult()
     {
@@ -94,11 +127,11 @@ public class LineProfileTests
     {
         var points = new List<Point> { new(0, 5), new(.1, 3), new(.2, 9), new(.3, 1),
             new(.4, 4), new(.9, 6), new(1, 8), new(1.5, 2) };
-        LineProfilePlotView.LineProfilePlotControl.ReduceToPixelColumns(points, 1);
+        LineProfileWindow.LineProfilePlotControl.ReduceToPixelColumns(points, 1);
         Assert.Equal(new Point[] { new(0, 5), new(.2, 9), new(.3, 1), new(.9, 6), new(1, 8), new(1.5, 2) }, points);
         var highDpi = new List<Point> { new(0, 0), new(.2, 2), new(.4, 1), new(.6, 3), new(.8, 0) };
         var expected = highDpi.ToArray();
-        LineProfilePlotView.LineProfilePlotControl.ReduceToPixelColumns(highDpi, 5);
+        LineProfileWindow.LineProfilePlotControl.ReduceToPixelColumns(highDpi, 5);
         Assert.Equal(expected, highDpi);
     }
 
@@ -108,7 +141,7 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var plot = new LineProfilePlotView.LineProfilePlotControl();
+            var plot = new LineProfileWindow.LineProfilePlotControl();
             var profile = Profile(new PixelSample(FramePixelFormat.Gray8, 42, 0, 0, 0, 255));
             for (int i = 0; i < 100; i++) { profile[0] = profile[0] with { Gray = i }; plot.SetProfile(profile); }
             long before = GC.GetAllocatedBytesForCurrentThread();
@@ -124,7 +157,7 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var plot = new LineProfilePlotView.LineProfilePlotControl();
+            var plot = new LineProfileWindow.LineProfilePlotControl();
             var profile = Profile(new(FramePixelFormat.Gray8, 1, 0, 0, 0, 255),
                 new(FramePixelFormat.Gray8, 2, 0, 0, 0, 255),
                 new(FramePixelFormat.Gray8, double.NaN, 0, 0, 0, 255),
@@ -204,10 +237,10 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var view = new LineProfilePlotView();
+            var view = new LineProfileWindow();
             try
             {
-                var plot = (LineProfilePlotView.LineProfilePlotControl)view.Window.Content;
+                var plot = (LineProfileWindow.LineProfilePlotControl)view.Window.Content;
                 PixelSample rgb = new(FramePixelFormat.Bgr24, 0, 10, 20, 30, 255);
                 view.Clear();
                 Assert.Equal(0, plot.SampleCount);
@@ -253,7 +286,7 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var view = new LineProfilePlotView();
+            var view = new LineProfileWindow();
             try
             {
                 var profile = Profile(Enumerable.Repeat(
@@ -261,7 +294,7 @@ public class LineProfileTests
                 profile[0] = new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255);
                 profile[1] = new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255);
                 view.ShowProfile(new ArraySegment<PixelSample>(profile, 0, 2));
-                var plot = (LineProfilePlotView.LineProfilePlotControl)view.Window.Content;
+                var plot = (LineProfileWindow.LineProfilePlotControl)view.Window.Content;
                 Assert.Equal(2, plot.SampleCount);
                 Assert.Equal(new double[] { 10, 20 }, plot.GetSamples(0).ToArray());
                 view.ShowProfile(Array.Empty<PixelSample>());
@@ -277,14 +310,14 @@ public class LineProfileTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var view = new LineProfilePlotView();
+            var view = new LineProfileWindow();
             try
             {
                 var profile = Profile(
                     new(FramePixelFormat.Bgr24, 0, 1, 2, 3, 255),
                     new(FramePixelFormat.Bgr24, 0, double.PositiveInfinity, double.NegativeInfinity, double.NaN, 255));
                 view.ShowProfile(profile);
-                var plot = (LineProfilePlotView.LineProfilePlotControl)view.Window.Content;
+                var plot = (LineProfileWindow.LineProfilePlotControl)view.Window.Content;
                 for (int channel = 0; channel < 3; channel++)
                     Assert.True(double.IsNaN(plot.GetSamples(channel).Span[1]));
                 Assert.Equal(double.PositiveInfinity, profile[1].R);
@@ -307,7 +340,7 @@ public class LineProfileTests
             var descriptor = new FrameDescriptor(4, 1, 4, FramePixelFormat.Gray8);
             var request = Assert.IsType<CoordinateQueryRequest>(item.QueryClient.Capture(descriptor));
             request.Publish(new FrameInfo(1, descriptor, null), [new(FramePixelFormat.Gray8, 10, 0, 0, 0, 255), new(FramePixelFormat.Gray8, 20, 0, 0, 0, 255)]);
-            var plot = (LineProfilePlotView.LineProfilePlotControl)pair.Window.Content;
+            var plot = (LineProfileWindow.LineProfilePlotControl)pair.Window.Content;
             Assert.Equal(2, plot.SampleCount);
             Assert.Equal(1, plot.ChannelCount);
 

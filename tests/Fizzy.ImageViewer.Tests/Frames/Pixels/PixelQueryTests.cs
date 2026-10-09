@@ -6,6 +6,16 @@ namespace Fizzy.ImageViewer.Tests;
 public class PixelQueryTests
 {
     [Fact]
+    public void CpuReaderRejectsGpuPixelsButReportsOutOfBoundsSeparately()
+    {
+        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+            (nint)1, new DelayedSource(), () => { });
+        using var lease = frame.Acquire();
+        Assert.False(CpuFramePixelReader.Instance.TryRead(lease, -1, 0, out _));
+        Assert.Throws<NotSupportedException>(() => CpuFramePixelReader.Instance.TryRead(lease, 0, 0, out _));
+    }
+
+    [Fact]
     public async Task QueriesRetainGpuOwnerWithoutImplicitDownload()
     {
         int releases=0;

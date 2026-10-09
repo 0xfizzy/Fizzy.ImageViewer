@@ -25,7 +25,7 @@ to `.Measurements`; menu contracts and helpers belong to `.Menus`.
 HUD text handles and anchor alignment belong to `.Hud`.
 
 Frame storage and original-pixel access share `.Frames`: `IFramePixelSource`,
-`FramePixelReader`, `PixelCoordinate`, `PixelRegion`, `PixelSample`, `ChannelStatistics`,
+`CpuFramePixelReader`, `PixelCoordinate`, `PixelRegion`, `PixelSample`, `ChannelStatistics`,
 `RegionStatistics`, `PixelQueryResult`, `RegionStatisticsResult` and `RegionPixels`.
 `.Imaging` contains display range and shared query configuration/metrics, rather than
 the pixel-source protocol. See [module dependencies](architecture.md#frame-and-imaging-dependencies).
@@ -101,9 +101,15 @@ WPF visibility (a shown minimized window is still visible); `IsMinimized` is ind
 Minimizing an already hidden window does not implicitly show it.
 
 `DisposeAsync` closes the window and waits for owned background work and the STA to stop.
+Repeated calls observe one completion task and its fixed success or failure result.
+Resource cleanup failures are reported after all remaining safe cleanup and STA exit;
+subscriber notification failures are logged and isolated. `Closed` subscriptions are
+released when that terminal notification is delivered.
 Construction validates window bounds before starting the STA. If initialization fails,
-all created resources are released on their owning thread and background work is drained
-before the original exception is rethrown.
+safe resource cleanup runs on the owning thread and background work is drained before
+the original exception is rethrown. If cleanup also fails, an aggregate preserves both
+initialization and cleanup errors. Resources whose safe detachment cannot be established
+remain isolated rather than being released or reused.
 Application adapters route user closure (`Closed`) and explicit adapter disposal to
 one idempotent cleanup task, release application resources and await the owned viewer's
 `DisposeAsync`. Keep measurement subscriptions until window cleanup finishes when
@@ -122,6 +128,10 @@ controls bottom-left pixel inspection and its query subscription; the context me
 the same state. Both properties can be configured before showing the window.
 `EndInteraction()` cancels unfinished creation or ends editing, preserving completed
 measurements and edits already applied.
+
+`FitToViewport` centers the full image and may choose a scale outside the ordinary
+wheel range of 0.01–100. At such a scale, the wheel permits steps toward that range
+and rejects steps farther away, so very large or small images remain navigable.
 
 ## Measurement notifications and extensions
 
@@ -258,8 +268,10 @@ callbacks on another thread that is waiting for a viewer operation.
 
 Normal menu closure preserves the pending click until input drains. Explicit revocation or
 viewer shutdown invalidates it immediately. If menu construction fails after freezing a
-frame, the viewer resumes submissions and removes partial bindings before propagating the
-failure. Viewer shutdown releases registrations, callbacks and WPF menu bindings.
+frame, the viewer resumes submissions, removes partial bindings and closes that opening.
+Header, visibility and check-state failures are logged at the WPF event boundary; they do
+not escape into the dispatcher. A later opening evaluates registrations again.
+Viewer shutdown releases registrations, callbacks and WPF menu bindings.
 
 ```csharp
 using var registration = viewer.RegisterMenuItem(

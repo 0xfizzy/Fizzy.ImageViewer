@@ -10,7 +10,7 @@ internal sealed class MeasurementPresentation : IDisposable
 {
     private readonly MeasurementOverlay _layer;
     private readonly Action _closed;
-    private LineProfilePlotView? _plot;
+    private LineProfileWindow? _plot;
     private bool _disposed;
     internal IEnumerable<UIElement> Visuals => [PrimaryVisual, Label];
     public UIElement PrimaryVisual { get; }
@@ -46,7 +46,7 @@ internal sealed class MeasurementPresentation : IDisposable
     internal void Complete(bool showProfileWindow)
     {
         if (!showProfileWindow) return;
-        _plot = new LineProfilePlotView();
+        _plot = new LineProfileWindow();
         _plot.Window.Closed += PlotClosed;
         _plot.Window.Show();
     }

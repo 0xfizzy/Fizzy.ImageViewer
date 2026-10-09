@@ -196,7 +196,11 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
         activation?.Context.End(cancelled);
         if (Mode == InteractionMode.Measuring) Mode = InteractionMode.Idle;
         try { if (activation?.Callback is { } callback) ReleaseSession(callback, cancelled); }
-        finally { activation?.Context.ClearPreviews(); }
+        catch (Exception error)
+        {
+            MeasurementFailure.RethrowAfterCleanup(error, () => activation?.Context.ClearPreviews());
+        }
+        activation?.Context.ClearPreviews();
     }
 
     private static void ReleaseSession(IMeasurementToolSession tool, bool cancelled)

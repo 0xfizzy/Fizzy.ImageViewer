@@ -77,6 +77,8 @@ internal sealed class MeasurementItem : IMeasurement
     {
         EnsureAlive();
         ArgumentNullException.ThrowIfNull(resource);
+        if (_resources.Any(existing => ReferenceEquals(existing, resource)))
+            throw new ArgumentException("The resource is already owned by this measurement.", nameof(resource));
         _resources.Add(resource);
     }
 

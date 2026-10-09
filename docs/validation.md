@@ -25,6 +25,8 @@ No package release is performed by these validation commands.
 The package embeds `docs/nuget-readme.md` as `README.md`; keep it in plain Markdown
 with absolute documentation links because NuGet does not render the repository's HTML header.
 Before publishing, inspect the packed README and preview its headings, code blocks and links.
+The package also includes `lib/net8.0-windows7.0/Fizzy.ImageViewer.xml` for IntelliSense.
+CI verifies the packaged XML and representative ownership/concurrency documentation.
 Check the repository README on GitHub for icon sharpness, size and spacing.
 The Windows CI workflow runs restore, build, test, tool builds and pack on pushes and pull
 requests, using only this repository's checkout. It does not publish packages.
@@ -129,6 +131,9 @@ exercise serialized export reads, cancellation while queued, read failures, and 
 release independently of a window or a native GPU surface.
 `FramePresentationTests` verify that GPU preparation performs no pixel reads and rejects
 CPU display mapping; they do not bind a native surface or validate real CPU/GPU switching.
+`D3DImagePresenterTests` inject the native target boundary to verify partial attachment,
+failed detachment/unlock, retained surface leases and no repeated cleanup after failure.
+These fault tests do not replace validation against a real D3D device.
 
 `FrameMetadataTests` cover standalone queries, cropped/raw/display pixel descriptors,
 local coordinates and explicit source provenance. `MeasurementHandleTests` cover worker
@@ -227,3 +232,9 @@ Query policy regression tests cover all four geometry-acceptance/interval-origin
 combinations using a manual clock. Activation tests cover instance-bound registration
 handles, worker-thread revocation, completed-item retention, same-ID replacement during
 throwing cancellation, captured menu targets and shared activation admission.
+
+Boundary tests also cover rejected query intervals, saturated scheduling deadlines,
+zoom recovery from fit scales outside wheel limits, isolated drawing/menu callbacks,
+single-sample profile markers, stable geometry distances and duplicate resource ownership.
+Shutdown tests verify fixed failures, combined session/preview cleanup errors, retained
+external leases, subscriber release and STA exit even when cleanup fails.

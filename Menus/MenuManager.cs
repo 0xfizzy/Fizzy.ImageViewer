@@ -155,14 +155,19 @@ internal sealed class MenuManager : IDisposable
                 }
             }
         }
-        catch
+        catch (Exception error)
         {
             if (generation == _generation && !_disposed)
             {
                 try { EndOpening(); }
-                finally { ClearBindings(); }
+                catch (Exception closeError) { _logger.LogError(closeError, "Failed menu opening cleanup failed"); }
+                finally
+                {
+                    ClearBindings();
+                    _menu.IsOpen = false;
+                }
             }
-            throw;
+            _logger.LogError(error, "Menu opening failed");
         }
     }
 

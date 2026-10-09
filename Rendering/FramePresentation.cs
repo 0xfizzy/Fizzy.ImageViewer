@@ -41,7 +41,7 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         {
             var previous = _d3dPresenter;
             _d3dPresenter = null;
-            Cleanup(previous.Dispose);
+            previous.Dispose();
         }
         return source;
     }
@@ -64,9 +64,12 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         dispatcher.VerifyAccess();
         if (_disposed) return;
         _disposed = true;
-        Cleanup(presenter.Dispose);
-        Cleanup(() => _d3dPresenter?.Dispose());
+        List<Exception> errors = [];
+        try { presenter.Dispose(); } catch (Exception ex) { errors.Add(ex); }
+        try { _d3dPresenter?.Dispose(); } catch (Exception ex) { errors.Add(ex); }
         _d3dPresenter = null;
+        if (errors.Count == 1) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(errors[0]).Throw();
+        if (errors.Count > 1) throw new AggregateException("Presentation cleanup failed.", errors);
     }
 
     private void Cleanup(Action action)

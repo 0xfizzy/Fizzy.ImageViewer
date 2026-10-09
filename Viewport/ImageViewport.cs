@@ -213,8 +213,9 @@ namespace Fizzy.ImageViewer.Viewport
                 sY /= ViewportConstants.ScaleFactor;
             }
 
-            // 限制缩放范围
-            if (sX < ViewportConstants.MinScale || sX > ViewportConstants.MaxScale)
+            // Fit may fall outside the wheel limits. Allow steps back toward the range.
+            if ((sX < ViewportConstants.MinScale && sX <= Scaler.ScaleX) ||
+                (sX > ViewportConstants.MaxScale && sX >= Scaler.ScaleX))
                 return;
 
             var dX = point.X * (Scaler.ScaleX - sX);

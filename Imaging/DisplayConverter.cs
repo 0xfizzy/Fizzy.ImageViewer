@@ -40,7 +40,7 @@ internal static class DisplayConverter
                     if (info.IsGrayscale)
                     {
                         byte gray = d.Format == FramePixelFormat.Gray8 ? gray8[row[s]] :
-                            MapGray(FramePixelReader.Decode(d.Format, row.Slice(s)).Gray, bounds);
+                            MapGray(CpuFramePixelReader.Decode(d.Format, row.Slice(s)).Gray, bounds);
                         dst[i] = dst[i + 1] = dst[i + 2] = gray;
                         dst[i + 3] = 255;
                     }

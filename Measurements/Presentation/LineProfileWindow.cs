@@ -6,11 +6,11 @@ using System.Windows.Media;
 namespace Fizzy.ImageViewer.Measurements.Presentation;
 
 /// <summary>UI-thread presentation; the measurement owns the window lifetime.</summary>
-internal sealed class LineProfilePlotView
+internal sealed class LineProfileWindow
 {
     private readonly LineProfilePlotControl _plot = new();
     public Window Window { get; } = new() { Title = "Pixel Values", Width = 600, Height = 400, Topmost = true };
-    public LineProfilePlotView() => Window.Content = _plot;
+    public LineProfileWindow() => Window.Content = _plot;
     public void Clear() => _plot.Clear();
     public void ShowProfile(IReadOnlyList<PixelSample> samples) => _plot.SetProfile(samples);
 
@@ -222,6 +222,18 @@ internal sealed class LineProfilePlotView
         {
             if (_points.Count == 0) return;
             ReduceToPixelColumns(_points, VisualTreeHelper.GetDpi(this).DpiScaleX);
+            if (_points.Count == 1)
+            {
+                // A figure with no segments is invisible. Draw a small marker for
+                // isolated finite samples without joining across non-finite gaps.
+                var point = _points[0];
+                const double radius = 1.5;
+                context.BeginFigure(new(point.X + radius, point.Y), false, true);
+                context.ArcTo(new(point.X - radius, point.Y), new(radius, radius), 0, false, SweepDirection.Clockwise, true, false);
+                context.ArcTo(new(point.X + radius, point.Y), new(radius, radius), 0, false, SweepDirection.Clockwise, true, false);
+                _points.Clear();
+                return;
+            }
             context.BeginFigure(_points[0], false, false);
             for (int i = 1; i < _points.Count; i++)
                 context.LineTo(_points[i], true, false);

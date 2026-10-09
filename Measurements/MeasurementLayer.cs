@@ -21,7 +21,8 @@ public sealed class MeasurementLayer : ViewerLayer
     internal override void ClearContent()
     {
         try { ContentClearing?.Invoke(); }
-        finally { Overlay.ClearVisuals(); }
+        catch (Exception error) { MeasurementFailure.RethrowAfterCleanup(error, Overlay.ClearVisuals); throw; }
+        Overlay.ClearVisuals();
     }
     internal override void ReleaseHandlers() => ContentClearing = null;
     internal override void Redraw(bool scaleOnly) => Overlay.UpdateScale(Owner.Scale);

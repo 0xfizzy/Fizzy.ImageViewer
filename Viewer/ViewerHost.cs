@@ -33,6 +33,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
     private PixelInfoController? _pixelInfo;
     private readonly ViewerLifetime _lifetime = new();
     private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _cleanupErrors = new();
     private bool _closed;
     private bool _closedNotified;
 
@@ -65,7 +66,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
             Exception? failure = null;
             try
             {
-                win = new ViewerWindow("Fizzy ImageViewer", _lifetime);
+                win = new ViewerWindow("Fizzy ImageViewer", _lifetime, _logger);
                 _window = win;
                 checkpoint?.Invoke(ViewerInitializationStage.WindowCreated);
                 _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageViewport,
@@ -73,12 +74,12 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 _pipeline = new Rendering.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
                 checkpoint?.Invoke(ViewerInitializationStage.PipelineCreated);
                 _hud = new HudTextCollection(win.HudLayer, _lifetime);
-                _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _logger);
+                _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _cleanupErrors.Enqueue);
                 win.Closed += OnWindowClosed;
 
                 _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
                 _measurementRuntime = new MeasurementRuntime(_lifetime, win.Dispatcher, _queryScheduler, _logger);
-                _measurements = new MeasurementCollection(win.Layers.Measurements, _measurementRuntime, _logger);
+                _measurements = new MeasurementCollection(win.Layers.Measurements, _measurementRuntime);
                 _tools = new MeasurementToolRegistry();
                 _measurements.ItemCompleted += _owner.NotifyMeasurementCompleted;
                 _measurements.ItemRemoved += _owner.NotifyMeasurementRemoved;
@@ -115,7 +116,11 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
             catch (Exception ex)
             {
                 failure = ex;
-                if (tcs.Task.IsCompletedSuccessfully) _logger.LogError(ex, "Viewer dispatcher failed");
+                if (tcs.Task.IsCompletedSuccessfully)
+                {
+                    _cleanupErrors.Enqueue(ex);
+                    _logger.LogError(ex, "Viewer dispatcher failed");
+                }
             }
             finally
             {
@@ -138,12 +143,12 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
         _windowThread.Start();
 
         try { tcs.Task.GetAwaiter().GetResult(); }
-        catch
+        catch (Exception startupError)
         {
             _windowThread.Join();
             // Cancellation can still be releasing frame/query leases off the STA.
             try { _disposeCompletion.Task.GetAwaiter().GetResult(); }
-            catch (Exception cleanupError) { _logger.LogWarning(cleanupError, "Startup cleanup failed"); }
+            catch (Exception cleanupError) { throw new AggregateException("Viewer startup and cleanup failed.", startupError, cleanupError); }
             throw;
         }
     }
@@ -205,11 +210,12 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 
     private void Cleanup(Action action)
     {
-        try { action(); } catch (Exception ex) { _logger.LogWarning(ex, "Viewer cleanup failed"); }
+        try { action(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
     }
 
     private async Task CompleteDisposalAsync()
     {
+        List<Exception> errors = [];
         try
         {
             if (!_closed && _window != null && !_window.Dispatcher.HasShutdownStarted)
@@ -219,13 +225,30 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                     await _window.Dispatcher.InvokeAsync(() => _window.CloseProgrammatically()).Task.ConfigureAwait(false);
                 }
                 catch (TaskCanceledException) { }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                    _window.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
+                }
             }
-            await Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _queryScheduler?.Completion ?? Task.CompletedTask, _windowStopped.Task).ConfigureAwait(false);
+            // Stop establishes the terminal pipeline/query completion tasks. Wait for
+            // that boundary before reading them, including when shutdown started elsewhere.
+            await _windowStopped.Task.ConfigureAwait(false);
+            var drained = Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _queryScheduler?.Completion ?? Task.CompletedTask);
+            try { await drained.ConfigureAwait(false); }
+            catch (Exception ex)
+            {
+                if (drained.Exception is { } aggregate) errors.AddRange(aggregate.InnerExceptions);
+                else errors.Add(ex);
+            }
             // The stop signal is set in the STA's finally block, just before it returns.
             // Join off-thread so DisposeAsync also guarantees actual thread termination.
             await Task.Run(_windowThread.Join).ConfigureAwait(false);
             _lifetime.Complete();
-            if (_window?.ClosingError is { } error) _disposeCompletion.TrySetException(error);
+            if (_window?.ClosingError is { } error) errors.Add(error);
+            errors.AddRange(_cleanupErrors);
+            if (errors.Count == 1) _disposeCompletion.TrySetException(errors[0]);
+            else if (errors.Count > 1) _disposeCompletion.TrySetException(new AggregateException("Viewer shutdown failed.", errors));
             else _disposeCompletion.TrySetResult();
         }
         catch (Exception ex) { _disposeCompletion.TrySetException(ex); }

@@ -1,13 +1,12 @@
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Frames;
-using Microsoft.Extensions.Logging;
 using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer.Menus;
 
 /// <summary>Owns a menu target until input drains; callers acquire independent save targets.</summary>
 internal sealed class MenuSnapshotSession(FramePipeline pipeline, ViewerLifetime lifetime,
-    Dispatcher dispatcher, ILogger logger) : IDisposable
+    Dispatcher dispatcher, Action<Exception> reportCleanupFailure) : IDisposable
 {
     private Target? _target;
     private long _generation;
@@ -104,6 +103,6 @@ internal sealed class MenuSnapshotSession(FramePipeline pipeline, ViewerLifetime
     private void Release(IDisposable? target)
     {
         try { target?.Dispose(); }
-        catch (Exception ex) { logger.LogWarning(ex, "Menu target release failed"); }
+        catch (Exception ex) { reportCleanupFailure(ex); }
     }
 }

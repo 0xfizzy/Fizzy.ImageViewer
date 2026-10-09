@@ -13,6 +13,64 @@ namespace Fizzy.ImageViewer.Tests;
 public class MeasurementOwnershipTests
 {
     [Fact]
+    public async Task ResourceOwnershipTransfersOnceAndRejectedResourcesRemainWithCaller()
+    {
+        await using var viewer = Create();
+        IMeasurement? handle = null;
+        int acceptedDisposals = 0, rejectedDisposals = 0;
+        var accepted = new Resource(() => acceptedDisposals++);
+        var rejected = new Resource(() => rejectedDisposals++);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            handle = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+                .CreateMeasurement(MeasurementGeometry.Point(new()));
+            handle.AddResource(accepted);
+            Assert.Throws<ArgumentException>(() => handle.AddResource(accepted));
+            var equalFirst = new EqualResource();
+            var equalSecond = new EqualResource();
+            Assert.Equal(equalFirst, equalSecond);
+            handle.AddResource(equalFirst);
+            handle.AddResource(equalSecond);
+            Assert.Equal(0, acceptedDisposals);
+            handle.Dispose();
+            handle.Dispose();
+            Assert.Equal(1, equalFirst.Disposals);
+            Assert.Equal(1, equalSecond.Disposals);
+            Assert.Throws<ObjectDisposedException>(() => handle.AddResource(rejected));
+            Assert.Equal(1, acceptedDisposals);
+            Assert.Equal(0, rejectedDisposals);
+        });
+        await viewer.DisposeAsync();
+        Assert.Throws<ObjectDisposedException>(() => handle!.AddResource(rejected));
+        Assert.Equal(0, rejectedDisposals);
+        rejected.Dispose();
+        Assert.Equal(1, rejectedDisposals);
+    }
+
+    [Fact]
+    public async Task ShutdownReportsResourceFailuresAfterReleasingEveryMeasurementOnce()
+    {
+        await using var viewer = Create();
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var context = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
+            var first = context.CreateMeasurement(MeasurementGeometry.Point(new()));
+            var second = context.CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
+            var failure = new InvalidOperationException("owned resource failed");
+            int releases = 0;
+            first.AddResource(new Resource(() => { releases++; throw failure; }));
+            second.AddResource(new Resource(() => releases++));
+            var error = Assert.Throws<AggregateException>(viewer.Host.Measurements.Shutdown);
+            Assert.Contains(failure, error.Flatten().InnerExceptions);
+            Assert.True(first.IsDisposed);
+            Assert.True(second.IsDisposed);
+            Assert.Equal(2, releases);
+            viewer.Host.Measurements.Shutdown();
+            Assert.Equal(2, releases);
+        });
+    }
+
+    [Fact]
     public async Task ModelMovesAnchorsAndDispatchesForeignThreadUpdates()
     {
         await using var viewer = Create();
@@ -59,6 +117,13 @@ public class MeasurementOwnershipTests
 
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     private sealed class Resource(Action dispose) : IDisposable { public void Dispose() => dispose(); }
+    private sealed class EqualResource : IDisposable
+    {
+        public int Disposals { get; private set; }
+        public void Dispose() => Disposals++;
+        public override bool Equals(object? obj) => obj is EqualResource;
+        public override int GetHashCode() => 0;
+    }
     private sealed class Tool : IMeasurementTool
     {
         public string Id => "custom";
@@ -152,7 +217,9 @@ public class MeasurementOwnershipTests
             completed.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()))));
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
             viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(1, 2);
-            Assert.Throws<InvalidOperationException>(() => viewer.Layers.ClearContents());
+            var error = Assert.Throws<AggregateException>(() => viewer.Layers.ClearContents());
+            Assert.Contains(error.Flatten().InnerExceptions, failure => failure.Message == "Plugin cancel failed");
+            Assert.Contains(error.Flatten().InnerExceptions, failure => failure.Message == "cleanup failed");
             Assert.Equal(1, tool.Disposals); Assert.Equal(1, disposed);
             Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });

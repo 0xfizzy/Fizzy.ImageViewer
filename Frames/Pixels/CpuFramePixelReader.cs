@@ -2,9 +2,13 @@ using System.Buffers.Binary;
 
 namespace Fizzy.ImageViewer.Frames;
 
-public sealed class FramePixelReader
+/// <summary>Synchronous access to CPU-backed original pixels. Use FrameLease asynchronous
+/// read methods for backend-independent access.</summary>
+public sealed class CpuFramePixelReader
 {
-    public static FramePixelReader Instance { get; } = new();
+    public static CpuFramePixelReader Instance { get; } = new();
+    /// <summary>Returns false only when coordinates are outside the image.</summary>
+    /// <exception cref="NotSupportedException">The frame is GPU-backed and coordinates are valid.</exception>
     public bool TryRead(FrameLease frame, int x, int y, out PixelSample sample)
     {
         var d = frame.Descriptor;
@@ -14,6 +18,8 @@ public sealed class FramePixelReader
         sample = Decode(d.Format, bytes);
         return true;
     }
+    /// <summary>Reads the requested CPU pixels into caller-owned storage.</summary>
+    /// <exception cref="NotSupportedException">A requested pixel belongs to a GPU-backed frame.</exception>
     public void ReadPixels(FrameLease frame, ReadOnlySpan<PixelCoordinate> coordinates, Span<PixelSample> samples)
     {
         if (samples.Length < coordinates.Length) throw new ArgumentException("Insufficient output capacity.");

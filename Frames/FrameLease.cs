@@ -70,7 +70,9 @@ public sealed class FrameLease : IDisposable
         return new(lease.Info, region, pixels);
     }
     internal nint D3D9Surface => Storage.Surface;
-    /// <summary>Describes these pixels. FrameId is zero until submitted to a viewer.</summary>
+    /// <summary>Describes this lease's pixels and submission identity. A standalone lease has
+    /// FrameId zero. Submission assigns identity only to the submitted lease; leases acquired
+    /// before submission keep zero. Acquiring from a lease copies that lease's identity.</summary>
     public FrameInfo Info { get; internal set; }
     public FrameLease Acquire()
     {

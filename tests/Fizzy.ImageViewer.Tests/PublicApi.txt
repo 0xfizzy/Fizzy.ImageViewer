@@ -122,6 +122,10 @@ Fizzy.ImageViewer.Frames.ChannelStatistics: public static System.Boolean op_Ineq
 Fizzy.ImageViewer.Frames.ChannelStatistics: public virtual System.Boolean Equals(System.Object obj)
 Fizzy.ImageViewer.Frames.ChannelStatistics: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Frames.ChannelStatistics: public virtual System.String ToString()
+Fizzy.ImageViewer.Frames.CpuFramePixelReader: public System.Boolean TryRead(Fizzy.ImageViewer.Frames.FrameLease frame, System.Int32 x, System.Int32 y, out Fizzy.ImageViewer.Frames.PixelSample sample)
+Fizzy.ImageViewer.Frames.CpuFramePixelReader: public System.Void ReadPixels(Fizzy.ImageViewer.Frames.FrameLease frame, System.ReadOnlySpan<Fizzy.ImageViewer.Frames.PixelCoordinate> coordinates, System.Span<Fizzy.ImageViewer.Frames.PixelSample> samples)
+Fizzy.ImageViewer.Frames.CpuFramePixelReader: public ctor()
+Fizzy.ImageViewer.Frames.CpuFramePixelReader: static Fizzy.ImageViewer.Frames.CpuFramePixelReader Instance { public get; }
 Fizzy.ImageViewer.Frames.FrameDescriptor: Fizzy.ImageViewer.Frames.FramePixelFormat Format { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameDescriptor: System.Int32 Height { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameDescriptor: System.Int32 RequiredBytes { public get; }
@@ -166,10 +170,6 @@ Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames
 Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Pbgra32 = 7
 Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Rgb24 = 3
 Fizzy.ImageViewer.Frames.FramePixelFormats: public static System.Int32 BytesPerPixel(Fizzy.ImageViewer.Frames.FramePixelFormat format)
-Fizzy.ImageViewer.Frames.FramePixelReader: public System.Boolean TryRead(Fizzy.ImageViewer.Frames.FrameLease frame, System.Int32 x, System.Int32 y, out Fizzy.ImageViewer.Frames.PixelSample sample)
-Fizzy.ImageViewer.Frames.FramePixelReader: public System.Void ReadPixels(Fizzy.ImageViewer.Frames.FrameLease frame, System.ReadOnlySpan<Fizzy.ImageViewer.Frames.PixelCoordinate> coordinates, System.Span<Fizzy.ImageViewer.Frames.PixelSample> samples)
-Fizzy.ImageViewer.Frames.FramePixelReader: public ctor()
-Fizzy.ImageViewer.Frames.FramePixelReader: static Fizzy.ImageViewer.Frames.FramePixelReader Instance { public get; }
 Fizzy.ImageViewer.Frames.FrameSubmissionOptions: System.Action<Fizzy.ImageViewer.Frames.FrameLease>? OnCommitted { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameSubmissionOptions: System.Nullable<System.DateTimeOffset> SourceTimestamp { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameSubmissionOptions: public Fizzy.ImageViewer.Frames.FrameSubmissionOptions <Clone>$()
@@ -668,8 +668,8 @@ sealed class Fizzy.ImageViewer.Drawing.DrawingLayer : Fizzy.ImageViewer.Layers.V
 sealed class Fizzy.ImageViewer.Drawing.LineElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.LineElement>
 sealed class Fizzy.ImageViewer.Drawing.RectangleElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.RectangleElement>
 sealed class Fizzy.ImageViewer.Drawing.TextElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.TextElement>
+sealed class Fizzy.ImageViewer.Frames.CpuFramePixelReader
 sealed class Fizzy.ImageViewer.Frames.FrameLease : System.IDisposable
-sealed class Fizzy.ImageViewer.Frames.FramePixelReader
 sealed class Fizzy.ImageViewer.Frames.FrameSubmissionOptions : System.IEquatable<Fizzy.ImageViewer.Frames.FrameSubmissionOptions>
 sealed class Fizzy.ImageViewer.Frames.ImageFrame : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.PixelQueryResult

@@ -3,6 +3,11 @@ namespace Fizzy.ImageViewer.Frames;
 /// <summary>All operations read original pixels. No operation may silently materialize the full image.
 /// ReadPixelsAsync transfers its returned sample array; the provider must not reuse or mutate it.
 /// Statistics are immutable snapshots and region reads transfer an independently owned image.</summary>
+/// <remarks>All methods can be called concurrently, including across methods and leases of the same
+/// frame. Providers must support this concurrency or serialize their backend access themselves.
+/// Each operation must finish all backend access, including native work and callbacks, before its
+/// ValueTask completes successfully, faults or is canceled. Completion allows the caller to release
+/// its source lease; requesting cancellation alone does not end that ownership requirement.</remarks>
 public interface IFramePixelSource
 {
     ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct);
@@ -13,7 +18,6 @@ public interface IFramePixelSource
     /// <summary>Transfers an independently owned CPU image with the requested dimensions and
     /// the source pixel format. Returned pixels use region-local coordinates; the provider
     /// must not mutate or release them after returning. A local read must not implicitly
-    /// download the full source image. Complete outstanding backend access before returning
-    /// or throwing, including cancellation, so the caller can safely release the source lease.</summary>
+    /// download the full source image.</summary>
     ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct);
 }

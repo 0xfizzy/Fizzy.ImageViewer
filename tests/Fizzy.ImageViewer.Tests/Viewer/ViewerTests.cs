@@ -149,7 +149,7 @@ public class ViewerTests
         {
             using var current = viewer.AcquireCurrentFrame();
             Assert.Equal(info, current!.Info);
-            FramePixelReader.Instance.TryRead(current, 0, 0, out var p); observed = p.Gray;
+            CpuFramePixelReader.Instance.TryRead(current, 0, 0, out var p); observed = p.Gray;
         };
         var result = await viewer.SubmitFrameAsync(Frame(42), new() { OnCommitted = _ => throw new Exception("callback") });
         Assert.Equal(FrameSubmitStatus.Committed, result.Status); Assert.Equal(42, observed);

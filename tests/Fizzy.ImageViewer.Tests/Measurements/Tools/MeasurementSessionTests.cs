@@ -162,7 +162,7 @@ public class MeasurementSessionTests
             using var queries = new PixelQueryScheduler(() => { acquisitions++; return null; },
                 NullLogger.Instance, new DispatcherQueryRuntime(layer.Overlay.Dispatcher));
             var runtime = new MeasurementRuntime(new ViewerLifetime(), layer.Overlay.Dispatcher, queries, NullLogger.Instance);
-            var owner = new MeasurementCollection(layer, runtime, NullLogger.Instance);
+            var owner = new MeasurementCollection(layer, runtime);
             var creation = new MeasurementCreationContext(owner, runtime, () => null);
             var completed = creation.CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryKind.Pixel });
             completed.Complete();
@@ -177,7 +177,8 @@ public class MeasurementSessionTests
             preview.OnDispose(() => released++);
             queries.Tick();
             Assert.Equal(1, acquisitions);
-            layer.Clear();
+            var cleanup = Assert.Throws<AggregateException>(layer.Clear);
+            Assert.Contains(cleanup.Flatten().InnerExceptions, error => error.Message == "cleanup failure");
             Assert.True(completed.IsDisposed);
             Assert.True(preview.IsDisposed);
             Assert.Equal(2, released);

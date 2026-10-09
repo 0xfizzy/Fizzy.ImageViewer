@@ -185,6 +185,8 @@ not physical display pixels.
   Overlapping batches resolve to the last-added batch in the topmost enabled layer.
 - `DrawingClicked` runs on the viewer STA thread and consumes that mouse-down event.
   Handlers should remain short and marshal work to the application's UI when needed.
+  Each subscriber failure is logged and isolated; later subscribers still receive the
+  same click, and the event remains consumed.
 - Measurement tools temporarily suppress all business-layer hit testing. Ending or
   cancelling measurement restores each layer's configured flag, including changes
   made during measurement. `IsHitTestVisible` reports the configured flag.
@@ -237,6 +239,9 @@ survive this clear, and layers removed by callbacks are skipped (removal already
 clears them). Existing layers that remain attached are cleared in snapshot order.
 Clearing
 `Measurements` also cancels active measurement and editing sessions.
+Explicit clear/remove operations preserve cancellation and content-cleanup failures while
+attempting all remaining safe cleanup. Menu and input event boundaries log those failures;
+viewer shutdown reports them through `DisposeAsync`.
 Snapshot export still exports image data, not overlay layers.
 
 `DrawText`, `TextElement` and `DrawHudText` all accept fractional `double` font sizes.

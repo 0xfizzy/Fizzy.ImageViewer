@@ -5,6 +5,7 @@ using Fizzy.ImageViewer.Viewport;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer
 {
@@ -18,7 +19,7 @@ namespace Fizzy.ImageViewer
 
         public ViewerWindow(string title) : this(title, new ViewerLifetime()) { }
 
-        internal ViewerWindow(string title, ViewerLifetime lifetime)
+        internal ViewerWindow(string title, ViewerLifetime lifetime, ILogger? logger = null)
         {
             // === Window 属性 ===
             Title = title;
@@ -29,7 +30,7 @@ namespace Fizzy.ImageViewer
 
             // === 实例化图层 ===
             ImageViewport = new ImageViewport();
-            Layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, lifetime);
+            Layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, lifetime, logger);
             HudLayer = new HudLayer();
 
 

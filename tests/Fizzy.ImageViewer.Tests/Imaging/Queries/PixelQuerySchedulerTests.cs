@@ -11,6 +11,134 @@ namespace Fizzy.ImageViewer.Tests;
 public class PixelQuerySchedulerTests
 {
     [Fact]
+    public async Task ReplacedFrameReleaseFailureSurvivesLaterSuccessfulBatchAndRepeatedClose()
+    {
+        var runtime = new Runtime();
+        var failure = new InvalidOperationException("old query frame release");
+        var old = Frame(new Source(runtime), () => throw failure);
+        using var next = Frame(new Source(runtime));
+        next.Info = new(2, next.Descriptor, null);
+        var current = old;
+        using var scheduler = new PixelQueryScheduler(() => current.Acquire(), NullLogger.Instance, runtime);
+        var client = new Client(runtime);
+        using var subscription = scheduler.Register(client);
+        runtime.Tick!();
+        // The first batch now owns the only remaining reference to the old storage.
+        current = next;
+        old.Dispose();
+        await runtime.Finish(scheduler);
+        Assert.Equal(1, client.Published);
+        runtime.Now = TimeSpan.FromSeconds(1);
+        runtime.Tick();
+        await runtime.Finish(scheduler);
+        Assert.Equal(2, client.Published);
+        Assert.Equal(2, client.FrameId);
+        scheduler.Dispose();
+        var completion = scheduler.Completion;
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => completion);
+        Assert.Same(failure, Assert.Single(aggregate.Flatten().InnerExceptions));
+        scheduler.Dispose();
+        Assert.Same(completion, scheduler.Completion);
+        Assert.Same(aggregate, await Assert.ThrowsAsync<AggregateException>(() => scheduler.Completion));
+    }
+
+    [Fact]
+    public async Task CaptureLeaseReleaseFailureIsOwnedByClose()
+    {
+        var runtime = new Runtime();
+        var failure = new InvalidOperationException("capture lease release");
+        using var scheduler = new PixelQueryScheduler(() => Frame(new Source(runtime), () => throw failure),
+            NullLogger.Instance, runtime);
+        using var subscription = scheduler.Register(new Client(runtime) { Enabled = false });
+        runtime.Tick!();
+        scheduler.Dispose();
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => scheduler.Completion);
+        Assert.Same(failure, Assert.Single(aggregate.Flatten().InnerExceptions));
+    }
+
+    [Fact]
+    public async Task ReentrantCloseDrainsCaptureLeaseBeforeCompleting()
+    {
+        var runtime = new Runtime();
+        var failure = new InvalidOperationException("capture lease release");
+        using var scheduler = new PixelQueryScheduler(() => Frame(new Source(runtime), () => throw failure),
+            NullLogger.Instance, runtime);
+        using var subscription = scheduler.Register(new ClosingCaptureClient(() =>
+        {
+            scheduler.Dispose();
+            Assert.False(scheduler.Completion.IsCompleted);
+        }));
+        runtime.Tick!();
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => scheduler.Completion);
+        Assert.Same(failure, Assert.Single(aggregate.Flatten().InnerExceptions));
+        Assert.Empty(runtime.Work);
+    }
+
+    private sealed class ClosingCaptureClient(Action close) : IFrameQueryClient
+    {
+        public QueryRequest? Capture(FrameDescriptor descriptor) { close(); return null; }
+        public void ClearResult() { }
+    }
+
+    [Theory]
+    [InlineData(double.Epsilon)]
+    [InlineData(double.MaxValue)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void UnrepresentableRatesAreRejectedWhenApplied(double rate)
+    {
+        using var scheduler = new PixelQueryScheduler(() => null, NullLogger.Instance, new Runtime());
+        var original = scheduler.QueryOptions;
+        Assert.Throws<ArgumentOutOfRangeException>(() => scheduler.QueryOptions = new() { PixelQueryRateHz = rate });
+        Assert.Throws<ArgumentOutOfRangeException>(() => scheduler.QueryOptions = new() { LineQueryRateHz = rate });
+        Assert.Throws<ArgumentOutOfRangeException>(() => scheduler.QueryOptions = new() { RegionQueryRateHz = rate });
+        Assert.Same(original, scheduler.QueryOptions);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LongIntervalsSaturateDeadlinesWithoutOverflow(bool fromCompletion)
+    {
+        var runtime = new Runtime { Now = TimeSpan.FromDays(10000000) };
+        using var frame = Frame(new Source(runtime));
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelQueryRateHz = 2e-12 } };
+        var client = new Client(runtime) { Policy = new(IntervalOrigin:
+            fromCompletion ? QueryIntervalOrigin.Completion : QueryIntervalOrigin.Start) };
+        using var subscription = scheduler.Register(client);
+        runtime.Tick!();
+        await runtime.Finish(scheduler);
+        Assert.Equal(1, client.Published);
+        client.Version++;
+        runtime.Now += TimeSpan.FromSeconds(1);
+        runtime.Tick();
+        Assert.Empty(runtime.Work);
+    }
+
+    [Fact]
+    public async Task MaximumRateStillRequiresOneTickBetweenQueries()
+    {
+        var runtime = new Runtime();
+        using var frame = Frame(new Source(runtime));
+        using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime)
+        { QueryOptions = new() { PixelQueryRateHz = TimeSpan.TicksPerSecond } };
+        var client = new Client(runtime);
+        using var subscription = scheduler.Register(client);
+        runtime.Tick!();
+        await runtime.Finish(scheduler);
+        client.Version++;
+        runtime.Tick();
+        Assert.Empty(runtime.Work);
+        runtime.Now = TimeSpan.FromTicks(1);
+        runtime.Tick();
+        Assert.Single(runtime.Work);
+        await runtime.Finish(scheduler);
+    }
+
+    [Fact]
     public void QueryOptionsValidateResultAge()
     {
         Assert.Equal(TimeSpan.FromMilliseconds(100), new PixelQueryOptions().MaxResultAge);

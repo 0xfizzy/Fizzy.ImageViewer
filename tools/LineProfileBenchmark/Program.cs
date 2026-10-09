@@ -16,10 +16,10 @@ internal static class Program
         {
             var samples = new PixelSample[count];
             for (int i = 0; i < count; i++) samples[i] = new(gray ? FramePixelFormat.Gray8 : FramePixelFormat.Bgr24, i % 256, i % 256, i % 123, i % 67, 255);
-            var plot = new LineProfilePlotView.LineProfilePlotControl();
+            var plot = new LineProfileWindow.LineProfilePlotControl();
             plot.Measure(new Size(600, 400));
             plot.Arrange(new Rect(0, 0, 600, 400));
-            var render = (Action<DrawingContext>)typeof(LineProfilePlotView.LineProfilePlotControl)
+            var render = (Action<DrawingContext>)typeof(LineProfileWindow.LineProfilePlotControl)
                 .GetMethod("OnRender", BindingFlags.Instance | BindingFlags.NonPublic)!.CreateDelegate(typeof(Action<DrawingContext>), plot);
             var visual = new DrawingVisual();
             void Update(bool draw, bool change)

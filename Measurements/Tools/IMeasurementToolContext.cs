@@ -11,6 +11,8 @@ public interface IMeasurementToolContext
     MeasurementOrigin Origin { get; }
     /// <summary>Ends only this activation, retaining completed measurements and disposing previews.
     /// May be called from any thread. Returns false if this activation has already ended.</summary>
+    /// <remarks>Session and preview cleanup failures propagate after all cleanup is attempted.
+    /// The activation remains ended and subsequent calls do not retry cleanup.</remarks>
     bool Finish();
     MeasurementStyle Style { get; }
     FrameLease? AcquireCurrentFrame();

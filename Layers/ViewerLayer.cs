@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Runtime.ExceptionServices;
 
 namespace Fizzy.ImageViewer.Layers;
 
@@ -72,12 +73,17 @@ public abstract class ViewerLayer
     {
         if (_clearing) return;
         _clearing = true;
-        try { Clearing?.Invoke(); }
-        finally
+        Exception? cancellationError = null;
+        try
         {
+            try { Clearing?.Invoke(); }
+            catch (Exception error) { cancellationError = error; }
             try { ClearContent(); }
-            finally { _clearing = false; }
+            catch (Exception cleanupError) when (cancellationError != null)
+            { throw new AggregateException(cancellationError, cleanupError); }
+            if (cancellationError != null) ExceptionDispatchInfo.Capture(cancellationError).Throw();
         }
+        finally { _clearing = false; }
     }
 
     internal abstract void ClearContent();

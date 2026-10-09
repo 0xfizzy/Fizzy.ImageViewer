@@ -39,3 +39,24 @@ jobs:
         run: dotnet build tools/LineProfileBenchmark/LineProfileBenchmark.csproj -c Release
       - name: Pack
         run: dotnet pack Fizzy.ImageViewer.csproj -c Release --no-restore -o artifacts/ci
+      - name: Verify packaged XML contracts
+        shell: pwsh
+        run: |
+          $package = @(Get-ChildItem artifacts/ci -Filter Fizzy.ImageViewer.*.nupkg)
+          if ($package.Count -ne 1) { throw 'Expected one package.' }
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($package[0].FullName)
+          try {
+            $entry = $archive.GetEntry('lib/net8.0-windows7.0/Fizzy.ImageViewer.xml')
+            if ($null -eq $entry) { throw 'The package must include IntelliSense XML documentation.' }
+            $reader = [System.IO.StreamReader]::new($entry.Open())
+            try { [xml]$documentation = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            $members = @($documentation.doc.members.member)
+            $ownership = @($members | Where-Object { $_.name -like 'M:Fizzy.ImageViewer.Frames.ImageFrame.TakeOwnership(*' })
+            if ($ownership.Count -ne 1 -or $ownership[0].SelectSingleNode('summary').InnerText -notmatch 'Transfers ownership') {
+              throw 'The transferred frame ownership contract is missing.'
+            }
+            $provider = $members | Where-Object { $_.name -eq 'T:Fizzy.ImageViewer.Frames.IFramePixelSource' }
+            if ($null -eq $provider -or $provider.SelectSingleNode('remarks').InnerText -notmatch 'concurrently') {
+              throw 'The pixel provider concurrency contract is missing.'
+            }
+          } finally { $archive.Dispose() }

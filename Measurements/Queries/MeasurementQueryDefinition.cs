@@ -51,10 +51,13 @@ internal static class MeasurementQueryDefinition
                 MeasurementQueryKind.LineProfile, coordinates, samples.ToArray())));
     }
 
+    internal static PixelRegion GetRegion(RectangleMeasurementGeometry geometry, FrameDescriptor descriptor) =>
+        PixelRegion.Clip(geometry.Bounds.X, geometry.Bounds.Y, geometry.Bounds.Width, geometry.Bounds.Height, descriptor);
+
     private static QueryRequest? RegionStatistics(MeasurementGeometry geometry, FrameDescriptor descriptor,
         QueryIdentity identity, Action<MeasurementQueryResult> publish)
     {
-        var region = ((RectangleMeasurementGeometry)geometry).ToRegion(descriptor);
+        var region = GetRegion((RectangleMeasurementGeometry)geometry, descriptor);
         return region.IsEmpty ? null : new RegionStatisticsQueryRequest(identity, region,
             (frame, stats) => publish(new MeasurementRegionResult(identity.ClientId, identity.GeometryVersion,
                 frame, region, stats.Channels.ToArray())));

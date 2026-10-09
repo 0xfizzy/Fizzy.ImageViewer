@@ -5,6 +5,7 @@ using Fizzy.ImageViewer.Viewport;
 using Fizzy.ImageViewer.Drawing;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -17,6 +18,39 @@ public class DrawingTests
 {
     private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
     private static CircleElement Circle(double x = 20, double y = 20) => new(new(x, y), 5, Brushes.Red, 2, Brushes.Red);
+
+    [Fact]
+    public async Task ClickSubscriberFailureIsLoggedWithoutSkippingLaterSubscribersOrLosingTheHit()
+    {
+        var log = new ClickLog();
+        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), false);
+        var failure = new InvalidOperationException("subscriber failed");
+        using var drawing = viewer.Layers.Markers.Add(Circle());
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
+        {
+            var layer = viewer.Layers.Markers;
+            layer.IsHitTestVisible = true;
+            Arrange(viewer.Layers);
+            int notified = 0;
+            layer.DrawingClicked += (_, _) => throw failure;
+            layer.DrawingClicked += (_, e) => { notified++; Assert.Same(drawing, e.Drawing); };
+            Assert.True(layer.DispatchClick(new(20, 20), System.Windows.Input.MouseButton.Left));
+            Assert.Equal(1, notified);
+            Assert.Contains(failure, log.Errors);
+            Assert.False(layer.DispatchClick(new(100, 100), System.Windows.Input.MouseButton.Left));
+            Assert.Equal(1, notified);
+        });
+    }
+
+    private sealed class ClickLog : ILogger<Viewer>
+    {
+        public List<Exception> Errors { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        { if (exception != null) Errors.Add(exception); }
+    }
 
     [Theory]
     [InlineData(false)]

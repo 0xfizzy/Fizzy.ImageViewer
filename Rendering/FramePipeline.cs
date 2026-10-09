@@ -16,6 +16,7 @@ internal sealed class FramePipeline
     private readonly ILogger _logger;
     private readonly Action<FrameLease, FrameSubmissionOptions?> _onCommitted;
     private bool _closed;
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _releaseErrors = new();
 
     internal FramePipeline(ViewerLifetime lifetime, Dispatcher dispatcher, FramePresentation presentation,
         ILogger logger, Action<FrameLease, FrameSubmissionOptions?> onCommitted)
@@ -178,12 +179,16 @@ internal sealed class FramePipeline
 
     private void Finish(Submission submission, FrameSubmitStatus status, Exception? error = null)
     {
-        ReleaseFrame(submission.Frame);
+        try { submission.Frame.Dispose(); }
+        catch (Exception releaseError)
+        {
+            error = error == null ? releaseError : new AggregateException(error, releaseError);
+        }
         submission.Completion.TrySetResult(new(submission.Frame.Info.FrameId, status, error));
     }
     private void ReleaseFrame(FrameLease? frame)
     {
-        try { frame?.Dispose(); } catch (Exception ex) { _logger.LogError(ex, "Frame release failed"); }
+        try { frame?.Dispose(); } catch (Exception ex) { _releaseErrors.Enqueue(ex); }
     }
 
     // The frame and display settings are captured under the same gate as publication.
@@ -239,7 +244,7 @@ internal sealed class FramePipeline
             _currentFrame = null;
             _redraw = false;
         }
-        _shutdown.Cancel();
+        try { _shutdown.Cancel(); } catch (Exception ex) { _releaseErrors.Enqueue(ex); }
         if (pending != null) Finish(pending, FrameSubmitStatus.Closed);
         ReleaseFrame(current);
         lock (_frameGate) _renderTask = CompleteStopAsync(_renderTask);
@@ -247,7 +252,11 @@ internal sealed class FramePipeline
 
     private async Task CompleteStopAsync(Task render)
     {
-        try { await render.ConfigureAwait(false); }
+        try
+        {
+            await render.ConfigureAwait(false);
+            if (!_releaseErrors.IsEmpty) throw new AggregateException("Frame release failed.", _releaseErrors);
+        }
         finally { _shutdown.Dispose(); }
     }
 }

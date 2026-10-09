@@ -79,11 +79,11 @@ public class MeasurementInteractionTests
             viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
             var editor = viewer.Host.Interaction.Editor;
             var initial = item.Geometry; var initialVersion = item.GeometryVersion;
-            Assert.True(editor.BeginDrag(initial.ControlPoints[index], 1));
+            Assert.True(editor.BeginDrag(MeasurementGeometryEditing.GetControlPoints(initial)[index], 1));
             editor.UpdateDrag(new(x, y));
             // Continuing beyond the crossing must keep the ORIGINAL opposite corner fixed.
             editor.UpdateDrag(new(x + .25, y + .25));
-            var expected = MeasurementGeometry.Rectangle(initial.ControlPoints[(index + 2) % 4], new(x + .25, y + .25));
+            var expected = MeasurementGeometry.Rectangle(MeasurementGeometryEditing.GetControlPoints(initial)[(index + 2) % 4], new(x + .25, y + .25));
             Assert.Equal(expected.TopLeft, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft); Assert.Equal(expected.BottomRight, Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).BottomRight);
             Assert.Equal(2, item.GeometryVersion - initialVersion);
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
@@ -93,7 +93,7 @@ public class MeasurementInteractionTests
             editor.EndDrag();
             using var frame = viewer.AcquireCurrentFrame();
             var request = Assert.IsType<RegionStatisticsQueryRequest>(item.QueryClient.Capture(frame!.Descriptor));
-            Assert.Equal(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).ToRegion(frame.Descriptor), request.Region);
+            Assert.Equal(MeasurementQueryDefinition.GetRegion(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry), frame.Descriptor), request.Region);
             Assert.Equal(item.GeometryVersion, request.Identity.GeometryVersion);
             viewer.Host.MenuController.CaptureTarget(); frozen = viewer.Host.MenuSession.AcquireTarget(region: true);
             Assert.NotNull(frozen); Assert.Equal(request.Region, frozen!.Region);
@@ -232,7 +232,7 @@ public class MeasurementInteractionTests
 
     private static void AssertHandlesFollowGeometry(MeasurementEditController editor, MeasurementGeometry geometry)
     {
-        var points = geometry.ControlPoints;
+        var points = MeasurementGeometryEditing.GetControlPoints(geometry);
         Assert.Equal(points.Count, editor.Handles.Count);
         for (int i = 0; i < points.Count; i++)
             Assert.Equal(points[i], MeasurementVisualData.Get(editor.Handles[i])!.AnchorPoint);
@@ -278,7 +278,7 @@ public class MeasurementInteractionTests
             Assert.Equal(1, notifications);
             viewer.MeasurementChanged -= OnChanged;
             Assert.False(editor.BeginDrag(new(0, 0), 1));
-            Assert.True(editor.BeginDrag(Geometry(100).ControlPoints[0], 1));
+            Assert.True(editor.BeginDrag(MeasurementGeometryEditing.GetControlPoints(Geometry(100))[0], 1));
             editor.EndDrag();
             viewer.EndInteraction();
             handle.UpdateGeometry(Geometry(200));
@@ -303,7 +303,7 @@ public class MeasurementInteractionTests
             var item = DrawRoi(viewer);
             viewer.Host.Interaction.StartEditing(item);
             var editor = viewer.Host.Interaction.Editor;
-            Assert.True(editor.BeginDrag(item.Geometry.ControlPoints[index], 1));
+            Assert.True(editor.BeginDrag(MeasurementGeometryEditing.GetControlPoints(item.Geometry)[index], 1));
             var replacement = MeasurementGeometry.Rectangle(new(100, 110), new(120, 130));
             bool replaced = false;
             if (reentrant)
@@ -317,7 +317,7 @@ public class MeasurementInteractionTests
             if (!reentrant) ((IMeasurement)item).UpdateGeometry(replacement);
             AssertHandlesFollowGeometry(editor, replacement);
             Assert.True(editor.IsDragging);
-            var fixedCorner = replacement.ControlPoints[(index + 2) % 4];
+            var fixedCorner = MeasurementGeometryEditing.GetControlPoints(replacement)[(index + 2) % 4];
             editor.UpdateDrag(new(90, 95));
             editor.UpdateDrag(new(150, 160));
             var expected = MeasurementGeometry.Rectangle(fixedCorner, new(150, 160));
@@ -353,7 +353,7 @@ public class MeasurementInteractionTests
             var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
             var runtime = new MeasurementRuntime(new ViewerLifetime(), overlay.Dispatcher, queries, NullLogger.Instance);
-            var measurements = new MeasurementCollection(layers.Measurements, runtime, NullLogger.Instance);
+            var measurements = new MeasurementCollection(layers.Measurements, runtime);
             var capture = new FakeCapture();
             var binding = new ViewerInputBinding(image, overlay, measurements, layers.Collection, capture);
             using var coordinator = new MeasurementInteractionCoordinator(binding, new MeasurementEditController(overlay),
@@ -396,7 +396,7 @@ public class MeasurementInteractionTests
             var overlay = layers.Measurements.Overlay;
             using var queries = new PixelQueryScheduler(() => null, NullLogger.Instance, new DispatcherQueryRuntime(overlay.Dispatcher));
             var runtime = new MeasurementRuntime(new ViewerLifetime(), overlay.Dispatcher, queries, NullLogger.Instance);
-            var context = new MeasurementCollection(layers.Measurements, runtime, NullLogger.Instance);
+            var context = new MeasurementCollection(layers.Measurements, runtime);
             var tools = new MeasurementToolRegistry();
             var editor = new MeasurementEditController(overlay);
             var capture = new FakeCapture { Succeeds = action != "failed" };

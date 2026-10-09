@@ -9,7 +9,7 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
         {
             if ((i & 255) == 0) ct.ThrowIfCancellationRequested();
             var p = coordinates.Span[i];
-            result[i] = FramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(p.Y * descriptor.Stride + p.X * descriptor.Format.BytesPerPixel()));
+            result[i] = CpuFramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(p.Y * descriptor.Stride + p.X * descriptor.Format.BytesPerPixel()));
         }
         return ValueTask.FromResult(result);
     }
@@ -25,7 +25,7 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
             ct.ThrowIfCancellationRequested();
             for (int x = region.X; x < region.X + region.Width; x++)
             {
-                var p = FramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(y * descriptor.Stride + x * bytesPerPixel));
+                var p = CpuFramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(y * descriptor.Stride + x * bytesPerPixel));
                 for (int c = 0; c < channels; c++)
                 {
                     double v = info.IsGrayscale ? p.Gray : c == 0 ? p.R : c == 1 ? p.G : c == 2 ? p.B : p.A;

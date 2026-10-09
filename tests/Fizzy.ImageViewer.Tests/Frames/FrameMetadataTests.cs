@@ -9,6 +9,22 @@ namespace Fizzy.ImageViewer.Tests;
 public class FrameMetadataTests
 {
     [Fact]
+    public async Task SubmissionDoesNotChangePreviouslyAcquiredLeaseIdentity()
+    {
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        var frame = ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 7 });
+        using var before = frame.Acquire();
+        await viewer.SubmitFrameAsync(frame);
+        using var committed = viewer.AcquireCurrentFrame()!;
+        using var standaloneCopy = before.Acquire();
+        using var committedCopy = committed.Acquire();
+        Assert.Equal(0, before.Info.FrameId);
+        Assert.Equal(before.Info, standaloneCopy.Info);
+        Assert.True(committed.Info.FrameId > 0);
+        Assert.Equal(committed.Info, committedCopy.Info);
+    }
+
+    [Fact]
     public async Task StandaloneQueriesDescribeTheirActualPixels()
     {
         using var image = ImageFrame.Copy(new(2, 2, 2, FramePixelFormat.Gray8), new byte[] { 1, 2, 3, 4 });

@@ -7,6 +7,25 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class FramesTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ConstructionAndCleanupFailuresAreBothPreserved(bool gpu)
+    {
+        int releases = 0;
+        var cleanupError = new InvalidOperationException("release failed");
+        void Release() { releases++; throw cleanupError; }
+        var error = Assert.Throws<AggregateException>(() =>
+        {
+            if (gpu) ImageFrame.TakeD3D9Surface(new(0, 1, 0, FramePixelFormat.Gray8), 0, null!, Release);
+            else ImageFrame.TakeOwnership(new(0, 1, 0, FramePixelFormat.Gray8), Array.Empty<byte>(), Release);
+        });
+        Assert.Equal(1, releases);
+        Assert.Collection(error.InnerExceptions,
+            original => Assert.IsType<ArgumentException>(original),
+            cleanup => Assert.Same(cleanupError, cleanup));
+    }
+
     [Fact]
     public void LeasesHoldStorageAndReleaseExactlyOnce()
     {
@@ -33,9 +52,9 @@ public class FramesTests
         using var frame = ImageFrame.Copy(new(2, 2, 4, FramePixelFormat.Gray8), bytes);
         Array.Fill(bytes, (byte)0);
         using var lease = frame.Acquire();
-        Assert.True(FramePixelReader.Instance.TryRead(lease, 1, 1, out var value));
+        Assert.True(CpuFramePixelReader.Instance.TryRead(lease, 1, 1, out var value));
         Assert.Equal(4, value.Gray);
-        Assert.False(FramePixelReader.Instance.TryRead(lease, -1, 0, out _));
+        Assert.False(CpuFramePixelReader.Instance.TryRead(lease, -1, 0, out _));
     }
     [Theory]
     [InlineData(FramePixelFormat.Rgb24, 10, 20, 30, 10, 20, 30)]
@@ -47,7 +66,7 @@ public class FramesTests
     {
         using var frame = ImageFrame.Copy(new(1, 1, format.BytesPerPixel(), format), new byte[] { a, b, c, 64 });
         using var lease = frame.Acquire();
-        FramePixelReader.Instance.TryRead(lease, 0, 0, out var p);
+        CpuFramePixelReader.Instance.TryRead(lease, 0, 0, out var p);
         Assert.Equal(r, p.R); Assert.Equal(g, p.G); Assert.Equal(blue, p.B);
         Assert.Equal(format == FramePixelFormat.Pbgra32, p.IsPremultiplied);
     }
@@ -59,7 +78,7 @@ public class FramesTests
         using var lease = frame.Acquire();
         using var display = DisplayConverter.Convert(lease, new(0, 12000), default);
         Assert.Equal(255, display.Bytes[0]);
-        FramePixelReader.Instance.TryRead(lease, 0, 0, out var p); Assert.Equal(12000, p.Gray);
+        CpuFramePixelReader.Instance.TryRead(lease, 0, 0, out var p); Assert.Equal(12000, p.Gray);
     }
     [Fact]
     public async Task FloatSpecialValuesAndLineClipping()

@@ -20,10 +20,15 @@ public sealed class ImageFrame : IDisposable
             data[..descriptor.RequiredBytes].CopyTo(owner.Memory.Span);
             return CreateCpuFrame(descriptor, owner.Memory[..descriptor.RequiredBytes], owner.Dispose);
         }
-        catch { owner.Dispose(); throw; }
+        catch (Exception error)
+        {
+            ReleaseAfterFailure(owner.Dispose, error);
+            throw;
+        }
     }
 
-    /// <summary>Transfers ownership, including on validation failure. Release is called exactly once.</summary>
+    /// <summary>Transfers ownership, including on validation failure. Release is called exactly once.
+    /// If construction and release both fail, throws an AggregateException containing both errors.</summary>
     public static ImageFrame TakeOwnership(FrameDescriptor descriptor, ReadOnlyMemory<byte> data, Action release)
     {
         ArgumentNullException.ThrowIfNull(release);
@@ -32,7 +37,11 @@ public sealed class ImageFrame : IDisposable
             descriptor.Validate(data.Length);
             return CreateCpuFrame(descriptor, data[..descriptor.RequiredBytes], release);
         }
-        catch { release(); throw; }
+        catch (Exception error)
+        {
+            ReleaseAfterFailure(release, error);
+            throw;
+        }
     }
 
     private static ImageFrame CreateCpuFrame(FrameDescriptor descriptor, ReadOnlyMemory<byte> pixels, Action release)
@@ -41,7 +50,9 @@ public sealed class ImageFrame : IDisposable
     public FrameLease Acquire() => Storage.Acquire();
     /// <summary>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
     /// The query provider reads only explicitly requested pixels and must return
-    /// independent immutable CPU storage matching descriptor. Release runs after the last lease.</summary>
+    /// independent immutable CPU storage matching descriptor. Release runs after the last lease.
+    /// Ownership transfers even on construction failure. If construction and release both fail,
+    /// throws an AggregateException containing both errors.</summary>
     public static ImageFrame TakeD3D9Surface(FrameDescriptor descriptor, nint surface,
         IFramePixelSource pixelSource, Action release)
     {
@@ -53,7 +64,16 @@ public sealed class ImageFrame : IDisposable
             ArgumentNullException.ThrowIfNull(pixelSource);
             return new(new FrameStorage(descriptor, default, pixelSource, release, surface));
         }
-        catch { release(); throw; }
+        catch (Exception error)
+        {
+            ReleaseAfterFailure(release, error);
+            throw;
+        }
+    }
+    private static void ReleaseAfterFailure(Action release, Exception error)
+    {
+        try { release(); }
+        catch (Exception cleanupError) { throw new AggregateException(error, cleanupError); }
     }
     internal FrameLease Transfer()
     {

@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Measurements.Presentation;
-using Microsoft.Extensions.Logging;
 using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
@@ -10,7 +9,6 @@ internal sealed class MeasurementCollection
     internal MeasurementNotificationQueue Notifications => _runtime.Notifications;
     public MeasurementStyle Style { get; internal set; } = MeasurementStyle.Default;
     private readonly MeasurementLayer _measurementLayer;
-    private readonly ILogger _logger;
     private readonly MeasurementRuntime _runtime;
     private readonly HashSet<MeasurementItem> _items = [];
     private readonly Dictionary<UIElement, MeasurementItem> _visualOwners = [];
@@ -31,12 +29,11 @@ internal sealed class MeasurementCollection
         ItemCompleted?.Invoke(Snapshot(item));
     }
 
-    internal MeasurementCollection(MeasurementLayer layer, MeasurementRuntime runtime, ILogger logger)
+    internal MeasurementCollection(MeasurementLayer layer, MeasurementRuntime runtime)
     {
         _measurementLayer = layer;
         _runtime = runtime;
         layer.ContentClearing += ClearMeasurements;
-        _logger = logger;
     }
     internal IMeasurement CreateMeasurement(MeasurementGeometry geometry, MeasurementOptions? options, MeasurementCreationContext session)
     {
@@ -87,17 +84,15 @@ internal sealed class MeasurementCollection
     {
         if (_cleaning) return;
         _cleaning = true;
-        try
-        {
-            foreach (var item in _items.ToArray())
-                try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
-        }
+        try { CancelItems(_items.ToArray()); }
         finally { _cleaning = false; }
     }
     internal void CancelItems(MeasurementItem[] items)
     {
+        List<Exception>? errors = null;
         foreach (var item in items)
-            try { item.Dispose(); } catch (Exception ex) { _logger.LogWarning(ex, "Measurement cleanup failed"); }
+            try { item.Dispose(); } catch (Exception ex) { (errors ??= []).Add(ex); }
+        if (errors != null) throw new AggregateException("Measurement collection cleanup failed.", errors);
     }
     internal void Shutdown()
     {

@@ -18,6 +18,14 @@ public interface IMeasurement : IDisposable
     /// During dragging, programmatic changes replace the drag baseline.</summary>
     void UpdateGeometry(MeasurementGeometry geometry);
     void Complete();
+    /// <summary>Transfers sole cleanup responsibility to this measurement on successful return.
+    /// Each accepted instance is disposed once during measurement cleanup.</summary>
+    /// <remarks>On failure no ownership changes: a previously unowned resource remains the caller's
+    /// responsibility; a duplicate remains owned by this measurement. Do not register resources
+    /// already owned by another measurement or owner.</remarks>
+    /// <exception cref="ArgumentNullException">The resource is null.</exception>
+    /// <exception cref="ArgumentException">This exact resource instance was already registered.</exception>
+    /// <exception cref="ObjectDisposedException">The measurement or viewer has stopped accepting operations.</exception>
     void AddResource(IDisposable resource);
     void OnDispose(Action callback);
 }

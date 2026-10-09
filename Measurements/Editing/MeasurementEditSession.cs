@@ -10,7 +10,7 @@ internal sealed class MeasurementEditSession : IDisposable
     private MeasurementGeometry? _pending;
     private int _index;
     public bool IsDragging => _original != null;
-    public IReadOnlyList<Point> Points => _item.Geometry.ControlPoints;
+    public IReadOnlyList<Point> Points => MeasurementGeometryEditing.GetControlPoints(_item.Geometry);
     internal event Action? GeometryChanged;
 
     internal MeasurementEditSession(MeasurementItem item)
@@ -28,7 +28,7 @@ internal sealed class MeasurementEditSession : IDisposable
     public void Update(Point point)
     {
         if (_original == null) return;
-        _pending = _original.MoveControlPoint(_index, point);
+        _pending = MeasurementGeometryEditing.MoveControlPoint(_original, _index, point);
         try { _item.UpdateGeometry(_pending); }
         finally { _pending = null; }
     }

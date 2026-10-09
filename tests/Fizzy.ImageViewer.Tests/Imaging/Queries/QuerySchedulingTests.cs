@@ -18,15 +18,15 @@ public class QuerySchedulingTests
         await using var viewer=Viewer();
         var source=new ControlledSource();
         System.Windows.Window? window=null;
-        Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl? plot=null;
+        Measurements.Presentation.LineProfileWindow.LineProfilePlotControl? plot=null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
             viewer.ActivateMeasurementTool(MeasurementToolIds.LineProfile);
             viewer.Host.Interaction.ImageDown(0, 0);
             viewer.Host.Interaction.ImageDown(1, 0);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
-                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl);
-            plot=(Measurements.Presentation.LineProfilePlotView.LineProfilePlotControl)window.Content;
+                .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfileWindow.LineProfilePlotControl);
+            plot=(Measurements.Presentation.LineProfileWindow.LineProfilePlotControl)window.Content;
         });
         await viewer.SubmitFrameAsync(Frame(source,()=>{}));
         try

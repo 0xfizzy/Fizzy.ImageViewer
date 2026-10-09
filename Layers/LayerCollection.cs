@@ -3,6 +3,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Runtime.ExceptionServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Fizzy.ImageViewer.Layers;
 
@@ -16,12 +18,14 @@ internal sealed class LayerCollection
     private bool _redrawPending, _clearing;
     internal Grid Root { get; } = new() { Background = null };
     internal Transform Transform { get; }
+    internal ILogger Logger { get; }
     internal double Scale { get; private set; } = 1;
     internal bool InputSuppressed { get; private set; }
     public IReadOnlyList<ViewerLayer> Items => Invoke(() => (IReadOnlyList<ViewerLayer>)_layers.ToArray());
-    internal LayerCollection(Transform transform, ViewerLifetime? lifetime = null)
+    internal LayerCollection(Transform transform, ViewerLifetime? lifetime = null, ILogger? logger = null)
     {
         _lifetime = lifetime ?? new ViewerLifetime();
+        Logger = logger ?? NullLogger.Instance;
         _dispatcher = Root.Dispatcher; Transform = transform;
     }
     internal T Add<T>(T layer) where T : ViewerLayer

@@ -6,6 +6,25 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class MeasurementGeometryTests
 {
+    [Theory]
+    [InlineData(1e200)]
+    [InlineData(1e-200)]
+    [InlineData(double.Epsilon)]
+    public void LineLengthDoesNotOverflowOrUnderflowIntermediateSquares(double scale)
+    {
+        Assert.Equal(scale, MeasurementGeometry.Line(new(), new(scale, 0)).Length);
+        var length = MeasurementGeometry.Line(new(), new(3 * scale, 4 * scale)).Length;
+        Assert.InRange(length / scale, 5 - 1e-14, 5 + 1e-14);
+    }
+
+    [Fact]
+    public void LineLengthOnlyOverflowsWhenTheResultIsNotRepresentable()
+    {
+        Assert.Equal(double.PositiveInfinity,
+            MeasurementGeometry.Line(new(), new(double.MaxValue, double.MaxValue)).Length);
+        Assert.Equal(0, MeasurementGeometry.Line(new(2, 3), new(2, 3)).Length);
+    }
+
     [Fact]
     public void CoordinatesUseGeometrySpecificNames()
     {

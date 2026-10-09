@@ -108,8 +108,10 @@ that session's unfinished items. Normal completion also ends the context and rel
 its unfinished items. Completed items belong to the measurement collection until removal.
 A callback interrupted by a newer session cannot create through its old context; creation
 throws `ObjectDisposedException`. Measurements created by the new session survive cleanup,
-even when a disposal callback starts it. Cleanup attempts every owned preview and logs
-disposal failures. Bulk measurement cleanup rejects new measurement creation.
+even when a disposal callback starts it. Cleanup attempts every owned preview and propagates
+combined session and preview failures to explicit callers. Framework input callbacks log
+these failures; viewer shutdown includes them in `DisposeAsync`. Bulk measurement cleanup
+rejects new measurement creation.
 Once viewer shutdown begins, `ActivateMeasurementTool` throws `ObjectDisposedException`;
 shutdown cleans both completed and unfinished measurements and waits for owned queries.
 
@@ -304,6 +306,8 @@ The built-in line-profile tool enables it; explicit queries default to data only
 and the window/query combination are validated before attachment.
 
 `LineMeasurementGeometry.Length` provides the geometric length in image pixels without reading a frame. A length-only measurement therefore has no query result.
+Distance calculation avoids intermediate square overflow and underflow; positive infinity
+is returned only when the resulting length cannot be represented by a `double`.
 
 `IMeasurement.QueryResult` is null until successful publication. `QueryResultChanged` provides an
 immutable `MeasurementQueryResult`, or null when a previous result becomes invalid. The result
@@ -334,13 +338,20 @@ access requires a running viewer. Do not block STA callbacks waiting for workers
 call these handles.
 
 Use `AddResource` and `OnDispose` to bind external resources and event subscriptions to the
-measurement. Unregistering a tool retains completed measurements. Selection and deletion
+measurement. `AddResource` transfers ownership only when it succeeds. If it throws, the
+call does not change ownership: a new resource remains the caller's responsibility, while
+re-registering the same instance is rejected and leaves the measurement's existing ownership
+intact. Do not share an owned resource across measurements. Unregistering a tool retains
+completed measurements. Selection and deletion
 target the measurement owner, which removes both its primary visual and label. Hiding cancels
 previews but retains completed items; clear and viewer closure dispose all items.
 
 Disposal revokes queries, executes cleanup callbacks, disposes resources, closes the plot
 and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates
-cleanup errors; framework cleanup logs errors and continues. Disposal is idempotent.
+cleanup errors. Explicit layer clearing and interaction cancellation propagate cleanup errors
+after attempting all items; framework input callbacks log them. Viewer shutdown includes
+resource cleanup failures in its shared `DisposeAsync` result. Disposal is idempotent and
+does not retry resources whose disposal already ran.
 Creation is rejected during bulk cleanup and shutdown. Geometry/result and viewer event
 subscriber failures are logged and isolated. `Viewer.FrameCommitted` is a viewer-level notification, not a
 query execution callback.
@@ -404,7 +415,8 @@ adapts to the window size; axis drawings are cached until size, range or DPI cha
 The plot uses native WPF drawing with frozen shared pens and cached curve geometry.
 Unchanged samples retain the geometry; data changes and resizing rebuild it.
 Within each physical pixel column, rendering retains each finite run's endpoints
-and minimum/maximum in sample order. Non-finite samples remain gaps. This bounds
+and minimum/maximum in sample order. Non-finite samples remain gaps; a finite run with only
+one sample is drawn as a point, including a one-pixel profile. This bounds
 dense curve detail by display resolution without changing raw measurement samples.
 Plots consume immutable measurement-result samples directly. Channel buffers grow
 geometrically and remain owned by the plot; data-only queries do not build RGB curve buffers. Query publication

@@ -256,14 +256,19 @@ public class MeasurementActivationTests
     [Fact]
     public async Task UnexpectedDispatcherExitRaisesClosedExactlyOnce()
     {
-        await using var viewer = new Viewer(showWindow: false);
+        var viewer = new Viewer(showWindow: false);
+        var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
+        var failure = new InvalidOperationException("unexpected");
         var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var count = 0;
         viewer.Closed += (_, _) => { count++; closed.TrySetResult(); };
-        _ = viewer.Host.Window.Dispatcher.BeginInvoke(new Action(() => throw new InvalidOperationException("unexpected")));
+        _ = viewer.Host.Window.Dispatcher.BeginInvoke(new Action(() => throw failure));
         await closed.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await viewer.DisposeAsync();
+        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.DisposeAsync().AsTask()));
+        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.DisposeAsync().AsTask()));
         Assert.Equal(1, count);
+        Assert.False(sta.IsAlive);
+        Assert.True(viewer.Host.Window.Dispatcher.HasShutdownFinished);
     }
 
     private sealed class TestSource(System.Windows.Media.Visual root) : PresentationSource
