@@ -5,10 +5,10 @@ using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer.Menus;
 
-internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCapture capture, bool raw, bool region = false) : IMenuItem
+internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCapture capture, bool region = false) : IMenuItem
 {
     public bool IsVisible => !region || session.HasRegion;
-    public string Header => region ? (raw ? "Export Region Raw TIFF..." : "Save Region Display Image As...") : raw ? "Export Raw TIFF..." : "Save Display Image As...";
+    public string Header => region ? "Save Region Image As..." : "Save Image As...";
     public async ValueTask ExecuteAsync()
     {
         if (!session.TryBeginSave()) return;
@@ -19,10 +19,11 @@ internal sealed class SaveImageMenuItem(MenuSnapshotSession session, SnapshotCap
             if (target == null) { MessageBox.Show("No image to save."); return; }
             var dialog = new SaveFileDialog
             {
-                Filter = raw ? "TIFF Image|*.tif" : "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
+                Filter = "PNG Display Image|*.png|JPEG Display Image|*.jpg|Bitmap Display Image|*.bmp|TIFF Raw Image|*.tif",
                 FileName = region ? "Region" : "Image"
             };
             if (dialog.ShowDialog() != true) return;
+            var raw = dialog.FilterIndex == 4;
             using var snapshot = await capture.CaptureAsync(target.View.Acquire(), raw ? SnapshotKind.Raw : SnapshotKind.Display, target.Region).ConfigureAwait(false);
             await snapshot.SaveAsync(dialog.FileName, raw ? SnapshotEncoding.Tiff : dialog.FilterIndex switch
             { 1 => SnapshotEncoding.Png, 2 => SnapshotEncoding.Jpeg, _ => SnapshotEncoding.Bmp }).ConfigureAwait(false);

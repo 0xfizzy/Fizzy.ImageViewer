@@ -45,10 +45,8 @@ internal sealed class ViewerMenuController : IDisposable
         foreach (var item in CreateInteractionItems()) yield return item;
         yield return SeparatorMenuItem.Instance;
         yield return new MenuItem("Clear All Shapes", _layers.ClearContents);
-        yield return new SaveImageMenuItem(_session, _capture, false);
-        yield return new SaveImageMenuItem(_session, _capture, true);
-        yield return new SaveImageMenuItem(_session, _capture, false, true);
-        yield return new SaveImageMenuItem(_session, _capture, true, true);
+        yield return new SaveImageMenuItem(_session, _capture);
+        yield return new SaveImageMenuItem(_session, _capture, region: true);
         yield return SeparatorMenuItem.Instance;
         yield return new CheckableMenuItem("Pixel Info", () => _pixelInfo.IsEnabled, () =>
         {

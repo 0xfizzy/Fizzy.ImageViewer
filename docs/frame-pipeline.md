@@ -231,6 +231,9 @@ directory and replaces the target only after successful encoding. Cancellation i
 before replacement and between TIFF rows; WPF PNG/JPEG/BMP encoding itself is not interruptible.
 Display exports support PNG, JPEG, BMP and TIFF. JPEG composites transparency onto black.
 Raw exports require TIFF and never silently quantize high-bit-depth values.
+The context menu's **Save Image As...** action selects display PNG/JPEG/BMP or raw TIFF
+through the file dialog's file type. **Save Region Image As...** offers the same choices
+when a completed rectangular measurement is selected.
 
 TIFF uses uncompressed Classic TIFF, UINT Gray16 or IEEEFP Gray32Float, top-left orientation,
 RGB channel order and associated/unassociated alpha tags. Bgr32 padding is omitted. Images
