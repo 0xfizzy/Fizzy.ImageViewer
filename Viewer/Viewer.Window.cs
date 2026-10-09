@@ -4,6 +4,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    /// <inheritdoc/>
     public bool CanUserClose
     {
         get => InvokeAlive(() => _host.Window.CanUserClose);

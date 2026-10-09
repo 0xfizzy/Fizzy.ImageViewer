@@ -10,6 +10,7 @@ public sealed record PixelQueryOptions
     public double LineQueryRateHz { get; init; } = 30;
     /// <summary>Maximum query frequency in hertz for each region-statistics client.</summary>
     public double RegionQueryRateHz { get; init; } = 10;
+    /// <summary>Positive maximum age from frame/geometry capture to result acceptance; defaults to 100 ms. Valid results on an unchanged paused frame are retained.</summary>
     public TimeSpan MaxResultAge { get; init; } = TimeSpan.FromMilliseconds(100);
     internal void Validate()
     {

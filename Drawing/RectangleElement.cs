@@ -3,6 +3,11 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
+/// <summary>Rectangle drawing in image coordinates; supports ScaleWithImage and FixedStroke.</summary>
+/// <param name="Bounds">Finite bounds in image pixels.</param>
+/// <param name="Stroke">Outline brush, snapshotted when submitted.</param>
+/// <param name="Thickness">Finite positive outline width; units follow ScaleMode.</param>
+/// <param name="Fill">Optional interior brush; null leaves the interior unfilled.</param>
 public sealed record RectangleElement(Rect Bounds, Brush Stroke, double Thickness = 1, Brush? Fill = null) : DrawingElement
 {
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)

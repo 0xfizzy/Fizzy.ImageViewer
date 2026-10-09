@@ -5,8 +5,10 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    /// <inheritdoc/>
     public MeasurementLayer Measurements => Layers.Measurements;
 
+    /// <inheritdoc/>
     public MeasurementStyle MeasurementStyle
     {
         get => InvokeAlive(() => _host.Measurements.Style);
@@ -19,6 +21,7 @@ public partial class Viewer
         }
     }
 
+    /// <inheritdoc/>
     public IDisposable RegisterMeasurementTool(IMeasurementTool tool) => InvokeAlive(() =>
     {
         ArgumentNullException.ThrowIfNull(tool);
@@ -31,12 +34,14 @@ public partial class Viewer
             () => _host.Interaction.RevokeMeasurementTool(registration)));
     });
 
+    /// <inheritdoc/>
     public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
         return _host.Interaction.UnregisterMeasurementTool(toolId);
     });
 
+    /// <inheritdoc/>
     public void ActivateMeasurementTool(string toolId)
     {
         InvokeAlive(() =>
@@ -59,6 +64,7 @@ public partial class Viewer
         });
     }
 
+    /// <inheritdoc/>
     public void EndInteraction()
     {
         InvokeAlive(() => _host.Interaction.Cancel());

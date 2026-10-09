@@ -2,11 +2,16 @@ using System.Windows;
 
 namespace Fizzy.ImageViewer.Measurements;
 
+/// <summary>Normalized rectangle in source-image pixels.</summary>
 public sealed record RectangleMeasurementGeometry : MeasurementGeometry
 {
+    /// <summary>Normalized minimum X and Y corner in source-image pixels.</summary>
     public Point TopLeft { get; }
+    /// <summary>Normalized maximum X and Y corner in source-image pixels.</summary>
     public Point BottomRight { get; }
+    /// <inheritdoc/>
     public override MeasurementGeometryKind Kind => MeasurementGeometryKind.Rectangle;
+    /// <inheritdoc/>
     public override Rect Bounds => new(TopLeft, BottomRight);
     internal override Point Anchor => TopLeft;
     internal RectangleMeasurementGeometry(Point a, Point b)

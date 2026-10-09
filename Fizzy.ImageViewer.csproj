@@ -6,8 +6,6 @@
     <Nullable>enable</Nullable>
     <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**;plans/**</DefaultItemExcludes>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Publish existing contracts while undocumented legacy members are filled in incrementally. -->
-    <NoWarn>$(NoWarn);1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageId>Fizzy.ImageViewer</PackageId>

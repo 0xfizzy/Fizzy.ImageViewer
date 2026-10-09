@@ -3,6 +3,12 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
+/// <summary>Circle drawing anchored in image coordinates. Radius and stroke units follow ScaleMode.</summary>
+/// <param name="Center">Finite center in image pixels.</param>
+/// <param name="Radius">Finite positive radius.</param>
+/// <param name="Stroke">Outline brush, snapshotted when submitted.</param>
+/// <param name="Thickness">Finite positive outline width.</param>
+/// <param name="Fill">Optional interior brush; null leaves the interior unfilled.</param>
 public sealed record CircleElement(Point Center, double Radius, Brush Stroke, double Thickness = 1, Brush? Fill = null) : DrawingElement
 {
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)

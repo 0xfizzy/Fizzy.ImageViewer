@@ -8,10 +8,15 @@ namespace Fizzy.ImageViewer.Measurements;
 /// creation copy and freeze brushes; subsequent changes to the source brushes have no effect.</summary>
 public sealed record MeasurementStyle
 {
+    /// <summary>Unselected line, crosshair and circle outlines and label foreground; defaults to LimeGreen.</summary>
     public Brush NormalBrush { get; init; } = Brushes.LimeGreen;
+    /// <summary>Selected shape outline or point fill; defaults to Yellow.</summary>
     public Brush SelectedBrush { get; init; } = Brushes.Yellow;
+    /// <summary>Measurement label background; defaults to Transparent.</summary>
     public Brush TextBackground { get; init; } = Brushes.Transparent;
+    /// <summary>Point marker fill; defaults to Red.</summary>
     public Brush PointBrush { get; init; } = Brushes.Red;
+    /// <summary>Unselected rectangle outline; defaults to Cyan.</summary>
     public Brush RegionBrush { get; init; } = Brushes.Cyan;
     internal static MeasurementStyle Default { get; } = new();
 

@@ -6,14 +6,21 @@ namespace Fizzy.ImageViewer.Measurements;
 public abstract record MeasurementGeometry
 {
     private protected MeasurementGeometry() { }
+    /// <summary>Geometric shape, independent of the tool that created it.</summary>
     public abstract MeasurementGeometryKind Kind { get; }
+    /// <summary>Normalized image-space bounds. Points and crosshairs have zero extent; circles use diameter bounds.</summary>
     public abstract Rect Bounds { get; }
     internal abstract Point Anchor { get; }
 
+    /// <summary>Creates a point at a finite image-pixel position.</summary>
     public static PointMeasurementGeometry Point(Point position) => new(position);
+    /// <summary>Creates a crosshair at a finite image-pixel position.</summary>
     public static CrosshairMeasurementGeometry Crosshair(Point position) => new(position);
+    /// <summary>Creates a line preserving endpoint order. Coordinates and their component differences must be finite.</summary>
     public static LineMeasurementGeometry Line(Point start, Point end) => new(start, end);
+    /// <summary>Creates a rectangle from opposite corners, normalizing their order. Coordinates and extents must be finite.</summary>
     public static RectangleMeasurementGeometry Rectangle(Point a, Point b) => new(a, b);
+    /// <summary>Creates a circle in image pixels. Center, nonnegative radius and resulting bounds must be finite.</summary>
     public static CircleMeasurementGeometry Circle(Point center, double radius) => new(center, radius);
 
     internal static double Distance(Point a, Point b)

@@ -3,9 +3,12 @@ using System.Windows.Media;
 namespace Fizzy.ImageViewer.Drawing;
 
 /// <summary>Immutable image-coordinate drawing data. Brushes are snapshotted when submitted.</summary>
+/// <remarks>Coordinates and dimensions are validated when added or replaced, not at construction.
+/// Dimensional units follow <see cref="ScaleMode"/>; screen dimensions use device-independent pixels (DIPs).</remarks>
 public abstract record DrawingElement
 {
     private protected DrawingElement() { }
+    /// <summary>Controls zoom scaling of visual dimensions; defaults to FixedStroke unless a concrete element selects another mode. Unsupported modes are rejected on submission.</summary>
     public OverlayScaleMode ScaleMode { get; init; } = OverlayScaleMode.FixedStroke;
     internal abstract DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes);
     internal abstract void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources);

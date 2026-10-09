@@ -5,9 +5,11 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    /// <inheritdoc/>
     public Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotKind kind, CancellationToken ct = default)
         => CaptureSnapshot(kind, null, ct);
 
+    /// <inheritdoc/>
     public Task<ImageSnapshot> CaptureSnapshotAsync(SnapshotKind kind, PixelRegion region, CancellationToken ct = default)
         => CaptureSnapshot(kind, region, ct);
 

@@ -7,6 +7,7 @@ public sealed class ImageFrame : IDisposable
 {
     private FrameStorage? _storage;
     internal ImageFrame(FrameStorage storage) => _storage = storage;
+    /// <summary>Layout of the owned pixels. Access after ownership transfer or disposal throws ObjectDisposedException.</summary>
     public FrameDescriptor Descriptor => Storage.Descriptor;
     private FrameStorage Storage => Volatile.Read(ref _storage) ?? throw new ObjectDisposedException(nameof(ImageFrame));
 
@@ -49,6 +50,7 @@ public sealed class ImageFrame : IDisposable
     private static ImageFrame CreateCpuFrame(FrameDescriptor descriptor, ReadOnlyMemory<byte> pixels, Action release)
         => new(new FrameStorage(descriptor, pixels, new CpuFramePixelSource(descriptor, pixels), release));
 
+    /// <summary>Acquires an independent reference to the pixels. The caller must dispose it; it can outlive this frame and the viewer.</summary>
     public FrameLease Acquire() => Storage.Acquire();
     /// <summary>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
     /// The query provider reads only explicitly requested pixels and must return
@@ -84,5 +86,6 @@ public sealed class ImageFrame : IDisposable
         var storage = Interlocked.Exchange(ref _storage, null) ?? throw new ObjectDisposedException(nameof(ImageFrame));
         return new FrameLease(storage);
     }
+    /// <summary>Releases this frame reference once. Final release runs synchronously and propagates cleanup failure; subsequent disposal does not retry it.</summary>
     public void Dispose() => Interlocked.Exchange(ref _storage, null)?.Release();
 }

@@ -5,6 +5,7 @@ namespace Fizzy.ImageViewer.Viewport;
 /// <summary>Image viewport fitting and display mapping, independent of original-pixel queries.</summary>
 public interface IViewerDisplay
 {
+    /// <summary>Centers and scales the full image to fit the viewport. Fit scale may lie outside the ordinary wheel-zoom range.</summary>
     void FitToViewport();
 
     /// <summary>The requested mapping, which may not yet be committed to the displayed frame.</summary>

@@ -9,6 +9,7 @@ public interface IMeasurementToolSession : IDisposable
 {
     /// <summary>Return Finish to end input. Only measurements explicitly completed are retained.</summary>
     MeasurementClickResult OnClick(Point point);
+    /// <summary>Updates the active preview for a pointer position in source-image pixels, on the viewer STA.</summary>
     void OnMouseMove(Point point);
     /// <summary>Called once when interrupted, including an activation superseded during its factory.
     /// The creation context has already ended; unfinished measurements are released by the framework.</summary>

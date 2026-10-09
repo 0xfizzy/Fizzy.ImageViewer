@@ -3,13 +3,18 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
+/// <summary>Crosshair with a center ring, anchored in image coordinates. Defaults to a fixed screen size.</summary>
 public sealed record CrosshairElement : DrawingElement
 {
+    /// <summary>Finite center in image pixels.</summary>
     public Point Center { get; init; }
+    /// <summary>Outline brush, snapshotted when submitted.</summary>
     public Brush Stroke { get; init; }
-    /// <summary>Distance from the center to each crosshair endpoint.</summary>
+    /// <summary>Finite positive distance from the center to each endpoint; screen DIPs in FixedSize mode, otherwise image pixels.</summary>
     public double ArmLength { get; init; }
+    /// <summary>Finite positive stroke width; screen DIPs unless ScaleMode is ScaleWithImage.</summary>
     public double Thickness { get; init; }
+    /// <summary>Creates a crosshair using FixedSize mode; arm length and stroke width are in screen DIPs.</summary>
     public CrosshairElement(Point center, Brush stroke, double armLength = 20, double thickness = 2)
     { Center = center; Stroke = stroke; ArmLength = armLength; Thickness = thickness; ScaleMode = OverlayScaleMode.FixedSize; }
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)

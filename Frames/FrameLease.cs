@@ -10,7 +10,9 @@ public sealed class FrameLease : IDisposable
         Info = new(0, storage.Descriptor, null);
     }
     private FrameStorage Storage => Volatile.Read(ref _storage) ?? throw new ObjectDisposedException(nameof(FrameLease));
+    /// <summary>Layout of the retained pixels. Access after disposal throws ObjectDisposedException.</summary>
     public FrameDescriptor Descriptor => Storage.Descriptor;
+    /// <summary>Borrows existing CPU memory without copying; returns false for GPU storage. Keep this lease alive while using the memory.</summary>
     public bool TryGetCpuPixels(out ReadOnlyMemory<byte> pixels)
     {
         var storage = Storage;
@@ -98,6 +100,7 @@ public sealed class FrameLease : IDisposable
     /// FrameId zero. Submission assigns identity only to the submitted lease; leases acquired
     /// before submission keep zero. Acquiring from a lease copies that lease's identity.</summary>
     public FrameInfo Info { get; internal set; }
+    /// <summary>Acquires an independent reference with the same frame identity. The caller must dispose it; it can outlive this lease and the viewer.</summary>
     public FrameLease Acquire()
     {
         var lease = Storage.Acquire();

@@ -8,6 +8,10 @@ public sealed class MenuItem : IMenuItem
     private readonly Func<ValueTask> _action;
     private readonly Func<bool>? _isVisible;
 
+    /// <summary>Creates a menu item with a asynchronous action.</summary>
+    /// <param name="header">Nonblank display text, preserved as supplied.</param>
+    /// <param name="action">Required action invoked on the viewer STA.</param>
+    /// <param name="isVisible">Optional visibility predicate, evaluated on opening; null means visible.</param>
     public MenuItem(string header, Func<ValueTask> action, Func<bool>? isVisible = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(header);
@@ -17,6 +21,10 @@ public sealed class MenuItem : IMenuItem
         _isVisible = isVisible;
     }
 
+    /// <summary>Creates a menu item with a synchronous action.</summary>
+    /// <param name="header">Nonblank display text, preserved as supplied.</param>
+    /// <param name="action">Required action invoked on the viewer STA.</param>
+    /// <param name="isVisible">Optional visibility predicate, evaluated on opening; null means visible.</param>
     public MenuItem(string header, Action action, Func<bool>? isVisible = null)
         : this(header, Wrap(action), isVisible) { }
 
@@ -26,7 +34,10 @@ public sealed class MenuItem : IMenuItem
         return () => { action(); return ValueTask.CompletedTask; };
     }
 
+    /// <inheritdoc/>
     public string Header { get; }
+    /// <inheritdoc/>
     public bool IsVisible => _isVisible?.Invoke() ?? true;
+    /// <inheritdoc/>
     public ValueTask ExecuteAsync() => _action();
 }

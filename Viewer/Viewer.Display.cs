@@ -10,6 +10,7 @@ public partial class Viewer
     /// <inheritdoc />
     public Task SetDisplayRangeAsync(GrayDisplayRange? range) => _host.Pipeline.SetDisplayRangeAsync(range);
 
+    /// <inheritdoc/>
     public void FitToViewport()
     {
         InvokeAlive(() => _host.Window.ImageViewport.FitToViewport());

@@ -15,6 +15,7 @@ public abstract class ViewerLayer
     internal bool IsClearing => _clearing;
     internal event Action? Clearing;
     internal event Action? InputPolicyChanged;
+    /// <summary>Layer name assigned at creation.</summary>
     public string Name { get; }
     internal bool IsBuiltIn { get; }
 
@@ -29,6 +30,7 @@ public abstract class ViewerLayer
         ApplyHitTest();
     }
 
+    /// <summary>Whether layer content is visible. Hiding the measurement layer cancels previews while retaining completed measurements.</summary>
     public bool IsVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _visible; });
@@ -40,6 +42,7 @@ public abstract class ViewerLayer
             InputPolicyChanged?.Invoke();
         });
     }
+    /// <summary>Configured input policy; temporary interaction suppression may still prevent hit testing.</summary>
     public bool IsHitTestVisible
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _hitTest; });
@@ -51,6 +54,7 @@ public abstract class ViewerLayer
             InputPolicyChanged?.Invoke();
         });
     }
+    /// <summary>Stacking order; larger values place this layer above layers with smaller values.</summary>
     public int ZIndex
     {
         get => Owner.Invoke(() => { EnsureAlive(); return _zIndex; });
@@ -67,6 +71,7 @@ public abstract class ViewerLayer
         bool enabled = _hitTest && !Owner.InputSuppressed;
         Root.IsHitTestVisible = enabled;
     }
+    /// <summary>Clears this layer's content and cancels its interaction while retaining the layer. Cleanup failures propagate after required cleanup is attempted.</summary>
     public void Clear() => Owner.Invoke(() => { EnsureAlive(); ClearCore(); });
 
     internal void ClearCore()

@@ -5,12 +5,14 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
+    /// <inheritdoc/>
     public event Action<FrameInfo>? FrameCommitted;
 
     /// <inheritdoc cref="IFrameSink.SubmitFrameAsync"/>
     public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken ct = default)
         => _host.Pipeline.SubmitAsync(frame, options, ct);
 
+    /// <inheritdoc/>
     public FrameLease? AcquireCurrentFrame() => _host.Pipeline.AcquireCurrentFrame();
 
     internal void NotifyFrameCommitted(FrameInfo info)

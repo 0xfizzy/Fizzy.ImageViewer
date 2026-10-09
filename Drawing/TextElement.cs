@@ -4,14 +4,22 @@ using System.Windows.Media;
 
 namespace Fizzy.ImageViewer.Drawing;
 
+/// <summary>Text anchored in image coordinates; supports ScaleWithImage and FixedSize, defaulting to FixedSize.</summary>
 public sealed record TextElement : DrawingElement
 {
+    /// <summary>Finite anchor position in image pixels.</summary>
     public Point Anchor { get; init; }
+    /// <summary>Non-null text to display.</summary>
     public string Text { get; init; }
+    /// <summary>Text brush, snapshotted when submitted.</summary>
     public Brush Foreground { get; init; }
+    /// <summary>Finite positive font size; screen DIPs in FixedSize mode, image units in ScaleWithImage mode.</summary>
     public double FontSize { get; init; }
+    /// <summary>Finite displacement from the anchor; screen DIPs in FixedSize mode, image units in ScaleWithImage mode.</summary>
     public Vector Offset { get; init; }
+    /// <summary>Nonblank WPF font family name; defaults to Segoe UI.</summary>
     public string FontFamily { get; init; } = "Segoe UI";
+    /// <summary>Creates text in FixedSize mode with font size and offset in screen DIPs.</summary>
     public TextElement(Point anchor, string text, Brush foreground, double fontSize = 14, Vector offset = default)
     { Anchor = anchor; Text = text; Foreground = foreground; FontSize = fontSize; Offset = offset; ScaleMode = OverlayScaleMode.FixedSize; }
     internal override DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes)

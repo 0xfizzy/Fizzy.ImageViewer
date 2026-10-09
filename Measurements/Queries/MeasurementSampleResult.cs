@@ -6,7 +6,9 @@ namespace Fizzy.ImageViewer.Measurements;
 /// <summary>Owned coordinate/sample pairs for a pixel or ordered line-profile query.</summary>
 public sealed class MeasurementSampleResult : MeasurementQueryResult
 {
+    /// <summary>Immutable source-pixel coordinates paired by index with Samples; line queries preserve endpoint direction.</summary>
     public IReadOnlyList<PixelCoordinate> Coordinates { get; }
+    /// <summary>Immutable original-pixel values paired by index with Coordinates; safe to retain after measurement removal.</summary>
     public IReadOnlyList<PixelSample> Samples { get; }
     internal MeasurementSampleResult(Guid id, long version, FrameInfo frame, MeasurementQueryKind query,
         PixelCoordinate[] coordinates, PixelSample[] samples)

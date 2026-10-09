@@ -6,6 +6,7 @@ namespace Fizzy.ImageViewer.Frames;
 /// read methods for backend-independent access.</summary>
 public sealed class CpuFramePixelReader
 {
+    /// <summary>Shared stateless decoder. Callers must keep each supplied frame lease alive during reads.</summary>
     public static CpuFramePixelReader Instance { get; } = new();
     /// <summary>Returns false only when coordinates are outside the image.</summary>
     /// <exception cref="NotSupportedException">The frame is GPU-backed and coordinates are valid.</exception>

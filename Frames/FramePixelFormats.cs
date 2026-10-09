@@ -1,5 +1,6 @@
 namespace Fizzy.ImageViewer.Frames;
 
+/// <summary>Storage-size helpers for supported frame pixel formats.</summary>
 public static class FramePixelFormats
 {
     private static readonly FramePixelFormatInfo Gray8 = new(FramePixelFormatInfo.ComponentOrder.Gray, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger);
@@ -11,6 +12,7 @@ public static class FramePixelFormats
     private static readonly FramePixelFormatInfo Bgra32 = new(FramePixelFormatInfo.ComponentOrder.Bgra, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger, FramePixelFormatInfo.AlphaKind.Straight);
     private static readonly FramePixelFormatInfo Pbgra32 = new(FramePixelFormatInfo.ComponentOrder.Bgra, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger, FramePixelFormatInfo.AlphaKind.Premultiplied);
 
+    /// <summary>Returns bytes occupied by one stored pixel, including padding or alpha; throws NotSupportedException for an unknown format.</summary>
     public static int BytesPerPixel(this FramePixelFormat format) => format.GetInfo().BytesPerPixel;
 
     internal static FramePixelFormatInfo GetInfo(this FramePixelFormat format) => format switch

@@ -57,6 +57,7 @@ public sealed class DrawingHandle : IDisposable
             Commit(snapshot, layer.Owner.Scale, layer.PixelsPerDip);
         });
     }
+    /// <summary>Removes this drawing on the viewer STA. May be called from any thread and is idempotent, including after viewer closure.</summary>
     public void Dispose()
     {
         if (_disposed) return;

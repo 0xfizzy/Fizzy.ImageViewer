@@ -1,5 +1,6 @@
 namespace Fizzy.ImageViewer.Drawing
 {
+    /// <summary>How drawing dimensions respond to image zoom; positions remain anchored in image coordinates.</summary>
     public enum OverlayScaleMode
     {
         /// <summary>Geometry, stroke width, text size and offsets scale with the image.</summary>

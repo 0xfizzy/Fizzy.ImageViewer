@@ -10,6 +10,7 @@ namespace Fizzy.ImageViewer.Frames;
 /// its source lease; requesting cancellation alone does not end that ownership requirement.</remarks>
 public interface IFramePixelSource
 {
+    /// <summary>Returns one original-value sample per coordinate, in input order and in the source format. Transfers the returned array to the caller.</summary>
     ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct);
     /// <summary>Returns statistics in Gray, R/G/B, or R/G/B/A order, excluding padding.
     /// Preserve premultiplied values; ignore non-finite values, using zero count and null
