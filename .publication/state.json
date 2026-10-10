@@ -1,9 +1,13 @@
 {
-  "lastSuccess": "bccf6fd261e73ba85886ead155c9bfb27c9ef44d",
+  "lastSuccess": "52a507412c796e61003dcdd1f23ee85af511ba75",
   "successes": [
     {
       "commit": "bccf6fd261e73ba85886ead155c9bfb27c9ef44d",
       "runId": "migration-baseline"
+    },
+    {
+      "runId": "38075223212",
+      "commit": "52a507412c796e61003dcdd1f23ee85af511ba75"
     }
   ]
 }
