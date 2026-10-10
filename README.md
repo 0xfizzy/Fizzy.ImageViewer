@@ -4,6 +4,8 @@
 
 <h1 align="center">Fizzy.ImageViewer</h1>
 
+[简体中文](README.zh-CN.md)
+
 <p align="center">
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
@@ -91,6 +93,16 @@ See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
 
 ## Build
 
+Read the [guides](docs/index.md), [complete examples](docs/getting-started.md),
+[documentation maintenance](docs/documentation.md) and [release SOP](docs/releasing.md).
+The [online documentation](https://0xfizzy.github.io/Fizzy.ImageViewer/) retains
+`/v{version}/` pages starting at v1.2.0; `/dev/` follows main.
+
+```powershell
+./scripts/Build-Docs.ps1
+./scripts/Serve-Docs.ps1
+```
+
 See [architecture and ownership](docs/architecture.md) before changing module boundaries.
 
 ```powershell
@@ -98,11 +110,8 @@ dotnet build -c Release
 dotnet pack -c Release -o ./artifacts
 ```
 
-Releases are published by GitHub Actions through NuGet Trusted Publishing.
-The repository contains no NuGet API key. The NuGet.org trusted-publisher policy
-must match owner `0xfizzy`, repository `Fizzy.ImageViewer`, and workflow
-`.github/workflows/release.yml`; the repository variable `NUGET_USER` contains
-the NuGet.org username. Pushing a `v*` tag starts the release workflow.
+Releases use GitHub Actions and NuGet Trusted Publishing. Follow the
+[release SOP](docs/releasing.md) for configuration, validation and recovery.
 
 ## License
 

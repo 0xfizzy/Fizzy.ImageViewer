@@ -1,34 +1,34 @@
 namespace Fizzy.ImageViewer.Hud;
 
 /// <summary>
-/// 指定锚点在 HUD 文本元素上的对齐位置（九宫格）。
+/// The anchor alignment within a HUD text element.
 /// </summary>
 public enum AnchorAlignment
 {
-    /// <summary>锚点位于文本左上角（默认）。</summary>
+    /// <summary>Anchors at the top-left corner (default) of the text.</summary>
     TopLeft,
 
-    /// <summary>锚点位于文本顶部中央。</summary>
+    /// <summary>Anchors at the top center of the text.</summary>
     TopCenter,
 
-    /// <summary>锚点位于文本右上角。</summary>
+    /// <summary>Anchors at the top-right corner of the text.</summary>
     TopRight,
 
-    /// <summary>锚点位于文本左侧中央。</summary>
+    /// <summary>Anchors at the middle left of the text.</summary>
     CenterLeft,
 
-    /// <summary>锚点位于文本正中央。</summary>
+    /// <summary>Anchors at the center of the text.</summary>
     Center,
 
-    /// <summary>锚点位于文本右侧中央。</summary>
+    /// <summary>Anchors at the middle right of the text.</summary>
     CenterRight,
 
-    /// <summary>锚点位于文本左下角。</summary>
+    /// <summary>Anchors at the bottom-left corner of the text.</summary>
     BottomLeft,
 
-    /// <summary>锚点位于文本底部中央。</summary>
+    /// <summary>Anchors at the bottom center of the text.</summary>
     BottomCenter,
 
-    /// <summary>锚点位于文本右下角。</summary>
+    /// <summary>Anchors at the bottom-right corner of the text.</summary>
     BottomRight
 }

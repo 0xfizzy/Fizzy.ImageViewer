@@ -1,0 +1,36 @@
+name: Release readiness
+description: Record human review and external service rehearsal before creating a release tag.
+title: 'release: readiness for v'
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version and reviewed commit
+      placeholder: v1.2.0 / full commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Validation and rehearsal evidence
+      description: Link CI runs and the isolated service rehearsal. Identify the independent reviewer and the NuGet-success/Pages-failure recovery run. Do not describe offline fixtures as a real deployment rehearsal.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Release review
+      options:
+        - label: Full release gate and workflow checks passed at the reviewed commit.
+        - label: English and Chinese guides, API reference, examples and fixed package documentation links were reviewed.
+        - label: Pages, archive permissions and NuGet OIDC configuration were verified in the intended environment.
+        - label: An independent maintainer followed the SOP and exercised recovery in an isolated environment.
+        - label: Required interaction, performance and consumer checks were completed or limitations recorded below.
+        - label: The original bundle retention and prohibition on moving tags/overwriting historical versions are understood.
+  - type: textarea
+    id: limitations
+    attributes:
+      label: Unverified scenarios and remaining actions
+      description: Explicitly list physical display, mixed DPI, GPU/devices or external services not verified. Tag creation is a separate authorized publication action.
+    validations:
+      required: true

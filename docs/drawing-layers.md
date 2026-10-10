@@ -1,5 +1,7 @@
 # Drawing and business layers
 
+[简体中文](zh-CN/drawing-layers.md)
+
 `Viewer.Layers` (also on `IViewer`) owns image-coordinate business layers.
 `CreateDrawingLayer` creates a custom drawing layer. `ClearContents` clears content
 while retaining the layers; `RemoveLayer` removes a custom layer and its content.

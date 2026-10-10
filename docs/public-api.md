@@ -1,34 +1,14 @@
 # Supported public API
 
+[简体中文](zh-CN/public-api.md)
+
 `Viewer` constructs an independent STA window. `IViewer` is its complete consumer
 contract, including `HudLabelText`, `QueryOptions` and `QueryMetrics`. `Viewer` is sealed;
 application adapters own an instance and use its public API. Raw-window access is not supported.
 
-| Capability | Supported entry points |
-| --- | --- |
-| Window | `Show`, `Hide`, `Minimize`, `IsVisible`, `IsMinimized`, title, bounds, borderless mode, `CanUserClose`, `Closed` |
-| Lifetime | `DisposeAsync` |
-| Frames | `SubmitFrameAsync`, `AcquireCurrentFrame`, `FrameCommitted`, frame descriptors, leases and submission results |
-| Pixels | CPU readers, external `IFramePixelSource`, query data, shared query configuration/metrics and display range |
-| Snapshots | `CaptureSnapshotAsync`, `ImageSnapshot` and snapshot encodings |
-| Layer composition | `Layers`, `ViewerLayers`, `ViewerLayer`, layer enumeration, creation/removal and global clear |
-| Drawing | `Markers`, `DrawingLayer`, drawing elements, drawing handles, click events and `Draw*` convenience methods |
-| HUD | `HudLabelText`, `IsPixelInfoEnabled`, `DrawHudText`, `HudTextHandle` |
-| Measurements | `Measurements` layer, instance `MeasurementStyle`, tool IDs, built-in activation, registration/unregistration, start/cancel, completion/change/removal events |
-| Display | `FitToViewport`, read-only requested `DisplayRange`, `SetDisplayRangeAsync` |
-| Extensions | `IMenuItem`, `ICheckableMenuItem`, menu helpers, `IMeasurementTool`, `IMeasurementToolSession`, `IMeasurementToolContext`, `IMeasurement`, `MeasurementGeometry`, `MeasurementOptions`, `MeasurementQueryResult` |
-
-The root namespace contains `Viewer`, `IViewer` and `IViewerWindow`. Shared `ViewerLayers` and `ViewerLayer` handles belong to `.Layers`. Drawing descriptions,
-`DrawingLayer`, drawing handles and drawing enums belong to `.Drawing`; measurement tools, models, `MeasurementStyle`,
-`MeasurementLayer` and notifications belong
-to `.Measurements`; menu contracts and helpers belong to `.Menus`.
-HUD text handles and anchor alignment belong to `.Hud`.
-
-Frame storage and original-pixel access share `.Frames`: `IFramePixelSource`,
-`CpuFramePixelReader`, `PixelCoordinate`, `PixelRegion`, `PixelSample`, `ChannelStatistics`,
-`RegionStatistics`, `PixelSamplesResult`, `RegionStatisticsResult` and `RegionPixels`.
-`.Imaging` contains display range and shared query configuration/metrics, rather than
-the pixel-source protocol. See [module dependencies](architecture.md#frame-and-imaging-dependencies).
+The generated **API reference** lists public types and members. Source XML defines
+symbol-level constraints; component guides describe cross-API protocols. Begin with
+the [complete examples](getting-started.md).
 
 ## Borrowing viewer capabilities
 
@@ -141,84 +121,9 @@ and completes immediately. See [display contracts](frame-pipeline.md#submission-
 
 ## Measurement notifications and extensions
 
-`MeasurementCompleted` reports all completed measurements, including custom tools;
-previews are excluded. `MeasurementRemoved` reports only previously completed items,
-including clear and closure. `MeasurementSnapshot` carries the stable ID, immutable
-geometry, origin and owner-maintained geometry version. Completion captures geometry at completion;
-removal captures the latest geometry. Circle snapshots include their radius.
-
-`MeasurementChanged` reports geometry edits, successful query publication and result
-invalidation for completed items, both built-in and custom. Each event includes `Snapshot`
-and `QueryResult`; a null result means no valid query result is currently available. A geometry
-change reports its new version and clears the old result. Completion precedes change
-notifications; previews do not emit changes. Snapshots and result arrays can be retained
-on other threads. Callbacks run on the viewer STA and subscriber failures are isolated.
-
-The event's `IMeasurement Measurement` is the same live handle returned to its tool.
-Use it to update geometry or dispose the item from any thread; disposal is safe after
-closure. Removal may occur reentrantly during a completion subscriber.
-Completion does not promise pixel-query readiness.
-
-Viewer and handle notifications share an ordered STA queue. Reentrant mutations append
-notifications without reversing versions or delivering changes after removal. Event payloads
-are immutable snapshots; their live handles can already reflect later changes. `Closed`
-follows queued removal notifications. Explicit calls preserve operation and cleanup failures;
-framework input/window callbacks log failures so one tool cannot terminate the viewer.
-
-Tools implement `IMeasurementToolSession.OnClick` with `MeasurementClickResult.Continue`
-or `Finish`. `IMeasurement.Complete()` commits one item; `IMeasurementToolContext.Finish()`
-ends only the originating activation and is safe to call from asynchronous work. Contexts,
-handles and snapshots retain `MeasurementOrigin` (`ToolId`, `SessionId`). `Kind` describes
-geometry through `MeasurementGeometryKind`, independently of the originating tool.
-
-`MeasurementOptions.Query` selects a `MeasurementQueryKind`. The independent `ShowProfileWindow` option requests an owned plot and requires a line-profile query. Geometry/query compatibility is checked before attachment.
-`IMeasurement.QueryResult` and `MeasurementEventArgs.QueryResult` expose frame-dependent results; `QueryResultChanged` reports publication or invalidation. `LineMeasurementGeometry.Length` is a frame-independent geometric value.
-`MeasurementQueryResult` contains common provenance; pattern-match `MeasurementSampleResult`
-for coordinate/sample pairs or `MeasurementRegionStatisticsResult` for region/channel statistics.
-
-Custom and built-in tool registrations implement `IMeasurementTool.CreateSession(context)`.
-Every activation must return a fresh `IMeasurementToolSession`; its `OnClick`, `OnMouseMove`
-and `Cancel` callbacks retain that context and keep all temporary interaction state in the session.
-The framework calls the session's `Dispose` exactly once on the STA after completion,
-interruption or callback failure, including a superseded factory's returned session.
-The context ends before cancellation/disposal; unfinished measurements are released even
-if either callback throws. Session disposal owns temporary subscriptions and timers;
-measurement resources instead survive successful completion until the item is removed.
-Registrations may be shared across viewers when their configuration and factory support concurrent
-calls on those viewers' STAs. Sessions and contexts must never be shared between activations.
-Tools use `IMeasurementToolContext.CreateMeasurement(geometry, options)`.
-The context belongs to one creation session. Once that session completes, is cancelled or
-is replaced, creating another preview through its retained context throws `ObjectDisposedException`.
-The returned `IMeasurement` owns geometry, display, queries and registered resources.
-Update it with `UpdateGeometry`, subscribe to `GeometryChanged` for edit writeback, and
-observe `QueryResultChanged` for immutable query results or invalidation. `Complete` retains
-a preview; unfinished items are cleaned when creation ends or is cancelled. Tool callbacks
-and context creation run on the viewer STA. `IMeasurement` reads, updates and subscription
-changes synchronously dispatch to that STA. `Dispose` and event unsubscription are safe
-after viewer closure; `Id`, `Origin` and `IsDisposed` remain readable. Other access requires a running
-viewer, and mutations reject disposed items. Notifications still run on STA: never block
-them waiting for worker code that is calling the handle. Retained event snapshots remain
-immutable even when another subscriber updates or disposes the live handle.
-
-Geometry is a closed family of immutable records: `PointMeasurementGeometry`,
-`CrosshairMeasurementGeometry`, `LineMeasurementGeometry`, `RectangleMeasurementGeometry`
-and `CircleMeasurementGeometry`. The `MeasurementGeometry` factories return these concrete
-types. Pattern-match the geometry to access `Position`, line `Start`/`End`,
-rectangle `TopLeft`/`BottomRight`, or `Center`/`Radius`;
-the base exposes only common `Kind` and `Bounds` properties. `MeasurementGeometry.Bounds` is the normalized image-space bounding
-rectangle. Rectangle corners are normalized regardless of input order.
-Lines retain their endpoint order; circles use diameter bounds; points and
-crosshairs have zero extent, excluding their screen-space marker size. Query options
-compose existing point-pixel, line-profile and rectangle-statistics capabilities; unsupported
-combinations fail on creation. The framework owns primary visuals, labels and control points.
-Programmatic geometry updates synchronize editing control points before public notifications; updates during
-a drag replace its geometric baseline while preserving the active control-point index.
-Arbitrary WPF attachment, geometry implementations and query algorithms are not extension
-contracts. See [measurement contracts and example](measurements.md).
-
-During normal operation, a new session started synchronously from a callback takes
-precedence over the interrupted session. Once disposal begins, `ActivateMeasurementTool` throws
-`ObjectDisposedException` and measurement creation is rejected.
+See [measurements](measurements.md) for completion/removal/change ordering, immutable
+snapshots, geometry/query compatibility and fresh tool sessions. Completion does not
+promise query readiness. Notifications run on the viewer STA; do not block them.
 
 ## Tool registration lifetime
 

@@ -1,0 +1,8 @@
+{
+  "repository": "0xfizzy/Fizzy.ImageViewer",
+  "origin": "https://0xfizzy.github.io",
+  "basePath": "/Fizzy.ImageViewer/",
+  "archiveBranch": "docs-archive",
+  "minimumVersion": "1.2.0",
+  "packageId": "Fizzy.ImageViewer"
+}

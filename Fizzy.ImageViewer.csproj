@@ -4,7 +4,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**;plans/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**;plans/**;node_modules/**</DefaultItemExcludes>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
@@ -25,12 +25,17 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
-    <None Include="docs/nuget-readme.md" Pack="true" PackagePath="/README.md" />
+    <None Include="docs/nuget-readme.md" Pack="true" PackagePath="/README.md" Condition="'$(ReleaseReadme)' == ''" />
+    <None Include="$(ReleaseReadme)" Pack="true" PackagePath="/README.md" Condition="'$(ReleaseReadme)' != ''" />
     <None Include="assets/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
     <Compile Remove="tools/**/*.cs" />
+    <Compile Remove="samples/**/*.cs" />
+    <Page Remove="samples/**" />
+    <ApplicationDefinition Remove="samples/**" />
+    <EmbeddedResource Remove="samples/**" />
     <None Remove="tests/**" />
   </ItemGroup>
 </Project>

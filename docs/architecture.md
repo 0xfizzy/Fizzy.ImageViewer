@@ -1,5 +1,7 @@
 # Architecture
 
+[简体中文](zh-CN/architecture.md)
+
 Use this guide when changing resource ownership or module dependencies. The library
 owns an independent WPF STA per Viewer; callers submit immutable frames and use the
 public facade, drawing handles and measurement handles.

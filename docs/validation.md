@@ -1,262 +1,55 @@
 # Validation
 
-Windows and .NET 8+ SDK are required. Only this repository is needed; no cameras or other
-devices are required. Run the commands from the repository root, sequentially because the
-projects share the library's build outputs. These commands restore packages automatically.
+[简体中文](zh-CN/validation.md)
+
+Use Windows, PowerShell 7 and the pinned .NET SDK. This repository builds independently; no camera or robot is required. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.
+
+## Build and test
 
 ```powershell
-dotnet build Fizzy.ImageViewer.csproj -c Release
+dotnet restore Fizzy.ImageViewer.csproj --locked-mode
+dotnet build Fizzy.ImageViewer.csproj -c Release --no-restore
 dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release
-dotnet build tools/FrameBenchmark/FrameBenchmark.csproj -c Release
-dotnet build tools/DrawingBenchmark/DrawingBenchmark.csproj -c Release
-dotnet build tools/ResizeBenchmark/ResizeBenchmark.csproj -c Release
-dotnet build tools/LineProfileBenchmark/LineProfileBenchmark.csproj -c Release
-dotnet pack Fizzy.ImageViewer.csproj -c Release -o artifacts
+./scripts/Test-Samples.ps1
 ```
 
-The library suite uses independent hidden STA windows, injected presenters and explicit gates
-for queue tests. It exercises ownership, pixels, submission/notification order, frozen snapshots,
-format changes and TIFF readback. LibTIFF is a test-only dependency used as an independent
-decoder for the built-in TIFF writer. TIFF tests cover all pixel formats, strip layouts,
-raw floating-point bits, alpha tags, size limits, cancellation and failed replacement cleanup.
-Passing the suite does not verify physical screen presentation, mixed-DPI monitors, remote
-desktop or real hardware. These require a separate interactive check.
-No package release is performed by these validation commands.
-The package embeds `docs/nuget-readme.md` as `README.md`; keep it in plain Markdown
-with absolute documentation links because NuGet does not render the repository's HTML header.
-Before publishing, inspect the packed README and preview its headings, code blocks and links.
-The package also includes `lib/net8.0-windows7.0/Fizzy.ImageViewer.xml` for IntelliSense.
-CI verifies the packaged XML and representative ownership/concurrency documentation.
-Check the repository README on GitHub for icon sharpness, size and spacing.
-The Windows CI workflow runs restore, build, test, tool builds and pack on pushes and pull
-requests, using only this repository's checkout. It does not publish packages.
-
-Synthetic benchmark (hidden windows, commit timings, no hardware):
-
-```powershell
-dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
-```
-
-It covers 1080p/4K, Gray8/Bgr24, 30/60 input FPS, one/two viewers and line sampling on/off.
-The direct WritePixels reference measures only the old copy operation, not an old application
-build. Neither benchmark measures physical presentation or chart-window rendering. Allocation
-counts include the harness; private-memory deltas include pooling, JIT and GC effects.
-
-Drawing benchmark (writes CSV measurements to standard output):
-
-```powershell
-dotnet run --project tools/DrawingBenchmark -c Release
-```
+Use `./scripts/Test-Release.ps1` for the complete library/tool/sample/documentation/package gate. It does not publish. [Documentation maintenance](documentation.md) lists prerequisites and browser installation. Inspect the generated package README, XML and immutable version URL before release. Only release-mode validation at a clean matching tag can create a publishable bundle.
 
 ## Pixel queries
 
-PixelQueryTests in Frames/Pixels cover GPU ownership during async reads, CPU stride/finite
-statistics, region clipping and cancellation cleanup. QueryResultSnapshotTests and
-PixelFormatContractTests in the same directory cover immutable results and format semantics.
-SnapshotCaptureTests cover fixed ROI snapshots; PixelQuerySchedulerTests cover query options.
-QuerySchedulingTests inject slow sources to verify merged sampling,
-STA responsiveness, replacement, geometry invalidation, expiration and shutdown ownership.
-GPU-backed producers should validate their native surface and pixel-source implementation in
-the consumer repository. This library does not require a specific GPU runtime or device SDK.
+Run pixel-source, frame metadata, scheduler, HUD and snapshot tests for format, provenance or query changes. Verify independent leases, local region coordinates, immutable results, unsupported capabilities, subscription/geometry invalidation, bounded admission, fairness, cancellation and original-operation plus cleanup failures. TIFF readback tests use a test-only LibTIFF dependency, not the writer itself as the oracle.
 
 ## Measurement ownership and interaction
 
-`UnifiedMeasurementTests` compare built-in and custom ROI notifications, labels and
-statistics, verify immutable retained pixel/profile results, reject stale in-flight ROI
-results after editing/removal, and exercise circle edit writeback and callback removal.
-Query failures, invalid combinations and geometry validation also have regression coverage.
-
-`MeasurementOwnershipTests` cover model-owned custom-tool cleanup, cancellation exceptions,
-visual ownership, reentrant registration/disposal, viewer closure, unsupported editors,
-rectangle drag sessions and the absence of standalone overlay interaction.
-
-`MeasurementNotificationsTests` verify the public change stream for built-in and custom ROI,
-retained geometry/result snapshots, STA callbacks, subscriber isolation, editing invalidation
-and reentrant removal. Session ownership tests verify that interrupted or ended contexts
-cannot attach previews to replacement sessions, and unrelated items survive session cleanup.
-Measurement cleanup is also checked after presentation detachment.
-
-`MeasurementReentryTests` cover session replacement from click, move, cancellation,
-tool switching and entry into editing, with and without callback exceptions. They
-check active tool, interaction mode, cursor, input suppression and preview ownership,
-including restart during measurement disposal and rejection of new sessions during closure.
-`MeasurementInteractionTests` also cover restarting the same built-in tool from a
-completion subscriber. Run the focused suite with:
-
-```powershell
-dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release --filter FullyQualifiedName~MeasurementReentryTests
-```
-
-`PixelQuerySchedulerTests` use a manual clock and execution/publication queues for
-batching, independent rates, expiration, failed queries, stale geometry,
-re-registration and cancellation ownership. `MeasurementInteractionTests` cover
-corner crossing, model/query/export consistency, label updates, invalid editing,
-mode interruption, preview cancellation and reentrant removal. They also verify worker
-geometry updates refresh every supported shape's editing controls before public notifications,
-and that external or reentrant updates during a rectangle drag rebase all four corners. `LineProfileTests`
-and `QuerySchedulingTests` cover plot-window ownership and slow in-flight queries
-on real STA dispatchers. See [measurement contracts](measurements.md).
-`ViewportPanTests` verify failed/lost capture, restart, screen-coordinate deltas and
-reentrant release through the same capture boundary used by measurement editing. Actual pointer
-capture and dragging on an interactive desktop still require manual validation.
-
-For interactive validation, cancel a preview with Escape, start consecutive
-measurements from a completion callback, and switch between point, line and ROI
-tools. Confirm that the pen cursor and suppressed marker input belong only to the
-active measurement session. Hide the measurement layer during a preview and check
-that the preview is removed and normal input returns; show it again and start a new
-measurement. Close the viewer during a preview and with a completed line-profile
-window open, then confirm both windows close and `DisposeAsync` completes. These
-checks use synthetic frames and do not require camera or motion hardware.
-
-Pixel HUD cases in `PixelQuerySchedulerTests` cover the completion-based 10 Hz
-cap, lower configured rates, moving results, 300 ms retention, failures, expiration,
-session changes and stationary video updates without real-clock sleeps.
-`PixelInfoStateTests` cover coordinate/value pairing, immediate invalid-target
-hiding and stable invariant columns for gray, floating-point and premultiplied data.
-
-`ViewerTests` also check that asynchronous disposal cannot be vetoed by window
-closing handlers, rejects subsequent API calls and consumes submissions with a
-`Closed` result. `DrawingTests` check layer and drawing-handle invalidation and
-that clearing business layers retains HUD text. Drawing tests also exercise both `Add`
-overloads and single/collection/empty replacement through `DrawingHandle`, preserving
-visual identity, stacking order and click identity. Invalid replacements retain prior
-content; all image-coordinate `Draw*` helpers support replacement from worker threads
-and reject updates after shutdown.
-
-`ViewerTests` cover pending versus committed display settings, redraw without new-frame
-notifications, menu Closed-before-Click and rapid reopening, independently retained menu
-targets after shutdown, and exactly-once STA presenter disposal. `SnapshotCaptureTests`
-exercise serialized export reads, cancellation while queued, read failures, and lease
-release independently of a window or a native GPU surface.
-`FramePresentationTests` verify that GPU preparation performs no pixel reads and rejects
-CPU display mapping; they do not bind a native surface or validate real CPU/GPU switching.
-`D3DImagePresenterTests` inject the native target boundary to verify partial attachment,
-failed detachment/unlock, retained surface leases and no repeated cleanup after failure.
-These fault tests do not replace validation against a real D3D device.
-
-`FrameMetadataTests` cover standalone queries, cropped/raw/display pixel descriptors,
-local coordinates and explicit source provenance. `MeasurementHandleTests` cover worker
-updates/completion/disposal, STA callbacks, immutable retained snapshots, cancelled
-previews and handles after shutdown. `MenuExecutionTests` cover awaitable actions,
-reopening while an action is pending, independent actions, revocation and failures
-after the viewer dispatcher exits.
+Run measurement/interaction/layer suites for session or lifetime changes. Exercise independent activations, factory reentry and failure, ended contexts, preview cleanup, exactly-once session disposal, notification ordering, programmatic edits, control-point crossing, registration revocation and external leases surviving Viewer closure. Preserve resource/thread safety coverage when removing unsupported recovery behavior.
 
 ## Architectural boundaries
 
-`MeasurementStyleTests` exercise independent STA viewers, brush snapshots and per-item
-selection colors. `ViewerInitializationTests` inject startup/cleanup failures and verify
-frame/measurement/presenter release, original exceptions and actual STA exit. `LayerInteractionTests`
-cover routed selection input, one cancellation per layer operation and complete bulk cleanup
-after failures. `PixelInfoControllerTests` run HUD sampling without a Viewer or measurement
-context. MeasurementGeometryTests verify normalized bounds, endpoint order, zero extents and invalid
-coordinates/radii. ViewerTests verify submission callbacks and public frame-notification
-order despite callback failures. The public API baseline test detects exported type/member changes; its update
-procedure is documented in [public API](public-api.md).
+Public API tests review exported signatures, nullability and defaults against `PublicApi.txt`. Review diffs rather than blindly updating the baseline. Public API or behavior changes in the joint workspace also require the consumers' Source builds and relevant tests according to parent rules. XML-only edits do not change signatures or authorize unrelated runtime changes.
 
-Initialization tests also verify public hidden creation, configuration and frame submission
-before showing, disposal without showing, and shared cleanup after window closure.
-Partial composition failures after window, pipeline and measurement
-creation verify exactly-once presenter cleanup on the STA, original exception preservation
-and actual thread exit even when presenter disposal throws.
-Style tests cover caller-owned `Tag` data, per-visual zoom dimensions,
-point fill selection and editing after metadata changes. Menu tests cover visibility,
-check state, separator normalization and captured targets across closure/reopening.
-Menu lifetime tests cover independent registrations, cross-thread and reentrant revocation,
-retained click invalidation, delayed cleanup after Closed, failed-opening unfreeze, and
-binding cleanup on shutdown and initialization failure. Initialization checkpoints include
-fully composed menus. Edit tests retain model writeback and drag-start corner behavior
-without an editor factory or forwarding wrapper. Unregistered visuals cannot replace a
-selected measurement or become edit targets; retained menu actions ignore disposed targets.
-Measurement resource failure tests verify visual detachment and idempotent disposal
-even when specialized cleanup throws.
-
-`PixelFormatContractTests` verify statistics for all supported formats using explicit source
-bytes and expected semantic values, including Bgr32 padding, RGB/BGR order and preserved
-premultiplied channels. They also check invalid statistics channel counts and unknown formats.
-`TiffSnapshotWriterTests` independently verify encoded channel layout, bit depth and alpha tags.
+Startup/shutdown tests must check original errors, safe cleanup after partial composition, shared terminal failure, no repeated destructive disposal, native-resource quarantine and actual STA exit. Menu tests cover Closed-before-Click, reopening, revocation, independent action resources and asynchronous failure.
 
 ## Line-profile allocations
 
+Run affected benchmarks for hot-path changes; these synthetic measurements do not establish physical presentation timing or sustained device-stream performance.
+
 ```powershell
+dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+dotnet run --project tools/DrawingBenchmark -c Release
+dotnet run --project tools/ResizeBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
 ```
 
-The STA benchmark warms buffers, then reports managed bytes and time per update
-for 1024/4096 samples in gray/RGB. It separates data updates, changed/unchanged
-WPF drawing commands and offscreen `RenderTargetBitmap` rendering. One red sample
-changes per update; RGB changes rebuild all channels to preserve shared scaling.
-Drawing measurements include the harness drawing context; they exclude sampling,
-window composition and native allocations. They do not establish a zero-GC frame pipeline.
-
-The `--query-publication` mode compares cached line-request publication with the
-previous duplicate-copy pattern at 1024/4096 samples. It reports managed allocation
-and elapsed time per result, excluding provider reads, request creation and STA
-dispatch. Results must remain independently immutable in either path.
-
-```powershell
-dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
-```
-
-The snapshot mode compares independent region reads followed by another copy with
-ownership transfer into a Raw snapshot. It measures elapsed time and managed
-allocations; logical pixel-storage sizes are not process peak-memory measurements.
+Frame/snapshot modes report time and managed allocation, not total process peak memory. Drawing measurements exclude consumer result construction, cross-thread dispatch and physical presentation. Line-profile modes separate data changes, WPF commands, offscreen rendering and query-result copying; immutable result ownership must remain intact.
 
 ## Tool sessions and layer ownership
 
-`MeasurementSessionTests` verify independent state when a registration is shared across two
-viewers, factory reentry and failure cleanup, and rejection of ended creation contexts.
-They also clear model-owned content and query subscriptions without an interaction coordinator,
-and after coordinator disposal. Existing reentry tests cover interrupted clicks, moves,
-cancellation, completion and editing using explicit session contexts.
-Test source files are grouped by capability (Measurements, Interaction, Layers, Drawing, Frames, Rendering, Imaging,
-Viewport, Hud, Menus, Snapshots, Viewer and Api); test filters continue to use the same namespaces.
+Validate drawing replacement across single/collection/empty content, visual and click identity, invalid replacement retaining content, whole-layer clear, reentrant callbacks and handle invalidation. Verify HUD survives business-layer clear. Tool tests cover cancellation/disposal failures without terminating a replacement session. Geometry and query tests retain half-open pixel coverage, extreme finite coordinates and non-finite sample gaps.
 
-`LineSamplingTests` verify clipping and endpoint order without presentation state.
-`LineProfileTests` cover data-only results without plot windows and visual cleanup after
-collection callback failures. `ViewerLifetimeTests` verify STA removal dispatch, retained
-handles after shutdown and preservation of callback failures when shutdown starts reentrantly.
+## Manual checks
 
-`ToolSessionLifetimeTests` cover exactly-once STA session disposal on completion, cancellation,
-callback failure, shutdown and factory supersession, including replacement from a throwing
-disposal callback. `QueryResultSnapshotTests` verify independent immutable query collections.
-Public API/menu tests verify pixel HUD configuration before display and shared menu state.
+Run the three [examples](getting-started.md) and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report any unperformed scenario explicitly.
 
-`MeasurementNotificationsTests` also verify two-subscriber reentry across viewer and handle
-notifications, result invalidation ordering and closure from a subscriber, including terminal
-removal before `Closed`. `MeasurementModelBoundaryTests` cover typed result payload ownership
-and original-operation failures combined with attachment/completion cleanup failures.
-
-`MeasurementQueryOptionsTests` check the geometry/query matrix against actual requests and result provenance, and reject invalid window/query combinations. Profile tests verify independent data-only and window-enabled queries and window ownership. Tool protocol tests cover registration replacement, context-scoped asynchronous
-finishing, origin retention and original callback errors combined with cleanup failures.
-
-`PublicApiTests` exercise borrowed window, frame, drawing, HUD, query and measurement
-capabilities against one Viewer, including frame consumption after closure. Facade coverage
-includes inherited interfaces; the API baseline records each capability and its signatures.
-Boundary tests reserve global layer management for `IViewer`, verify that drawing and
-measurement capabilities share their respective live layer handles, and exercise independent
-layer clearing, measurement cancellation and global clearing through those public contracts.
-
-Measurement session tests verify that retained completed or disposed handles do not retain
-their ended creation contexts. Interaction tests verify control-point admission at different
-image scales through the input adapter, including the screen-space hit boundary.
-
-Query policy regression tests cover all four geometry-acceptance/interval-origin
-combinations using a manual clock. Activation tests cover instance-bound registration
-handles, worker-thread revocation, completed-item retention, same-ID replacement during
-throwing cancellation, captured menu targets and shared activation admission.
-
-Boundary tests also cover rejected query intervals, saturated scheduling deadlines,
-zoom recovery from fit scales outside wheel limits, isolated drawing/menu callbacks,
-single-sample profile markers, stable geometry distances and duplicate resource ownership.
-Shutdown tests verify fixed failures, combined session/preview cleanup errors, retained
-external leases, subscriber release and STA exit even when cleanup fails.
-
-Navigation tests route handled input through sibling overlays; HUD tests retain the pixel
-session when leaving the image control for an overlay. Menu tests verify that retained
-cancel actions cannot cancel a replacement activation. Extreme line sampling tests cover
-both directions, exclusive edges and finite coordinates whose subtraction overflows.
-Snapshot tests verify bounded admission before lease acquisition, fixed waiting targets,
-capacity reuse and operation/cleanup error aggregation, including failure after file replacement.
-Weak-reference tests check retired handle ownership and displayed-bitmap release after cleanup.
+Inspect rendered English/Chinese guides, search, direct nested API links and version selection at the project prefix. Publication and recovery additionally require the [release SOP](releasing.md), fault gates and an isolated service rehearsal. Local tests never authorize a production release.

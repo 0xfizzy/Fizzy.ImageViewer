@@ -4,24 +4,24 @@ namespace Fizzy.ImageViewer;
 public interface IViewerWindow
 {
     /// <summary>
-    /// 在查看器 STA 上显示、恢复最小化并激活窗口。关闭或释放开始后抛出 ObjectDisposedException。
+    /// Shows, restores and activates the window on the viewer STA. Throws ObjectDisposedException after shutdown begins.
     /// </summary>
     void Show();
 
-    /// <summary>在查看器 STA 上隐藏窗口，保留帧和绘图。关闭或释放开始后抛出 ObjectDisposedException。</summary>
+    /// <summary>Hides the window on its STA, retaining frames and drawings. Throws ObjectDisposedException after shutdown begins.</summary>
     void Hide();
 
-    /// <summary>在查看器 STA 上最小化窗口。关闭或释放开始后抛出 ObjectDisposedException。</summary>
+    /// <summary>Minimizes the window on its STA. Throws ObjectDisposedException after shutdown begins.</summary>
     void Minimize();
 
-    /// <summary>在查看器 STA 上查询可见性；已显示的最小化窗口仍可见。关闭或释放开始后抛出 ObjectDisposedException。</summary>
+    /// <summary>Reads visibility on the viewer STA; a shown minimized window remains visible. Throws ObjectDisposedException after shutdown begins.</summary>
     bool IsVisible { get; }
 
-    /// <summary>在查看器 STA 上查询最小化状态。关闭或释放开始后抛出 ObjectDisposedException。</summary>
+    /// <summary>Reads minimized state on the viewer STA. Throws ObjectDisposedException after shutdown begins.</summary>
     bool IsMinimized { get; }
 
     /// <summary>
-    /// 是否允许用户通过点击关闭按钮关闭窗口。
+    /// Whether the user may close the window using its close button.
     /// </summary>
     bool CanUserClose { get; set; }
 
@@ -30,32 +30,32 @@ public interface IViewerWindow
     event EventHandler? Closed;
 
     /// <summary>
-    /// 窗口标题。
+    /// Window title.
     /// </summary>
     string Title { get; set; }
 
     /// <summary>
-    /// 窗口宽度。
+    /// Window width in device-independent units.
     /// </summary>
     double Width { get; set; }
 
     /// <summary>
-    /// 窗口高度。
+    /// Window height in device-independent units.
     /// </summary>
     double Height { get; set; }
 
     /// <summary>
-    /// 窗口左边缘位置。
+    /// Left window position in device-independent units.
     /// </summary>
     double Left { get; set; }
 
     /// <summary>
-    /// 窗口顶边缘位置。
+    /// Top window position in device-independent units.
     /// </summary>
     double Top { get; set; }
 
     /// <summary>
-    /// 是否启用无边框模式。
+    /// Whether borderless mode is enabled.
     /// </summary>
     bool Borderless { get; set; }
 }

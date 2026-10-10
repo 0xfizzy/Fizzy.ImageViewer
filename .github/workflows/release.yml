@@ -1,37 +1,158 @@
-name: Publish NuGet package
-
+name: Publish versioned package and documentation
 on:
   push:
-    tags:
-      - 'v*'
-
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish or recover (v1.2.0 or later)
+        required: true
+        type: string
 permissions:
   contents: read
-  id-token: write
-
 jobs:
-  publish:
-    runs-on: windows-latest
+  prepare:
+    runs-on: windows-2022
+    outputs:
+      tag: ${{ steps.identity.outputs.tag }}
     steps:
+      - name: Resolve requested tag
+        id: identity
+        shell: pwsh
+        env:
+          REQUESTED_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if ($env:REQUESTED_TAG -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$') { throw 'Invalid tag.' }
+          "tag=$env:REQUESTED_TAG" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.tag }}
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      - name: Pack
-        run: dotnet pack Fizzy.ImageViewer.csproj -c Release -o artifacts -p:ContinuousIntegrationBuild=true
-      - name: Log in to NuGet.org with OIDC
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Restore immutable bundle or validate new release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          Import-Module ./scripts/Release.Remote.psm1
+          $record = Get-ReleaseRecord $env:RELEASE_TAG
+          if ($null -ne $record -and @($record.assets | Where-Object name -eq 'release-bundle.zip').Count) {
+            ./scripts/Resume-Release.ps1 -Tag $env:RELEASE_TAG
+          } else {
+            ./scripts/Test-Release.ps1 -Version $env:RELEASE_TAG.Substring(1) -Release
+            ./scripts/New-ReleaseBundle.ps1
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: artifacts/bundle/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-diagnostics
+          path: |
+            artifacts/release/validation.log
+            artifacts/release/tests/
+          if-no-files-found: ignore
+  publish:
+    needs: prepare
+    runs-on: windows-2022
+    concurrency:
+      group: documentation-publication
+      cancel-in-progress: false
+    environment: github-pages
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: artifacts/bundle
+      - name: Persist and verify original assets
+        run: ./scripts/Publish-Release.ps1 -Stage Archive
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Log in to NuGet with OIDC
         id: nuget-login
         uses: NuGet/login@v1
         with:
           user: ${{ vars.NUGET_USER }}
-      - name: Publish to NuGet.org
+      - name: Publish or verify NuGet
+        run: ./scripts/Publish-Release.ps1 -Stage NuGet
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+      - name: Restore site without rebuilding
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: ./scripts/Resume-Release.ps1 -Tag $env:RELEASE_TAG
+      - id: config
         shell: pwsh
         run: |
-          Get-ChildItem artifacts -Filter *.nupkg |
-            Where-Object { $_.Name -notlike '*.symbols.nupkg' } |
-            ForEach-Object {
-              dotnet nuget push $_.FullName `
-                --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" `
-                --source https://api.nuget.org/v3/index.json `
-                --skip-duplicate
-            }
+          $config = Get-Content docs/site.json -Raw | ConvertFrom-Json
+          "archive=$($config.archiveBranch)" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.config.outputs.archive }}
+          path: artifacts/archive
+          fetch-depth: 0
+      - run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Site artifacts/restored-site
+        shell: pwsh
+      - run: |
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: archive release documentation'
+        shell: pwsh
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: release-pages
+          path: artifacts/archive
+      - uses: actions/deploy-pages@v4
+        with:
+          artifact_name: release-pages
+      - name: Verify immutable online version
+        run: ./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Complete version index
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Complete -Version $env:RELEASE_TAG.Substring(1)
+      - run: |
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: complete verified release index'
+        shell: pwsh
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: completed-pages
+          path: artifacts/archive
+      - uses: actions/deploy-pages@v4
+        with:
+          artifact_name: completed-pages
+      - name: Verify completion and publish GitHub Release
+        run: ./scripts/Publish-Release.ps1 -Stage Complete
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}

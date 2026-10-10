@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Fizzy.ImageViewer;
 
 /// <summary>
-/// 图像查看器主类，提供图像显示、绘图、测量等功能。
+/// Displays images, drawings and measurements in an independently owned WPF window.
 /// <para>
-/// 该类在独立的 STA 线程中创建 WPF 窗口，支持从任意线程调用 API。
-/// 所有 UI 操作都会自动调度到 UI 线程执行。
+/// Creates its WPF window on an independent STA; facade calls marshal to that thread.
+/// Borrowed tool contexts retain their own callback-thread restrictions.
 /// </para>
 /// </summary>
 public sealed partial class Viewer : IViewer

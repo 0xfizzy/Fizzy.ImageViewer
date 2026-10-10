@@ -4,7 +4,7 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <summary>窗口关闭后触发；后台任务和线程退出请等待 DisposeAsync。</summary>
+    /// <summary>Raised after window closure; await DisposeAsync for background work and STA termination.</summary>
     public event EventHandler? Closed;
     internal void NotifyClosed(EventArgs e)
     {

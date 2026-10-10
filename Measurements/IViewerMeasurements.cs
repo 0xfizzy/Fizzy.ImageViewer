@@ -11,12 +11,12 @@ public interface IViewerMeasurements
     MeasurementStyle MeasurementStyle { get; set; }
 
     /// <summary>
-    /// 激活已注册的测量工具，为本次交互创建独立会话；会话可创建零个或多个测量。
+    /// Activates a registered tool with a fresh session that can create zero or more measurements.
     /// </summary>
     void ActivateMeasurementTool(string toolId);
 
     /// <summary>
-    /// 结束当前创建或编辑交互，保留已完成的测量及已应用的编辑。
+    /// Ends creation or editing, preserving completed measurements and edits already applied.
     /// </summary>
     /// <remarks>Session and unfinished-measurement cleanup are all attempted. Failures propagate
     /// to the caller, aggregated when multiple stages fail; cleanup is not retried.</remarks>
@@ -32,9 +32,9 @@ public interface IViewerMeasurements
     event EventHandler<MeasurementEventArgs>? MeasurementChanged;
 
     /// <summary>
-    /// 注册自定义测量工具；CreateSession 为每次启动创建独立会话。会话通过 IMeasurementToolContext.CreateMeasurement 创建测量并托管资源，
-    /// 调用 Complete 保留完成结果；取消、删除、清空和关闭由查看器统一清理。
-    /// 调度器、任意几何实现及逐帧查询注册不是公共扩展接口。
+    /// Registers a custom tool; CreateSession creates a fresh session for each activation. Create previews through IMeasurementToolContext.CreateMeasurement.
+    /// Complete retains the result; the viewer owns cancellation, removal, clear and shutdown cleanup.
+    /// Schedulers, arbitrary geometry implementations and per-frame query registration are not public extension points.
     /// </summary>
     /// <remarks>Id and DisplayName are read once on the viewer STA and captured for the registration.
     /// If a metadata getter initiates viewer shutdown, registration is rejected with ObjectDisposedException.</remarks>

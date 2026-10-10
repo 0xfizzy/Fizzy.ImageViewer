@@ -1,0 +1,73 @@
+name: Development documentation
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: ./scripts/Build-Docs.ps1
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: development-documentation
+          path: artifacts/docs/site/
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: windows-2022
+    concurrency:
+      group: documentation-publication
+      cancel-in-progress: false
+    environment: github-pages
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - id: config
+        shell: pwsh
+        run: |
+          $config = Get-Content docs/site.json -Raw | ConvertFrom-Json
+          "archive=$($config.archiveBranch)" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.config.outputs.archive }}
+          path: artifacts/archive
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: development-documentation
+          path: artifacts/docs/site
+      - name: Reject stale development build
+        shell: pwsh
+        run: |
+          git fetch origin main
+          if ($LASTEXITCODE) { throw 'Cannot read current main.' }
+          $latest = git rev-parse origin/main
+          if ($latest -ne '${{ github.sha }}') { throw 'Stale development build. Run the latest main workflow.' }
+          $identity = Get-Content artifacts/docs/site/identity.json -Raw | ConvertFrom-Json
+          if ($identity.commit -ne $latest -or $identity.channel -ne 'Development') { throw 'Artifact source identity does not match current main.' }
+      - run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Site artifacts/docs/site
+        shell: pwsh
+      - run: |
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: update development documentation'
+        shell: pwsh
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts/archive
+      - uses: actions/deploy-pages@v4

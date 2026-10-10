@@ -4,9 +4,9 @@ namespace Fizzy.ImageViewer.Imaging;
 /// <remarks>Changes affect the viewer-wide scheduler, including queries belonging to other callers.</remarks>
 public interface IViewerQueries
 {
-    /// <summary>测量及像素 HUD 的查询配置，通过查看器 STA 读写。</summary>
+    /// <summary>Query configuration shared by measurements and pixel HUD; access dispatches to the viewer STA.</summary>
     PixelQueryOptions QueryOptions { get; set; }
 
-    /// <summary>内置查询调度器的统计快照，通过查看器 STA 读取。</summary>
+    /// <summary>Statistics snapshot of the shared query scheduler, read on the viewer STA.</summary>
     PixelQueryMetrics QueryMetrics { get; }
 }

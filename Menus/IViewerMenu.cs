@@ -4,8 +4,8 @@ namespace Fizzy.ImageViewer.Menus;
 public interface IViewerMenu
 {
     /// <summary>
-    /// 注册自定义菜单项；释放返回句柄撤销本次注册，不释放菜单对象。
-    /// 句柄可从任意线程重复释放，查看器关闭后释放仍然安全。
+    /// Registers a borrowed menu item. Disposing the returned handle revokes this registration without disposing the menu object.
+    /// The handle can be disposed repeatedly from any thread, including after viewer closure.
     /// </summary>
     IDisposable RegisterMenuItem(IMenuItem menuItem);
 }

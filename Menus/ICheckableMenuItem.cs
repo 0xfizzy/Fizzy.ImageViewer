@@ -1,12 +1,12 @@
 namespace Fizzy.ImageViewer.Menus;
 
 /// <summary>
-/// 可勾选的菜单项接口。
+/// A menu item with checked state.
 /// </summary>
 public interface ICheckableMenuItem : IMenuItem
 {
     /// <summary>
-    /// 当前是否选中。
+    /// Whether the item is currently checked.
     /// </summary>
     bool IsChecked { get; }
 }

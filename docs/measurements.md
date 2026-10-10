@@ -1,5 +1,7 @@
 # Measurements and interaction
 
+[简体中文](zh-CN/measurements.md)
+
 There is no standalone measurement creation or saved-ROI restoration API. Noninteractive drawings use drawing layers; editable measurements belong to tool sessions.
 
 Built-in and custom tools create the same model-owned measurements through

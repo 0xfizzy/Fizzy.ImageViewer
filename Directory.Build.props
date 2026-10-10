@@ -1,3 +1,7 @@
 <Project>
   <!-- Standalone library: do not inherit parent application output paths or RID. -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <WarningsAsErrors Condition="'$(DocumentationStrict)' == 'true'">$(WarningsAsErrors);CS1591;CS1570;CS1572;CS1573;CS1574;CS1584;CS1587;CS1658</WarningsAsErrors>
+  </PropertyGroup>
 </Project>

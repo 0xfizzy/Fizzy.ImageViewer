@@ -1,35 +1,6 @@
 # Frame pipeline
 
-## Internal composition
-
-`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
-public API calls and raises notifications. It does not own rendering queue or menu-target state.
-`FramePipeline` and presentation implementations belong to Rendering; Frames contains
-storage, leases and submission contracts.
-
-| Component | State and responsibility |
-| --- | --- |
-| `FramePipeline` | Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results |
-| `FramePresentation` | Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal |
-| `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
-| `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
-
-`CommittedViewLease` owns a frame lease plus the range and version captured atomically
-from the last committed display. Crop regions are separate values; export synchronization
-belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
-before showing a file dialog.
-
-The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
-Expensive upload runs outside that gate; image attachment and current-frame publication run
-inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
-The commit callback invokes the submission callback and then the public frame event;
-display-only redraws do not invoke it. Measurements and the pixel HUD independently
-subscribe to the shared query scheduler, which samples acquired committed frames.
-
-Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
-resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
-query completion and the window thread. Already acquired export work retains its own
-lease and export gate and may finish after the Viewer closes.
+[简体中文](zh-CN/frame-pipeline.md)
 
 ## Input and lifetime
 
@@ -321,3 +292,34 @@ If surface attachment fails, presentation stops using that presenter. A successf
 permits lease release; if detachment cannot be confirmed, the presenter and potentially
 attached leases are retained for process lifetime. This deliberate isolation prevents
 native use after release and is reported as a failure, not automatic recovery.
+
+## Internal composition
+
+`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
+public API calls and raises notifications. It does not own rendering queue or menu-target state.
+`FramePipeline` and presentation implementations belong to Rendering; Frames contains
+storage, leases and submission contracts.
+
+| Component | State and responsibility |
+| --- | --- |
+| `FramePipeline` | Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results |
+| `FramePresentation` | Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal |
+| `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
+| `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
+
+`CommittedViewLease` owns a frame lease plus the range and version captured atomically
+from the last committed display. Crop regions are separate values; export synchronization
+belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
+before showing a file dialog.
+
+The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
+Expensive upload runs outside that gate; image attachment and current-frame publication run
+inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
+The commit callback invokes the submission callback and then the public frame event;
+display-only redraws do not invoke it. Measurements and the pixel HUD independently
+subscribe to the shared query scheduler, which samples acquired committed frames.
+
+Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
+resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
+query completion and the window thread. Already acquired export work retains its own
+lease and export gate and may finish after the Viewer closes.

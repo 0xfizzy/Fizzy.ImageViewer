@@ -12,7 +12,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 窗口宽度。
+    /// Window width in device-independent units.
     /// </summary>
     public double Width
     {
@@ -21,7 +21,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 窗口高度。
+    /// Window height in device-independent units.
     /// </summary>
     public double Height
     {
@@ -30,7 +30,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 窗口左边缘位置。
+    /// Left window position in device-independent units.
     /// </summary>
     public double Left
     {
@@ -39,7 +39,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 窗口顶边缘位置。
+    /// Top window position in device-independent units.
     /// </summary>
     public double Top
     {
@@ -48,7 +48,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 窗口标题。
+    /// Window title.
     /// </summary>
     public string Title
     {
@@ -57,7 +57,7 @@ public partial class Viewer
     }
 
     /// <summary>
-    /// 是否启用无边框模式。
+    /// Whether borderless mode is enabled.
     /// </summary>
     public bool Borderless
     {

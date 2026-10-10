@@ -1,0 +1,16 @@
+name: Release status audit
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/Test-ReleaseStatus.ps1
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}

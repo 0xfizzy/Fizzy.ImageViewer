@@ -6,3 +6,4 @@ artifacts/
 *.nupkg
 *.snupkg
 /plans/
+node_modules/

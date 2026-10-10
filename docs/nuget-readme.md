@@ -40,11 +40,8 @@ thread and dispatches public API calls to it.
 
 ## Documentation
 
-- [Public API and viewer lifetime](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/v1.1.2/docs/public-api.md)
-- [Frame ownership, rendering, and snapshots](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/v1.1.2/docs/frame-pipeline.md)
-- [Drawing layers](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/v1.1.2/docs/drawing-layers.md)
-- [Measurements and interaction](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/v1.1.2/docs/measurements.md)
+[Guides and API reference](https://0xfizzy.github.io/Fizzy.ImageViewer/)
 
 ## License
 
-[MIT](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/v1.1.2/LICENSE)
+[MIT](https://github.com/0xfizzy/Fizzy.ImageViewer/blob/main/LICENSE)
