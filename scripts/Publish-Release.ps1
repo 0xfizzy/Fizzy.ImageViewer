@@ -11,6 +11,11 @@ if ($Stage -eq 'Archive') {
     if ($null -eq $record) {
         Invoke-Checked gh @('release','create',$manifest.tag,'--repo',$config.repository,'--verify-tag','--draft','--title',$manifest.tag,'--notes',"Immutable package and documentation for $($manifest.tag). Publication is incomplete until all checks pass.")
         $record = Get-ReleaseRecord $manifest.tag
+        for ($attempt = 0; $null -eq $record -and $attempt -lt 5; $attempt++) {
+            Start-Sleep -Seconds 2
+            $record = Get-ReleaseRecord $manifest.tag
+        }
+        if ($null -eq $record) { throw 'Created release is not visible yet. Retry with the original preparation artifact.' }
     }
     $assets = @($record.assets | Where-Object name -CEQ 'release-bundle.zip')
     if (!$assets.Count) {
@@ -33,7 +38,7 @@ if ($Stage -eq 'Archive') {
         & dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --timeout 120
         $pushExit = $LASTEXITCODE
         $visible = $false
-        for ($attempt = 0; $attempt -lt 12; $attempt++) {
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
             if (Test-NuGetPayload $Bundle -AllowMissing) { $visible = $true; break }
             Start-Sleep -Seconds 10
         }
