@@ -49,7 +49,8 @@ try {
     const response = await page.goto(base + relative);
     assert.equal(response.status(), 200, relative);
     await page.locator('#documentation-version').waitFor();
-    assert.match(await page.locator('#documentation-version').innerText(), liveUrl ? /Development \(unreleased\)/ : /v1\.2\.1/);
+    const expectedLabel = liveUrl ? (identity.channel === 'Development' ? 'Development (unreleased)' : `v${identity.version}`) : 'v1.2.1';
+    assert((await page.locator('#documentation-version > span').innerText()).startsWith(expectedLabel));
     const broken = await page.locator('img').evaluateAll(images => images.filter(i => !i.complete || i.naturalWidth === 0).map(i => i.src));
     assert.deepEqual(broken, [], relative);
   }
