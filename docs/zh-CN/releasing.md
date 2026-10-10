@@ -2,7 +2,7 @@
 
 [English](../releasing.md)
 
-适用于 v1.2.0 及以后，不补档旧版。NuGet 有效载荷、不可变 `/v{version}/r0/` 文档、版本索引和 GitHub Release 一致才算完成。禁止移动已发布 tag 或覆盖历史版本。NuGet 和 Pages 是独立服务，部分发布可以恢复，但不是原子事务。
+适用于 v1.2.0 及以后，不补档旧版。NuGet 有效载荷、`/v{version}/` 文档、版本索引和 GitHub Release 一致才算完成。禁止移动已发布 tag 或覆盖包；文档更新整体覆盖同版本目录。NuGet 和 Pages 是独立服务，部分发布可以恢复，但不是原子事务。
 
 ## 一次性配置
 
@@ -43,8 +43,8 @@ git push origin v1.2.0
 1. **准备**：锁定还原、库测试、工具/示例构建、严格文档、故障门禁、浏览器及包检查。只打包一次，从该原始包提取 DLL/XML 重新生成正式 API 文档；`New-ReleaseBundle` 封存哈希和身份。
 2. **归档**：创建 draft Release，上传单个 `release-bundle.zip`，内含原始 nupkg、文档 zip、清单及验证报告。发布 NuGet 前下载核验。Actions 产物只是中转。
 3. **NuGet**：通过 OIDC 获取短期 key，发布或下载核验已有版本，不使用 `--skip-duplicate`。比较除服务端新增签名以外的所有有效载荷条目。
-4. **固定文档**：恢复归档站点，合并到 `docs-archive/v{version}/r0/`，不强推；部署全部历史站点并验证每个线上文件。未完成版本不成为 latest。
-5. **完成**：标记完成，root/latest 指向最高已完成稳定版，再部署检查；最后才发布 GitHub Release。
+4. **固定文档**：恢复归档站点，合并到 `docs-archive/v{version}/`，不强推；部署全部历史站点并验证每个线上文件。候选站点包含稳定版完成索引，但只有线上验证通过才记录部署成功。
+5. **完成**：记录成功归档提交；root/latest 在同一次部署中指向最高已完成稳定版。最后才发布 GitHub Release。
 
 最后一步必须显示 `PASS` 和固定文档地址。核查 Release 已非草稿、NuGet 版本、双语导航、API/搜索和版本选择。原始 bundle 永久保留。
 
@@ -82,9 +82,9 @@ gh run list --workflow release.yml --limit 5
 | Actions 产物过期 | 从永久 Release bundle 和归档分支恢复。 |
 | 发包后原 bundle 缺失 | 停止调查，不能重建并冒充原产物。 |
 
-网络重试有上限，索引/CDN 延迟会明确失败，不假定成功。巡检只读，workflow 日志及 GitHub Actions 失败通知是故障入口。tag 内脚本存在不可恢复缺陷时，用审阅后的工作流修复处理保留 bundle，不改 tag 或历史文档。
+网络重试有上限，索引/CDN 延迟会明确失败，不假定成功。巡检只读，workflow 日志及 GitHub Actions 失败通知是故障入口。tag 内脚本存在不可恢复缺陷时，用审阅后的工作流修复处理保留 bundle，不改 tag 或原始 Release 资产。
 
-Pages 以文档归档提交标识部署版本，而非包的源码提交。开发站点、固定版本暂存和索引激活可能共享源码，但站点内容不同。产物名称包含阶段、运行和尝试编号，避免重试重名。部署 API 报告成功后仍须核验线上内容。
+Pages 以文档归档提交标识部署版本，而非包的源码提交。开发站点和固定版本更新可能共享源码，但站点内容不同。产物名称包含阶段、运行和尝试编号，避免重试重名。部署 API 报告成功后仍须核验线上内容。
 
 ## 可选 CUDA 包
 
@@ -98,24 +98,31 @@ gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
 
 Archive 前审查准备日志、测试结果和 bundle 验证报告。独立且不可变的 `cuda-release-bundle.zip` 附件包含包、原生文件哈希、源码身份及验证报告，不替换主包归档或固定文档。工作流下载核验附件，通过同一 NuGet Trusted Publishing 策略发布，再比对下载的 NuGet 有效载荷；策略必须允许 CUDA 包 ID。恢复时重复同一 dispatch，不重新构建已发布版本。硬件、驱动和物理显示验证独立于托管测试及原生编译。
 
-## 不发包的文档修订
+## 不发包的文档更新
 
-修订要求原发布已完成并归档 r0；旧固定目录保留，不原地转换。Prepare 要求干净检出，在当前目录从活动修订源码创建并切换新分支，保留之前的修正，并建议下一个修订号；可用 `-Branch` 指定新分支名。所有修改仍对照原始 tag 检查。
+要求原发布已完成且原始包已归档。更新整体替换 `/v{version}/`，移除的页面随之删除。Prepare 要求干净检出，从当前已部署文档源码创建隔离工作区和分支并记录归档 SHA；`-Branch` 指定新分支名。源码变化始终对照原始 tag 检查。
 
 ```powershell
-./scripts/Revision-Docs.ps1 -Action Prepare -Tag v1.2.0
-# 在准备好的分支中修改指南/翻译、导航、示例 C# 或 XML 注释；
-# 审阅翻译、接受哈希并提交。不改运行时代码、构建配置或工具。
-./scripts/Revision-Docs.ps1 -Action Check -Tag v1.2.0 -Revision 1
-git push -u origin docs/v1.2.0-r1
-./scripts/Revision-Docs.ps1 -Action Start -Tag v1.2.0 -Revision 1 -Branch docs/v1.2.0-r1
-./scripts/Revision-Docs.ps1 -Action Status -Tag v1.2.0
-./scripts/Revision-Docs.ps1 -Action Resume -Tag v1.2.0 -Revision 1
-./scripts/Revision-Docs.ps1 -Action Rollback -Tag v1.2.0 -Revision 0
+./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.2.0 -Branch docs/v1.2.0-update
+# 修改指南/翻译、导航、示例 C# 或 XML 注释。
+# 审阅翻译、接受哈希并提交；不修改运行时代码、构建配置或工具。
+./scripts/Update-Docs.ps1 -Action Check -Tag v1.2.0
+# 始终从 main 运行此脚本；Check 自动选择准备好的源码目录。
+git -C <prepared-source-directory> push -u origin docs/v1.2.0-update
+./scripts/Update-Docs.ps1 -Action Start -Tag v1.2.0 -SourceRef (git -C <prepared-source-directory> rev-parse HEAD)
+./scripts/Update-Docs.ps1 -Action Status
+./scripts/Update-Docs.ps1 -Action Resume -RunId 123456789
+./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.2.0 -ArchiveCommit <成功归档提交SHA>
 ```
 
-Check 要求已提交的干净源树，拒绝非注释运行时代码变化，使用已发布原始 DLL 和审阅后的 XML。示例针对原始包编译；严格 XML、翻译、站点和浏览器检查必须通过。工作流先检查允许修改范围，再执行候选脚本。Start 将单个 `documentation-rN.zip` 保存到原 Release，下载核对字节后才部署。共用部署锁内再次检查同名内容冲突；禁止覆盖附件，不同内容选择新修订。
+Check 要求已提交的干净源树，先拒绝运行时代码变化，再使用受信任的 main 工具构建。API 使用原包 DLL 和审阅后的 XML；示例针对原包编译。XML、翻译、链接及 Chromium 检查必须通过。更新不修改 NuGet、tag 或原始 Release 资产。
 
-先部署固定修订并核验每个文件，再激活入口；root/latest 只选择已完成稳定版。Resume 下载原修订产物，不重新构建。Rollback 验证目标已完成修订，只移动活动指针。旧完成发布重试不能撤销后续修订或主动回滚。两个阶段均检查线上入口，失败在 Actions 中明确显示。运行 `./scripts/Test-DocumentationRevision.ps1` 离线验证不可变、激活、回滚、冲突和源修改限制。任何修订操作都不发布 NuGet 包。
+Start 要求完整源码 SHA；未运行 Prepare 时会记录当前归档 SHA。共用部署锁内拒绝基线已变化的候选，开发版另拒绝过期 main。运行产物与哈希永久提交到 `docs-archive` 的 `.publication/runs/<运行ID>/`，内部历史不部署到公开站点；Git 历史保留原始产物。版本元数据记录源码提交及文件哈希，不分配修订号。
 
-仅预览开发文档时，初始化归档后在 main 触发 `docs.yml`；不需要 NuGet 凭据或发布 tag。没有稳定版时首页链接到 `/dev/`。
+完整构建及检查后一次性部署整个站点。线上验证通过才将归档 SHA 记入 `.publication/state.json` 的成功历史。失败候选保留供恢复，不作为其他部署的基础。Resume 复用原运行产物，不重新构建；已有后续成功部署时拒绝旧候选，开发候选过期时也拒绝。Rollback 只恢复指定版本在已知成功归档提交中的内容，并追加新提交，不改写历史。重试已成功的旧包发布不会撤销后来的文档更新。
+
+root/latest 选择最高已完成稳定包版本，更新旧版本不改变此选择。部署 API 成功后继续比对线上候选字节与入口，失败在 Actions 中明确显示。`./scripts/Test-DocumentationUpdate.ps1` 离线覆盖整体覆盖、删除页面、恢复、回滚、过期候选和 XML 源码限制。
+
+下次组装归档时删除旧修订目录，把原活动内容迁到直接版本路径，并修正身份和选择器；旧修订 URL 返回 404，不重定向。原始 Release 附件保持不变。
+
+仅预览开发文档时，初始化归档后在 main 触发 `docs.yml`，不需要发包或发布 tag。没有稳定版时首页链接到 `/dev/`。

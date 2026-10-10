@@ -1,0 +1,122 @@
+name: Update version documentation
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        options: [start, resume, rollback]
+        required: true
+      tag:
+        type: string
+      source_ref:
+        description: Full committed documentation SHA
+        type: string
+      expected_archive:
+        description: Archive SHA captured by Update-Docs.ps1
+        type: string
+      run_id:
+        description: Original failed run to resume without rebuilding
+        type: string
+      archive_commit:
+        description: Successfully deployed archive SHA to roll back
+        type: string
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main' && inputs.action == 'start'
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate immutable inputs
+        shell: pwsh
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          EXPECTED_ARCHIVE: ${{ inputs.expected_archive }}
+        run: |
+          if ($env:SOURCE_REF -cnotmatch '^[0-9a-f]{40}$' -or $env:EXPECTED_ARCHIVE -cnotmatch '^[0-9a-f]{40}$') { throw 'Full source and archive SHAs required.' }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: artifacts/source
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Validate source and build with trusted tooling and original package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_TAG: ${{ inputs.tag }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: ./scripts/Update-Docs.ps1 -Action Check -Tag $env:UPDATE_TAG -Source artifacts/source -SourceRef $env:SOURCE_REF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation-update
+          path: artifacts/source/artifacts/docs-update-bundle
+          if-no-files-found: error
+  deploy:
+    if: always() && github.ref == 'refs/heads/main' && (needs.prepare.result == 'success' || (needs.prepare.result == 'skipped' && inputs.action != 'start'))
+    needs: prepare
+    runs-on: windows-2022
+    concurrency:
+      group: documentation-publication
+      cancel-in-progress: false
+    environment: github-pages
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UPDATE_TAG: ${{ inputs.tag }}
+      EXPECTED_ARCHIVE: ${{ inputs.expected_archive }}
+      RESUME_RUN_ID: ${{ inputs.run_id }}
+      ARCHIVE_COMMIT: ${{ inputs.archive_commit }}
+      UPDATE_ACTION: ${{ inputs.action }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: config
+        shell: pwsh
+        run: |
+          $config = Get-Content docs/site.json -Raw | ConvertFrom-Json
+          "archive=$($config.archiveBranch)" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.config.outputs.archive }}
+          path: artifacts/archive
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        if: inputs.action == 'start'
+        with:
+          name: documentation-update
+          path: artifacts/docs-update-bundle
+      - name: Persist candidate and replace version directory
+        shell: pwsh
+        run: |
+          $parameters = @{ Action='Stage'; ExpectedArchive=$env:EXPECTED_ARCHIVE; Tag=$env:UPDATE_TAG }
+          switch ($env:UPDATE_ACTION) {
+            start { $parameters.Bundle='artifacts/docs-update-bundle' }
+            resume { $parameters.ResumeRunId=$env:RESUME_RUN_ID }
+            rollback { $parameters.ArchiveCommit=$env:ARCHIVE_COMMIT }
+            default { throw 'Invalid action.' }
+          }
+          ./scripts/Publish-Documentation.ps1 @parameters
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: persist candidate and replace version'
+      - uses: ./.github/actions/deploy-archive
+        with:
+          stage: update
+      - name: Verify and record successful deployment
+        shell: pwsh
+        run: |
+          $request = Get-Content "artifacts/archive/.publication/runs/$env:GITHUB_RUN_ID/request.json" -Raw | ConvertFrom-Json
+          ./scripts/Publish-Documentation.ps1 -Action Verify -Tag $request.tag
+          ./scripts/Publish-Documentation.ps1 -Action Success
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: record successful deployment'

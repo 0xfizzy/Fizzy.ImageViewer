@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:Repo = Split-Path $PSScriptRoot -Parent
+$script:Repo = if ($env:DOCS_SOURCE_ROOT) { $env:DOCS_SOURCE_ROOT } else { Split-Path $PSScriptRoot -Parent }
 function Get-Repo { $script:Repo }
 function Resolve-FullPath([string]$Path) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path) }
 function Get-SiteConfig { Get-Content (Join-Path $script:Repo 'docs/site.json') -Raw | ConvertFrom-Json }

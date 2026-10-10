@@ -2,7 +2,7 @@
 
 [简体中文](zh-CN/releasing.md)
 
-For maintainers publishing v1.2.0 or later. Older releases are not backfilled. A release is complete only when NuGet payload, immutable `/v{version}/r0/` documentation, version index and GitHub Release agree. Never move a published tag or overwrite a retained version. NuGet and Pages are separate services; partial publication is recoverable, not atomic.
+For maintainers publishing v1.2.0 or later. Older releases are not backfilled. A release is complete only when NuGet payload, `/v{version}/` documentation, version index and GitHub Release agree. Never move a published tag or overwrite a package. Documentation updates replace the same version directory. NuGet and Pages are separate services; partial publication is recoverable, not atomic.
 
 ## One-time setup
 
@@ -43,8 +43,8 @@ Do not tag until HEAD is the reviewed commit and the checkout is clean. The work
 1. **Prepare**: locked restore, library tests, tool/sample builds, strict docs, fault gates, browser checks and package verification. Pack once; regenerate release API reference from DLL/XML extracted from that exact package. `New-ReleaseBundle` seals checksums and source identity.
 2. **Archive**: create a draft GitHub Release and upload `release-bundle.zip`, containing the original nupkg, documentation zip, manifest and validation report. Download and verify before publishing NuGet. Actions artifacts are only temporary transport.
 3. **NuGet**: obtain a short-lived OIDC key, publish or download and verify the existing version. Never use `--skip-duplicate`. Compare all payload entries except NuGet's added signature.
-4. **Fixed documentation**: restore archived site, merge into `docs-archive/v{version}/r0/`, commit without force, deploy the entire retained site, and verify every immutable online file. An indexed but incomplete version is not selected as latest.
-5. **Completion**: mark the version complete, update root/latest to the greatest completed stable SemVer, redeploy and verify. Publish the GitHub Release only after success.
+4. **Fixed documentation**: restore archived site, merge into `docs-archive/v{version}/`, commit without force, deploy the entire retained site, and verify every online file. The candidate includes the completed stable-version index, but the successful-deployment marker is recorded only after online verification.
+5. **Completion**: record the successful archive commit. Root/latest select the greatest completed stable SemVer in the same deployment. Publish the GitHub Release only after success.
 
 The final workflow step must print `PASS` and the fixed documentation URL. Inspect the GitHub Release (not draft), NuGet version, language navigation, API/search and version selector. Preserve original bundle assets permanently.
 
@@ -82,9 +82,9 @@ Manual recovery uses the reviewed workflow and scripts from main, while package/
 | Actions artifact expired | Recover from durable GitHub Release bundle and archive branch. |
 | Original bundle missing after package publication | Stop and investigate; do not rebuild a replacement pretending to be the original. |
 
-Network retries are bounded; indexing or CDN delay ends in a visible failure rather than presumed success. The audit performs no writes. Workflow logs and GitHub Actions failure notifications are the incident entrypoint. For an unrecoverable automation defect in tagged scripts, use a reviewed workflow fix and the retained bundle; do not mutate the tag or archived documentation.
+Network retries are bounded; indexing or CDN delay ends in a visible failure rather than presumed success. The audit performs no writes. Workflow logs and GitHub Actions failure notifications are the incident entrypoint. For an unrecoverable automation defect in tagged scripts, use a reviewed workflow fix and the retained bundle; do not mutate the tag or original Release assets.
 
-Pages deployment identifies each build by its documentation archive commit, not the package source commit. Development, fixed-version staging and index activation can share source code but contain different sites. Artifact names include the stage, run and attempt to avoid collisions on retries. Online content verification remains required after the deployment API reports success.
+Pages deployment identifies each build by its documentation archive commit, not the package source commit. Development and fixed-version updates can share source code but contain different sites. Artifact names include the stage, run and attempt to avoid collisions on retries. Online content verification remains required after the deployment API reports success.
 
 ## Optional CUDA package
 
@@ -98,24 +98,31 @@ gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
 
 Review the preparation transcript, test results and bundle validation before Archive. The separate immutable `cuda-release-bundle.zip` asset contains the package, native hash, source identity and validation report. It does not replace the core bundle or fixed documentation. The workflow downloads and validates this asset, publishes through the same NuGet Trusted Publishing policy, and compares the downloaded NuGet payload. The policy must authorize the CUDA package ID. Resume with the same dispatch; never rebuild an already published version. Hardware, driver and physical display validation are separate from managed tests and native compilation.
 
-## Documentation corrections without publishing a package
+## Documentation updates without publishing a package
 
-Corrections require a completed release with archived r0; legacy fixed directories are preserved and cannot be converted in place. Prepare requires a clean checkout and creates/switches to a new branch from the active revision source, preserving prior corrections. It proposes the next revision number; use `-Branch` to choose the new branch name. All changes are checked against the original tag.
+A completed release and its original package bundle are required. Updates replace `/v{version}/` as a whole; removed pages disappear. Prepare requires a clean checkout, creates an isolated worktree and branch from the currently deployed documentation source, and captures the archive SHA. `-Branch` selects the new branch name. Source changes are compared against the original tag.
 
 ```powershell
-./scripts/Revision-Docs.ps1 -Action Prepare -Tag v1.2.0
-# On the prepared branch, edit guides/translations, navigation, sample C# or XML;
-# review translations, accept hashes and commit. No runtime/build/tooling changes.
-./scripts/Revision-Docs.ps1 -Action Check -Tag v1.2.0 -Revision 1
-git push -u origin docs/v1.2.0-r1
-./scripts/Revision-Docs.ps1 -Action Start -Tag v1.2.0 -Revision 1 -Branch docs/v1.2.0-r1
-./scripts/Revision-Docs.ps1 -Action Status -Tag v1.2.0
-./scripts/Revision-Docs.ps1 -Action Resume -Tag v1.2.0 -Revision 1
-./scripts/Revision-Docs.ps1 -Action Rollback -Tag v1.2.0 -Revision 0
+./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.2.0 -Branch docs/v1.2.0-update
+# Edit guides/translations, navigation, sample C# or XML comments.
+# Review translations, accept hashes, commit; do not change runtime/build/tooling.
+./scripts/Update-Docs.ps1 -Action Check -Tag v1.2.0
+# Keep running this script from main; Check automatically selects the prepared source.
+git -C <prepared-source-directory> push -u origin docs/v1.2.0-update
+./scripts/Update-Docs.ps1 -Action Start -Tag v1.2.0 -SourceRef (git -C <prepared-source-directory> rev-parse HEAD)
+./scripts/Update-Docs.ps1 -Action Status
+./scripts/Update-Docs.ps1 -Action Resume -RunId 123456789
+./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.2.0 -ArchiveCommit <successful-archive-sha>
 ```
 
-Check requires clean committed source, rejects non-comment runtime changes, and uses the published original DLL with reviewed XML. Samples compile against the original package; strict XML, translation, site and browser checks must pass. The workflow checks allowed changes before executing candidate scripts. Start stores one `documentation-rN.zip` on the original Release and verifies downloaded bytes before deployment. Same-name content conflicts are checked under the shared deployment lock. Never overwrite assets; choose another revision for different content.
+Check requires clean committed source and rejects runtime changes before running trusted main tooling. API reference uses the original package DLL with reviewed XML; samples compile against that package. XML, translations, links and Chromium checks must pass. No update modifies NuGet, tags or original Release assets.
 
-The fixed revision is deployed and every file verified before activation. Root/latest only select completed stable versions. Resume downloads the original correction bundle without rebuilding. Rollback verifies the selected completed revision and moves only the active pointer. Re-running an older completed publication cannot reverse a later correction or intentional rollback. Both stages verify online entrypoints; failures remain visible in Actions. Run `./scripts/Test-DocumentationRevision.ps1` for offline immutability, activation, rollback, conflict and source-restriction tests. No correction operation publishes a NuGet package.
+Start requires a full source SHA. If Prepare was not used, Start captures the current archive SHA. Under the shared deployment lock, a changed archive baseline rejects the candidate. Development deployment also rejects an obsolete main SHA. Run payloads and hashes are durably committed beneath `.publication/runs/<run-id>/` on `docs-archive`; this internal history is excluded from the public site. The branch retains all original payloads in Git history. Version metadata stores the source commit and file hashes; no revision number is assigned.
 
-For development-only preview, initialize the archive once and dispatch `docs.yml` on main. NuGet credentials and release tags are unnecessary. With no stable version, the homepage links to `/dev/`.
+Build and checks precede one whole-site Pages deployment. Only verified deployments enter `.publication/state.json` with their successful archive SHA. Failed candidates remain resumable and are never used as the base of an unrelated deployment. Resume reuses the persisted run payload without rebuilding and rejects a candidate superseded by a later successful deployment; obsolete development candidates are also rejected. Rollback restores only the requested version from a known successful archive commit and appends a new commit. It does not rewrite history. A successful old package-release retry cannot undo later documentation updates.
+
+Root/latest select the highest completed stable package version. Updating an older version does not change that selection. Online verification checks candidate bytes and entrypoints after the deployment API reports success; failures remain visible in Actions. Run `./scripts/Test-DocumentationUpdate.ps1` for overwrite, deletion, recovery, rollback, stale candidate and XML-only source fixtures.
+
+Legacy revision directories are removed when the archive is next assembled. Existing active content moves to the direct version path with corrected identity and selector; old revision URLs return 404 without redirection. Original Release assets remain untouched.
+
+For development-only preview, initialize the archive once and dispatch `docs.yml` on main. No package or release tag is needed. With no stable version, the homepage links to `/dev/`.

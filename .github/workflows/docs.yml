@@ -61,7 +61,7 @@ jobs:
           if ($latest -ne '${{ github.sha }}') { throw 'Stale development build. Run the latest main workflow.' }
           $identity = Get-Content artifacts/docs/site/identity.json -Raw | ConvertFrom-Json
           if ($identity.commit -ne $latest -or $identity.channel -ne 'Development') { throw 'Artifact source identity does not match current main.' }
-      - run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Site artifacts/docs/site
+      - run: ./scripts/Publish-Documentation.ps1 -Action StageDevelopment
         shell: pwsh
       - run: |
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: update development documentation'
@@ -69,3 +69,9 @@ jobs:
       - uses: ./.github/actions/deploy-archive
         with:
           stage: development
+      - name: Verify and record successful deployment
+        shell: pwsh
+        run: |
+          ./scripts/Publish-Documentation.ps1 -Action Verify -Tag dev
+          ./scripts/Publish-Documentation.ps1 -Action Success
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: record successful deployment'

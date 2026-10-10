@@ -14,7 +14,6 @@ $index = @{ versions = @() }
 if ($identity.channel -eq 'Development') { $index.development = @{ commit = $identity.commit } }
 else {
     $entry = @{ version = $identity.version; completed = $true }
-    if ($identity.PSObject.Properties.Name -contains 'revision') { $entry.revisions = @(); $entry.currentRevision = $identity.revision }
     $index.versions += $entry
 }
 Write-Json $index (Join-Path $mount 'versions.json')

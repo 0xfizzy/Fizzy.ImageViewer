@@ -15,6 +15,18 @@ try {
     $reader = [IO.StreamReader]::new($siteArchive.GetEntry('identity.json').Open())
     try { $identity = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
 } finally { $siteArchive.Dispose() }
+# Once the package Release is public, documentation may legitimately have been updated.
+# Verify the current committed archive content rather than the original documentation.zip.
+$record = Get-ReleaseRecord $manifest.tag
+if ($record -and !$record.draft) {
+    $currentIndex = Join-Path (Get-Repo) 'artifacts/published-versions.json'
+    $null = Get-RemoteFile "${root}versions.json" $currentIndex
+    $current = Get-Content $currentIndex -Raw | ConvertFrom-Json -AsHashtable
+    $entry = @($current.versions | Where-Object { $_.version -ceq $manifest.version -and $_.completed })
+    if ($entry.Count -ne 1) { throw 'Missing completed documentation version.' }
+    $report.siteFiles = $entry[0].files
+    $identity.directory = $manifest.tag
+}
 $work = Reset-Output (Join-Path (Get-Repo) 'artifacts/online-check')
 # Check every immutable site file; CDN propagation is bounded and never treated as success.
 foreach ($entry in $report.siteFiles.GetEnumerator()) {
@@ -33,7 +45,7 @@ if ($RequireCompleted) {
     $null = Get-RemoteFile "${root}versions.json" "$work/versions.json"
     $index = Get-Content "$work/versions.json" -Raw | ConvertFrom-Json
     $entry = @($index.versions | Where-Object version -CEQ $manifest.version)
-    if ($entry.Count -ne 1 -or !$entry[0].completed -or $entry[0].commit -cne $manifest.commit) { throw 'Online version index is not complete.' }
+    if ($entry.Count -ne 1 -or !$entry[0].completed) { throw 'Online version index is not complete.' }
     $stable = @($index.versions | Where-Object { $_.completed -and $_.version -notmatch '-' } | Sort-Object { [System.Management.Automation.SemanticVersion]::Parse($_.version) } -Descending)
     if ($stable.Count) {
         foreach ($path in @('index.html','latest/index.html')) {

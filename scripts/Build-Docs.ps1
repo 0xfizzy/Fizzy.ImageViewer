@@ -1,12 +1,11 @@
 [CmdletBinding()]
-param([ValidateSet('Development','Release')][string]$Channel = 'Development', [string]$Version, [ValidateRange(0,2147483647)][int]$Revision = 0, [string]$Package, [string]$ReviewedXml)
+param([ValidateSet('Development','Release')][string]$Channel = 'Development', [string]$Version, [string]$Package, [string]$ReviewedXml)
 $ErrorActionPreference = 'Stop'
 Import-Module "$PSScriptRoot/Release.Common.psm1" -Force
 Push-Location (Get-Repo)
 try {
     if (!$Version) { $Version = Get-PackageVersion }
-    if ($Channel -eq 'Release' -and $Revision -eq 0) { Assert-ReleaseIdentity $Version }
-    if ($Revision -gt 0 -and (!$Package -or !$ReviewedXml)) { throw 'Revision builds require the original package and reviewed XML.' }
+    if ($Channel -eq 'Release' -and !$Package) { Assert-ReleaseIdentity $Version }
     & "$PSScriptRoot/Test-Documentation.ps1"
     Invoke-Checked dotnet @('tool','restore')
     $null = Reset-Output (Join-Path (Get-Repo) 'artifacts/docs')
@@ -44,13 +43,13 @@ try {
     Invoke-Checked dotnet @('docfx','metadata','artifacts/docs/metadata.json','--warningsAsErrors')
     & "$PSScriptRoot/Complete-ApiNavigation.ps1"
     Invoke-Checked dotnet @('docfx','build','docfx.json','--warningsAsErrors')
+    Copy-Item (Join-Path $PSScriptRoot '../docs/site/versions.js') 'artifacts/docs/site/docs/site/versions.js' -Force
     $config = Get-SiteConfig
-    $directory = if ($Channel -eq 'Release') { "v$Version/r$Revision" } else { 'dev' }
+    $directory = if ($Channel -eq 'Release') { "v$Version" } else { 'dev' }
     $identity = @{ version = $Version; channel = $Channel; directory = $directory; commit = (Get-Commit); basePath = $config.basePath; sdk = (& dotnet --version); docfx = '2.78.3' }
-    if ($Channel -eq 'Release') { $identity.revision = $Revision }
     Write-Json $identity artifacts/docs/site/identity.json
     Write-Json (Get-Tree $inputDir) artifacts/docs/input-hashes.json
     & "$PSScriptRoot/Test-DocumentationSite.ps1"
-    Invoke-Checked node @('scripts/Test-Browser.mjs')
+    Invoke-Checked node @((Join-Path $PSScriptRoot 'Test-Browser.mjs'), '--site', (Join-Path (Get-Repo) 'artifacts/docs/site'))
     Write-Host 'PASS: documentation built. Preview with ./scripts/Serve-Docs.ps1'
 } finally { Pop-Location }

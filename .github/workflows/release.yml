@@ -132,7 +132,9 @@ jobs:
           ref: ${{ steps.config.outputs.archive }}
           path: artifacts/archive
           fetch-depth: 0
-      - run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Site artifacts/restored-site
+      - run: ./scripts/Publish-Documentation.ps1 -Action Restore
+        shell: pwsh
+      - run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Site artifacts/restored-site -Complete -Version ('${{ needs.prepare.outputs.tag }}'.Substring(1)) -OriginalRelease
         shell: pwsh
       - run: |
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: archive release documentation'
@@ -140,22 +142,16 @@ jobs:
       - uses: ./.github/actions/deploy-archive
         with:
           stage: release
-      - name: Verify immutable online version
+      - name: Verify online version
         run: ./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Complete version index
+      - name: Record successful documentation deployment
         shell: pwsh
-        env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: ./scripts/Merge-DocumentationArchive.ps1 -Archive artifacts/archive -Complete -Version $env:RELEASE_TAG.Substring(1)
-      - run: |
-          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: complete verified release index'
-        shell: pwsh
-      - uses: ./.github/actions/deploy-archive
-        with:
-          stage: completed
+        run: |
+          ./scripts/Publish-Documentation.ps1 -Action Success
+          ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: record successful release documentation'
       - name: Verify completion and publish GitHub Release
         run: ./scripts/Publish-Release.ps1 -Stage Complete
         shell: pwsh

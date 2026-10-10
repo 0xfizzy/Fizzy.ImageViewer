@@ -38,8 +38,8 @@
 
 ## 验证
 
-- XML 为符号级契约，组件指南定义跨 API 协议。XML/API 参考用英文，指南同步维护 `docs/zh-CN/`；公共声明/XML、README、指南/翻译、导航、模板或文档工具变更运行 `scripts/Build-Docs.ps1` 及 `node scripts/Test-Browser.mjs`；示例及发布/修订逻辑变化增加对应门禁。翻译哈希仅在人工审阅后接受，具体流程见 [文档维护](docs/documentation.md)。
-- 从 v1.2.0 起按 `/v{version}/` 留存文档。发布和恢复遵循 [发布 SOP](docs/releasing.md)，使用原始归档产物；禁止覆盖历史版本、移动发布 tag 或用 `--skip-duplicate` 掩盖版本冲突。构建、测试和本地演练不授权正式发布。
+- XML 为符号级契约，组件指南定义跨 API 协议。XML/API 参考用英文，指南同步维护 `docs/zh-CN/`；公共声明/XML、README、指南/翻译、导航、模板或文档工具变更运行 `scripts/Build-Docs.ps1` 及 `node scripts/Test-Browser.mjs`；示例及发布/更新逻辑变化增加对应门禁。翻译哈希仅在人工审阅后接受，具体流程见 [文档维护](docs/documentation.md)。
+- 从 v1.2.0 起按 `/v{version}/` 留存文档。发布和恢复遵循 [发布 SOP](docs/releasing.md)，使用原始归档产物；文档同版本整体覆盖，包与原始 Release 资产保持不可变；禁止移动发布 tag 或用 `--skip-duplicate` 掩盖版本冲突。构建、测试和本地演练不授权正式发布。
 
 - 按改动范围选择 [验证指南](docs/validation.md) 中的构建、测试、工具构建、打包与基准命令；共享库输出的构建和测试串行执行。纯文档修改检查内容、链接与 diff。
 - 公共 API 变更须审查基线差异及相关测试，不以更新基线代替契约审查；联合工作区中的 API 或行为变更还须按父目录约定验证消费者的 Source 构建及相关测试。

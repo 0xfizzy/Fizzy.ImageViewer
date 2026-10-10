@@ -1,7 +1,8 @@
 [CmdletBinding()]
-param()
+param([string]$Site)
 $ErrorActionPreference = 'Stop'
-$site = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts/docs/site'))
+if (!$Site) { $Site = [IO.Path]::GetFullPath((Join-Path $(if ($env:DOCS_SOURCE_ROOT) { $env:DOCS_SOURCE_ROOT } else { Split-Path -Parent $PSScriptRoot }) 'artifacts/docs/site')) }
+$Site = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Site)
 if (!(Test-Path -LiteralPath (Join-Path $site 'index.html'))) { throw 'Build the documentation site before checking it.' }
 $pages = @{}
 foreach ($file in Get-ChildItem $site -Recurse -Filter '*.html') {

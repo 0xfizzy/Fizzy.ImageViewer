@@ -23,7 +23,7 @@ try {
         & "$PSScriptRoot/Build-Docs.ps1" -Channel $channel -Version $Version
         & "$PSScriptRoot/Test-DocumentationGate.ps1"
         & "$PSScriptRoot/Test-ReleaseGate.ps1"
-        & "$PSScriptRoot/Test-DocumentationRevision.ps1"
+        & "$PSScriptRoot/Test-DocumentationUpdate.ps1"
         Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-ReleaseRecovery.ps1")
         $config = Get-SiteConfig
         $readme = (Get-Content docs/nuget-readme.md -Raw).Replace("$($config.origin)$($config.basePath)", "$($config.origin)$($config.basePath)v$Version/").Replace('/blob/main/LICENSE', "/blob/$(Get-Commit)/LICENSE")

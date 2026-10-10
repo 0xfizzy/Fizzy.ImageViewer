@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param([string[]]$AcceptTranslation = @())
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent $PSScriptRoot
+$repo = if ($env:DOCS_SOURCE_ROOT) { $env:DOCS_SOURCE_ROOT } else { Split-Path -Parent $PSScriptRoot }
 $manifestPath = Join-Path $repo 'docs/translations.json'
 $pairs = [ordered]@{ 'README.md' = 'README.zh-CN.md' }
 foreach ($file in Get-ChildItem (Join-Path $repo 'docs') -File -Filter '*.md' | Where-Object Name -NE 'nuget-readme.md' | Sort-Object Name) {

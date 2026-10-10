@@ -1,7 +1,7 @@
 # DocFX 2.78 emits links for every namespace segment, even parents with no types.
 # Generate navigation-only parent pages from metadata so those links resolve locally.
 $ErrorActionPreference = 'Stop'
-$apiRoot = Join-Path (Split-Path -Parent $PSScriptRoot) 'artifacts/docs/api'
+$apiRoot = Join-Path $(if ($env:DOCS_SOURCE_ROOT) { $env:DOCS_SOURCE_ROOT } else { Split-Path -Parent $PSScriptRoot }) 'artifacts/docs/api'
 $namespaces = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($file in Get-ChildItem $apiRoot -Filter '*.yml') {
     foreach ($match in [regex]::Matches([IO.File]::ReadAllText($file.FullName), '(?m)^  namespace: ([A-Za-z_][A-Za-z0-9_.]*)\r?$')) {

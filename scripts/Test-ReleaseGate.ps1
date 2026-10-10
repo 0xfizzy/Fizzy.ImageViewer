@@ -41,7 +41,8 @@ $dev = New-Site '1.3.0' 'Development'
 if (!(Get-Content "$archive/latest/index.html" -Raw).Contains('v1.2.1/')) { throw 'Latest stable regressed.' }
 Assert-Tree $snapshot "$archive/v1.2.0"
 Set-Content "$first/index.html" 'changed'
-Expect-Failure { & "$PSScriptRoot/Merge-DocumentationArchive.ps1" -Archive $archive -Site $first } 'Content mismatch'
+& "$PSScriptRoot/Merge-DocumentationArchive.ps1" -Archive $archive -Site $first
+Assert-Tree (Get-Tree $first) "$archive/v1.2.0"
 Expect-Failure { Get-Version '../1.2.0' } 'Invalid version'
 Expect-Failure { Get-Version 'v1.2.0' } 'Invalid version'
 Expect-Failure { Get-Version '1.1.2' } 'predates'

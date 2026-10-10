@@ -14,11 +14,18 @@ runs:
         $commit = git -C artifacts/archive rev-parse HEAD
         if ($LASTEXITCODE) { throw 'Cannot resolve documentation archive commit.' }
         "commit=$commit" >> $env:GITHUB_OUTPUT
+    - name: Assemble public site without internal history
+      shell: pwsh
+      run: |
+        Import-Module ./scripts/Release.Common.psm1
+        $public = Reset-Output (Join-Path (Get-Repo) 'artifacts/pages-public')
+        Get-ChildItem artifacts/archive -Force | Where-Object Name -NotIn @('.git','.publication','.gitattributes') | Copy-Item -Destination $public -Recurse
+        if (Get-ChildItem $public -Recurse -Directory | Where-Object Name -Match '^r\d+$') { throw 'Legacy revision directory remains in public site.' }
     - uses: actions/upload-pages-artifact@v3
       id: upload
       with:
         name: pages-${{ inputs.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
-        path: artifacts/archive
+        path: artifacts/pages-public
     - uses: actions/github-script@v7
       env:
         PAGES_ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}

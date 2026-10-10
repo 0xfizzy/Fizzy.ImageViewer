@@ -3,19 +3,20 @@ import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-const repo = path.resolve(import.meta.dirname, '..');
-const site = path.join(repo, 'artifacts/docs/site');
+const repo = process.env.DOCS_SOURCE_ROOT || path.resolve(import.meta.dirname, '..');
+const siteIndex = process.argv.indexOf('--site');
+const site = siteIndex >= 0 ? path.resolve(process.argv[siteIndex + 1]) : path.join(repo, 'artifacts/docs/site');
 const urlIndex = process.argv.indexOf('--url');
 const liveUrl = urlIndex >= 0 ? new URL(process.argv[urlIndex + 1]).href.replace(/\/?$/, '/') : null;
 const identity = liveUrl ? await fetch(new URL('identity.json', liveUrl)).then(r => { assert(r.ok); return r.json(); }) : JSON.parse(await readFile(path.join(site, 'identity.json'), 'utf8'));
-const mounts = ['v1.2.0/r0', 'v1.2.1/r1', 'dev'];
+const mounts = ['v1.2.0', 'v1.2.1', 'dev'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     if (pathname === `${identity.basePath}versions.json`) {
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ development: { commit: identity.commit }, versions: ['1.2.1','1.2.0'].map(version => ({ version, completed: true, revisions: [{}], currentRevision: version === '1.2.1' ? 1 : 0 })) })); return;
+      res.end(JSON.stringify({ development: { commit: identity.commit }, versions: ['1.2.1','1.2.0'].map(version => ({ version, completed: true })) })); return;
     }
     const directory = mounts.find(v => pathname.startsWith(`${identity.basePath}${v}/`));
     if (!directory) { res.writeHead(404).end(); return; }
@@ -23,7 +24,7 @@ const server = createServer(async (req, res) => {
     const target = path.resolve(site, relative);
     if (!target.startsWith(site + path.sep)) { res.writeHead(403).end(); return; }
     // Simulate a page removed in the older version to exercise language-preserving fallback.
-    if (directory === 'v1.2.0/r0' && relative === 'docs/zh-CN/snapshots.html') { res.writeHead(404).end(); return; }
+    if (directory === 'v1.2.0' && relative === 'docs/zh-CN/snapshots.html') { res.writeHead(404).end(); return; }
     if (relative === 'identity.json') {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ ...identity, version: directory.slice(1).split('/')[0], directory, channel: directory === 'dev' ? 'Development' : 'Release' })); return;
@@ -35,7 +36,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const base = liveUrl || `${origin}${identity.basePath}v1.2.1/r1/`;
+const base = liveUrl || `${origin}${identity.basePath}v1.2.1/`;
 let browser;
 let page;
 const output = path.join(repo, 'artifacts/docs/browser');
@@ -53,11 +54,11 @@ try {
     assert.deepEqual(broken, [], relative);
   }
   if (!liveUrl) {
-    await page.getByLabel('Documentation version').selectOption('v1.2.0/r0');
-    await page.waitForURL('**/v1.2.0/r0/api/Fizzy.ImageViewer.Frames.FrameLease.html');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/api/Fizzy.ImageViewer.Frames.FrameLease.html');
     await page.goto(base + 'docs/zh-CN/snapshots.html');
-    await page.getByLabel('Documentation version').selectOption('v1.2.0/r0');
-    await page.waitForURL('**/v1.2.0/r0/docs/zh-CN/index.html');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/zh-CN/index.html');
   }
   await page.goto(base + 'docs/index.html');
   await page.getByRole('link', { name: '简体中文', exact: true }).click();
