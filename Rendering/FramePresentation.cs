@@ -22,12 +22,12 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         public void Dispose() => Pixels?.Dispose();
     }
 
-    internal PreparedFrame Prepare(FrameLease frame, GrayDisplayRange? range, CancellationToken ct)
+    internal PreparedFrame Prepare(FrameLease frame, GrayDisplayRange? range, CancellationToken cancellationToken)
     {
-        ct.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
         if (frame.D3D9Surface != 0 && range != null)
             throw new NotSupportedException("GPU surface display mapping must be applied by the GPU producer.");
-        return new(frame, frame.D3D9Surface == 0 ? DisplayConverter.Convert(frame, range, ct) : null);
+        return new(frame, frame.D3D9Surface == 0 ? DisplayConverter.Convert(frame, range, cancellationToken) : null);
     }
 
     internal ImageSource Present(PreparedFrame prepared)

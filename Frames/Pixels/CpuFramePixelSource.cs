@@ -2,18 +2,18 @@ namespace Fizzy.ImageViewer.Frames;
 
 internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMemory<byte> pixels) : IFramePixelSource
 {
-    public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
+    public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken)
     {
         var result = new PixelSample[coordinates.Length];
         for (int i = 0; i < result.Length; i++)
         {
-            if ((i & 255) == 0) ct.ThrowIfCancellationRequested();
+            if ((i & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
             var p = coordinates.Span[i];
             result[i] = CpuFramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(p.Y * descriptor.Stride + p.X * descriptor.Format.BytesPerPixel()));
         }
         return ValueTask.FromResult(result);
     }
-    public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+    public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
     {
         var info = descriptor.Format.GetInfo();
         int channels = info.SemanticChannelCount;
@@ -22,7 +22,7 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
         var max = Enumerable.Repeat(double.NegativeInfinity, channels).ToArray(); var sum = new double[channels];
         for (int y = region.Y; y < region.Y + region.Height; y++)
         {
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             for (int x = region.X; x < region.X + region.Width; x++)
             {
                 var p = CpuFramePixelReader.Decode(descriptor.Format, pixels.Span.Slice(y * descriptor.Stride + x * bytesPerPixel));
@@ -36,13 +36,13 @@ internal sealed class CpuFramePixelSource(FrameDescriptor descriptor, ReadOnlyMe
         }
         return ValueTask.FromResult(new RegionStatistics(descriptor.Format, Enumerable.Range(0, channels).Select(c => count[c] == 0 ? new ChannelStatistics(0, null, null, null) : new(count[c], min[c], max[c], sum[c] / count[c])).ToArray()));
     }
-    public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct)
+    public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken)
     {
         int stride = checked(region.Width * descriptor.Format.BytesPerPixel());
         var bytes = new byte[checked(stride * region.Height)];
         for (int y = 0; y < region.Height; y++)
         {
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             pixels.Span.Slice((region.Y + y) * descriptor.Stride + region.X * descriptor.Format.BytesPerPixel(), stride).CopyTo(bytes.AsSpan(y * stride));
         }
         return ValueTask.FromResult(ImageFrame.TakeOwnership(new(region.Width, region.Height, stride, descriptor.Format), bytes, () => { }));

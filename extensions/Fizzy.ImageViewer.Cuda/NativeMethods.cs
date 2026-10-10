@@ -10,8 +10,15 @@ internal static partial class NativeMethods
     {
         if (status == 0) return;
         throw new CudaException(Marshal.PtrToStringUTF8(fv_error()) ?? "CUDA extension failure",
-            fv_error_domain() switch { 1 => "CUDA runtime", 2 => "CUDA driver", 3 => "D3D9", _ => "extension" }, fv_error_code());
+            MapErrorDomain(fv_error_domain()), fv_error_code());
     }
+    internal static CudaErrorDomain MapErrorDomain(int domain) => domain switch
+    {
+        1 => CudaErrorDomain.CudaRuntime,
+        2 => CudaErrorDomain.CudaDriver,
+        3 => CudaErrorDomain.Direct3D9,
+        _ => CudaErrorDomain.Extension
+    };
     internal static void VerifyAbi()
     {
         if (!Environment.Is64BitProcess) throw new PlatformNotSupportedException("CUDA images require Windows x64.");

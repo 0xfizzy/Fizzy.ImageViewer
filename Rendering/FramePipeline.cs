@@ -48,7 +48,7 @@ internal sealed class FramePipeline
         public TaskCompletionSource<FrameSubmitResult> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    internal ValueTask<FrameSubmitResult> SubmitAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken ct = default)
+    internal ValueTask<FrameSubmitResult> SubmitAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
         var lease = frame.Transfer();
@@ -58,8 +58,8 @@ internal sealed class FramePipeline
         lock (_frameGate)
         {
             lease.Info = new(++_nextFrameId, lease.Descriptor, options?.SourceTimestamp);
-            submission = new(lease, options, ct, _freezeEpoch);
-            rejected = _lifetime.IsStopping ? FrameSubmitStatus.Closed : ct.IsCancellationRequested ? FrameSubmitStatus.Cancelled :
+            submission = new(lease, options, cancellationToken, _freezeEpoch);
+            rejected = _lifetime.IsStopping ? FrameSubmitStatus.Closed : cancellationToken.IsCancellationRequested ? FrameSubmitStatus.Cancelled :
                 _isFrozen ? FrameSubmitStatus.Frozen : null;
             submission.Accepted = !_lifetime.IsStopping;
             if (submission.Accepted) _acceptedSubmissions++;

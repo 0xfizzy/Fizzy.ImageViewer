@@ -138,13 +138,13 @@ public class D3DImagePresenterTests
     }
 
     private static ImageFrame Frame(nint surface, Action release) =>
-        ImageFrame.TakeD3D9Surface(new(1, 1, 4, FramePixelFormat.Bgra32), surface, new Pixels(), release);
+        D3D9ImageFrame.TakeOwnership(new(1, 1, 4, FramePixelFormat.Bgra32), surface, new Pixels(), release);
 
     private sealed class Pixels : IFramePixelSource
     {
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class Target : ID3DImageTarget

@@ -12,5 +12,5 @@ public interface IFrameSink
     ValueTask<FrameSubmitResult> SubmitFrameAsync(
         ImageFrame frame,
         FrameSubmissionOptions? options = null,
-        CancellationToken ct = default);
+        CancellationToken cancellationToken = default);
 }

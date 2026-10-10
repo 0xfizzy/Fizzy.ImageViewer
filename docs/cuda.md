@@ -13,7 +13,7 @@ Implement `ICudaFrameSource` for one independently retained, immutable source im
 `Descriptor` describes original pixels. Pass that source to the factory:
 
 ```csharp
-ImageFrame frame = await CudaImageFrame.CreateAsync(source, cancellationToken);
+ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
 await viewer.SubmitFrameAsync(frame);
 ```
 
@@ -34,14 +34,16 @@ backend. Do not retain or reenter the callback. A callback borrows an `ICudaExec
 | Context / Stream | Standard CUDA handles, not runtime-private object handles; keep the context valid through external resource cleanup |
 | InputPointer / InputByteLength / RowStride | Register read-only input use before exporting the device address; storage covers all referenced rows |
 | AllocateScratch | Supply device or pinned host memory owned by this operation, retained through safe completion |
-| RetainResource | Register an `ICudaResource` before GPU access and return an independent ownership token |
-| WaitForCompletion | Prove submitted access ended without cancellation; do not end the operation |
+| RegisterResource | Register an `ICudaResource` before GPU access and return an independent ownership token |
+| WaitForGpuCompletion | Prove submitted access ended without cancellation; do not end the operation |
 
 The source descriptor's stride need not match a backend's device pitch; the scope provides the
 actual device row stride. Both layouts must have the same dimensions, format and pixel values.
 The extension validates dimensions, supported formats and accessible extent, not arbitrary
 pointer validity. CPU input, negative strides, multi-plane storage and foreign opaque handles
 are not accepted.
+
+The frame factory immediately takes ownership. In contrast, `RegisterResource` transfers cleanup responsibility only on success; on failure the registering caller still owns cleanup.
 
 The bridge owns the operation's final completion and retirement. A resource remains retained
 by both the operation and the returned token. Only final safe release calls `ICudaResource.Release`.
@@ -54,7 +56,7 @@ Cancellation before execution avoids GPU work. After enqueue, cancellation stops
 never bypasses completion. Query host bytes are read only after a successful scope wait and
 copied into independent results before scope exit. Surface publication also waits for the bridge's
 final `ExecuteAsync` completion. Consumer exceptions propagate unchanged; extension native
-failures use `CudaException` with domain and native code. Operation and owned cleanup failures
+failures use `CudaException` with a typed `CudaErrorDomain` and the original native code. Operation and owned cleanup failures
 are preserved together.
 
 ## Formats and transfer costs
@@ -76,7 +78,11 @@ channel), or the specified region. Gather splits at 65,536 points while preservi
 Statistics reorder source channels into Gray or R/G/B[/A]; small ROIs use only the needed reduction
 blocks, capped at 256. Full snapshots explicitly request the full image. No implicit full-image
 cache or download fallback exists. `CudaDiagnostics.QueryMetrics` counts extension transfers and
-active query callbacks, not runtime allocations or quarantined bytes. `LiveSurfaces` loads the
+active query callbacks, not runtime allocations or quarantined bytes.
+`EnqueuedQueries` and `EnqueuedResultBytes` count native calls that returned successfully; each gather
+chunk counts separately, and partial enqueue before failure is not fully counted. `ActiveQueries` and
+`ActiveResultBytes` cover query execution and managed result copying; zero is not proof of GPU
+completion or empty quarantine. `GetLiveSurfaceCount()` loads the
 native DLL and includes retained native surface owners.
 
 No high-bit-depth CUDA mapping, premultiplied RGBA, Bayer conversion, custom LUT/range, D3D11/12

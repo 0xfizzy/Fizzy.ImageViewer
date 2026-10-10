@@ -9,10 +9,10 @@ public abstract class MeasurementQueryResult
     public Guid MeasurementId { get; }
     /// <summary>Geometry version captured when this query was requested.</summary>
     public long GeometryVersion { get; }
-    /// <summary>Identity and layout of the original frame read by the query.</summary>
-    public FrameInfo Frame { get; }
+    /// <summary>Identity and layout of the original source frame read by the query.</summary>
+    public FrameInfo SourceFrame { get; }
     /// <summary>Query kind that determines the concrete result payload.</summary>
     public MeasurementQueryKind Query { get; }
-    private protected MeasurementQueryResult(Guid id, long version, FrameInfo frame, MeasurementQueryKind query)
-    { MeasurementId = id; GeometryVersion = version; Frame = frame; Query = query; }
+    private protected MeasurementQueryResult(Guid id, long version, FrameInfo sourceFrame, MeasurementQueryKind query)
+    { MeasurementId = id; GeometryVersion = version; SourceFrame = sourceFrame; Query = query; }
 }

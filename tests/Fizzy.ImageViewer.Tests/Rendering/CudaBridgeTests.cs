@@ -6,16 +6,30 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class CudaBridgeTests
 {
+    [Theory]
+    [InlineData(0, CudaErrorDomain.Extension)]
+    [InlineData(1, CudaErrorDomain.CudaRuntime)]
+    [InlineData(2, CudaErrorDomain.CudaDriver)]
+    [InlineData(3, CudaErrorDomain.Direct3D9)]
+    [InlineData(99, CudaErrorDomain.Extension)]
+    public void NativeErrorDomainsPreserveCodesWithoutLoadingCuda(int nativeDomain, CudaErrorDomain expected)
+    {
+        var error = new CudaException("native diagnostic", NativeMethods.MapErrorDomain(nativeDomain), 719);
+        Assert.Equal(expected, error.Domain);
+        Assert.Equal(719, error.NativeCode);
+        Assert.Equal("native diagnostic", error.Message);
+    }
+
     [Fact]
     public async Task CancellationAndUnsupportedInputTransferOwnershipWithoutNativeLoading()
     {
         var backend = new Backend();
         var cancelled = new Source();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CudaImageFrame.CreateAsync(cancelled, backend, new(true)).AsTask());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CudaImageFrame.TakeOwnershipAsync(cancelled, backend, new(true)).AsTask());
         Assert.Equal(1, cancelled.Disposals);
         Assert.Equal(0, cancelled.Executions);
         var unsupported = new Source { Descriptor = new(1, 1, 2, FramePixelFormat.Gray16) };
-        await Assert.ThrowsAsync<NotSupportedException>(() => CudaImageFrame.CreateAsync(unsupported, backend, default).AsTask());
+        await Assert.ThrowsAsync<NotSupportedException>(() => CudaImageFrame.TakeOwnershipAsync(unsupported, backend, default).AsTask());
         Assert.Equal(1, unsupported.Disposals);
         Assert.Equal(0, backend.Created);
     }
@@ -29,7 +43,7 @@ public class CudaBridgeTests
     {
         var source = new Source { Failure = phase };
         var backend = new Backend { Failure = phase };
-        await Assert.ThrowsAsync<InvalidOperationException>(() => CudaImageFrame.CreateAsync(source, backend, default).AsTask());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CudaImageFrame.TakeOwnershipAsync(source, backend, default).AsTask());
         Assert.Equal(1, source.Disposals);
         Assert.Equal(phase == "register" ? 1 : 0, backend.Released);
         // A failed submission is not proof of safe resource release. The fake bridge
@@ -42,7 +56,7 @@ public class CudaBridgeTests
     public async Task IndependentLeaseKeepsSourceAndSurfaceAliveForQueries()
     {
         var source = new Source(); var backend = new Backend();
-        using var frame = await CudaImageFrame.CreateAsync(source, backend, default);
+        using var frame = await CudaImageFrame.TakeOwnershipAsync(source, backend, default);
         using var lease = frame.Acquire();
         frame.Dispose();
         Assert.Equal(0, source.Disposals);
@@ -61,7 +75,7 @@ public class CudaBridgeTests
         var source = new Source();
         var backend = new Backend { AfterWrite = cancellation.Cancel };
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            CudaImageFrame.CreateAsync(source, backend, cancellation.Token).AsTask());
+            CudaImageFrame.TakeOwnershipAsync(source, backend, cancellation.Token).AsTask());
         Assert.True(source.Scope!.Waited);
         Assert.Equal(1, backend.Released);
         Assert.Equal(1, source.Disposals);
@@ -71,7 +85,7 @@ public class CudaBridgeTests
     public async Task OperationAndSourceCleanupErrorsArePreserved()
     {
         var source = new Source { Failure = "complete", FailDispose = true };
-        var error = await Assert.ThrowsAsync<AggregateException>(() => CudaImageFrame.CreateAsync(source, new Backend(), default).AsTask());
+        var error = await Assert.ThrowsAsync<AggregateException>(() => CudaImageFrame.TakeOwnershipAsync(source, new Backend(), default).AsTask());
         Assert.Equal("complete", error.InnerExceptions[0].Message);
         Assert.Equal("source release", error.InnerExceptions[1].Message);
         source.Scope!.CompleteAccess();
@@ -84,7 +98,7 @@ public class CudaBridgeTests
         internal bool FailDispose;
         internal int Disposals, Executions;
         internal Scope? Scope;
-        public ValueTask ExecuteAsync(Action<ICudaExecutionScope> action, CancellationToken ct)
+        public ValueTask ExecuteAsync(Action<ICudaExecutionScope> action, CancellationToken cancellationToken)
         {
             Executions++;
             var scope = new Scope(Failure); Scope = scope;
@@ -105,12 +119,12 @@ public class CudaBridgeTests
         internal Token? Retained;
         internal bool Waited;
         public nint AllocateScratch(long bytes, CudaMemoryKind kind) => throw new NotSupportedException();
-        public IDisposable RetainResource(ICudaResource resource)
+        public IDisposable RegisterResource(ICudaResource resource)
         {
             if (failure == "register") throw new InvalidOperationException("register");
             return Retained = new Token(resource);
         }
-        public void WaitForCompletion() { if (failure == "wait") throw new InvalidOperationException("wait"); Waited = true; }
+        public void WaitForGpuCompletion() { if (failure == "wait") throw new InvalidOperationException("wait"); Waited = true; }
         internal void CompleteAccess() => Retained?.Complete();
         internal sealed class Token(ICudaResource resource) : IDisposable
         {

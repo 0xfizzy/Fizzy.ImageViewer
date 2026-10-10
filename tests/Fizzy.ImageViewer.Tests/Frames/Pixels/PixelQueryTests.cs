@@ -8,11 +8,11 @@ public class PixelQueryTests
     [Fact]
     public void CpuReaderRejectsGpuPixelsButReportsOutOfBoundsSeparately()
     {
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, new DelayedSource(), () => { });
         using var lease = frame.Acquire();
-        Assert.False(CpuFramePixelReader.Instance.TryRead(lease, -1, 0, out _));
-        Assert.Throws<NotSupportedException>(() => CpuFramePixelReader.Instance.TryRead(lease, 0, 0, out _));
+        Assert.False(CpuFramePixelReader.TryReadPixel(lease, -1, 0, out _));
+        Assert.Throws<NotSupportedException>(() => CpuFramePixelReader.TryReadPixel(lease, 0, 0, out _));
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class PixelQueryTests
     {
         int releases=0;
         var source=new DelayedSource();
-        var frame=ImageFrame.TakeD3D9Surface(new(4,3,4,FramePixelFormat.Gray8),(nint)1,source,()=>releases++);
+        var frame=D3D9ImageFrame.TakeOwnership(new(4,3,4,FramePixelFormat.Gray8),(nint)1,source,()=>releases++);
         var lease=frame.Acquire();frame.Dispose();Assert.False(lease.TryGetCpuPixels(out _));
         var pending=lease.ReadPixelsAsync(new[]{new PixelCoordinate(2,1)}).AsTask();
         lease.Dispose();Assert.Equal(0,releases);source.Ready.SetResult();
@@ -48,7 +48,7 @@ public class PixelQueryTests
     {
         int sourceReleased=0,outputReleased=0;
         var source=new DelayedRegion(()=>outputReleased++);
-        var frame=ImageFrame.TakeD3D9Surface(new(2,2,2,FramePixelFormat.Gray8),(nint)1,source,()=>sourceReleased++);
+        var frame=D3D9ImageFrame.TakeOwnership(new(2,2,2,FramePixelFormat.Gray8),(nint)1,source,()=>sourceReleased++);
         var lease=frame.Acquire();frame.Dispose();
         using var stop=new CancellationTokenSource();
         var pending=lease.ReadRegionAsync(new(1,1,1,1),stop.Token).AsTask();
@@ -61,9 +61,9 @@ public class PixelQueryTests
     private sealed class DelayedRegion(Action release) : IFramePixelSource
     {
         public TaskCompletionSource Ready=new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points,CancellationToken ct)=>throw new NotSupportedException();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
-        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken ct)
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points,CancellationToken cancellationToken)=>throw new NotSupportedException();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken cancellationToken)=>throw new NotSupportedException();
+        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken cancellationToken)
         {
             await Ready.Task;
             return ImageFrame.TakeOwnership(new(1,1,1,FramePixelFormat.Gray8),new byte[]{7},release);
@@ -73,8 +73,8 @@ public class PixelQueryTests
     {
         public TaskCompletionSource Ready=new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int RegionCalls;
-        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points,CancellationToken ct) { await Ready.Task;return [new(FramePixelFormat.Gray8,42,0,0,0,255)]; }
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken ct) { RegionCalls++;throw new NotSupportedException(); }
+        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points,CancellationToken cancellationToken) { await Ready.Task;return [new(FramePixelFormat.Gray8,42,0,0,0,255)]; }
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken cancellationToken)=>throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken cancellationToken) { RegionCalls++;throw new NotSupportedException(); }
     }
 }

@@ -12,10 +12,10 @@ internal sealed class CudaBackend : ICudaBackend
         FramePixelFormat.Bgra32 => 3, FramePixelFormat.Pbgra32 => 4, FramePixelFormat.Rgba32 => 5,
         _ => throw new NotSupportedException($"CUDA input format {format} is not supported.")
     };
-    internal static void Validate(ICudaExecutionScope scope, FrameDescriptor d)
+    internal static void Validate(ICudaExecutionScope scope, FrameDescriptor descriptor)
     {
-        if (scope.Context == 0 || scope.InputPointer == 0 || scope.RowStride < d.RowBytes ||
-            scope.InputByteLength < checked((d.Height - 1L) * scope.RowStride + d.RowBytes))
+        if (scope.Context == 0 || scope.InputPointer == 0 || scope.RowStride < descriptor.RowBytes ||
+            scope.InputByteLength < checked((descriptor.Height - 1L) * scope.RowStride + descriptor.RowBytes))
             throw new ArgumentException("The CUDA bridge returned an invalid device image view.");
     }
     private static nint Allocate(ICudaExecutionScope scope, long bytes, CudaMemoryKind kind)
@@ -36,17 +36,17 @@ internal sealed class CudaBackend : ICudaBackend
             throw;
         }
     }
-    public void WriteSurface(CudaSurface surface, ICudaExecutionScope scope, FrameDescriptor d, int format)
+    public void WriteSurface(CudaSurface surface, ICudaExecutionScope scope, FrameDescriptor descriptor, int format)
     {
         // Premultiplied BGRA already has the exact display layout.
-        nint scratch = d.Format == FramePixelFormat.Pbgra32 ? 0 : Allocate(scope, checked((long)d.Width * d.Height * 4), CudaMemoryKind.Device);
+        nint scratch = descriptor.Format == FramePixelFormat.Pbgra32 ? 0 : Allocate(scope, checked((long)descriptor.Width * descriptor.Height * 4), CudaMemoryKind.Device);
         NativeMethods.Check(NativeMethods.fv_display_write(surface.Owner, scope.Stream, scope.InputPointer, scope.RowStride, format, scratch));
     }
-    public byte[] Query(ICudaExecutionScope scope, FrameDescriptor d, int kind, int[]? points, PixelRegion region)
+    public byte[] Query(ICudaExecutionScope scope, FrameDescriptor descriptor, int kind, int[]? points, PixelRegion region)
     {
-        Validate(scope, d);
+        Validate(scope, descriptor);
         NativeMethods.VerifyAbi();
-        int channels = d.Format.BytesPerPixel();
+        int channels = descriptor.Format.BytesPerPixel();
         int count = (points?.Length ?? 0) / 2;
         int length = kind == 0 ? checked(count * channels) : kind == 1 ? channels * 32 : checked(region.Width * region.Height * channels);
         nint host = Allocate(scope, length, CudaMemoryKind.PinnedHost);
@@ -69,10 +69,10 @@ internal sealed class CudaBackend : ICudaBackend
         try
         {
             NativeMethods.Check(NativeMethods.fv_query(scope.Context, scope.Stream, scope.InputPointer, scope.RowStride,
-                d.Width, d.Height, channels, kind, coordinates, count, region.X, region.Y, region.Width, region.Height,
+                descriptor.Width, descriptor.Height, channels, kind, coordinates, count, region.X, region.Y, region.Width, region.Height,
                 deviceCoordinates, scratch, output, host));
             CudaDiagnostics.Enqueued(length);
-            scope.WaitForCompletion();
+            scope.WaitForGpuCompletion();
             var bytes = new byte[length];
             Marshal.Copy(host, bytes, 0, length);
             return bytes;

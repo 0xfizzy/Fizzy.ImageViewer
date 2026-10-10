@@ -23,7 +23,7 @@ public sealed class FrameLease : IDisposable
     /// <summary>Reads ordered original-pixel samples while retaining an independent source lease.
     /// CPU queries may execute synchronously on the calling thread; async does not imply worker dispatch.
     /// If querying and source cleanup both fail, an AggregateException preserves the query error first.</summary>
-    public async ValueTask<PixelSamplesResult> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct = default)
+    public async ValueTask<PixelSamplesResult> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken = default)
     {
         var lease = Acquire();
         try
@@ -32,9 +32,9 @@ public sealed class FrameLease : IDisposable
             foreach (var point in copy)
                 if ((uint)point.X >= (uint)lease.Descriptor.Width || (uint)point.Y >= (uint)lease.Descriptor.Height)
                     throw new ArgumentOutOfRangeException(nameof(coordinates));
-            ct.ThrowIfCancellationRequested();
-            var values = await lease.Storage.PixelSource.ReadPixelsAsync(copy, ct).ConfigureAwait(false);
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+            var values = await lease.Storage.PixelSource.ReadPixelsAsync(copy, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             if (values.Length != copy.Length || values.Any(p => p.Format != lease.Descriptor.Format))
                 throw new InvalidOperationException("Pixel source returned invalid samples.");
             var result = new PixelSamplesResult(lease.Info, values);
@@ -46,15 +46,15 @@ public sealed class FrameLease : IDisposable
     /// <summary>Computes original-pixel statistics while retaining an independent source lease.
     /// CPU queries may execute synchronously on the calling thread.
     /// If querying and source cleanup both fail, an AggregateException preserves the query error first.</summary>
-    public async ValueTask<RegionStatisticsResult> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct = default)
+    public async ValueTask<RegionStatisticsResult> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken = default)
     {
         var lease = Acquire();
         try
         {
             region.Validate(lease.Descriptor);
-            ct.ThrowIfCancellationRequested();
-            var statistics = await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region, ct).ConfigureAwait(false);
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+            var statistics = await lease.Storage.PixelSource.ComputeRegionStatisticsAsync(region, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             if (statistics.Format != lease.Descriptor.Format)
                 throw new InvalidOperationException("Pixel source returned invalid statistics.");
             var result = new RegionStatisticsResult(lease.Info, region, statistics);
@@ -66,16 +66,16 @@ public sealed class FrameLease : IDisposable
     /// <summary>Returns independently owned CPU pixels while retaining a source lease through the read.
     /// CPU queries may execute synchronously. If reading and cleanup fail, both errors are preserved,
     /// with the operation error first. A result is transferred only after source cleanup succeeds.</summary>
-    public async ValueTask<RegionPixels> ReadRegionAsync(PixelRegion region, CancellationToken ct = default)
+    public async ValueTask<RegionPixels> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken = default)
     {
         var lease = Acquire();
         ImageFrame? pixels = null;
         try
         {
             region.Validate(lease.Descriptor);
-            ct.ThrowIfCancellationRequested();
-            pixels = await lease.Storage.PixelSource.ReadRegionAsync(region, ct).ConfigureAwait(false);
-            ct.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+            pixels = await lease.Storage.PixelSource.ReadRegionAsync(region, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             using (var check = pixels.Acquire())
                 if (check.Descriptor.Width != region.Width || check.Descriptor.Height != region.Height ||
                     check.Descriptor.Format != lease.Descriptor.Format || !check.TryGetCpuPixels(out _))

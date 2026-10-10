@@ -96,7 +96,7 @@ public class SnapshotOwnershipTests
     public async Task SourceReleaseFailureCleansUndeliveredSnapshot(SnapshotKind kind)
     {
         var source = new RegionSource();
-        var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8), 1, source,
+        var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), 1, source,
             () => throw new InvalidOperationException("source release"));
         var view = new CommittedViewLease(frame.Acquire(), null, 0);
         frame.Dispose();
@@ -109,7 +109,7 @@ public class SnapshotOwnershipTests
     public async Task RawSnapshotRetainsTransferredRegionUntilFinalLeaseRelease()
     {
         var source = new RegionSource();
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8), 1, source, () => { });
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), 1, source, () => { });
         var snapshot = await new SnapshotCapture().CaptureAsync(() => new(frame.Acquire(), null, 0), SnapshotKind.Raw);
         Assert.Equal(0, source.Releases);
         using var pixels = snapshot.AcquirePixels();
@@ -137,9 +137,9 @@ public class SnapshotOwnershipTests
     private sealed class RegionSource : IFramePixelSource
     {
         internal int Releases;
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) =>
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }, () => Releases++));
     }
 }

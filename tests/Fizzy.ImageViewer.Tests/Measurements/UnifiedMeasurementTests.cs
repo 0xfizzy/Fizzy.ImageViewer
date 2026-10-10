@@ -30,15 +30,15 @@ public class UnifiedMeasurementTests
         public readonly TaskCompletionSource Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool Fail;
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken ct)
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken cancellationToken)
             => ValueTask.FromResult(points.ToArray().Select(_ => new PixelSample(FramePixelFormat.Gray8, 7, 0, 0, 0, 255)).ToArray());
-        public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+        public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
         {
             Entered.TrySetResult(); await Release.Task;
             if (Fail) throw new InvalidOperationException("query failure");
             return new(FramePixelFormat.Gray8, [new(region.Width * region.Height, 7, 7, 7)]);
         }
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
     private sealed class Harness : IDisposable
     {
@@ -175,7 +175,7 @@ public class UnifiedMeasurementTests
             using (h)
             {
                 var result = Assert.IsType<MeasurementSampleResult>(item!.QueryResult);
-                Assert.Equal(42, result.Frame.FrameId); Assert.Equal(item.GeometryVersion, result.GeometryVersion);
+                Assert.Equal(42, result.SourceFrame.FrameId); Assert.Equal(item.GeometryVersion, result.GeometryVersion);
                 Assert.Equal(query == MeasurementQueryKind.Pixel ? 5 : 0, result.Samples[0].Gray);
                 var version = item.GeometryVersion; item.UpdateGeometry(item.Geometry); Assert.Equal(version, item.GeometryVersion);
                 Assert.Same(result, item.QueryResult);

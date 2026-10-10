@@ -10,7 +10,7 @@
 为独立保留的不可变源图实现 `ICudaFrameSource`，`Descriptor` 描述原始像素：
 
 ```csharp
-ImageFrame frame = await CudaImageFrame.CreateAsync(source, cancellationToken);
+ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
 await viewer.SubmitFrameAsync(frame);
 ```
 
@@ -28,19 +28,20 @@ await viewer.SubmitFrameAsync(frame);
 | Context / Stream | 标准 CUDA 句柄，不是运行时私有对象；context 保活至外部资源清理完成 |
 | InputPointer / InputByteLength / RowStride | 导出设备地址前登记只读使用，存储覆盖访问的各行 |
 | AllocateScratch | 提供设备或锁页主机临时内存，由操作保留到安全完成 |
-| RetainResource | GPU 访问前登记 ICudaResource，返回独立所有权令牌 |
-| WaitForCompletion | 不受取消影响地证明设备访问完成，但不结束 operation |
+| RegisterResource | GPU 访问前登记 ICudaResource，返回独立所有权令牌 |
+| WaitForGpuCompletion | 不受取消影响地证明设备访问完成，但不结束 operation |
 
 描述符 stride 可以不同于设备 pitch，实际设备行距由 scope 提供，两者尺寸、格式、像素值一致。
 扩展验证尺寸、支持格式和存储范围，不验证任意指针安全性。不接受 CPU 输入、负 stride、多平面或外部不透明句柄。
+
+帧工厂在调用时立即接管源帧；`RegisterResource` 仅在成功时转移清理责任，登记失败仍由登记调用方清理。
 
 桥接拥有最终完成和退役流程。operation 与独立令牌共同保留资源，仅在最终安全释放时调用 `ICudaResource.Release`。
 清理失败须保留资源及 context、通过运行时失败渠道报告并隔离，不重试破坏性清理。native 调用或等待失败不证明
 设备访问已经结束，桥接必须排空或隔离已登记的输入、临时内存及外部资源，才能允许回收。
 
 执行前取消不启动 GPU；入队后取消只停止交付，不能绕过完成。查询必须等待成功后读取 host 字节，作用域退出前
-复制为独立结果。表面发布还要等待整个 ExecuteAsync 成功。消费者异常直接传播；扩展 native 错误使用包含 domain
-和 native code 的 CudaException。操作与自有资源清理错误同时保留。
+复制为独立结果。表面发布还要等待整个 ExecuteAsync 成功。消费者异常直接传播；扩展 native 错误使用包含类型化 `CudaErrorDomain` 和原始 native code 的 `CudaException`。操作与自有资源清理错误同时保留。
 
 ## 格式与传输成本
 
@@ -54,7 +55,7 @@ context 的活动表面共享 D3D9Ex device。仍要求设备/适配器兼容并
 查询只下载请求点、紧凑统计（每语义通道 count/min/max/sum 共 32 字节）或指定区域。gather 每 65,536 点分批，
 保留顺序；统计输出 Gray 或 R/G/B[/A] 顺序，小 ROI 只使用必要归约块，上限 256。完整快照显式请求全图。
 没有隐式整图缓存或下载回退。CudaDiagnostics.QueryMetrics 统计扩展传输及活动查询回调，不代表运行时实际分配
-或隔离字节。LiveSurfaces 会加载 native DLL，包含保留的 native 表面 owner。
+或隔离字节。`EnqueuedQueries` 和 `EnqueuedResultBytes` 统计成功返回的 native 查询，每个 gather 分块单独计数，不承诺完整统计失败前的部分入队。`ActiveQueries` 和 `ActiveResultBytes` 覆盖查询执行及托管结果复制；归零不证明 GPU 已完成或隔离区为空。GetLiveSurfaceCount() 会加载 native DLL，包含保留的 native 表面 owner。
 
 不提供高位深 CUDA 映射、预乘 RGBA、Bayer、自定义 LUT/显示范围、D3D11/12 输入、软件回退或设备重建。
 WPF 附加与恢复遵循[帧契约](frame-pipeline.md#gpu-surfaces-and-explicit-pixel-queries)。

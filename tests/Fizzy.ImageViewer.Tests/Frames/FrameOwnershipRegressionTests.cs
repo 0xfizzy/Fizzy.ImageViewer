@@ -51,7 +51,7 @@ public class FrameOwnershipRegressionTests
             {
                 entered.SetResult();
                 release.Wait(TimeSpan.FromSeconds(15));
-            }), ct: new CancellationToken(!frozen)));
+            }), cancellationToken: new CancellationToken(!frozen)));
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
             var closing = viewer.DisposeAsync().AsTask();
             await Assert.ThrowsAsync<TimeoutException>(() => closing.WaitAsync(TimeSpan.FromMilliseconds(200)));
@@ -72,7 +72,7 @@ public class FrameOwnershipRegressionTests
     public async Task RegionResultIsReleasedIfLastSourceReleaseThrows()
     {
         var source = new RegionSource();
-        var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () => throw new InvalidOperationException("source release"));
+        var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () => throw new InvalidOperationException("source release"));
         var lease = frame.Acquire();
         frame.Dispose();
         var pending = lease.ReadRegionAsync(new(0, 0, 1, 1)).AsTask();
@@ -93,7 +93,7 @@ public class FrameOwnershipRegressionTests
     public async Task ProviderAndLastSourceReleaseErrorsArePreserved(string operation)
     {
         var source = new RegionSource { Fail = true };
-        var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () => throw new InvalidOperationException("source release"));
+        var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () => throw new InvalidOperationException("source release"));
         var lease = frame.Acquire(); frame.Dispose();
         Task pending = operation switch
         {
@@ -114,7 +114,7 @@ public class FrameOwnershipRegressionTests
         using var cancellation = new CancellationTokenSource();
         var source = new RegionSource { FailRegionRelease = true };
         int sourceReleases = 0;
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () =>
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), (nint)1, source, () =>
         {
             sourceReleases++;
             throw new InvalidOperationException("source release");
@@ -158,17 +158,17 @@ public class FrameOwnershipRegressionTests
         public bool Fail;
         public bool FailRegionRelease;
         public ImageFrame? Returned;
-        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken ct)
+        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken cancellationToken)
         {
             Entered.SetResult(); await Resume.Task;
             throw new ArgumentException("provider error");
         }
-        public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+        public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
         {
             Entered.SetResult(); await Resume.Task;
             throw new ArgumentException("provider error");
         }
-        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct)
+        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken)
         {
             Entered.SetResult(); await Resume.Task;
             if (Fail) throw new ArgumentException("provider error");

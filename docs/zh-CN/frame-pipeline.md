@@ -34,7 +34,7 @@ DisplayRange 读取最新请求；等待 `SetDisplayRangeAsync` 观察重绘失�
 
 ## 像素访问与测量
 
-像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。`AcquireCurrentFrame()` 返回调用方拥有的租约。`TryGetCpuPixels` 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。CpuFramePixelReader 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。
+像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。`AcquireCurrentFrame()` 返回调用方拥有的租约。`TryGetCpuPixels` 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。静态 `CpuFramePixelReader.TryReadPixel` 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。查询与测量结果通过 `SourceFrame` 标识原始帧，区域像素使用区域局部坐标。
 
 跨后端使用租约的 `ReadPixelsAsync`、`ComputeRegionStatisticsAsync`、`ReadRegionAsync`。输入坐标用 ReadOnlyMemory，结果保留顺序、原单位和格式；每次异步调用自行获取租约直至结束。CPU 可在调用线程同步完成，直接调用不承诺工作线程；Viewer 调度器及快照自行安排离开 STA。
 
@@ -80,7 +80,7 @@ TIFF 为无压缩 Classic TIFF，Gray16 UINT、Gray32Float IEEEFP、左上方向
 
 ## GPU 表面与显式像素查询
 
-GPU 输入提供不可变 BGRA IDirect3DSurface9、所有者及显式像素源。呈现不触发像素读取，CPU 显示范围不应用于 GPU。查询仅下载明确请求数据，返回独立 CPU 存储；提供者支持协议要求的并发、格式与所有权。最后源租约释放才清理查询资源；不能证明 D3D 安全分离时隔离保留而不重用。真实 GPU/切换仍需设备验证。
+`D3D9ImageFrame.TakeOwnership` 接管已就绪的 GPU 表面，包括验证失败时的清理责任。GPU 输入提供不可变 BGRA IDirect3DSurface9、所有者及显式像素源。呈现不触发像素读取，CPU 显示范围不应用于 GPU。查询仅下载明确请求数据，返回独立 CPU 存储；提供者支持协议要求的并发、格式与所有权。最后源租约释放才清理查询资源；不能证明 D3D 安全分离时隔离保留而不重用。真实 GPU/切换仍需设备验证。
 
 外部表面入口是受信任的 native 边界，非零指针不证明兼容。调用方须提供有效、非多重采样、D3DPOOL_DEFAULT 中的 D3DFMT_A8R8G8B8 render target，使用预乘 alpha，尺寸与描述符一致。设备须兼容 WPF；可选 CUDA 组件使用带 D3DCREATE_MULTITHREADED 和 D3DCREATE_FPU_PRESERVE 的 D3D9Ex 设备。生产者负责设备兼容性、native 元数据验证和 GPU 同步；移交前必须完成全部写入并解除计算映射，仅入队不足以交付。设备、表面及原始查询资源保活至最终 release。描述符描述原始像素，不描述 BGRA 表面的字节布局。本入口不表达自定义颜色映射、方向变换或显示范围；Display 快照从原始像素重建标准显示转换，不读取显示表面。
 

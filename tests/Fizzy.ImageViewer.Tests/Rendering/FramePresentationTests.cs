@@ -62,7 +62,7 @@ public class FramePresentationTests
             new FramePresentation(viewer.Host.Window.Dispatcher, new ImageViewport(), new WriteableBitmapPresenter(), NullLogger.Instance));
         var source = new UnexpectedReadSource();
         int released = 0;
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 4, FramePixelFormat.Bgra32),
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 4, FramePixelFormat.Bgra32),
             (nint)1, source, () => released++);
         using var lease = frame.Acquire();
         try
@@ -89,8 +89,8 @@ public class FramePresentationTests
     {
         internal int Reads;
         private Exception Unexpected() { Reads++; return new InvalidOperationException("Unexpected pixel read during presentation"); }
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken ct) => throw Unexpected();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct) => throw Unexpected();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) => throw Unexpected();
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> points, CancellationToken cancellationToken) => throw Unexpected();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken) => throw Unexpected();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) => throw Unexpected();
     }
 }

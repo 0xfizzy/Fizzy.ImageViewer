@@ -11,11 +11,11 @@ public interface ISnapshotSource
     /// <summary>Captures the whole current committed frame. The caller owns and must dispose the returned snapshot.</summary>
     /// <exception cref="InvalidOperationException">No committed frame exists or the capture capacity is full.</exception>
     Task<ImageSnapshot> CaptureSnapshotAsync(
-        SnapshotKind kind, CancellationToken ct = default);
+        SnapshotKind kind, CancellationToken cancellationToken = default);
 
     /// <summary>Captures a nonempty region wholly inside the current committed frame. The caller owns and must dispose the returned snapshot.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The region is empty or outside the frame.</exception>
     /// <exception cref="InvalidOperationException">No committed frame exists or the capture capacity is full.</exception>
     Task<ImageSnapshot> CaptureSnapshotAsync(
-        SnapshotKind kind, PixelRegion region, CancellationToken ct = default);
+        SnapshotKind kind, PixelRegion region, CancellationToken cancellationToken = default);
 }

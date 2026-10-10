@@ -4,15 +4,15 @@ namespace Fizzy.ImageViewer.Cuda;
 
 internal sealed class CudaPixelSource(ICudaFrameSource source, FrameDescriptor descriptor, ICudaBackend backend) : IFramePixelSource
 {
-    private async ValueTask<byte[]> Read(int kind, int[]? points, PixelRegion region, CancellationToken ct)
+    private async ValueTask<byte[]> Read(int kind, int[]? points, PixelRegion region, CancellationToken cancellationToken)
     {
-        ct.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
         byte[]? result = null;
-        await source.ExecuteAsync(scope => result = backend.Query(scope, descriptor, kind, points, region), ct).ConfigureAwait(false);
-        ct.ThrowIfCancellationRequested();
+        await source.ExecuteAsync(scope => result = backend.Query(scope, descriptor, kind, points, region), cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         return result ?? throw new InvalidOperationException("The bridge did not execute the CUDA callback.");
     }
-    public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
+    public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken)
     {
         var result = new PixelSample[coordinates.Length];
         int channels = descriptor.Format.BytesPerPixel();
@@ -21,7 +21,7 @@ internal sealed class CudaPixelSource(ICudaFrameSource source, FrameDescriptor d
             int count = Math.Min(65536, coordinates.Length - offset);
             var points = new int[count * 2];
             for (int i = 0; i < count; i++) { var p = coordinates.Span[offset + i]; points[i * 2] = p.X; points[i * 2 + 1] = p.Y; }
-            var bytes = await Read(0, points, default, ct).ConfigureAwait(false);
+            var bytes = await Read(0, points, default, cancellationToken).ConfigureAwait(false);
             for (int i = 0; i < count; i++)
             {
                 int p = i * channels;
@@ -34,9 +34,9 @@ internal sealed class CudaPixelSource(ICudaFrameSource source, FrameDescriptor d
     private int Channel(int semantic) => semantic < 3 && descriptor.Format is FramePixelFormat.Bgr24 or FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32
         ? 2 - semantic : semantic;
 
-    public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+    public async ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
     {
-        var bytes = await Read(1, null, region, ct).ConfigureAwait(false);
+        var bytes = await Read(1, null, region, cancellationToken).ConfigureAwait(false);
         var result = new ChannelStatistics[descriptor.Format.BytesPerPixel()];
         for (int c = 0; c < result.Length; c++)
         {
@@ -46,9 +46,9 @@ internal sealed class CudaPixelSource(ICudaFrameSource source, FrameDescriptor d
         }
         return new(descriptor.Format, result);
     }
-    public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct)
+    public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken)
     {
-        var bytes = await Read(2, null, region, ct).ConfigureAwait(false);
+        var bytes = await Read(2, null, region, cancellationToken).ConfigureAwait(false);
         return ImageFrame.TakeOwnership(new(region.Width, region.Height, checked(region.Width * descriptor.Format.BytesPerPixel()), descriptor.Format), bytes, () => { });
     }
 }

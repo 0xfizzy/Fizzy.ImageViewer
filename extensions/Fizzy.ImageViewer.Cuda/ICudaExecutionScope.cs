@@ -21,9 +21,9 @@ public interface ICudaExecutionScope
     /// <remarks>The operation and token each retain the resource. Release it only after both have ended
     /// safely. If Release fails, preserve the resource and context, report the failure through the runtime's
     /// failure channel and quarantine; never retry destructive cleanup. The token releases its own reference once.</remarks>
-    IDisposable RetainResource(ICudaResource resource);
+    IDisposable RegisterResource(ICudaResource resource);
     /// <summary>Synchronously proves this operation's submitted CUDA accesses have ended.
     /// Does not finish or release the operation. Must not observe user cancellation instead of completion.
     /// A thrown error is not safety proof; the bridge still owns drain/quarantine.</summary>
-    void WaitForCompletion();
+    void WaitForGpuCompletion();
 }

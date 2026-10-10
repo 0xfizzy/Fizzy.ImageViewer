@@ -81,13 +81,15 @@ call `SetDisplayRangeAsync` explicitly to request another update.
 ## Pixel access and measurements
 
 Original-pixel access belongs to `Fizzy.ImageViewer.Frames`, alongside storage and leases.
+Query and measurement results identify their original frame through `SourceFrame`; region pixels use region-local coordinates.
+
 It includes `IFramePixelSource`, `CpuFramePixelReader`, pixel coordinates/regions, samples,
 statistics and read results. `Fizzy.ImageViewer.Imaging` consumes these contracts for
 display conversion, line sampling and query scheduling; Frames has no Imaging dependency.
 
 `AcquireCurrentFrame()` returns an owned lease. `TryGetCpuPixels` exposes only existing
 CPU memory and returns false for GPU storage. There is no general `Data` accessor.
-`CpuFramePixelReader` is a CPU-only decoding helper; it never downloads GPU pixels.
+`CpuFramePixelReader.TryReadPixel` and `ReadPixels` are static CPU-only decoding helpers; they never download GPU pixels.
 Its `TryRead` returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
 `NotSupportedException`. Use lease asynchronous reads for backend-independent access.
 
@@ -253,12 +255,12 @@ owned; drawing and HUD handles are invalidated during cleanup.
 
 Application integrations should adapt their own frame and image types to `ImageFrame`.
 Use `Copy` for borrowed storage, `TakeOwnership` to transfer immutable CPU storage, or
-`TakeD3D9Surface` to transfer a ready GPU surface. Producers own conversion, lifetime and
+`D3D9ImageFrame.TakeOwnership` to transfer a ready GPU surface. Producers own conversion, lifetime and
 device compatibility; integration tests for their adapters belong in the consumer repository.
 
 ## GPU surfaces and explicit pixel queries
 
-`ImageFrame.TakeD3D9Surface(descriptor, surface, pixelSource, release)` transfers a ready,
+`D3D9ImageFrame.TakeOwnership(descriptor, surface, pixelSource, release)` transfers a ready,
 immutable BGRA `IDirect3DSurface9` and its producer-owned lifetime. The producer must supply
 matching dimensions, a WPF-compatible D3D9 render target, and raw pixels consistent with the
 standard display conversion. The surface cannot be overwritten while any lease exists.
