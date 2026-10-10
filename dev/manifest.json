@@ -1,0 +1,1711 @@
+{
+  "source_base_path": "D:/a/Fizzy.ImageViewer/Fizzy.ImageViewer",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      }
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "LICENSE",
+      "output": {
+        "resource": {
+          "relative_path": "LICENSE"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "README.md",
+      "output": {
+        ".html": {
+          "relative_path": "README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "README.zh-CN.md",
+      "output": {
+        ".html": {
+          "relative_path": "README.zh-CN.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.CircleElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.CircleElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.CircleElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.CircleElement.yml\" sourcestartlinenumber=\"1\">Circle drawing anchored in image coordinates. Radius and stroke units follow ScaleMode.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.CrosshairElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.CrosshairElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.CrosshairElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.CrosshairElement.yml\" sourcestartlinenumber=\"1\">Crosshair with a center ring, anchored in image coordinates. Defaults to a fixed screen size.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingClickedEventArgs.yml\" sourcestartlinenumber=\"1\">Identifies the whole drawing that was hit; no individual element index is reported.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.DrawingElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.DrawingElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingElement.yml\" sourcestartlinenumber=\"1\">Immutable image-coordinate drawing data. Brushes are snapshotted when submitted.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingHandle.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.DrawingHandle.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.DrawingHandle",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingHandle.yml\" sourcestartlinenumber=\"1\">Owns one drawing containing zero or more elements. Replacement preserves its visual identity and stacking order.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingLayer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.DrawingLayer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.DrawingLayer",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.DrawingLayer.yml\" sourcestartlinenumber=\"1\">A layer of image-coordinate drawings. All public operations marshal to the viewer thread.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.IViewerDrawing.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.IViewerDrawing.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.IViewerDrawing",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.IViewerDrawing.yml\" sourcestartlinenumber=\"1\">Management and convenience drawing in the default marker layer.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.LineElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.LineElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.LineElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.LineElement.yml\" sourcestartlinenumber=\"1\">Line drawing in image coordinates; supports ScaleWithImage and FixedStroke.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.OverlayScaleMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.OverlayScaleMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.OverlayScaleMode",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.OverlayScaleMode.yml\" sourcestartlinenumber=\"1\">How drawing dimensions respond to image zoom; positions remain anchored in image coordinates.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.RectangleElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.RectangleElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.RectangleElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.RectangleElement.yml\" sourcestartlinenumber=\"1\">Rectangle drawing in image coordinates; supports ScaleWithImage and FixedStroke.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.TextElement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.TextElement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing.TextElement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Drawing.TextElement.yml\" sourcestartlinenumber=\"1\">Text anchored in image coordinates; supports ScaleWithImage and FixedSize, defaulting to FixedSize.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Drawing.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Drawing",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.ChannelStatistics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.ChannelStatistics.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.ChannelStatistics",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.ChannelStatistics.yml\" sourcestartlinenumber=\"1\">Statistics of finite original values for one semantic channel.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.CpuFramePixelReader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.CpuFramePixelReader.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.CpuFramePixelReader",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.CpuFramePixelReader.yml\" sourcestartlinenumber=\"1\">Synchronous access to CPU-backed original pixels. Use FrameLease asynchronous\nread methods for backend-independent access.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameDescriptor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameDescriptor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameDescriptor",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameDescriptor.yml\" sourcestartlinenumber=\"1\">Layout of a top-down, single-plane image. Construction stores values; frame factories validate them.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameInfo.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameInfo",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameInfo.yml\" sourcestartlinenumber=\"1\">Pixel description and viewer-local submission identity. FrameId zero denotes unsubmitted pixels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameLease.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameLease.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameLease",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameLease.yml\" sourcestartlinenumber=\"1\">A single ownership token. Do not dispose concurrently with reading its memory.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FramePixelFormat.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FramePixelFormat.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FramePixelFormat",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FramePixelFormat.yml\" sourcestartlinenumber=\"1\">Original pixel storage layout; multibyte grayscale values use little-endian byte order.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FramePixelFormats.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FramePixelFormats.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FramePixelFormats",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FramePixelFormats.yml\" sourcestartlinenumber=\"1\">Storage-size helpers for supported frame pixel formats.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmissionOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameSubmissionOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameSubmissionOptions",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmissionOptions.yml\" sourcestartlinenumber=\"1\">Optional source metadata and notification for one frame submission.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameSubmitResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameSubmitResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitResult.yml\" sourcestartlinenumber=\"1\">The actual commit/drop outcome and any processing or submission-owned cleanup failure.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.FrameSubmitStatus",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.yml\" sourcestartlinenumber=\"1\">Terminal submission outcome. Inspect FrameSubmitResult.Error separately for processing or cleanup failures.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.ICommittedFrameSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.ICommittedFrameSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.ICommittedFrameSource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.ICommittedFrameSource.yml\" sourcestartlinenumber=\"1\">Access to committed original frames and commit notifications.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.IFramePixelSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.IFramePixelSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.IFramePixelSource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.IFramePixelSource.yml\" sourcestartlinenumber=\"1\">All operations read original pixels. No operation may silently materialize the full image.\nReadPixelsAsync transfers its returned sample array; the provider must not reuse or mutate it.\nStatistics are immutable snapshots and region reads transfer an independently owned image.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.IFrameSink.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.IFrameSink.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.IFrameSink",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.IFrameSink.yml\" sourcestartlinenumber=\"1\">Frame submission with immediate ownership transfer, including cancellation, rejection and failure.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.ImageFrame.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.ImageFrame.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.ImageFrame",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.ImageFrame.yml\" sourcestartlinenumber=\"1\">Owned, immutable pixel storage. Do not mutate or release transferred storage.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelCoordinate.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.PixelCoordinate.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.PixelCoordinate",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelCoordinate.yml\" sourcestartlinenumber=\"1\">Zero-based integer location in an image.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelRegion.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.PixelRegion.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.PixelRegion",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelRegion.yml\" sourcestartlinenumber=\"1\">Integer image region with exclusive right and bottom edges.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSample.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.PixelSample.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.PixelSample",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSample.yml\" sourcestartlinenumber=\"1\">Original pixel values in semantic channel order, without display mapping or unpremultiplication.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSamplesResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.PixelSamplesResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.PixelSamplesResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSamplesResult.yml\" sourcestartlinenumber=\"1\">Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame\nprovenance. Construction copies the supplied samples; retain the requested coordinates\nseparately when their association is needed.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionPixels.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.RegionPixels.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.RegionPixels",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionPixels.yml\" sourcestartlinenumber=\"1\">Owns independently read CPU pixels and their source provenance.\nCreated by <xref href=\"Fizzy.ImageViewer.Frames.FrameLease.ReadRegionAsync(Fizzy.ImageViewer.Frames.PixelRegion%2cSystem.Threading.CancellationToken)\" data-throw-if-not-resolved=\"false\"></xref> after validating the provider result.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionStatistics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.RegionStatistics.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.RegionStatistics",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionStatistics.yml\" sourcestartlinenumber=\"1\">Immutable statistics snapshot. Construction copies the supplied channels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionStatisticsResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.RegionStatisticsResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.RegionStatisticsResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.RegionStatisticsResult.yml\" sourcestartlinenumber=\"1\">Immutable region statistics with source provenance.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Hud.AnchorAlignment.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Hud.AnchorAlignment.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Hud.AnchorAlignment",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Hud.AnchorAlignment.yml\" sourcestartlinenumber=\"1\">The anchor alignment within a HUD text element.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Hud.HudTextHandle.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Hud.HudTextHandle.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Hud.HudTextHandle",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Hud.HudTextHandle.yml\" sourcestartlinenumber=\"1\">Handle for one viewer-owned screen-space text item. Updates and removal dispatch to the viewer STA.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Hud.IViewerHud.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Hud.IViewerHud.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Hud.IViewerHud",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Hud.IViewerHud.yml\" sourcestartlinenumber=\"1\">Screen-space text and pixel inspection. Operations dispatch to the viewer STA.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Hud.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Hud.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Hud",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.IViewer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.IViewer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.IViewer",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewer.yml\" sourcestartlinenumber=\"1\">Complete viewer capabilities and ownership of asynchronous shutdown.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.IViewerWindow.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.IViewerWindow.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.IViewerWindow",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewerWindow.yml\" sourcestartlinenumber=\"1\">Borrowed window control. Operations dispatch to the viewer STA and reject calls once shutdown starts.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Imaging.GrayDisplayRange.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Imaging.GrayDisplayRange.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Imaging.GrayDisplayRange",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Imaging.GrayDisplayRange.yml\" sourcestartlinenumber=\"1\">Grayscale display mapping in original-value units; values outside the bounds are clipped to black or white.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Imaging.IViewerQueries.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Imaging.IViewerQueries.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Imaging.IViewerQueries",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Imaging.IViewerQueries.yml\" sourcestartlinenumber=\"1\">Shared pixel-query configuration and metrics for measurements and pixel inspection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Imaging.PixelQueryMetrics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Imaging.PixelQueryMetrics.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Imaging.PixelQueryMetrics",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Imaging.PixelQueryMetrics.yml\" sourcestartlinenumber=\"1\">A snapshot of shared query execution and publication-age counters.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Imaging.PixelQueryOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Imaging.PixelQueryOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Imaging.PixelQueryOptions",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Imaging.PixelQueryOptions.yml\" sourcestartlinenumber=\"1\">Shared query limits. Rates must produce an interval of at least one TimeSpan tick\nand less than TimeSpan.MaxValue; invalid settings are rejected when applied.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Imaging.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Imaging.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Imaging",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Layers.ViewerLayer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Layers.ViewerLayer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Layers.ViewerLayer",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Layers.ViewerLayer.yml\" sourcestartlinenumber=\"1\">Shared visibility, input and lifetime of a business layer. Operations dispatch to the viewer STA.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Layers.ViewerLayers.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Layers.ViewerLayers.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Layers.ViewerLayers",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Layers.ViewerLayers.yml\" sourcestartlinenumber=\"1\">Public layer capabilities and default layer composition.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Layers.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Layers.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Layers",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Circle with a finite, nonnegative radius in source-image pixels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.CrosshairMeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.CrosshairMeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.CrosshairMeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.CrosshairMeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Crosshair location in source-image pixels; marker size is not part of its geometry.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.IMeasurement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.IMeasurement",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurement.yml\" sourcestartlinenumber=\"1\">A viewer-owned measurement handle. Operations dispatch synchronously to the viewer STA;\ncallbacks run on that STA. Dispose is idempotent and safe after viewer closure.\nId, Origin and IsDisposed remain readable after closure; other access requires a running viewer.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementTool.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.IMeasurementTool.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.IMeasurementTool",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementTool.yml\" sourcestartlinenumber=\"1\">Reusable tool registration. Each activation creates an independent session on the viewer STA.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementToolContext.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.IMeasurementToolContext.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.IMeasurementToolContext",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementToolContext.yml\" sourcestartlinenumber=\"1\">Capabilities borrowed by custom tools on the viewer STA. Tool callbacks and\ncreation operations must run on that STA; returned measurement handles dispatch themselves.\nEach factory receives a context for one activation and passes it to its session. Ended contexts reject new measurements.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementToolSession.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.IMeasurementToolSession.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.IMeasurementToolSession",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.IMeasurementToolSession.yml\" sourcestartlinenumber=\"1\">One activation of a measurement tool. Callbacks run on the viewer STA.\nDispose is called exactly once after completion, interruption or callback failure.\nCancellation notification is separate from unconditional session-resource cleanup.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.IViewerMeasurements.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.IViewerMeasurements.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.IViewerMeasurements",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.IViewerMeasurements.yml\" sourcestartlinenumber=\"1\">Measurement tools, interaction, style and notifications on the viewer STA.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.LineMeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.LineMeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.LineMeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.LineMeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Ordered line endpoints in source-image pixels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementClickResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementClickResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementClickResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementClickResult.yml\" sourcestartlinenumber=\"1\">Whether a tool click keeps its activation accepting input.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementEventArgs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementEventArgs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementEventArgs",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementEventArgs.yml\" sourcestartlinenumber=\"1\">Immutable geometry and query snapshots with a live, thread-safe measurement handle.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Closed immutable geometry family in source-image coordinates.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementGeometryKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementGeometryKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementGeometryKind",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementGeometryKind.yml\" sourcestartlinenumber=\"1\">Shape of a measurement, independent of its originating tool or pixel query.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementLayer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementLayer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementLayer",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementLayer.yml\" sourcestartlinenumber=\"1\">Layer for model-owned measurements. Content is created through measurement tools.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementOptions",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementOptions.yml\" sourcestartlinenumber=\"1\">Query and appearance options validated when a measurement is created.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementOrigin.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementOrigin.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementOrigin",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementOrigin.yml\" sourcestartlinenumber=\"1\">Immutable tool registration ID and unique activation ID captured at creation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementQueryKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementQueryKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementQueryKind",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementQueryKind.yml\" sourcestartlinenumber=\"1\">Pixel query attached to a compatible measurement geometry.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementQueryResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementQueryResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementQueryResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementQueryResult.yml\" sourcestartlinenumber=\"1\">Common provenance for the closed family of immutable measurement query results.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementRegionStatisticsResult.yml\" sourcestartlinenumber=\"1\">Owned statistics for a nonempty clipped source region.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementSampleResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementSampleResult.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementSampleResult",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementSampleResult.yml\" sourcestartlinenumber=\"1\">Owned coordinate/sample pairs for a pixel or ordered line-profile query.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementSnapshot.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementSnapshot.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementSnapshot",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementSnapshot.yml\" sourcestartlinenumber=\"1\">Immutable geometry snapshot of any completed measurement.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementStyle.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementStyle.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementStyle",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementStyle.yml\" sourcestartlinenumber=\"1\">Appearance of newly created measurement shapes. Viewer assignment and shape\ncreation copy and freeze brushes; subsequent changes to the source brushes have no effect.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementToolIds.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.MeasurementToolIds.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.MeasurementToolIds",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.MeasurementToolIds.yml\" sourcestartlinenumber=\"1\">Stable IDs independent of menu labels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.PointMeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.PointMeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.PointMeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.PointMeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Point location in source-image pixels; marker size is not part of its geometry.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.RectangleMeasurementGeometry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.RectangleMeasurementGeometry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements.RectangleMeasurementGeometry",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Measurements.RectangleMeasurementGeometry.yml\" sourcestartlinenumber=\"1\">Normalized rectangle in source-image pixels.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Measurements.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Measurements.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Measurements",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.CheckableMenuItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.CheckableMenuItem.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.CheckableMenuItem",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.CheckableMenuItem.yml\" sourcestartlinenumber=\"1\">A checkable menu action whose state is evaluated on opening.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.ICheckableMenuItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.ICheckableMenuItem.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.ICheckableMenuItem",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.ICheckableMenuItem.yml\" sourcestartlinenumber=\"1\">A menu item with checked state.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.IMenuItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.IMenuItem.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.IMenuItem",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.IMenuItem.yml\" sourcestartlinenumber=\"1\">Menu callbacks run on the viewer STA. A failure while reading display state\ncancels that menu opening and is logged; it does not close the viewer.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.IViewerMenu.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.IViewerMenu.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.IViewerMenu",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.IViewerMenu.yml\" sourcestartlinenumber=\"1\">Registers borrowed menu objects and returns independently revocable registration handles.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.MenuItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.MenuItem.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.MenuItem",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.MenuItem.yml\" sourcestartlinenumber=\"1\">A menu action. Async actions start on the viewer STA and are awaited by the menu binding.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.SeparatorMenuItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.SeparatorMenuItem.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus.SeparatorMenuItem",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Menus.SeparatorMenuItem.yml\" sourcestartlinenumber=\"1\">A separator normalized by the menu renderer.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Menus.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Menus.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Menus",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Snapshots.ISnapshotSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Snapshots.ISnapshotSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Snapshots.ISnapshotSource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Snapshots.ISnapshotSource.yml\" sourcestartlinenumber=\"1\">Captures independently owned snapshots of the committed frame or a region.\nAt most two captures are admitted per Viewer, with one export read executing at a time.\nFurther calls throw InvalidOperationException before acquiring a frame lease.\nAccepted calls capture the committed frame synchronously and may finish after Viewer closure.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Snapshots.ImageSnapshot.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Snapshots.ImageSnapshot.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Snapshots.ImageSnapshot",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Snapshots.ImageSnapshot.yml\" sourcestartlinenumber=\"1\">Independent immutable pixels. Owns its storage until disposed.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Snapshots.SnapshotEncoding.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Snapshots.SnapshotEncoding.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Snapshots.SnapshotEncoding",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Snapshots.SnapshotEncoding.yml\" sourcestartlinenumber=\"1\">Snapshot file encoding. Raw snapshots require TIFF; display snapshots support all listed encodings.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Snapshots.SnapshotKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Snapshots.SnapshotKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Snapshots.SnapshotKind",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Snapshots.SnapshotKind.yml\" sourcestartlinenumber=\"1\">Pixel representation captured independently of the viewer lifetime.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Snapshots.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Snapshots.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Snapshots",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Viewer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Viewer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Viewer",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Viewer.yml\" sourcestartlinenumber=\"1\">Displays images, drawings and measurements in an independently owned WPF window.</p>\n<p>\nCreates its WPF window on an independent STA; facade calls marshal to that thread.\nBorrowed tool contexts retain their own callback-thread restrictions.\n</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Viewport.IViewerDisplay.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Viewport.IViewerDisplay",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Viewport.IViewerDisplay.yml\" sourcestartlinenumber=\"1\">Image viewport fitting and display mapping, independent of original-pixel queries.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Viewport.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Viewport.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Viewport",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy",
+      "Summary": null
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "artifacts/docs/api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/toc.html"
+        },
+        ".json": {
+          "relative_path": "api/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "assets/icon-readme.png",
+      "output": {
+        "resource": {
+          "relative_path": "assets/icon-readme.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "assets/icon.png",
+      "output": {
+        "resource": {
+          "relative_path": "assets/icon.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "assets/icon.svg",
+      "output": {
+        "resource": {
+          "relative_path": "assets/icon.svg"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/architecture.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/architecture.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/documentation.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/documentation.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/drawing-layers.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/drawing-layers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/frame-pipeline.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/frame-pipeline.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/getting-started.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/getting-started.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/measurements.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/measurements.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/menus.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/menus.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/public-api.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/public-api.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/releasing.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/releasing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "docs/site/versions.js",
+      "output": {
+        "resource": {
+          "relative_path": "docs/site/versions.js"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/snapshots.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/snapshots.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "docs/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "docs/toc.html"
+        },
+        ".json": {
+          "relative_path": "docs/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/validation.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/validation.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/architecture.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/architecture.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/documentation.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/documentation.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/drawing-layers.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/drawing-layers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/frame-pipeline.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/frame-pipeline.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/getting-started.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/getting-started.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/measurements.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/measurements.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/menus.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/menus.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/public-api.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/public-api.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/releasing.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/releasing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/snapshots.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/snapshots.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "docs/zh-CN/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/toc.html"
+        },
+        ".json": {
+          "relative_path": "docs/zh-CN/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/validation.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/validation.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/BasicViewer/BasicViewer.csproj",
+      "output": {
+        "resource": {
+          "relative_path": "samples/BasicViewer/BasicViewer.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/BasicViewer/Program.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/BasicViewer/Program.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/LiveOverlays/LiveOverlays.csproj",
+      "output": {
+        "resource": {
+          "relative_path": "samples/LiveOverlays/LiveOverlays.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/LiveOverlays/Program.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/LiveOverlays/Program.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/MeasurementsAndExport/MeasurementsAndExport.csproj",
+      "output": {
+        "resource": {
+          "relative_path": "samples/MeasurementsAndExport/MeasurementsAndExport.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/MeasurementsAndExport/Program.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/MeasurementsAndExport/Program.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html"
+        },
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}
