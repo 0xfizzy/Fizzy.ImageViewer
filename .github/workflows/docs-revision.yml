@@ -95,16 +95,10 @@ jobs:
         run: |
           ./scripts/Documentation-Revision.ps1 -Action Stage -Version $env:VERSION -Revision $env:REVISION
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: archive immutable correction'
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/deploy-archive
         if: inputs.action != 'rollback'
         with:
-          name: revision-pages
-          path: artifacts/archive
-      - uses: actions/deploy-pages@v4
-        if: inputs.action != 'rollback'
-        with:
-          artifact_name: revision-pages
+          stage: revision
       - name: Verify fixed revision before activating
         shell: pwsh
         env:
@@ -117,13 +111,9 @@ jobs:
             ./scripts/Documentation-Revision.ps1 -Action Activate -Version $env:VERSION -Revision $env:REVISION
           }
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: activate verified correction'
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/deploy-archive
         with:
-          name: active-revision-pages
-          path: artifacts/archive
-      - uses: actions/deploy-pages@v4
-        with:
-          artifact_name: active-revision-pages
+          stage: active-revision
       - name: Verify active entrypoints
         shell: pwsh
         run: ./scripts/Documentation-Revision.ps1 -Action Verify -Version $env:VERSION -Revision $env:REVISION -RequireActive

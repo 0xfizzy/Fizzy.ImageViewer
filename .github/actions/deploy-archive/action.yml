@@ -1,0 +1,28 @@
+name: Deploy retained documentation
+description: Deploy the archive commit with a distinct artifact for each attempt and stage
+inputs:
+  stage:
+    required: true
+    description: Stage name unique within the job
+runs:
+  using: composite
+  steps:
+    - uses: actions/configure-pages@v5
+    - id: identity
+      shell: pwsh
+      run: |
+        $commit = git -C artifacts/archive rev-parse HEAD
+        if ($LASTEXITCODE) { throw 'Cannot resolve documentation archive commit.' }
+        "commit=$commit" >> $env:GITHUB_OUTPUT
+    - uses: actions/upload-pages-artifact@v3
+      id: upload
+      with:
+        name: pages-${{ inputs.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: artifacts/archive
+    - uses: actions/github-script@v7
+      env:
+        PAGES_ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
+        PAGES_ARCHIVE_COMMIT: ${{ steps.identity.outputs.commit }}
+      with:
+        script: |
+          await require(`${process.env.GITHUB_WORKSPACE}/scripts/Deploy-Pages.cjs`)({github, context, core});

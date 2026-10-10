@@ -8,10 +8,18 @@ on:
         description: Existing release tag to publish or recover (v1.2.0 or later)
         required: true
         type: string
+      component:
+        description: Package to publish or recover
+        type: choice
+        options: [core, cuda]
+        default: core
 permissions:
   contents: read
 jobs:
   prepare:
+    if: inputs.component != 'cuda'
+    permissions:
+      contents: write # Draft release assets require write access even for downloads.
     runs-on: windows-2022
     outputs:
       tag: ${{ steps.identity.outputs.tag }}
@@ -26,7 +34,6 @@ jobs:
           "tag=$env:REQUESTED_TAG" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.identity.outputs.tag }}
           fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
@@ -47,18 +54,26 @@ jobs:
           if ($null -ne $record -and @($record.assets | Where-Object name -eq 'release-bundle.zip').Count) {
             ./scripts/Resume-Release.ps1 -Tag $env:RELEASE_TAG
           } else {
-            ./scripts/Test-Release.ps1 -Version $env:RELEASE_TAG.Substring(1) -Release
+            $id = (Get-Content docs/site.json -Raw | ConvertFrom-Json).packageId.ToLowerInvariant()
+            $version = $env:RELEASE_TAG.Substring(1)
+            $probe = Invoke-WebRequest "https://api.nuget.org/v3-flatcontainer/$id/$version/$id.$version.nupkg" -Method Head -SkipHttpErrorCheck
+            if ($probe.StatusCode -ne 404) { throw 'Package exists or status is uncertain without an original bundle. Refusing to rebuild.' }
+            git checkout --detach $env:RELEASE_TAG
+            if ($LASTEXITCODE) { throw 'Cannot select release source.' }
+            ./scripts/Test-Release.ps1 -Version $version -Release
             ./scripts/New-ReleaseBundle.ps1
           }
       - uses: actions/upload-artifact@v4
         with:
           name: release-bundle
+          overwrite: true
           path: artifacts/bundle/
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: release-diagnostics
+          overwrite: true
           path: |
             artifacts/release/validation.log
             artifacts/release/tests/
@@ -77,7 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
           fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
@@ -123,14 +137,9 @@ jobs:
       - run: |
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: archive release documentation'
         shell: pwsh
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/deploy-archive
         with:
-          name: release-pages
-          path: artifacts/archive
-      - uses: actions/deploy-pages@v4
-        with:
-          artifact_name: release-pages
+          stage: release
       - name: Verify immutable online version
         run: ./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle
         shell: pwsh
@@ -144,15 +153,37 @@ jobs:
       - run: |
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: complete verified release index'
         shell: pwsh
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/deploy-archive
         with:
-          name: completed-pages
-          path: artifacts/archive
-      - uses: actions/deploy-pages@v4
-        with:
-          artifact_name: completed-pages
+          stage: completed
       - name: Verify completion and publish GitHub Release
         run: ./scripts/Publish-Release.ps1 -Stage Complete
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+  cuda:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.component == 'cuda'
+    runs-on: windows-2022
+    environment: github-pages
+    concurrency:
+      group: cuda-publication
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ vars.NUGET_USER }}
+      - name: Publish or verify archived CUDA package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/Publish-CudaRelease.ps1 -Stage Publish -Tag $env:RELEASE_TAG

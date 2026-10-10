@@ -12,9 +12,8 @@ calls below; binaries compiled against 1.1.2 are not guaranteed to be compatible
 - Make display-range updates awaitable and consolidate image-save menu options.
 - Retain bilingual documentation and package-derived API references by version,
   with immutable release bundles and recoverable publication.
-- Add an optional CUDA execution bridge in source. The main package release does
-  not publish `Fizzy.ImageViewer.Cuda`; that extension requires its matching native
-  component and separate packaging.
+- Add the optional `Fizzy.ImageViewer.Cuda` execution bridge package, published
+  separately with its matching Windows x64 native component.
 
 ### Upgrade from 1.1.2
 

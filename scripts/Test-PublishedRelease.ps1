@@ -23,8 +23,8 @@ foreach ($entry in $report.siteFiles.GetEnumerator()) {
     $url = "$root$($identity.directory)/$($entry.Key)"
     $matched = $false
     for ($attempt = 0; $attempt -lt 3; $attempt++) {
-        $null = Get-RemoteFile $url $target
-        if ((Get-Hash $target) -ceq $entry.Value) { $matched = $true; break }
+        $exists = Get-RemoteFile $url $target -AllowMissing
+        if ($exists -and (Get-Hash $target) -ceq $entry.Value) { $matched = $true; break }
         Start-Sleep -Seconds 5
     }
     if (!$matched) { throw "Published file differs: $url" }
