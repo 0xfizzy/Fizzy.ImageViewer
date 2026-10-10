@@ -83,7 +83,7 @@ npx playwright install chromium
 node scripts/Test-Browser.mjs
 ./scripts/Serve-Docs.ps1
 </code></pre>
-<p><code>Build-Docs</code> 验证翻译、锁定还原依赖、严格重编译 XML、从实际 DLL/XML 提取 API、构建站点、检查 HTML 链接并运行浏览器冒烟。不运行 WPF 示例、设备或发布部署。API 输入、清单和站点位于 <code>artifacts/docs/</code>。预览使用项目路径及 <code>/dev/</code> 或 <code>/v{version}/rN/</code>，打开打印的 HTTP 地址，不使用文件 URL；Ctrl+C 停止。</p>
+<p><code>Build-Docs</code> 验证翻译、锁定还原依赖、严格重编译 XML、从实际 DLL/XML 提取 API、构建站点、检查 HTML 链接并运行浏览器冒烟。不运行 WPF 示例、设备或发布部署。API 输入、清单和站点位于 <code>artifacts/docs/</code>。预览使用项目路径及 <code>/dev/</code> 或 <code>/v{version}/</code>，打开打印的 HTTP 地址，不使用文件 URL；Ctrl+C 停止。</p>
 <p><code>Test-Browser</code> 用固定 Chromium 和本地服务器检查双语入口、一个 API 页面、语言切换、搜索结果跳转、版本切换、缺页回退和页面错误。仅失败时截图，结果报告及失败截图位于 <code>artifacts/docs/browser/</code>。模拟版本挂载不表示实际发布已上线。部署后运行 <code>node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/</code> 检查线上行为；版本缺页回退只使用本地夹具。</p>
 <p>公共 XML/声明、指南/翻译、README、导航、模板或工具变更必须完整构建文档并运行浏览器冒烟。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。</p>
 <h2 id="翻译审阅">翻译审阅</h2>
@@ -100,10 +100,10 @@ node scripts/Test-Browser.mjs
 pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
 ./scripts/Test-Workflows.ps1
 </code></pre>
-<p>示例构建不打开窗口；交互检查手工运行<a href="getting-started.html">示例</a>。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证版本不可变、冲突、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 <code>artifacts/recovery-fixture/result.json</code> 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 <code>artifacts/</code>，不发布真实版本。</p>
+<p>示例构建不打开窗口；交互检查手工运行<a href="getting-started.html">示例</a>。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证同版本覆盖、过期候选、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 <code>artifacts/recovery-fixture/result.json</code> 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 <code>artifacts/</code>，不发布真实版本。</p>
 <p>依赖变更应主动进行非锁定还原或 npm install，审查锁文件差异，再执行锁定验证；发版时禁止重新生成锁文件。生成 HTML、API 元数据和本地报告不提交源码仓库。</p>
 <h2 id="版本发布">版本发布</h2>
-<p><code>docs/site.json</code> 集中配置仓库、域名、项目路径、最低留存版本和归档分支。新固定版本使用不可变 <code>/v{version}/r0/</code>，修订使用 <code>/v{version}/rN/</code>；<code>/v{version}/</code> 选择已验证的活动修订。旧固定目录保持不变，主分支使用 <code>/dev/</code>。各修订保留独立搜索、资源、示例和身份信息；公共索引更新不改写历史 HTML。</p>
+<p><code>docs/site.json</code> 集中配置仓库、域名、项目路径、最低留存版本和归档分支。固定文档使用 <code>/v{version}/</code>，更新整体覆盖该目录；主分支使用 <code>/dev/</code>。每个版本保留独立搜索、资源、示例及源码身份。Git 历史保留旧内容供回滚，不再公开修订路径或修订选择。</p>
 <p>归档分支保留生成站点，GitHub Release 资产独立保存原始发布包，不依赖 Actions 保留期。不得编辑已归档版本。首次配置、发布、部分失败和恢复见<a href="releasing.html">发布 SOP</a>。构建不授权发布。</p>
 <p><code>Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087</code> 仅按真实项目/版本前缀服务已有产物，不构建、不访问网络。开发部署取得共用部署锁后核对源 SHA，拒绝不再对应最新 main 的构建。</p>
 

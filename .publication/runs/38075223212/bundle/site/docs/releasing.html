@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Release SOP | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Release SOP | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="release-sop">Release SOP</h1>
+
+<p><a href="zh-CN/releasing.html">简体中文</a></p>
+<p>For maintainers publishing v1.2.0 or later. Older releases are not backfilled. A release is complete only when NuGet payload, <code>/v{version}/</code> documentation, version index and GitHub Release agree. Never move a published tag or overwrite a package. Documentation updates replace the same version directory. NuGet and Pages are separate services; partial publication is recoverable, not atomic.</p>
+<h2 id="one-time-setup">One-time setup</h2>
+<ol>
+<li>In GitHub Settings → Pages choose <strong>GitHub Actions</strong>. Set the <code>github-pages</code> environment deployment rules to allow main and release tags; the release job runs on tags. Configure approvals according to repository policy.</li>
+<li>Configure NuGet Trusted Publishing for owner <code>0xfizzy</code>, repository <code>Fizzy.ImageViewer</code>, workflow <code>release.yml</code>, and environment <code>github-pages</code> where the policy asks for it. Set repository variable <code>NUGET_USER</code>. No persistent API key is stored.</li>
+<li>Allow the publishing job <code>contents: write</code>, <code>pages: write</code>, <code>id-token: write</code>. PR validation and audit use read permissions. Protect main, release tags and <code>docs-archive</code>; allow the publishing bot to append archive commits, prohibit force pushes and deletion. Keep the environment's tag policy consistent with the workflow.</li>
+<li>Create the initially empty archive branch using <code>./scripts/Initialize-DocumentationArchive.ps1</code>. This explicitly pushes a new branch and must be run by an authorized maintainer. It refuses to replace an existing branch.</li>
+<li>Review the centralized <code>docs/site.json</code>. For an isolated rehearsal repository, change this configuration and workflow/trust settings there; never send rehearsal packages to the production NuGet ID. Run offline failure gates first.</li>
+<li>Have another maintainer follow this SOP in the isolated environment, including a deployment failure after package publication. Record commit, workflow run URLs, observed outcomes and unresolved manual checks in a retained release-readiness issue. A local fault fixture is not a real OIDC/Pages exercise.</li>
+</ol>
+<h2 id="prepare-a-release">Prepare a release</h2>
+<p>Update the project version, release notes, affected English XML/guides, Chinese translations and examples in one reviewed PR. Versions are SemVer without build metadata; the project version is <code>1.2.0</code>, its tag and documentation directory are <code>v1.2.0</code>. A prerelease such as <code>1.3.0-rc.1</code> does not replace latest stable.</p>
+<pre><code class="lang-powershell">npm ci
+npx playwright install chromium
+./scripts/Test-Release.ps1 -Version 1.2.0
+node scripts/Test-Browser.mjs
+./scripts/Serve-Docs.ps1
+</code></pre>
+<p>Review <code>artifacts/release/validation.json</code>, the transcript, test results, package contents and rendered bilingual pages. Local preparation does not require a tag or a clean checkout and cannot create a publishable bundle. Record interaction checks and required benchmark/consumer validation separately; build success is not physical display, mixed-DPI or device verification.</p>
+<p>Merge the PR after checks pass. A maintainer explicitly authorizes publication by creating and pushing the tag at the reviewed main commit:</p>
+<pre><code class="lang-powershell">git status --short
+git rev-parse HEAD
+git tag -a v1.2.0 -m 'release v1.2.0'
+git push origin v1.2.0
+</code></pre>
+<p>Do not tag until HEAD is the reviewed commit and the checkout is clean. The workflow also checks the project version, tag identity and reachability from <code>origin/main</code>.</p>
+<h2 id="automated-stages-and-success-criteria">Automated stages and success criteria</h2>
+<ol>
+<li><strong>Prepare</strong>: locked restore, library tests, tool/sample builds, strict docs, fault gates, browser checks and package verification. Pack once; regenerate release API reference from DLL/XML extracted from that exact package. <code>New-ReleaseBundle</code> seals checksums and source identity.</li>
+<li><strong>Archive</strong>: create a draft GitHub Release and upload <code>release-bundle.zip</code>, containing the original nupkg, documentation zip, manifest and validation report. Download and verify before publishing NuGet. Actions artifacts are only temporary transport.</li>
+<li><strong>NuGet</strong>: obtain a short-lived OIDC key, publish or download and verify the existing version. Never use <code>--skip-duplicate</code>. Compare all payload entries except NuGet's added signature.</li>
+<li><strong>Fixed documentation</strong>: restore archived site, merge into <code>docs-archive/v{version}/</code>, commit without force, deploy the entire retained site, and verify every online file. The candidate includes the completed stable-version index, but the successful-deployment marker is recorded only after online verification.</li>
+<li><strong>Completion</strong>: record the successful archive commit. Root/latest select the greatest completed stable SemVer in the same deployment. Publish the GitHub Release only after success.</li>
+</ol>
+<p>The final workflow step must print <code>PASS</code> and the fixed documentation URL. Inspect the GitHub Release (not draft), NuGet version, language navigation, API/search and version selector. Preserve original bundle assets permanently.</p>
+<p>Archive and Pages writes share a concurrency group with development deployment. GitHub may replace pending jobs; a cancelled job is never proof of release completion. The daily/manual audit reports retained tags with missing, draft or inconsistent releases.</p>
+<h2 id="recovery">Recovery</h2>
+<p>Prefer the workflow's manual dispatch from main, selecting the existing tag:</p>
+<pre><code class="lang-powershell">gh workflow run release.yml --ref main -f tag=v1.2.0
+gh run list --workflow release.yml --limit 5
+</code></pre>
+<p>Manual recovery uses the reviewed workflow and scripts from main, while package/source identity remains the original tag. Preparation needs <code>contents: write</code> to see draft Release assets; PR validation remains read-only. If a bundle already exists, the workflow downloads it and does not rebuild. If NuGet already contains the version but no archive is visible, preparation stops. Local diagnosis with access to the Release assets:</p>
+<pre><code class="lang-powershell">./scripts/Resume-Release.ps1 -Tag v1.2.0
+./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle -RequireCompleted
+./scripts/Test-ReleaseStatus.ps1
+</code></pre>
+<p><code>Resume-Release</code> only restores and verifies; the workflow continues publication and deployment with appropriate permissions. Repeated successful runs leave fixed contents unchanged and do not downgrade latest. Asset identity conflicts always stop.</p>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Action and expected result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Validation before archive</td>
+<td>No package was published. Fix source and review a new unused release identity; do not move the old tag automatically.</td>
+</tr>
+<tr>
+<td>Interrupted archive upload</td>
+<td>Check whether the single bundle asset exists. If present, recover it; otherwise rerun the original successful preparation artifact. Same-name different content is rejected.</td>
+</tr>
+<tr>
+<td>NuGet request timeout</td>
+<td>Query/download first. Matching payload means continue; absent/indexing output stays incomplete and can be retried.</td>
+</tr>
+<tr>
+<td>Existing NuGet version differs</td>
+<td>Stop; investigate identity conflict and choose a new version. Never delete or overwrite to force success.</td>
+</tr>
+<tr>
+<td>NuGet succeeds, Pages fails</td>
+<td>Keep the draft and original assets; dispatch the same tag. No repack is performed.</td>
+</tr>
+<tr>
+<td>Online file/identity mismatch</td>
+<td>Do not mark completion. Inspect archive commit and deployment/CDN state, then retry.</td>
+</tr>
+<tr>
+<td>Latest/index deployment fails</td>
+<td>Fixed version remains; same-tag recovery republishes the verified index.</td>
+</tr>
+<tr>
+<td>GitHub completion response lost</td>
+<td>Inspect actual draft status, then rerun.</td>
+</tr>
+<tr>
+<td>Actions artifact expired</td>
+<td>Recover from durable GitHub Release bundle and archive branch.</td>
+</tr>
+<tr>
+<td>Original bundle missing after package publication</td>
+<td>Stop and investigate; do not rebuild a replacement pretending to be the original.</td>
+</tr>
+</tbody>
+</table>
+<p>Network retries are bounded; indexing or CDN delay ends in a visible failure rather than presumed success. The audit performs no writes. Workflow logs and GitHub Actions failure notifications are the incident entrypoint. For an unrecoverable automation defect in tagged scripts, use a reviewed workflow fix and the retained bundle; do not mutate the tag or original Release assets.</p>
+<p>Pages deployment identifies each build by its documentation archive commit, not the package source commit. Development and fixed-version updates can share source code but contain different sites. Artifact names include the stage, run and attempt to avoid collisions on retries. Online content verification remains required after the deployment API reports success.</p>
+<h2 id="optional-cuda-package">Optional CUDA package</h2>
+<p>Publish <code>Fizzy.ImageViewer.Cuda</code> separately from the same source tag after the core package is available. On a Windows machine with the <a href="cuda.html#build-and-deployment">CUDA build prerequisites</a>, prepare from the tag's exported source, compile native tests without running hardware, run managed CUDA tests, and seal the original package:</p>
+<pre><code class="lang-powershell">./scripts/New-CudaReleaseBundle.ps1 -Tag v1.2.0
+./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.2.0 -Bundle artifacts/cuda-release-preparation/bundle
+gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
+</code></pre>
+<p>Review the preparation transcript, test results and bundle validation before Archive. The separate immutable <code>cuda-release-bundle.zip</code> asset contains the package, native hash, source identity and validation report. It does not replace the core bundle or fixed documentation. The workflow downloads and validates this asset, publishes through the same NuGet Trusted Publishing policy, and compares the downloaded NuGet payload. The policy must authorize the CUDA package ID. Resume with the same dispatch; never rebuild an already published version. Hardware, driver and physical display validation are separate from managed tests and native compilation.</p>
+<h2 id="documentation-updates-without-publishing-a-package">Documentation updates without publishing a package</h2>
+<p>A completed release and its original package bundle are required. Updates replace <code>/v{version}/</code> as a whole; removed pages disappear. Prepare requires a clean checkout, creates an isolated worktree and branch from the currently deployed documentation source, and captures the archive SHA. <code>-Branch</code> selects the new branch name. Source changes are compared against the original tag.</p>
+<pre><code class="lang-powershell">./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.2.0 -Branch docs/v1.2.0-update
+# Edit guides/translations, navigation, sample C# or XML comments.
+# Review translations, accept hashes, commit; do not change runtime/build/tooling.
+./scripts/Update-Docs.ps1 -Action Check -Tag v1.2.0
+# Keep running this script from main; Check automatically selects the prepared source.
+git -C &lt;prepared-source-directory&gt; push -u origin docs/v1.2.0-update
+./scripts/Update-Docs.ps1 -Action Start -Tag v1.2.0 -SourceRef (git -C &lt;prepared-source-directory&gt; rev-parse HEAD)
+./scripts/Update-Docs.ps1 -Action Status
+./scripts/Update-Docs.ps1 -Action Resume -RunId 123456789
+./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.2.0 -ArchiveCommit &lt;successful-archive-sha&gt;
+</code></pre>
+<p>Check requires clean committed source and rejects runtime changes before running trusted main tooling. API reference uses the original package DLL with reviewed XML; samples compile against that package. XML, translations, links and Chromium checks must pass. No update modifies NuGet, tags or original Release assets.</p>
+<p>Start requires a full source SHA. If Prepare was not used, Start captures the current archive SHA. Under the shared deployment lock, a changed archive baseline rejects the candidate. Development deployment also rejects an obsolete main SHA. Run payloads and hashes are durably committed beneath <code>.publication/runs/&lt;run-id&gt;/</code> on <code>docs-archive</code>; this internal history is excluded from the public site. The branch retains all original payloads in Git history. Version metadata stores the source commit and file hashes; no revision number is assigned.</p>
+<p>Build and checks precede one whole-site Pages deployment. Only verified deployments enter <code>.publication/state.json</code> with their successful archive SHA. Failed candidates remain resumable and are never used as the base of an unrelated deployment. Resume reuses the persisted run payload without rebuilding and rejects a candidate superseded by a later successful deployment; obsolete development candidates are also rejected. Rollback restores only the requested version from a known successful archive commit and appends a new commit. It does not rewrite history. A successful old package-release retry cannot undo later documentation updates.</p>
+<p>Root/latest select the highest completed stable package version. Updating an older version does not change that selection. Online verification checks candidate bytes and entrypoints after the deployment API reports success; failures remain visible in Actions. Run <code>./scripts/Test-DocumentationUpdate.ps1</code> for overwrite, deletion, recovery, rollback, stale candidate and XML-only source fixtures.</p>
+<p>Legacy revision directories are removed when the archive is next assembled. Existing active content moves to the direct version path with corrected identity and selector; old revision URLs return 404 without redirection. Original Release assets remain untouched.</p>
+<p>For development-only preview, initialize the archive once and dispatch <code>docs.yml</code> on main. No package or release tag is needed. With no stable version, the homepage links to <code>/dev/</code>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

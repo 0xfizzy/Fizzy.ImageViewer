@@ -1,0 +1,9 @@
+{
+  "lastSuccess": "bccf6fd261e73ba85886ead155c9bfb27c9ef44d",
+  "successes": [
+    {
+      "commit": "bccf6fd261e73ba85886ead155c9bfb27c9ef44d",
+      "runId": "migration-baseline"
+    }
+  ]
+}

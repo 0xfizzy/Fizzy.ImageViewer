@@ -1,4 +1,4 @@
-// Resolve the immutable document root from this module, never from the current page depth.
+// Resolve the version document root from this module, never from the current page depth.
 const root = new URL('../../', import.meta.url);
 const identity = await fetch(new URL('identity.json', root)).then(r => {
   if (!r.ok) throw new Error('Missing documentation identity');
@@ -17,7 +17,7 @@ try {
   const index = await response.json();
   const select = document.createElement('select');
   select.setAttribute('aria-label', 'Documentation version');
-  const entries = [...(index.development ? [{ directory: 'dev', label: 'Development' }] : []), ...index.versions.filter(v => v.completed).map(v => ({ directory: v.revisions ? `v${v.version}/r${v.currentRevision}` : `v${v.version}`, label: `v${v.version}` }))];
+  const entries = [...(index.development ? [{ directory: 'dev', label: 'Development' }] : []), ...index.versions.filter(v => v.completed).map(v => ({ directory: `v${v.version}`, label: `v${v.version}` }))];
   if (!entries.some(entry => entry.directory === identity.directory)) entries.unshift({ directory: identity.directory, label: `${identity.directory} (publication pending)` });
   for (const entry of entries) {
     const option = document.createElement('option');

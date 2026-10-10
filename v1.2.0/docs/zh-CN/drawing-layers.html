@@ -1,1 +1,183 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><title>Documentation</title><meta http-equiv="refresh" content="0;url=../../r0/docs/zh-CN/drawing-layers.html"><a href="../../r0/docs/zh-CN/drawing-layers.html">Current documentation revision</a></html>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>绘制与业务图层 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="绘制与业务图层 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="绘制与业务图层">绘制与业务图层</h1>
+
+<p><a href="../drawing-layers.html">English</a></p>
+<p>Viewer.Layers 拥有图像坐标业务层。CreateDrawingLayer 创建自定义层，ClearContents 清内容保留层，RemoveLayer 清除并移除自定义层。Markers 默认 ZIndex 0、不命中；Measurements 1000、可命中；自定义层 100、不命中。较高 ZIndex 在上，相同按创建顺序；图像在业务层下，HUD 在上。</p>
+<p>Markers/自定义层为 DrawingLayer，提供 Add/ DrawingClicked。Measurements 为工具管理的模型层，不提供批量绘图。ViewerLayers/ViewerLayer 属于 Layers 命名空间，共享名称、可见性、命中、ZIndex、Clear，Items 返回共有句柄快照。</p>
+<p>内置 LineProfile 启用曲线窗口，关闭曲线会删除线与标签，删除线会关闭曲线；自定义查询可仅返回数据。清测量或关闭 Viewer 清所有曲线窗口。</p>
+<p><a id="drawing-handles"></a></p>
+<h2 id="绘制句柄">绘制句柄</h2>
+<p>DrawingHandle 拥有零个或多个元素组成的一项绘图。单元素或集合 Add 都只创建一个 Visual，Replace 替换整个内容而不是追加；可在单项、集合、空集合和不同形状之间变化，不改句柄身份或叠放顺序。空集合保留对象但不绘制或命中；点击参数标识整项而非元素索引，Dispose 删除整项。</p>
+<p>DrawLine/DrawCircle/DrawRectangle/DrawCrosshair/DrawText 返回同一种句柄，名字只表示初始内容。每次调用创建独立 Visual；大量标记应按独立管理组一次提交集合。指定层使用其 Add。</p>
+<p><a id="batch-markers-alongside-measurements"></a></p>
+<h2 id="批量标记与测量共存">批量标记与测量共存</h2>
+<p>批量标记与交互测量独立：批量减少 Visual 数量，测量仍为独立 WPF 元素与模型。文本使用 FormattedText，不为每个标签创建布局控件。完整持续更新示例见 <a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a>。</p>
+<p><a id="live-camera-overlays-consumer-requirements"></a></p>
+<h2 id="实时相机叠加的消费者要求">实时相机叠加的消费者要求</h2>
+<p>层和批次应存续整个显示会话，不随相机每帧重建。初始化创建，循环 Replace，停止生产并等待在途更新后清理。</p>
+<table>
+<thead>
+<tr>
+<th>避免</th>
+<th>使用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每帧 Clear/Add 或释放重建</td>
+<td>保留句柄并 Replace</td>
+</tr>
+<tr>
+<td>每检测目标调用一个 Draw</td>
+<td>每独立管理组提交整个集合</td>
+</tr>
+<tr>
+<td>每结果投递 Dispatcher 或启动任务</td>
+<td>一个最新等待结果及单个限频消费循环</td>
+</tr>
+<tr>
+<td>每帧重绘静态 ROI/准星/标签</td>
+<td>单独保留静态批次，仅变化时更新</td>
+</tr>
+<tr>
+<td>每帧创建可变 Brush</td>
+<td>复用 Brushes.Lime 等冻结 Brush</td>
+</tr>
+<tr>
+<td>每状态重建 HUD</td>
+<td>保留句柄，内容变化时 Update</td>
+</tr>
+</tbody>
+</table>
+<p>显示频率与采集/推理独立，可按实测成本选择 30/60 Hz。旧等待结果被覆盖而不积队列；没有新结果不 Replace，新空结果 Replace 空集合。选定最新结果后才创建绘图对象，释放被覆盖结果的池化资源，不在消费者读取时修改结果。</p>
+<p>Replace 同步调度到 STA，不限频、不合并、不丢弃；帧管线的最新帧队列不适用于叠加。提交图像和替换叠加并非原子同帧呈现，消费者自行跟踪身份和过期策略。调用 Viewer 时不持生产者锁。</p>
+<p>复用 Visual 不等于无分配：集合会复制，冻结 Brush 的不可变元素可共享，可变 Brush 需克隆冻结；WPF 命令、资源和文本仍分配。一次准备内用有界缓存共享相同画笔，不承诺零 GC 或帧率，也不要每帧 GC.Collect。</p>
+<p>Clear、移除层和关闭使句柄失效。如果实时运行支持 Clear All Shapes，应与更新循环串行，恢复前重建一次句柄，不逐帧重试失效对象。停止订阅/计时器并等待在途更新再销毁。</p>
+<p>持续负载测量每次分配、GC 次数、延迟分位数、预期标记/文本量与缩放。基准的 50 次热身后替换使用两组预建圆，排除结果创建、跨线程及物理呈现，不能证明真实持续流 GC 性能。</p>
+<p><a id="coordinates-size-and-input"></a></p>
+<h2 id="坐标尺寸与输入">坐标、尺寸与输入</h2>
+<p>OverlayScaleMode 与定位独立，不支持模式在内容变更前拒绝。屏幕尺寸为 WPF DIP，不是物理像素。</p>
+<ul>
+<li>线、矩形、圆默认 FixedStroke：几何为图像像素，线宽为 DIP；ScaleWithImage 同时缩放。</li>
+<li>圆额外支持 FixedSize，中心为图像坐标，半径/线宽为 DIP。</li>
+<li>准星默认 FixedSize，也支持其他两种；ArmLength 为中心至端点距离，中心环半径为其一半。</li>
+<li>文本默认 FixedSize，字号/偏移为 DIP，ScaleWithImage 随图像缩放；默认 Segoe UI。</li>
+<li>平移只改共享变换，依赖缩放的批次每渲染周期重绘一次，DPI 变化刷新文字。</li>
+<li>滚轮、中键平移和像素查询使用公共视口输入面，包括可命中叠加上方。</li>
+<li>命中实际填充、轮廓、字形，不是批次边界；空心圆内部和空白透传，重叠时最高启用层最后添加者优先。</li>
+<li>DrawingClicked 在 STA 消耗鼠标按下，回调保持短小；订阅错误逐个记录隔离，后续订阅仍接收，事件仍被消费。</li>
+<li>测量暂时抑制业务层命中，不改配置标志；结束恢复当前配置，包括期间变更和新增层。</li>
+</ul>
+<p><a id="ownership-and-lifetime"></a></p>
+<h2 id="所有权与生命周期">所有权与生命周期</h2>
+<p>提交复制集合，后续修改不影响绘图。可变 WPF Brush 在所属调用线程复制冻结，不可冻结资源、null 元素、非有限坐标、非正半径/线宽/字号、不支持模式在内容改变前失败。Replace 验证并录制后发布，录制失败保留旧图。所有视觉操作调度 STA；Dispose 同步幂等，失效后 Replace 抛 ObjectDisposedException。</p>
+<p>内置层不可移除，名称非空且区分大小写唯一，层不可跨 Viewer 传递。Items 是成员快照但其中句柄仍可变。Clear 保留设置和订阅，移除/关闭释放资源及订阅；新增点击订阅拒绝失效层或关闭 Viewer，退订关闭后仍安全。</p>
+<p>IViewer.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。</p>
+<p>可编辑测量通过工具上下文创建、更新几何并 Complete，拥有框架视觉、标签、查询及注册资源。不支持附加任意 WPF 元素，内部 shape factory/MeasurementOverlay 不是公共接口。</p>
+<p>ClearContents/Clear All Shapes 取消测量并清全部业务层，保留 HUD。先取得层快照，回调新建层存续，已被移除层跳过，其余按顺序清理。清测量层也取消创建/编辑。显式清理尝试所有安全步骤并传播聚合错误，菜单/输入记录错误，关闭错误进入 DisposeAsync。快照只导出图像，不导出叠加。</p>
+<p><a id="hud-text"></a></p>
+<h2 id="hud-文字">HUD 文字</h2>
+<p>HudLabelText 控制右上标签，null/空值隐藏且读回空字符串。IsPixelInfoEnabled 独立控制像素 HUD，可显示前设置。HudTextHandle/AnchorAlignment 属于 Hud。</p>
+<p>DrawHudText 返回可更新文字/颜色的句柄；位置、对齐和 double 字号在其生命周期固定，改变布局需新建。创建/更新在调用线程复制 Brush 并调度 STA。null 文字/Brush、不可冻结 Brush、非法锚点/对齐、非正或非有限字号拒绝。释放幂等，关闭使句柄失效，之后 Update 抛 ObjectDisposedException。清业务层不清 HUD。</p>
+<p><a id="validation"></a></p>
+<h2 id="验证">验证</h2>
+<pre><code class="lang-powershell">dotnet test tests/Fizzy.ImageViewer.Tests
+dotnet run -c Release --project tools/DrawingBenchmark
+</code></pre>
+<p>基准覆盖 1,000/10,000 圆的创建、替换、含布局的缩放重绘，与逐 Shape 路径比较；时间依机器且不含 GPU 呈现，Visual 数与功能行为是自动验收依据。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

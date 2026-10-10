@@ -1,1 +1,188 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><title>Documentation</title><meta http-equiv="refresh" content="0;url=r0/README.html"><a href="r0/README.html">Current documentation revision</a></html>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Fizzy.ImageViewer | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Fizzy.ImageViewer | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="assets/icon.png">
+      <link rel="stylesheet" href="public/docfx.min.css">
+      <link rel="stylesheet" href="public/main.css">
+      <meta name="docfx:navrel" content="toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="index.html">
+            <img id="logo" class="svg" src="assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+
+<p align="center">
+  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108">
+</p>
+<h1 align="center">Fizzy.ImageViewer</h1>
+<p><a href="README.zh-CN.html">简体中文</a></p>
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="docs/frame-pipeline.html">Frame pipeline</a>
+</p>
+<p align="center">
+  <strong>View, measure, and inspect images in WPF applications.</strong>
+</p>
+<p align="center">
+  A fast, standalone image viewer for .NET 8 with zoom and pan, shape overlays,
+  measurements, interactive editing, HUD content, and pixel inspection.
+</p>
+<p align="center">
+  <a href="https://www.nuget.org/packages/Fizzy.ImageViewer"><img src="https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg" alt="NuGet version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/.NET-8-512BD4.svg" alt=".NET 8">
+  <img src="https://img.shields.io/badge/platform-WPF-0078D4.svg" alt="Platform: WPF">
+</p>
+<h2 id="install">Install</h2>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
+</code></pre>
+<p>The consuming project must target <code>net8.0-windows</code> (or a compatible newer target)
+and set <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>.</p>
+<h2 id="quick-start">Quick start</h2>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer;
+using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Measurements;
+
+await using var viewer = new Viewer();
+var pixels = new byte[640 * 480];
+var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
+    FramePixelFormat.Gray8), pixels);
+var result = await viewer.SubmitFrameAsync(frame);
+</code></pre>
+<p>Submission transfers ownership immediately. Awaiting returns a commit/drop result,
+not a physical presentation timestamp. One frame is processed while only the newest
+waiting frame is retained. Measurements read original pixels independently of display.
+Frame leases and original-pixel access types share the <code>Fizzy.ImageViewer.Frames</code> namespace.</p>
+<p>For thousands of markers, submit a collection as one visual:</p>
+<pre><code class="lang-csharp">using var markers = viewer.Layers.Markers.Add(
+    Enumerable.Range(0, 10000).Select(i =&gt;
+        new Fizzy.ImageViewer.Drawing.CircleElement(
+            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
+            3, System.Windows.Media.Brushes.Red)));
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
+</code></pre>
+<p>See <a href="docs/measurements.html">measurement ownership and interaction</a>.
+See <a href="docs/public-api.html">supported public API and window lifetime</a>.
+Application adapters own a sealed <code>Viewer</code>; use <code>showWindow: false</code> to configure and
+subscribe before <code>Show()</code>, and await <code>DisposeAsync()</code> when the adapter stops.
+See <a href="docs/drawing-layers.html">drawing layers</a> for updates, hit testing, and API behavior.
+For camera streams, retain batches and replace their content; follow the
+<a href="docs/drawing-layers.html#live-camera-overlays-consumer-requirements">live overlay consumer requirements</a>.
+See <a href="docs/frame-pipeline.html">frame, rendering and snapshot contracts</a> and
+<a href="docs/validation.html">validation commands</a>.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>Independent STA window with thread-safe API dispatch</li>
+<li>Low-allocation frame rendering and bounded render queue</li>
+<li>Zoom, pan, fit-to-window, and borderless modes</li>
+<li>Lines, text, crosshairs, rectangles, circles, and HUD text</li>
+<li><a href="docs/drawing-layers.html">Batch drawing and configurable layers</a>: one visual per collection</li>
+<li>Built-in point, line, rectangle, and line-profile measurements</li>
+<li>Shape selection and interactive editing</li>
+<li>Model-driven custom measurements with shared editing, queries and notifications</li>
+<li>Extensible context menus</li>
+<li>Pixel value inspection</li>
+</ul>
+<h2 id="build">Build</h2>
+<p>Read the <a href="docs/index.html">guides</a>, <a href="docs/getting-started.html">complete examples</a>,
+<a href="docs/documentation.html">documentation maintenance</a> and <a href="docs/releasing.html">release SOP</a>.
+The <a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">online documentation</a> retains
+<code>/v{version}/</code> pages starting at v1.2.0; <code>/dev/</code> follows main.</p>
+<pre><code class="lang-powershell">./scripts/Build-Docs.ps1
+./scripts/Serve-Docs.ps1
+</code></pre>
+<p>See <a href="docs/architecture.html">architecture and ownership</a> before changing module boundaries.</p>
+<pre><code class="lang-powershell">dotnet build -c Release
+dotnet pack -c Release -o ./artifacts
+</code></pre>
+<p>Releases use GitHub Actions and NuGet Trusted Publishing. Follow the
+<a href="docs/releasing.html">release SOP</a> for configuration, validation and recovery.</p>
+<h2 id="license">License</h2>
+<p>MIT</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

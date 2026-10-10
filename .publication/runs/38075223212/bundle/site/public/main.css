@@ -1,0 +1,6 @@
+/* Raster branding must stay inside the navigation row instead of covering content. */
+header .navbar-brand #logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}

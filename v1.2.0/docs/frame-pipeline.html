@@ -1,1 +1,419 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><title>Documentation</title><meta http-equiv="refresh" content="0;url=../r0/docs/frame-pipeline.html"><a href="../r0/docs/frame-pipeline.html">Current documentation revision</a></html>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Frame pipeline | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Frame pipeline | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="frame-pipeline">Frame pipeline</h1>
+
+<p><a href="zh-CN/frame-pipeline.html">简体中文</a></p>
+<h2 id="input-and-lifetime">Input and lifetime</h2>
+<p><code>ImageFrame.Copy(descriptor, bytes)</code> copies synchronously; the caller keeps its storage.
+<code>ImageFrame.TakeOwnership(descriptor, memory, release)</code> takes immutable storage and calls
+<code>release</code> exactly once when the final frame/lease is disposed, including validation failure.
+If construction and release both fail, an <code>AggregateException</code> preserves the construction
+error first and the release error second. Release is not retried.
+Width/height must be positive, stride must be positive and at least the valid row size.
+Row padding and non-contiguous source rows are supported. Data is top-down, single plane;
+Gray16 and Gray32Float are little endian. Unsupported formats fail explicitly.
+Storage size differs from semantic channel count: Gray16 uses two bytes for one channel,
+and Bgr32 uses four bytes for three channels; its fourth byte is padding, not alpha.
+Bgra32 and Pbgra32 have four semantic channels, with straight and premultiplied alpha,
+respectively.</p>
+<p><code>SubmitFrameAsync</code> consumes the frame even when cancelled, frozen or closed. Never dispose
+or mutate transferred storage. <code>ImageFrame</code> cannot be submitted twice. Each <code>FrameLease</code>
+is an independent ownership token with idempotent disposal. Acquire a separate lease before
+starting asynchronous work. Do not dispose a lease concurrently with reading its memory.
+External release callbacks should not throw. A submission's own release failure is returned
+in <code>FrameSubmitResult.Error</code>; release failures for viewer-owned current or redraw leases
+are reported by <code>DisposeAsync</code>. Independent lease disposal propagates its release failure.
+Repeated disposal does not retry a release callback.</p>
+<p>Release callbacks execute synchronously on whichever thread releases the final
+reference: a submitting thread, rendering/query worker, or the Viewer STA. There is
+no dedicated release thread. Producers must satisfy their own thread-affinity
+requirements and keep synchronous release short; blocking it also blocks that thread.</p>
+<p>The viewer keeps the current original frame for sampling. Acquiring a snapshot/measurement
+can extend this lifetime. A frozen viewer can hold a frame indefinitely. Camera pools must
+allow retention, or their adapters must make a copy. Read-only access does not prevent other
+owners from mutating memory: immutability is part of the producer contract.</p>
+<h2 id="submission-and-display">Submission and display</h2>
+<p>Each viewer has an independent STA and one background rendering loop. At most one submission
+is processing and one waits. New submissions replace the waiting frame (<code>Superseded</code>).
+Results are <code>Committed</code>, <code>Superseded</code>, <code>Frozen</code>, <code>Cancelled</code>, <code>Closed</code>, or <code>Failed</code>.
+<code>Status</code> describes the submission outcome; <code>Error</code> can also contain a cleanup failure for
+a dropped submission. Inspect both fields. A cleanup failure does not undo a commit or
+change a drop reason; when processing and cleanup both fail, both errors are retained.
+Cancellation is best effort until the UI commit boundary; cancellation after commit does not
+undo it. A request's token is observed while processing and before commit. A waiting cancelled
+frame terminates when dequeued/replaced/frozen/closed rather than using a per-frame callback.</p>
+<p><code>Committed</code> means the source and current frame have changed on the UI thread; it does not mean
+the monitor displayed it. FrameId is viewer-local and monotonic. Notifications occur after
+writing pixels. The per-submission <code>OnCommitted</code> runs first, then <code>FrameCommitted</code>.
+The <code>OnCommitted</code> frame lease is borrowed for that callback only.
+Measurement query notifications are scheduled independently. Callbacks must not block on another viewer
+submission; use asynchronous work with an acquired lease. Subscriber failures are isolated.</p>
+<p>The CPU presenter owns two reusable WriteableBitmaps. Conversion runs off the UI thread;
+an undisplayed bitmap is written before switching the source. WPF-native 8-bit formats keep
+their native layout; mapped grayscale and display snapshots use Pbgra32.
+Only the CPU presenter knows about mutable WPF bitmaps. GPU surface submissions use the D3DImage presenter described below.
+Image coordinates are source pixels, independent of DPI; WPF still handles pan/zoom/overlays.</p>
+<p><code>DisplayRange</code> is the latest requested grayscale mapping. Use
+<code>await viewer.SetDisplayRangeAsync(range)</code> to change it and observe redraw failures.
+Defaults: Gray8 0–255, Gray16 0–65535, Gray32Float 0–1.
+Finite increasing bounds are required. Values are clipped; NaN/negative infinity render black,
+positive infinity white. Range changes schedule a redraw with a separate display version.
+When a current frame exists, the returned task completes after a redraw or submission
+commits that version; rendering failures fault the task. A newer range request or
+viewer closure cancels an outstanding update. With no current frame, the call only
+configures future submissions and completes immediately. A non-null range for a
+current GPU frame is rejected before changing the request. Do not synchronously wait
+for an update on the Viewer STA.
+An already preparing first submission can still commit the mapping it captured
+before that configuration call; await the first submission before requesting a redraw.
+Snapshot capture uses the last committed range/version, not a range still awaiting
+redraw or one whose update failed. A failed update leaves the requested value readable;
+call <code>SetDisplayRangeAsync</code> explicitly to request another update.</p>
+<h2 id="pixel-access-and-measurements">Pixel access and measurements</h2>
+<p>Original-pixel access belongs to <code>Fizzy.ImageViewer.Frames</code>, alongside storage and leases.
+Query and measurement results identify their original frame through <code>SourceFrame</code>; region pixels use region-local coordinates.</p>
+<p>It includes <code>IFramePixelSource</code>, <code>CpuFramePixelReader</code>, pixel coordinates/regions, samples,
+statistics and read results. <code>Fizzy.ImageViewer.Imaging</code> consumes these contracts for
+display conversion, line sampling and query scheduling; Frames has no Imaging dependency.</p>
+<p><code>AcquireCurrentFrame()</code> returns an owned lease. <code>TryGetCpuPixels</code> exposes only existing
+CPU memory and returns false for GPU storage. There is no general <code>Data</code> accessor.
+<code>CpuFramePixelReader.TryReadPixel</code> and <code>ReadPixels</code> are static CPU-only decoding helpers; they never download GPU pixels.
+Its <code>TryRead</code> returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
+<code>NotSupportedException</code>. Use lease asynchronous reads for backend-independent access.</p>
+<p>Use <code>FrameLease.ReadPixelsAsync(coordinates, token)</code>, <code>ComputeRegionStatisticsAsync(region, token)</code> and <code>ReadRegionAsync(region, token)</code> for backend-independent access. Coordinates use
+<code>ReadOnlyMemory&lt;PixelCoordinate&gt;</code> and results preserve input order, raw units and format.
+Each call acquires its own lease before asynchronous work and retains storage through completion.
+The CPU backend can complete its calculation synchronously on the calling thread;
+these methods do not promise worker dispatch. The viewer scheduler and snapshot
+capture provide their own off-STA execution. Direct callers needing responsiveness
+must choose an appropriate execution thread.
+Operation and owned-resource cleanup failures are preserved together, with the
+operation failure first. Region ownership is handed to the caller only after source
+lease cleanup succeeds; an undeliverable region is disposed by the operation.
+Pixel and statistics results carry the queried lease's <code>FrameInfo</code>. <code>PixelSamplesResult</code>
+and <code>RegionStatistics</code> copy constructor inputs and expose read-only collections that
+can be retained and shared. Pixel providers transfer their returned sample arrays to the
+caller and must not reuse or mutate them after returning. <code>FrameLease.Info.Descriptor</code>
+always describes its own pixels. Unsubmitted frames, including derived pixel buffers, have
+FrameId 0 and no source timestamp. Submission assigns a viewer-local ID to the submitted lease;
+leases acquired before submission remain unsubmitted.</p>
+<p><code>RegionPixels.SourceFrame</code> and <code>ImageSnapshot.SourceFrame</code> identify their input frame.
+Their <code>Region</code> is expressed in that input frame's coordinates. <code>AcquirePixels()</code> returns an
+independent lease describing the cropped or converted pixels, without copying source metadata
+onto it. Queries on that lease use local coordinates and describe the derived pixels; retain
+the containing region/snapshot when source provenance is needed. <code>RegionPixels</code> owns its
+independent CPU image and must be disposed. It is created by <code>FrameLease.ReadRegionAsync</code>
+after validating the provider result; consumers cannot construct it directly.
+Unsupported capabilities fail without download fallback.</p>
+<p>CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32/Rgba32. Statistics return
+count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
+with zero count and null statistics when no finite values exist. Premultiplied channels stay premultiplied.
+<code>RegionStatistics.Channels</code> uses Gray, R/G/B or R/G/B/A order regardless of source byte order;
+Bgr32 padding is excluded. Construction rejects unknown formats and incorrect channel counts.
+External <code>IFramePixelSource</code> implementations must follow that ordering and return the source
+frame's format; frame leases reject a mismatched format. Display ranges do not constrain
+original query values, including Gray32Float values outside the default 0–1 display range.</p>
+<p>One pixel query scheduler per viewer captures geometry on STA and queries off STA, with at most
+one batch in flight. Each batch executes and publishes either one ROI or a shared gather
+for due mouse and line coordinates. Oldest-due selection serves pending work fairly;
+unselected requests retain no frame lease and capture fresh geometry/frame on a later tick.
+Slow ROI queries therefore do not age one another or delay publication of a completed gather.
+Point and line coordinates use the half-open pixel coverage rectangle
+<code>[0, Width) × [0, Height)</code>: pixel <code>(x, y)</code> covers <code>[x, x+1) × [y, y+1)</code>.
+Lines are clipped to that coverage, their endpoints are floored to pixel indices,
+and Bresenham samples retain the input direction and both endpoint pixels. Very large finite
+coordinates use exact clipping of the supplied binary values to avoid losing the pixel interval;
+this cannot recover precision already lost before calling the API. A crossing
+endpoint on the outer right/bottom boundary is clamped to the last covered pixel;
+a line lying on or only touching those exclusive edges has no samples.
+ROI geometry uses floor(left/top), ceil(right/bottom),
+then image intersection; empty regions are not queried. Shape editors preserve statistics labels.
+The separate interaction coordinator manages selection, editing and creation sessions.
+See <a href="measurements.html">measurement ownership and interaction</a> for geometry and extension contracts.</p>
+<p><code>Viewer.QueryOptions</code> accepts <code>PixelQueryOptions</code>: PixelQueryRateHz=30, LineQueryRateHz=30, RegionQueryRateHz=10 Hz,
+MaxResultAge=100 ms, all positive. Each rate must produce a representable interval of at
+least one <code>TimeSpan</code> tick and less than <code>TimeSpan.MaxValue</code>; invalid settings are rejected
+when assigned. Due requests are served in due order; pending geometry is replaced
+by its latest state without resetting the execution interval, including during edits and resizes.
+Monotonic age starts at the frame/geometry snapshot, not camera capture time.
+Geometry changes, deletion, disabling and closing invalidate old work. Results may describe a
+recent prior frame within the age limit; advancing video clears expired values, while an unchanged
+paused frame keeps its valid result. FrameId stays in API results/logging and is never a HUD label.
+<code>QueryMetrics.Batches</code> counts completed backend batches, including batches containing
+failed queries; it is not a successful-query or publication count. <code>ExpiredResults</code>
+counts individual completed results rejected at publication for exceeding <code>MaxResultAge</code>,
+not already displayed values later cleared by a scheduler tick.
+<code>LastDurationMilliseconds</code> spans frame/geometry capture through backend completion,
+including worker scheduling but excluding the wait for STA publication and its callbacks.</p>
+<p>The bottom-left pixel HUD has its own cap of <code>min(10, PixelQueryRateHz)</code> Hz, with a full
+interval after each completed query (including failures). Mouse moves coalesce to
+the latest target without resetting that interval. It may publish a recently sampled
+position from the same interaction session; the coordinates and value always update
+together. Other measurements still require the exact geometry version.
+While waiting, the HUD retains the complete previous result for up to 300 ms from
+its sampling start if the target or frame has changed, then shows <code>—</code>. An unchanged
+static result does not expire. Failures show <code>—</code> immediately; <code>MaxResultAge</code> still
+controls whether a newly completed query can publish. Leaving the image, disabling
+the HUD or losing the frame hides it and prevents old work from reappearing.
+The non-interactive HUD has no background and uses invariant numeric formatting
+with a minimum of seven characters per value. Longer values remain complete;
+narrow viewports clip the HUD rather than wrapping or resizing.
+Each target capture recomputes the image coordinate from the current container
+pointer and viewport transform, including when fit, layout or image dimensions change
+without mouse movement. Hidden/unloaded viewports and pointers outside the container
+have no query target.</p>
+<h2 id="freeze-snapshot-and-save">Freeze, snapshot and save</h2>
+<p>Opening the context menu freezes the current frame, clears pending input and invalidates
+in-flight pre-freeze submissions. Closing it resumes new input. A menu-scoped lease pins the
+frame and display settings through Click/Closed ordering; saving acquires its own lease before
+the file dialog. The menu lease is released when input drains or on viewer shutdown.</p>
+<p><code>CaptureSnapshotAsync(Raw|Display)</code> captures the current committed frame at call time and
+returns independent immutable storage. <code>Raw</code> preserves input values; <code>Display</code> applies the
+committed display mapping without annotations, HUD or viewport scaling.
+The overload accepting PixelRegion reads only that region. Snapshots record <code>SourceFrame</code> and
+region origin. Full snapshots explicitly request the entire region; GPU results are never cached
+back into source storage. One export read per Viewer executes at a time, with at most one
+additional capture admitted to wait. Further calls throw <code>InvalidOperationException</code>
+synchronously before acquiring a frame lease. Accepted captures retain the frame current
+at the call, including while waiting. Completion, cancellation or failure frees the slot.
+The ROI save menu pins both frame and integer region before opening the file dialog.
+Dispose snapshots when finished. A save retains its own lease until completion.
+Raw capture takes ownership of the independently read CPU region without copying it
+again. That region's release callback runs when the snapshot's final pixel reference
+is released, including independent pixel leases retained after snapshot disposal.
+Capture cleans up a candidate snapshot if another owned resource fails to
+release before delivery; operation and cleanup failures are preserved together.</p>
+<p><code>ImageSnapshot.SaveAsync(path, encoding, token)</code> writes a temporary file in the destination
+directory and replaces the target only after successful encoding. Cancellation is checked
+before replacement and between TIFF rows; WPF PNG/JPEG/BMP encoding itself is not interruptible.
+Display exports support PNG, JPEG, BMP and TIFF. JPEG composites transparency onto black.
+Raw exports require TIFF and never silently quantize high-bit-depth values.
+Encoding/cancellation and cleanup failures are preserved together, with the operation failure
+first. Cleanup can fail after the target was successfully replaced; a failed save task does
+not by itself prove that the destination is unchanged.
+The context menu's <strong>Save Image As...</strong> action selects display PNG/JPEG/BMP or raw TIFF
+through the file dialog's file type. <strong>Save Region Image As...</strong> offers the same choices
+when a completed rectangular measurement is selected.</p>
+<p>TIFF uses uncompressed Classic TIFF, UINT Gray16 or IEEEFP Gray32Float, top-left orientation,
+RGB channel order and associated/unassociated alpha tags. Bgr32 padding is omitted. Images
+exceeding the conservative Classic TIFF size bound are rejected; BigTIFF is not implemented.
+The context menu allows one save at a time. Independently created snapshot objects may be saved
+concurrently by application code. Captured snapshots remain usable after closing the viewer.</p>
+<h2 id="shutdown-and-integrations">Shutdown and integrations</h2>
+<p>Use <code>await viewer.DisposeAsync()</code> or <code>await using</code> to terminate queued/rendering and
+measurement work without blocking the STA. <code>Viewer</code> and <code>IViewer</code> implement
+<code>IAsyncDisposable</code>. <code>Closed</code> reports window closure; it does not signal that background
+rendering, measurement queries or the window thread have finished. Await <code>DisposeAsync()</code>
+to wait for those operations to finish and release their frame leases.
+Once closed the Viewer cannot be reopened.</p>
+<p>Disposal is idempotent and waits for rendering, in-flight measurement queries and
+the window thread to finish. Submission calls admitted before shutdown are also
+drained through final release and public result completion, including calls replaced
+on another caller's thread or dropped while frozen/cancelled. Pixel sources that ignore cancellation can delay this
+completion until their operations release their leases. Programmatic closure is
+not blocked by <code>CanUserClose</code> or a cancelling window-closing handler.
+Repeated calls share the same completion and failure result. Owned-resource cleanup
+failures are reported after the remaining safe cleanup and actual STA exit; notification
+subscriber failures remain isolated and logged. Failure does not prove all resources were
+released. Resources that cannot be safely detached must not be reused.
+Cleanup failures from internally owned query leases and menu snapshot pins are retained
+until shutdown, even if later queries or menu sessions succeed. Ordinary query/provider
+failures remain query failures and do not become shutdown failures.</p>
+<p>Once disposal begins, viewer properties, window commands, measurement registration,
+frame acquisition, snapshot capture and layer operations reject new work with
+<code>ObjectDisposedException</code>. Frame submission retains its ownership contract and
+returns <code>Closed</code>. Previously acquired leases and snapshots remain independently
+owned; drawing and HUD handles are invalidated during cleanup.</p>
+<p>Application integrations should adapt their own frame and image types to <code>ImageFrame</code>.
+Use <code>Copy</code> for borrowed storage, <code>TakeOwnership</code> to transfer immutable CPU storage, or
+<code>D3D9ImageFrame.TakeOwnership</code> to transfer a ready GPU surface. Producers own conversion, lifetime and
+device compatibility; integration tests for their adapters belong in the consumer repository.</p>
+<h2 id="gpu-surfaces-and-explicit-pixel-queries">GPU surfaces and explicit pixel queries</h2>
+<p><code>D3D9ImageFrame.TakeOwnership(descriptor, surface, pixelSource, release)</code> transfers a ready,
+immutable BGRA <code>IDirect3DSurface9</code> and its producer-owned lifetime. The producer must supply
+matching dimensions, a WPF-compatible D3D9 render target, and raw pixels consistent with the
+standard display conversion. The surface cannot be overwritten while any lease exists.</p>
+<p>The external-surface entry is a trusted native boundary: a nonzero pointer is not proof of
+compatibility. Supply a valid, non-multisampled <code>D3DFMT_A8R8G8B8</code> render target in
+<code>D3DPOOL_DEFAULT</code>, with premultiplied alpha and dimensions matching the descriptor.
+Use a WPF-compatible device (the provided CUDA component uses D3D9Ex with
+<code>D3DCREATE_MULTITHREADED</code> and <code>D3DCREATE_FPU_PRESERVE</code>). The producer owns device compatibility,
+native metadata validation and GPU synchronization. Finish all writes and relinquish compute
+mappings before transfer; merely enqueueing GPU work is insufficient. Keep the device,
+surface and original query resources valid until the final release callback. The descriptor
+describes original pixels, not the BGRA surface's byte layout. No custom color mapping,
+orientation change or display range is represented by this API; Display snapshots reconstruct
+the standard display conversion from original pixels rather than reading the surface.</p>
+<p>GPU submissions share the same latest-frame scheduler, FrameId, freeze/cancellation semantics
+and commit callbacks. D3DImage is created and bound on the viewer STA; no DisplayConverter or
+CPU pixel provider is invoked on the normal GPU display path. Front-buffer restoration rebinds
+the retained current surface. CPU submissions switch back to WriteableBitmap.</p>
+<p><code>IFramePixelSource</code> supplies asynchronous gather, statistics and region reads independently of
+the display surface. The library has no CUDA dependency. The producer retains its source image
+and query resources until the final frame lease is released. Query failures affect interaction,
+not display, and must never trigger an implicit full-image readback. Cancellation of submitted
+GPU work must retain buffers and leases until device completion, even when publication is cancelled.</p>
+<p>Region reads transfer an independently owned CPU <code>ImageFrame</code> with the requested dimensions
+and source format. Coordinates in that image start at the region's origin; <code>FrameLease</code>
+adds source provenance in <code>RegionPixels</code>. A provider must finish access to source resources
+before its operation returns or throws, including cancellation. The frame's release callback
+owns the provider's resources; the library does not separately dispose the provider.
+This completion rule applies to every provider method. Independent leases, direct reads,
+the query scheduler and snapshot capture can call the same provider concurrently, including
+different methods. The provider must support that concurrency or serialize its own backend
+access. The scheduler's single batch and the export gate do not serialize all provider calls.</p>
+<p>DisplayRange is unsupported for GPU surfaces; producers must apply their GPU mapping before
+submission. Consumers are responsible for converting source formats to the supported frame contract.
+Surface loss due to a driver reset is distinct from WPF front-buffer availability and is not
+recovered by recreating the producer's device here. No software rendering fallback is enabled.
+If a WPF front-buffer restoration callback fails, the presenter stops accepting GPU surfaces.
+The presentation owner retains that error for <code>Viewer.DisposeAsync()</code>, including after switching
+to CPU display; it does not throw the error out of the WPF event callback or retry restoration.
+This asynchronous failure does not change a previously returned submission result.
+If surface attachment fails, presentation stops using that presenter. A successful detach
+permits lease release; if detachment cannot be confirmed, the presenter and potentially
+attached leases are retained for process lifetime. This deliberate isolation prevents
+native use after release and is reported as a failure, not automatic recovery.</p>
+<p>The optional <a href="cuda.html">CUDA component</a> supplies native display conversion and original-pixel
+queries for Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32. Application adapters still supply their source-frame and runtime
+integration; the WPF assembly itself has no CUDA dependency.</p>
+<h2 id="internal-composition">Internal composition</h2>
+<p><code>ViewerHost</code> assembles components and owns STA startup and shutdown. <code>Viewer</code> forwards
+public API calls and raises notifications. It does not own rendering queue or menu-target state.
+<code>FramePipeline</code> and presentation implementations belong to Rendering; Frames contains
+storage, leases and submission contracts.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>State and responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FramePipeline</code></td>
+<td>Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results</td>
+</tr>
+<tr>
+<td><code>FramePresentation</code></td>
+<td>Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal</td>
+</tr>
+<tr>
+<td><code>MenuSnapshotSession</code></td>
+<td>Menu-owned frame and ROI, delayed target release, menu-save exclusion</td>
+</tr>
+<tr>
+<td><code>SnapshotCapture</code></td>
+<td>Serial region reads and independent Raw/Display snapshot generation</td>
+</tr>
+</tbody>
+</table>
+<p><code>CommittedViewLease</code> owns a frame lease plus the range and version captured atomically
+from the last committed display. Crop regions are separate values; export synchronization
+belongs to <code>SnapshotCapture</code>, not to the lease. Menu save targets acquire independent leases
+before showing a file dialog.</p>
+<p>The pipeline shares <code>ViewerLifetime.Gate</code> for submission, publication and shutdown admission.
+Expensive upload runs outside that gate; image attachment and current-frame publication run
+inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
+The commit callback invokes the submission callback and then the public frame event;
+display-only redraws do not invoke it. Measurements and the pixel HUD independently
+subscribe to the shared query scheduler, which samples acquired committed frames.</p>
+<p>Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
+resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
+query completion and the window thread. Already acquired export work retains its own
+lease and export gate and may finish after the Viewer closes.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
