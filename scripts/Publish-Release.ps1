@@ -35,8 +35,12 @@ if ($Stage -eq 'Archive') {
         if (!$env:NUGET_API_KEY) { throw 'NUGET_API_KEY must be supplied by the OIDC workflow step.' }
         $package = @(Get-ChildItem $Bundle -Filter '*.nupkg')[0]
         # Do not print arguments containing credentials or use --skip-duplicate.
-        & dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --timeout 120
+        $pushOutput = & dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --timeout 120 2>&1
         $pushExit = $LASTEXITCODE
+        $pushOutput | ForEach-Object { Write-Host $_ }
+        if ($pushExit -ne 0 -and ($pushOutput -join "`n") -match '\b(401|403|Forbidden|Unauthorized)\b') {
+            throw 'NuGet rejected publication credentials or package permissions. Check Trusted Publishing scope before retrying the original bundle.'
+        }
         $visible = $false
         for ($attempt = 0; $attempt -lt 60; $attempt++) {
             if (Test-NuGetPayload $Bundle -AllowMissing) { $visible = $true; break }

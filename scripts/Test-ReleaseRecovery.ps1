@@ -49,6 +49,11 @@ function global:gh {
 function global:dotnet {
     if ($args[0] -ne 'nuget' -or $args[1] -ne 'push') { throw 'No build is allowed during recovery.' }
     $global:ReleaseFixture.pushes++
+    if ($global:ReleaseFixture.denyPush) {
+        'error: Response status code does not indicate success: 403 (Forbidden).'
+        $global:LASTEXITCODE = 1
+        return
+    }
     Copy-Item $args[2] "$($global:ReleaseFixture.work)/nuget.nupkg"
     # Service accepted the bytes, but the caller lost the response.
     $global:LASTEXITCODE = 1
@@ -76,6 +81,15 @@ $previousKey = $env:NUGET_API_KEY
 try {
     $env:NUGET_API_KEY = 'fixture-not-a-real-secret'
     & "$PSScriptRoot/Publish-Release.ps1" -Stage Archive -Bundle $bundle
+    $global:ReleaseFixture.denyPush = $true
+    $denied = $false
+    try { & "$PSScriptRoot/Publish-Release.ps1" -Stage NuGet -Bundle $bundle } catch {
+        if ($_.Exception.Message -notmatch 'credentials or package permissions') { throw }
+        $denied = $true
+    }
+    if (!$denied -or (Test-Path "$work/nuget.nupkg")) { throw 'Authorization failure was not reported before publication.' }
+    $global:ReleaseFixture.denyPush = $false
+    $global:ReleaseFixture.pushes = 0
     & "$PSScriptRoot/Publish-Release.ps1" -Stage NuGet -Bundle $bundle
     if ($global:ReleaseFixture.pushes -ne 1) { throw 'Expected exactly one package upload.' }
     $failed = $false

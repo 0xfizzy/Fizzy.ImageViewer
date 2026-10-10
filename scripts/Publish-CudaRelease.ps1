@@ -64,7 +64,12 @@ if ($Stage -eq 'Archive') {
     $remote = Join-Path $download 'published.nupkg'
     if (!(Get-RemoteFile $uri $remote -AllowMissing)) {
         if (!$env:NUGET_API_KEY) { throw 'OIDC NuGet key required.' }
-        & dotnet nuget push $package --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --timeout 120
+        $pushOutput = & dotnet nuget push $package --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --timeout 120 2>&1
+        $pushExit = $LASTEXITCODE
+        $pushOutput | ForEach-Object { Write-Host $_ }
+        if ($pushExit -ne 0 -and ($pushOutput -join "`n") -match '\b(401|403|Forbidden|Unauthorized)\b') {
+            throw 'NuGet rejected CUDA publication credentials or package permissions. Authorize Fizzy.ImageViewer.Cuda in Trusted Publishing before retrying the original bundle.'
+        }
         # A lost push response is resolved by downloading, never by skip-duplicate.
         $visible = $false
         for ($attempt = 0; $attempt -lt 60; $attempt++) {
