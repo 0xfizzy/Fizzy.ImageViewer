@@ -14,6 +14,7 @@ public class PixelFormatContractTests
     [InlineData(FramePixelFormat.Bgr32, new byte[] { 30, 20, 10, 99 }, new double[] { 10, 20, 30 })]
     [InlineData(FramePixelFormat.Bgra32, new byte[] { 30, 20, 10, 128 }, new double[] { 10, 20, 30, 128 })]
     [InlineData(FramePixelFormat.Pbgra32, new byte[] { 30, 20, 10, 128 }, new double[] { 10, 20, 30, 128 })]
+    [InlineData(FramePixelFormat.Rgba32, new byte[] { 10, 20, 30, 128 }, new double[] { 10, 20, 30, 128 })]
     public async Task StatisticsPreserveSemanticChannels(FramePixelFormat format, byte[] bytes, double[] expected)
     {
         Assert.Equal(bytes.Length, format.BytesPerPixel());

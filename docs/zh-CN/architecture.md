@@ -13,6 +13,7 @@
 | Viewer | 公共门面、Host 组合、窗口和生命周期 |
 | Frames / Pixels | 不可变存储、描述符、租约、提交、像素源协议、CPU 解码与独立结果 |
 | Rendering | 提交队列、已提交状态、CPU 与 D3D 呈现 |
+| native/Cuda | 可选 CUDA/D3D9Ex kernel，借用标准 CUDA context 和 stream 句柄 |
 | Imaging / Queries | 线采样、显示转换、查询设置及共享调度/执行 |
 | Layers | 公共层组合、变换、输入和生命周期容器 |
 | Drawing | 元素、标记层、句柄、批量绘制 |
@@ -34,7 +35,7 @@
 
 按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。
 
-Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。根目录保留一个库项目；samples/tests/tools 不作为库源码收集。
+Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。核心项目保留在根目录，可选后端项目放在 extensions/；samples/tests/tools/extensions 不作为核心库源码收集。
 
 Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
 
@@ -43,6 +44,8 @@ Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、
 <a id="frame-and-imaging-dependencies"></a>
 
 ## 帧与图像依赖
+
+可选 `Fizzy.ImageViewer.Cuda` 程序集仅引用核心库和自有 native DLL。消费者桥接源帧所有权与执行作用域；扩展负责显示转换与像素查询。native 使用标准 CUDA 句柄，不创建第二套运行时，见 [CUDA 集成](cuda.md)。
 
 Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。
 

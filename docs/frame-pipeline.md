@@ -119,7 +119,7 @@ independent CPU image and must be disposed. It is created by `FrameLease.ReadReg
 after validating the provider result; consumers cannot construct it directly.
 Unsupported capabilities fail without download fallback.
 
-CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. Statistics return
+CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32/Rgba32. Statistics return
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
 with zero count and null statistics when no finite values exist. Premultiplied channels stay premultiplied.
 `RegionStatistics.Channels` uses Gray, R/G/B or R/G/B/A order regardless of source byte order;
@@ -263,6 +263,18 @@ immutable BGRA `IDirect3DSurface9` and its producer-owned lifetime. The producer
 matching dimensions, a WPF-compatible D3D9 render target, and raw pixels consistent with the
 standard display conversion. The surface cannot be overwritten while any lease exists.
 
+The external-surface entry is a trusted native boundary: a nonzero pointer is not proof of
+compatibility. Supply a valid, non-multisampled `D3DFMT_A8R8G8B8` render target in
+`D3DPOOL_DEFAULT`, with premultiplied alpha and dimensions matching the descriptor.
+Use a WPF-compatible device (the provided CUDA component uses D3D9Ex with
+`D3DCREATE_MULTITHREADED` and `D3DCREATE_FPU_PRESERVE`). The producer owns device compatibility,
+native metadata validation and GPU synchronization. Finish all writes and relinquish compute
+mappings before transfer; merely enqueueing GPU work is insufficient. Keep the device,
+surface and original query resources valid until the final release callback. The descriptor
+describes original pixels, not the BGRA surface's byte layout. No custom color mapping,
+orientation change or display range is represented by this API; Display snapshots reconstruct
+the standard display conversion from original pixels rather than reading the surface.
+
 GPU submissions share the same latest-frame scheduler, FrameId, freeze/cancellation semantics
 and commit callbacks. D3DImage is created and bound on the viewer STA; no DisplayConverter or
 CPU pixel provider is invoked on the normal GPU display path. Front-buffer restoration rebinds
@@ -288,10 +300,18 @@ DisplayRange is unsupported for GPU surfaces; producers must apply their GPU map
 submission. Consumers are responsible for converting source formats to the supported frame contract.
 Surface loss due to a driver reset is distinct from WPF front-buffer availability and is not
 recovered by recreating the producer's device here. No software rendering fallback is enabled.
+If a WPF front-buffer restoration callback fails, the presenter stops accepting GPU surfaces.
+The presentation owner retains that error for `Viewer.DisposeAsync()`, including after switching
+to CPU display; it does not throw the error out of the WPF event callback or retry restoration.
+This asynchronous failure does not change a previously returned submission result.
 If surface attachment fails, presentation stops using that presenter. A successful detach
 permits lease release; if detachment cannot be confirmed, the presenter and potentially
 attached leases are retained for process lifetime. This deliberate isolation prevents
 native use after release and is reported as a failure, not automatic recovery.
+
+The optional [CUDA component](cuda.md) supplies native display conversion and original-pixel
+queries for Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32. Application adapters still supply their source-frame and runtime
+integration; the WPF assembly itself has no CUDA dependency.
 
 ## Internal composition
 

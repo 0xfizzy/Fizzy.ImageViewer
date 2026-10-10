@@ -169,6 +169,7 @@ Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames
 Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Gray8 = 0
 Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Pbgra32 = 7
 Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Rgb24 = 3
+Fizzy.ImageViewer.Frames.FramePixelFormat: public const Fizzy.ImageViewer.Frames.FramePixelFormat Rgba32 = 8
 Fizzy.ImageViewer.Frames.FramePixelFormats: public static System.Int32 BytesPerPixel(Fizzy.ImageViewer.Frames.FramePixelFormat format)
 Fizzy.ImageViewer.Frames.FrameSubmissionOptions: System.Action<Fizzy.ImageViewer.Frames.FrameLease>? OnCommitted { public get; public init; }
 Fizzy.ImageViewer.Frames.FrameSubmissionOptions: System.Nullable<System.DateTimeOffset> SourceTimestamp { public get; public init; }

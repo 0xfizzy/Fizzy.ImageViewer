@@ -7,7 +7,7 @@ internal sealed record FramePixelFormatInfo(
     FramePixelFormatInfo.NumericKind NumericType,
     FramePixelFormatInfo.AlphaKind Alpha = FramePixelFormatInfo.AlphaKind.None)
 {
-    internal enum ComponentOrder { Gray, Rgb, Bgr, Bgrx, Bgra }
+    internal enum ComponentOrder { Gray, Rgb, Bgr, Bgrx, Bgra, Rgba }
     internal enum NumericKind { UnsignedInteger, FloatingPoint }
     internal enum AlphaKind { None, Straight, Premultiplied }
 

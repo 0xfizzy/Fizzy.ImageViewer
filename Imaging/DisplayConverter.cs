@@ -8,7 +8,7 @@ internal static class DisplayConverter
     {
         var d = frame.Descriptor;
         var info = d.Format.GetInfo();
-        bool native = !normalize && d.Format is not (FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float) &&
+        bool native = !normalize && d.Format is not (FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float or FramePixelFormat.Rgba32) &&
             (d.Format != FramePixelFormat.Gray8 || range == null || range.Value == new GrayDisplayRange(0, 255));
         var output = new DisplayBuffer(d.Width, d.Height, native ? d.Format : FramePixelFormat.Pbgra32);
         try
@@ -46,12 +46,13 @@ internal static class DisplayConverter
                     }
                     else
                     {
-                        if (d.Format == FramePixelFormat.Bgra32)
+                        if (d.Format is FramePixelFormat.Bgra32 or FramePixelFormat.Rgba32)
                         {
                             int alpha = row[s + 3];
-                            dst[i] = (byte)((row[s] * alpha + 127) / 255);
+                            bool rgba = d.Format == FramePixelFormat.Rgba32;
+                            dst[i] = (byte)((row[s + (rgba ? 2 : 0)] * alpha + 127) / 255);
                             dst[i + 1] = (byte)((row[s + 1] * alpha + 127) / 255);
-                            dst[i + 2] = (byte)((row[s + 2] * alpha + 127) / 255);
+                            dst[i + 2] = (byte)((row[s + (rgba ? 0 : 2)] * alpha + 127) / 255);
                             dst[i + 3] = (byte)alpha;
                         }
                         else

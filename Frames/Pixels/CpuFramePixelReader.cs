@@ -34,6 +34,7 @@ public sealed class CpuFramePixelReader
         FramePixelFormat.Gray16 => new(format, BinaryPrimitives.ReadUInt16LittleEndian(p), 0, 0, 0, 255),
         FramePixelFormat.Gray32Float => new(format, BinaryPrimitives.ReadSingleLittleEndian(p), 0, 0, 0, 255),
         FramePixelFormat.Rgb24 => new(format, 0, p[0], p[1], p[2], 255),
+        FramePixelFormat.Rgba32 => new(format, 0, p[0], p[1], p[2], p[3]),
         FramePixelFormat.Bgr24 or FramePixelFormat.Bgr32 => new(format, 0, p[2], p[1], p[0], 255),
         FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32 => new(format, 0, p[2], p[1], p[0], p[3]),
         _ => throw new NotSupportedException()

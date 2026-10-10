@@ -59,6 +59,14 @@ public sealed class ImageFrame : IDisposable
     /// the producer must satisfy thread affinity and avoid blocking.
     /// Ownership transfers even on construction failure. If construction and release both fail,
     /// throws an AggregateException containing both errors.</summary>
+    /// <remarks>The pointer must identify a valid, non-multisampled D3D9 render-target surface
+    /// in D3DPOOL_DEFAULT, with D3DFMT_A8R8G8B8 pixels and dimensions matching descriptor.
+    /// Alpha must be premultiplied for WPF. The descriptor describes original query pixels,
+    /// not the BGRA display layout. The producer must finish GPU writes and relinquish any
+    /// compute mapping before transfer, and keep the surface and its device valid and immutable
+    /// until release. The library does not inspect native resource metadata, wait producer fences,
+    /// rebuild devices or provide software fallback. Surface pixels must match the standard
+    /// display conversion of the original pixels with no custom display range or color mapping.</remarks>
     public static ImageFrame TakeD3D9Surface(FrameDescriptor descriptor, nint surface,
         IFramePixelSource pixelSource, Action release)
     {

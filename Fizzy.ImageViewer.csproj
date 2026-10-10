@@ -33,6 +33,7 @@
     <Compile Remove="tests/**/*.cs" />
     <Compile Remove="tools/**/*.cs" />
     <Compile Remove="samples/**/*.cs" />
+    <Compile Remove="extensions/**/*.cs" />
     <Page Remove="samples/**" />
     <ApplicationDefinition Remove="samples/**" />
     <EmbeddedResource Remove="samples/**" />

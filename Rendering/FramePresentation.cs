@@ -11,6 +11,7 @@ namespace Fizzy.ImageViewer.Rendering;
 internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport layer, ICpuImagePresenter presenter, ILogger logger) : IDisposable
 {
     private D3DImagePresenter? _d3dPresenter;
+    private List<Exception>? _frontBufferFailures;
     private bool _disposed;
 
     // Frame is borrowed from the render operation, which outlives this prepared result.
@@ -35,7 +36,7 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         ObjectDisposedException.ThrowIf(_disposed, this);
         var frame = prepared.Frame;
         var source = frame.D3D9Surface != 0
-            ? (_d3dPresenter ??= new D3DImagePresenter()).Present(frame)
+            ? (_d3dPresenter ??= new D3DImagePresenter(RecordFrontBufferFailure)).Present(frame)
             : presenter.Present(prepared.Pixels!);
         if (frame.D3D9Surface == 0 && _d3dPresenter != null)
         {
@@ -59,12 +60,14 @@ internal sealed class FramePresentation(Dispatcher dispatcher, ImageViewport lay
         Cleanup(layer.FitToViewport);
     }
 
+    internal void RecordFrontBufferFailure(Exception error) => (_frontBufferFailures ??= []).Add(error);
+
     public void Dispose()
     {
         dispatcher.VerifyAccess();
         if (_disposed) return;
         _disposed = true;
-        List<Exception> errors = [];
+        List<Exception> errors = _frontBufferFailures ?? [];
         // Unlink the visual on its STA. Failed native detach is independently quarantined by D3DImagePresenter.
         try { layer.ImageDisplay.Source = null; } catch (Exception ex) { errors.Add(ex); }
         try { presenter.Dispose(); } catch (Exception ex) { errors.Add(ex); }

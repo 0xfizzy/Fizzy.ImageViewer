@@ -38,7 +38,7 @@ public class TiffSnapshotWriterTests
             using var tiff = Tiff.Open(path, "rc");
             Assert.NotNull(tiff);
             bool gray = format is FramePixelFormat.Gray8 or FramePixelFormat.Gray16 or FramePixelFormat.Gray32Float;
-            bool alpha = format is FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32;
+            bool alpha = format is FramePixelFormat.Bgra32 or FramePixelFormat.Pbgra32 or FramePixelFormat.Rgba32;
             int channels = gray ? 1 : alpha ? 4 : 3;
             int bits = format == FramePixelFormat.Gray16 ? 16 : format == FramePixelFormat.Gray32Float ? 32 : 8;
             Assert.Equal(width, tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt());
@@ -64,7 +64,7 @@ public class TiffSnapshotWriterTests
             for (int y = 0; y < height; y++)
             {
                 Assert.True(tiff.ReadScanline(actual, y));
-                if (gray || format == FramePixelFormat.Rgb24)
+                if (gray || format is FramePixelFormat.Rgb24 or FramePixelFormat.Rgba32)
                     Array.Copy(pixels, y * stride, expected, 0, rowBytes);
                 else
                     for (int x = 0; x < width; x++)

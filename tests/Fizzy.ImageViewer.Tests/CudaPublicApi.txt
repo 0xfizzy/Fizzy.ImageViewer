@@ -1,0 +1,41 @@
+Fizzy.ImageViewer.Cuda.CudaDiagnostics: static Fizzy.ImageViewer.Cuda.CudaQueryMetrics QueryMetrics { public get; }
+Fizzy.ImageViewer.Cuda.CudaDiagnostics: static System.Int64 LiveSurfaces { public get; }
+Fizzy.ImageViewer.Cuda.CudaException: System.Int32 NativeCode { public get; }
+Fizzy.ImageViewer.Cuda.CudaException: System.String Domain { public get; }
+Fizzy.ImageViewer.Cuda.CudaException: public ctor(System.String message, System.String domain, System.Int32 nativeCode)
+Fizzy.ImageViewer.Cuda.CudaImageFrame: public static System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.ImageFrame> CreateAsync(Fizzy.ImageViewer.Cuda.ICudaFrameSource source, System.Threading.CancellationToken cancellationToken = default)
+Fizzy.ImageViewer.Cuda.CudaMemoryKind: public System.Int32 value__
+Fizzy.ImageViewer.Cuda.CudaMemoryKind: public const Fizzy.ImageViewer.Cuda.CudaMemoryKind Device = 0
+Fizzy.ImageViewer.Cuda.CudaMemoryKind: public const Fizzy.ImageViewer.Cuda.CudaMemoryKind PinnedHost = 1
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: System.Int64 DeviceToHostBytes { public get; public init; }
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: System.Int64 LiveRequests { public get; public init; }
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: System.Int64 Queries { public get; public init; }
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: System.Int64 ResultBuffers { public get; public init; }
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: System.Int64 ResultBytes { public get; public init; }
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public System.Boolean Equals(Fizzy.ImageViewer.Cuda.CudaQueryMetrics other)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public System.Void Deconstruct(out System.Int64 Queries, out System.Int64 DeviceToHostBytes, out System.Int64 ResultBuffers, out System.Int64 LiveRequests, out System.Int64 ResultBytes)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public ctor(System.Int64 Queries, System.Int64 DeviceToHostBytes, System.Int64 ResultBuffers, System.Int64 LiveRequests, System.Int64 ResultBytes)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public static System.Boolean op_Equality(Fizzy.ImageViewer.Cuda.CudaQueryMetrics left, Fizzy.ImageViewer.Cuda.CudaQueryMetrics right)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public static System.Boolean op_Inequality(Fizzy.ImageViewer.Cuda.CudaQueryMetrics left, Fizzy.ImageViewer.Cuda.CudaQueryMetrics right)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public virtual System.Boolean Equals(System.Object obj)
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public virtual System.Int32 GetHashCode()
+Fizzy.ImageViewer.Cuda.CudaQueryMetrics: public virtual System.String ToString()
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: abstract System.Int64 InputByteLength { public get; }
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: abstract System.Int64 RowStride { public get; }
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: abstract System.IntPtr Context { public get; }
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: abstract System.IntPtr InputPointer { public get; }
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: abstract System.IntPtr Stream { public get; }
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: public abstract System.IDisposable RetainResource(Fizzy.ImageViewer.Cuda.ICudaResource resource)
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: public abstract System.IntPtr AllocateScratch(System.Int64 byteCount, Fizzy.ImageViewer.Cuda.CudaMemoryKind kind)
+Fizzy.ImageViewer.Cuda.ICudaExecutionScope: public abstract System.Void WaitForCompletion()
+Fizzy.ImageViewer.Cuda.ICudaFrameSource: abstract Fizzy.ImageViewer.Frames.FrameDescriptor Descriptor { public get; }
+Fizzy.ImageViewer.Cuda.ICudaFrameSource: public abstract System.Threading.Tasks.ValueTask ExecuteAsync(System.Action<Fizzy.ImageViewer.Cuda.ICudaExecutionScope> action, System.Threading.CancellationToken cancellationToken)
+Fizzy.ImageViewer.Cuda.ICudaResource: public abstract System.Void Release()
+enum Fizzy.ImageViewer.Cuda.CudaMemoryKind : System.IComparable, System.IConvertible, System.IFormattable, System.ISpanFormattable
+interface Fizzy.ImageViewer.Cuda.ICudaExecutionScope
+interface Fizzy.ImageViewer.Cuda.ICudaFrameSource : System.IDisposable
+interface Fizzy.ImageViewer.Cuda.ICudaResource
+sealed class Fizzy.ImageViewer.Cuda.CudaException : System.Exception, System.Runtime.Serialization.ISerializable
+static class Fizzy.ImageViewer.Cuda.CudaDiagnostics
+static class Fizzy.ImageViewer.Cuda.CudaImageFrame
+struct Fizzy.ImageViewer.Cuda.CudaQueryMetrics : System.IEquatable<Fizzy.ImageViewer.Cuda.CudaQueryMetrics>
