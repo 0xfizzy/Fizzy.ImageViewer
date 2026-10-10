@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Interface IViewerDrawing | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Interface IViewerDrawing | Fizzy.ImageViewer ">
+      
+      <meta name="description" content="Management and convenience drawing in the default marker layer.">
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing">
+
+
+
+  <h1 id="Fizzy_ImageViewer_Drawing_IViewerDrawing" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing" class="text-break">
+Interface IViewerDrawing  
+  </h1>
+
+  <div class="facts text-secondary">
+    <dl><dt>Namespace</dt><dd><a class="xref" href="Fizzy.html">Fizzy</a>.<a class="xref" href="Fizzy.ImageViewer.html">ImageViewer</a>.<a class="xref" href="Fizzy.ImageViewer.Drawing.html">Drawing</a></dd></dl>
+  <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
+  </div>
+
+  <div class="markdown summary"><p>Management and convenience drawing in the default marker layer.</p>
+</div>
+  <div class="markdown conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public interface IViewerDrawing</code></pre>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <h2 class="section" id="properties">Properties
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_Markers_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.Markers*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_Markers" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.Markers">
+  Markers
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>The entire default drawing layer, including its content and input policy.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingLayer Markers { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingLayer.html">DrawingLayer</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <h2 class="section" id="methods">Methods
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCircle_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawCircle*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCircle_System_Windows_Point_System_Double_System_Windows_Media_Brush_System_Double_System_Windows_Media_Brush_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawCircle(System.Windows.Point,System.Double,System.Windows.Media.Brush,System.Double,System.Windows.Media.Brush)">
+  DrawCircle(Point, double, Brush, double, Brush?)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Creates a drawing containing a circle on Markers, which excludes hit testing by default. The returned handle can replace its content with one element or a collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingHandle DrawCircle(Point center, double radius, Brush brush, double thickness = 1, Brush? fill = null)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>center</code> <span class="xref">Point</span></dt>
+    <dd></dd>
+    <dt><code>radius</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+    <dt><code>brush</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+    <dt><code>thickness</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+    <dt><code>fill</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingHandle.html">DrawingHandle</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCrosshair_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawCrosshair*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCrosshair_System_Windows_Point_System_Windows_Media_Brush_System_Double_System_Double_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawCrosshair(System.Windows.Point,System.Windows.Media.Brush,System.Double,System.Double)">
+  DrawCrosshair(Point, Brush, double, double)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Creates a drawing containing a crosshair on Markers, which excludes hit testing by default. The returned handle can replace its content with one element or a collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingHandle DrawCrosshair(Point center, Brush brush, double armLength = 20, double thickness = 2)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>center</code> <span class="xref">Point</span></dt>
+    <dd></dd>
+    <dt><code>brush</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+    <dt><code>armLength</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+    <dt><code>thickness</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingHandle.html">DrawingHandle</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawLine_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawLine*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawLine_System_Windows_Point_System_Windows_Point_System_Windows_Media_Brush_System_Double_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawLine(System.Windows.Point,System.Windows.Point,System.Windows.Media.Brush,System.Double)">
+  DrawLine(Point, Point, Brush, double)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Creates a drawing containing a line on Markers, which excludes hit testing by default. The returned handle can replace its content with one element or a collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingHandle DrawLine(Point p1, Point p2, Brush brush, double thickness = 1)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>p1</code> <span class="xref">Point</span></dt>
+    <dd></dd>
+    <dt><code>p2</code> <span class="xref">Point</span></dt>
+    <dd></dd>
+    <dt><code>brush</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+    <dt><code>thickness</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingHandle.html">DrawingHandle</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawRectangle_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawRectangle*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawRectangle_System_Windows_Rect_System_Windows_Media_Brush_System_Double_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawRectangle(System.Windows.Rect,System.Windows.Media.Brush,System.Double)">
+  DrawRectangle(Rect, Brush, double)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Creates a drawing containing a rectangle on Markers, which excludes hit testing by default. The returned handle can replace its content with one element or a collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingHandle DrawRectangle(Rect rect, Brush brush, double thickness = 1)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>rect</code> <span class="xref">Rect</span></dt>
+    <dd></dd>
+    <dt><code>brush</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+    <dt><code>thickness</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingHandle.html">DrawingHandle</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawText_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawText*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawText_System_Windows_Point_System_String_System_Windows_Media_Brush_System_Double_System_Windows_Vector_" data-uid="Fizzy.ImageViewer.Drawing.IViewerDrawing.DrawText(System.Windows.Point,System.String,System.Windows.Media.Brush,System.Double,System.Windows.Vector)">
+  DrawText(Point, string, Brush, double, Vector)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Creates a drawing containing a text label on Markers, which excludes hit testing by default. The returned handle can replace its content with one element or a collection.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">DrawingHandle DrawText(Point anchor, string text, Brush brush, double fontSize = 14, Vector offset = null)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>anchor</code> <span class="xref">Point</span></dt>
+    <dd></dd>
+    <dt><code>text</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></dt>
+    <dd></dd>
+    <dt><code>brush</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.windows.media.brush">Brush</a></dt>
+    <dd></dd>
+    <dt><code>fontSize</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></dt>
+    <dd></dd>
+    <dt><code>offset</code> <span class="xref">Vector</span></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Drawing.DrawingHandle.html">DrawingHandle</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

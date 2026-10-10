@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Struct FrameDescriptor | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Struct FrameDescriptor | Fizzy.ImageViewer ">
+      
+      <meta name="description" content="Layout of a top-down, single-plane image. Construction stores values; frame factories validate them.">
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor">
+
+
+
+  <h1 id="Fizzy_ImageViewer_Frames_FrameDescriptor" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor" class="text-break">
+Struct FrameDescriptor  
+  </h1>
+
+  <div class="facts text-secondary">
+    <dl><dt>Namespace</dt><dd><a class="xref" href="Fizzy.html">Fizzy</a>.<a class="xref" href="Fizzy.ImageViewer.html">ImageViewer</a>.<a class="xref" href="Fizzy.ImageViewer.Frames.html">Frames</a></dd></dl>
+  <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
+  </div>
+
+  <div class="markdown summary"><p>Layout of a top-down, single-plane image. Construction stores values; frame factories validate them.</p>
+</div>
+  <div class="markdown conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public readonly struct FrameDescriptor : IEquatable&lt;FrameDescriptor&gt;</code></pre>
+  </div>
+
+
+
+
+
+  <dl class="typelist implements">
+    <dt>Implements</dt>
+    <dd>
+      <div><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.iequatable-1">IEquatable</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a>&gt;</div>
+    </dd>
+  </dl>
+
+
+  <dl class="typelist inheritedMembers">
+    <dt>Inherited Members</dt>
+    <dd>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+  </dd></dl>
+
+
+
+
+
+
+  <h2 class="section" id="constructors">Constructors
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor__ctor_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.#ctor*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor__ctor_System_Int32_System_Int32_System_Int32_Fizzy_ImageViewer_Frames_FramePixelFormat_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.#ctor(System.Int32,System.Int32,System.Int32,Fizzy.ImageViewer.Frames.FramePixelFormat)">
+  FrameDescriptor(int, int, int, FramePixelFormat)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Layout of a top-down, single-plane image. Construction stores values; frame factories validate them.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public FrameDescriptor(int Width, int Height, int Stride, FramePixelFormat Format)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>Width</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd><p>Image width in pixels; must be positive.</p>
+</dd>
+    <dt><code>Height</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd><p>Image height in pixels; must be positive.</p>
+</dd>
+    <dt><code>Stride</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd><p>Byte distance between row starts, at least the packed row size.</p>
+</dd>
+    <dt><code>Format</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FramePixelFormat.html">FramePixelFormat</a></dt>
+    <dd><p>Storage format, including channel order and numeric representation.</p>
+</dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+
+  <h2 class="section" id="properties">Properties
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Format_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Format*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Format" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Format">
+  Format
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Storage format, including channel order and numeric representation.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public FramePixelFormat Format { get; init; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FramePixelFormat.html">FramePixelFormat</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Height_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Height*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Height" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Height">
+  Height
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Image height in pixels; must be positive.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int Height { get; init; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_RequiredBytes_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.RequiredBytes*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_RequiredBytes" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.RequiredBytes">
+  RequiredBytes
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Minimum buffer size in bytes, excluding padding after the final row. Arithmetic overflow throws.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int RequiredBytes { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_RowBytes_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.RowBytes*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_RowBytes" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.RowBytes">
+  RowBytes
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Packed bytes per row, excluding padding. Arithmetic overflow throws.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int RowBytes { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Stride_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Stride*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Stride" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Stride">
+  Stride
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Byte distance between row starts, at least the packed row size.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int Stride { get; init; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Width_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Width*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Width" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Width">
+  Width
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Image width in pixels; must be positive.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int Width { get; init; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <h2 class="section" id="methods">Methods
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Deconstruct_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Deconstruct*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Deconstruct_System_Int32__System_Int32__System_Int32__Fizzy_ImageViewer_Frames_FramePixelFormat__" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Deconstruct(System.Int32@,System.Int32@,System.Int32@,Fizzy.ImageViewer.Frames.FramePixelFormat@)">
+  Deconstruct(out int, out int, out int, out FramePixelFormat)
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Deconstruct(out int Width, out int Height, out int Stride, out FramePixelFormat Format)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>Width</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+    <dt><code>Height</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+    <dt><code>Stride</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+    <dt><code>Format</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FramePixelFormat.html">FramePixelFormat</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Equals_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Equals*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Equals_Fizzy_ImageViewer_Frames_FrameDescriptor_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Equals(Fizzy.ImageViewer.Frames.FrameDescriptor)">
+  Equals(FrameDescriptor)
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Equals(FrameDescriptor other)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>other</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Equals_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Equals*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Equals_System_Object_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Equals(System.Object)">
+  Equals(object)
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public override bool Equals(object obj)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>obj</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_GetHashCode_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.GetHashCode*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_GetHashCode" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.GetHashCode">
+  GetHashCode()
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public override int GetHashCode()</code></pre>
+  </div>
+
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_ToString_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.ToString*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_ToString" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.ToString">
+  ToString()
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public override string ToString()</code></pre>
+  </div>
+
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_Validate_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Validate*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_Validate_System_Int32_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.Validate(System.Int32)">
+  Validate(int)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Checks positive dimensions, row stride and available buffer length in bytes; throws for invalid layout, insufficient storage or unsupported format.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Validate(int length)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>length</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+
+  <h2 class="section" id="operators">Operators
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_op_Equality_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.op_Equality*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_op_Equality_Fizzy_ImageViewer_Frames_FrameDescriptor_Fizzy_ImageViewer_Frames_FrameDescriptor_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.op_Equality(Fizzy.ImageViewer.Frames.FrameDescriptor,Fizzy.ImageViewer.Frames.FrameDescriptor)">
+  operator ==(FrameDescriptor, FrameDescriptor)
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static bool operator ==(FrameDescriptor left, FrameDescriptor right)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>left</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
+    <dd></dd>
+    <dt><code>right</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_FrameDescriptor_op_Inequality_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.op_Inequality*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_FrameDescriptor_op_Inequality_Fizzy_ImageViewer_Frames_FrameDescriptor_Fizzy_ImageViewer_Frames_FrameDescriptor_" data-uid="Fizzy.ImageViewer.Frames.FrameDescriptor.op_Inequality(Fizzy.ImageViewer.Frames.FrameDescriptor,Fizzy.ImageViewer.Frames.FrameDescriptor)">
+  operator !=(FrameDescriptor, FrameDescriptor)
+  
+  </h3>
+
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static bool operator !=(FrameDescriptor left, FrameDescriptor right)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>left</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
+    <dd></dd>
+    <dt><code>right</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

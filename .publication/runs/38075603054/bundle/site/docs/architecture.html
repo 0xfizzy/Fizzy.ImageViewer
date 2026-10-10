@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Architecture | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Architecture | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="architecture">Architecture</h1>
+
+<p><a href="zh-CN/architecture.html">简体中文</a></p>
+<p>Use this guide when changing resource ownership or module dependencies. The library
+owns an independent WPF STA per Viewer; callers submit immutable frames and use the
+public facade, drawing handles and measurement handles.</p>
+<h2 id="source-organization">Source organization</h2>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Viewer</td>
+<td>Public facade, host composition, window and lifetime</td>
+</tr>
+<tr>
+<td>Frames</td>
+<td>Immutable storage, frame descriptors, leases, original-pixel access and submission contracts</td>
+</tr>
+<tr>
+<td>Frames/Pixels</td>
+<td>Pixel-source contract, CPU reading/decoding, coordinates, regions and owned or immutable read results</td>
+</tr>
+<tr>
+<td>Rendering</td>
+<td>Submission queue, committed display state, CPU preparation/presentation and D3D presentation</td>
+</tr>
+<tr>
+<td>native/Cuda</td>
+<td>Optional CUDA/D3D9Ex kernels using borrowed standard CUDA context and stream handles</td>
+</tr>
+<tr>
+<td>Imaging</td>
+<td>Line sampling, shared query settings and display conversion shared by rendering and snapshots</td>
+</tr>
+<tr>
+<td>Imaging/Queries</td>
+<td>Shared query protocol, scheduler and execution runtime</td>
+</tr>
+<tr>
+<td>Layers</td>
+<td>Public layer composition and the container for transforms, input and lifetime</td>
+</tr>
+<tr>
+<td>Drawing</td>
+<td>Drawing elements, marker layers, drawing handles and batch rendering</td>
+</tr>
+<tr>
+<td>Measurements</td>
+<td>Measurement handles, collection, lifecycle, options, snapshots, notifications and style</td>
+</tr>
+<tr>
+<td>Measurements/Queries</td>
+<td>Measurement query kinds, geometry compatibility, request construction, query clients and results</td>
+</tr>
+<tr>
+<td>Measurements/Geometry</td>
+<td>Closed immutable geometry family and geometry kinds</td>
+</tr>
+<tr>
+<td>Measurements/Tools</td>
+<td>Tool contracts, registrations and creation contexts</td>
+</tr>
+<tr>
+<td>Measurements/Tools/BuiltIn</td>
+<td>Built-in tools and their shared creation session</td>
+</tr>
+<tr>
+<td>Measurements/Editing</td>
+<td>Measurement edit sessions and control-point interaction</td>
+</tr>
+<tr>
+<td>Measurements/Presentation</td>
+<td>Overlay, visual metadata, shape projection, labels and line-profile windows</td>
+</tr>
+<tr>
+<td>Interaction</td>
+<td>Measurement interaction coordination, WPF input binding and shared mouse capture</td>
+</tr>
+<tr>
+<td>Viewport</td>
+<td>ImageViewport, image-coordinate transforms, zoom and viewport pan</td>
+</tr>
+<tr>
+<td>Hud</td>
+<td>Screen-space surface, text handles, pixel sampling and display state</td>
+</tr>
+<tr>
+<td>Snapshots</td>
+<td>Captured frame/region ownership and encoding</td>
+</tr>
+<tr>
+<td>Menus</td>
+<td>Menu contracts, actions, registration, WPF bindings and captured menu targets</td>
+</tr>
+</tbody>
+</table>
+<h3 id="placement-rules">Placement rules</h3>
+<p>Place code with the feature that owns its behavior and lifetime, including interfaces,
+enums and controls. Shared code stays with its owning feature; a second caller does not
+justify a generic Controls, Models, Services or Helpers directory. Display conversion
+belongs to Imaging because both presentation and snapshot encoding use it.</p>
+<p>Each public top-level type has a same-named file. Independent internal implementations
+and contracts follow the same rule. Keep private implementation types nested in their
+owner. The small internal request and result families stay together in QueryRequest.cs
+and QueryResult.cs so their alternatives can be read as one protocol. Do not split
+nested helper types or create a directory for a single type merely to satisfy a pattern.</p>
+<p>Subdirectories group established responsibilities, rather than visibility or type kind.
+Frames/Pixels retains the public Frames namespace. Measurements/Geometry,
+Measurements/Tools and Measurements/Queries retain the public Measurements namespace:
+source navigation does not require a different consumer namespace for each subgroup.
+Built-in tools use Measurements.BuiltIn; editing and presentation have their own internal
+namespaces. Viewer files use the root namespace; other top-level feature directories use
+their feature namespace. Namespace changes require a separate API decision.</p>
+<p>Tests belong to the capability under test, not its historical implementation location.
+Frames/Pixels tests cover backend reads, pixel formats and immutable read results.
+Rendering tests cover presentation; Viewport tests cover pan; Imaging/Queries tests cover
+scheduling. Measurement geometry, query, tool-session and presentation tests use matching
+subdirectories. Tests spanning measurement ownership, notifications or interaction stay
+at the Measurements level. Test namespaces remain stable so existing filters continue
+to work. Test-only helpers live beside their callers; benchmarks remain under tools.</p>
+<p>Keep the core project at the repository root; optional backend projects belong under extensions/. Viewer partial files organize
+one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Queries,
+Snapshots and Lifetime. These files are not independently owned services. <code>IViewer</code> aggregates
+borrowed capability interfaces placed with their owning features. <code>IViewerWindow</code> stays
+with Viewer; display control belongs to Viewport, shared query settings to Imaging.
+<code>Viewer</code> implements these interfaces directly, with one shared lifetime; only the aggregate
+contract includes asynchronous disposal and global <code>Layers</code> composition. Drawing exposes
+only its default <code>Markers</code> layer; measurements expose their <code>Measurements</code> layer.
+Layer handles manage the entire corresponding layer, while drawing/HUD/registration
+handles manage individual resources. Review returned objects, collection elements and
+event/callback arguments as well as direct members when changing a capability boundary.
+These interfaces constrain typed dependencies; a shared implementation and event sender
+do not provide security isolation. Documentation in
+docs describes current component contracts.
+Update this map when introducing or removing a feature boundary, not for ordinary files.</p>
+<p>Visibility is enforced by C# access modifiers and the reviewed public API baseline.
+Integration tests access composed internals through Viewer.Host; component tests construct
+their owners directly. Viewer has no menu-freeze or snapshot-target forwarding methods.
+Viewer.Queries contains the shared pixel-query configuration; Viewer.Hud contains screen-space text APIs and pixel inspection settings.
+The facade is sealed. Application adapters own a Viewer instance, create it hidden
+when setup must precede display, and converge closure and disposal on their own
+idempotent cleanup before awaiting the viewer's disposal completion.</p>
+<h2 id="frame-and-imaging-dependencies">Frame and imaging dependencies</h2>
+<p>The optional <code>Fizzy.ImageViewer.Cuda</code> assembly references only the core library and its own native DLL. Consumers bridge their source ownership and execution scope; the extension owns display conversion and pixel queries. Native code uses standard CUDA handles without creating a second runtime. See <a href="cuda.html">CUDA integration</a>.</p>
+<p>Arrows show code dependencies within the single library project. Names match the source
+modules; Frames/Pixels is part of Frames and uses the same public namespace.</p>
+<pre><code class="lang-mermaid">flowchart TD
+    Measurements[Measurements] --&gt; Queries[&quot;Imaging/Queries&quot;]
+    Hud[Hud] --&gt; Queries
+    Measurements --&gt; Imaging[&quot;Imaging: sampling and display conversion&quot;]
+    Rendering[Rendering] --&gt; Imaging
+    Snapshots[Snapshots] --&gt; Imaging
+    Queries --&gt; Frames[&quot;Frames: storage, leases and original-pixel access&quot;]
+    Imaging --&gt; Frames
+    Rendering --&gt; Frames
+    Snapshots --&gt; Frames
+    Measurements --&gt; Frames
+    Hud --&gt; Frames
+</code></pre>
+<p>Frames does not reference Imaging. It owns the pixel-source protocol and its parameters
+and results, including byte decoding and CPU statistics. Imaging consumes that protocol
+for sampling, conversion and scheduling; refresh rates and result expiration stay there.</p>
+<p>ImageFrame factories compose storage with its pixel source. CPU factories share the same
+descriptor and memory slice with CpuFramePixelSource; the GPU factory receives the producer's
+source. FrameStorage only retains these components and manages reference counting and final
+release. It does not select a backend or independently dispose the pixel source.</p>
+<p>FrameLease is the backend-independent read boundary: each asynchronous operation retains
+its own lease, validates requests and results, and supplies frame provenance. Region reads
+return an independently owned CPU ImageFrame; RegionPixels adds the source frame and region
+without assigning source identity to the derived pixels. The producer's release callback
+owns external query resources until the final source lease is released.
+Raw snapshot capture transfers the independently owned region image into its
+snapshot; snapshot pixel leases can retain that region beyond snapshot disposal.
+Query and snapshot owners complete necessary cleanup before handing a result to
+the caller, and dispose an undeliverable result if cleanup fails.</p>
+<h2 id="ownership-and-direction">Ownership and direction</h2>
+<p>Viewer exposes the complete public facade and raises public notifications. Host composes
+frame notifications in submission-callback, public-event order;
+subscriber failures are isolated at each boundary.
+ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
+query scheduler, measurement collection, tool registry, interaction coordinator and HUD.
+The facade assigns the host before starting its STA. Startup failure uses the same
+idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
+Disposal waits for outstanding frame and query work and the actual STA exit.
+FramePipeline accounts for admitted submissions until their release and public result
+are complete, including replacement cleanup on submitting threads outside the render
+loop. Display-range changes have a separate awaitable result for the requested version;
+newer settings and shutdown cancel pending updates.
+The shared disposal result retains resource-cleanup and drain failures after safe cleanup;
+notification failures are isolated at their event boundaries. A GPU attachment that cannot
+be safely detached retains its presenter and surface leases for process lifetime.
+ViewerLifetime provides the shared stopping gate and shutdown-safe STA removal dispatch for measurement, drawing and HUD handles. HudTextCollection owns HUD text
+visuals and invalidates their handles on shutdown.</p>
+<p>ViewerInputBinding resolves WPF event sources through the measurement collection and
+passes measurement identities and image coordinates to the coordinator. It implements
+the small IInteractionView boundary for selection appearance, cursor, focus, capture,
+image scale and temporary layer input suppression without owning tool-session state.
+The adapter borrows LayerCollection; the coordinator borrows MeasurementLayer directly
+for admission policy and lifecycle events, without depending on ViewerLayers or its container.
+ViewerHost connects the input adapter to the coordinator; the coordinator depends on these effects rather than concrete WPF visuals
+or the input adapter. ImageViewport receives navigation and pointer movement from the common
+viewport surface, so sibling overlays do not block navigation or pixel inspection. Left-button
+selection and creation retain their separate input bindings. ViewportPan owns middle-button
+pan state in screen coordinates;
+it and measurement editing use MouseCaptureSession for capture admission, loss and
+idempotent release. Failed capture never starts a drag. Cancellation, interaction
+switching, hiding/unloading the image surface and shutdown end viewport capture.
+MeasurementInteractionCoordinator alone owns
+the active tool, session version, mode and selected measurement, and decides editing and measurement
+transitions. Tool and edit admission share the layer's configured visibility and hit-test
+policy, including admission after reentrant cancellation. Temporary input suppression
+does not change that configured policy. MeasurementToolRegistry stores reusable tool registrations and their metadata. On each activation,
+<code>IMeasurementTool.CreateSession(context)</code> returns a fresh <code>IMeasurementToolSession</code> containing
+that activation's mutable state. The coordinator disposes each callback session once on every terminal path and owns its explicit
+<code>MeasurementCreationContext</code> context; MeasurementCollection stores no ambient current session.
+Every preview must be created through its owning context. Ended contexts reject creation,
+including from callbacks interrupted by a newer session. An activation aggregates its
+registration identity, creation context and callback session; callback reentry validates
+that activation before continuing. Context-scoped finishing cannot affect replacements.</p>
+<p>MeasurementCollection owns membership, visual lookup, creation policy and viewer style.
+ViewerHost constructs MeasurementRuntime and shares it with the collection and interaction
+coordinator. The runtime supplies handle and creation-context STA dispatch, query registration
+and shared notification execution; MeasurementItem receives the runtime, presentation layer
+and style explicitly. Creation contexts receive the runtime and a frame-acquisition delegate
+directly, while the collection owns creation and membership rather than forwarding execution
+or frame access. Collection shutdown stops the shared runtime before disposing its items.
+A per-viewer MeasurementNotificationQueue
+serializes immutable viewer and handle notifications, including mutations made reentrantly
+by subscribers. Internal geometry application remains synchronous so editing controls are
+consistent before any public notification is queued.</p>
+<p>Display controls do not call controllers through stored references. <code>ViewerLayer</code> owns common visibility, hit testing and clear policy.
+<code>ViewerLayers</code> composes default layers and exposes consumer capabilities. Its internal
+<code>LayerCollection</code> owns attachment, transforms, input suppression and lifecycle without
+depending on concrete drawing or measurement types. Concrete layers depend on that
+container rather than the public composition facade.
+<code>DrawingLayer</code> owns drawings with one or many elements through the same <code>DrawingHandle</code>; <code>MeasurementLayer</code> owns the WPF measurement overlay and exposes
+a content-clearing notification. MeasurementCollection subscribes to clear its owned items and
+unsubscribes on shutdown; the layer has no reference to the concrete collection. Clear enters the
+layer's clearing gate, cancels input and selection, then always notifies content cleanup and
+removes remaining visuals in finally blocks. Model, query and resource cleanup does not depend on a coordinator being present.
+The same layer gate rejects creation and interaction starts throughout cancellation and cleanup.
+MeasurementLayer exposes no batch creation or batch-click events.</p>
+<p>MeasurementItem implements the public IMeasurement handle with STA dispatch and owns
+model state, query subscription and disposal. Completion and disposal release its creation-context
+reference before presentation or external callbacks; only immutable Origin survives as session provenance.
+The item directly disposes its presentation after deregistration and before removal notification. MeasurementPresentation owns its WPF
+visuals, their attachment/detachment, labels and optional plot. Plot closure requests item disposal, and active disposal
+detaches that callback before closing the plot. Disposed items release their collection and
+runtime references; presentation releases its overlay and close callback. Retained terminal
+model reads use only stable data and the lightweight Viewer lifetime gate. Invalidated drawing
+handles similarly release their layer reference. Presentation shutdown clears the image source
+on the STA; uncertain native attachments remain independently quarantined.
+MeasurementQueryDefinition owns the supported query/geometry pairs and request construction. MeasurementQueryClient caches those requests independently of the handle. Each request
+captures its geometry version and coordinates for immutable result provenance.
+ROI clipping also belongs to MeasurementQueryDefinition and is shared by queries and menus.
+Geometry records contain immutable geometric facts; MeasurementGeometryEditing owns control
+point ordering and drag behavior. LineProfileWindow wraps the optional plot window, while
+its nested control renders the samples.
+MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
+query clients with the shared scheduler; model dispatch and shutdown admission do not
+depend on the visual container. MeasurementCollection owns a primary set of model-driven
+items and a separate visual lookup index. The host creates and closes the collection
+independently of the tool registry. Hit testing resolves a visual to its registered measurement before selection.
+The measurement edit controller receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
+The pixel HUD independently subscribes to that same scheduler. Query protocol and
+query runtime are internal imaging capabilities, not public measurement extension points.
+A validated query publishes frame identity and its payload in one synchronous call;
+clients never stage samples awaiting a second publication notification.
+The query runtime controls time, worker execution and UI publication for deterministic tests.
+LineSampling computes clipped sample coordinates independently of display. The optional plot
+consumes immutable MeasurementSampleResult samples and owns its channel buffers; data-only line
+queries allocate no plot or intermediate RGB buffers.</p>
+<p>MeasurementEditController directly owns a MeasurementEditSession and its control-point visuals.
+The session observes internal geometry application before public notifications and refreshes
+control points for both pointer and programmatic updates. It preserves the drag-start fixed
+anchor across corner crossing; an external update during a drag replaces that baseline.
+Geometry operations belong to the closed MeasurementGeometry family, with one file per concrete geometry. Capability checks do not create sessions.
+There is no editor factory or dynamic editor registration contract.</p>
+<p>MenuManager owns registrations and WPF click bindings. Each registration has an
+independent disposable handle; revocation disables current bindings and releases their
+targets. Normal menu closure retains bindings until input drains because WPF can deliver
+Closed before Click. A new opening invalidates the previous bindings and delayed cleanup.
+Menu bindings await <code>ExecuteAsync</code>, isolate failures through logging and prevent
+concurrent execution of the same menu object across openings. Started work owns its
+resources and may outlive registration or viewer closure.
+ViewerMenuController supplies built-in menu policy and captures interaction/ROI targets,
+borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession in Menus
+alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.
+ViewerHost detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.</p>
+<p>Rendering owns CommittedViewLease, which retains a frame lease together with atomically
+captured display range and commit version. Menu targets and snapshots consume this committed
+view without owning pipeline state.</p>
+<h2 id="pixel-format-ownership">Pixel format ownership</h2>
+<p><code>Frames.FramePixelFormats.GetInfo</code> supplies the internal immutable <code>FramePixelFormatInfo</code>
+for each supported format. Component order, component bit depth, numeric representation
+and alpha mode are defined there; storage size, grayscale classification and semantic
+channel count are derived from those facts. Public <code>BytesPerPixel</code> uses the same definition.</p>
+<p>Frames/Pixels owns byte decoding and raw statistics; Imaging owns display mapping.
+Rendering owns WPF format adaptation; Snapshots owns output layout, channel conversion and encoding tags. These
+components consume format facts while retaining their own algorithms and policies:
+display ranges are not source-value limits, plot channel selection is not a format channel
+count, and encoded row sizes need not equal source row sizes. <code>RegionStatistics</code> validates
+its own format and channel count; frame leases check that provider results match the source.</p>
+<p>When adding a format, define its intrinsic facts once and review decoding, statistics,
+display, HUD/measurement presentation and snapshot paths. Each path must support it
+explicitly or reject it. A descriptor entry alone does not implement format support.</p>
+<h2 id="invariants-when-extending-the-library">Invariants when extending the library</h2>
+<ul>
+<li>Frame submission consumes ownership immediately; terminal results and last-lease
+release remain explicit, including cancellation, replacement and shutdown.</li>
+<li>CPU display buffers and native GPU surfaces have different presentation lifetimes.
+<code>ICpuImagePresenter</code> abstracts only the former.</li>
+<li>Batch marker rendering and individual WPF measurement visuals serve different
+workloads. Keep their ownership and interaction rules explicit.</li>
+<li>Copy and freeze caller brushes before crossing the STA boundary. Measurement styles
+belong to a Viewer; created visuals retain their own appearance snapshot.</li>
+<li>During ordinary tool callbacks the newest session owns input. Bulk clear rejects new
+sessions, is reentrantly idempotent and attempts every layer after a cleanup failure.</li>
+<li>Expose stable consumer capabilities rather than controls, caches or service instances.
+Review API baseline changes together with callers and component documentation.</li>
+</ul>
+<p>See <a href="public-api.html">public API</a>, <a href="frame-pipeline.html">frame pipeline</a>,
+<a href="measurements.html">measurements</a>, <a href="drawing-layers.html">drawing</a> and
+<a href="validation.html">validation</a> for the behavioral contracts and verification commands.</p>
+<h2 id="query-policy-and-tool-admission">Query policy and tool admission</h2>
+<p>Query policy independently selects acceptance of previous geometry and the interval
+origin (start or completion). Completion means STA processing of the result, including
+failed, expired and rejected results. Subscription, session and descriptor checks always
+apply. Display retention age controls existing values; MaxResultAge controls publication.</p>
+<p>MeasurementInteractionCoordinator owns activation admission and reentry checks. The
+facade maps initial rejection to public exceptions; menus ignore unavailable targets.
+Both activate a specific registration instance. Registration handles use ViewerLifetime
+for shutdown-safe removal, and registry removal/closure invalidates their owner references.
+Global ID-based revocation resolves the current instance and uses the same cleanup path.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

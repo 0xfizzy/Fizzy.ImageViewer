@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>测量与交互 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="测量与交互 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="测量与交互">测量与交互</h1>
+
+<p><a href="../measurements.html">English</a></p>
+<p>没有独立创建测量或恢复保存 ROI 的 API。非交互内容用绘图层，可编辑测量属于工具会话。内置 Point、Length、RectangleRoi、LineProfile 与自定义工具都通过 <code>IMeasurementToolContext.CreateMeasurement</code> 创建模型；每次激活创建可产生零到多个测量的独立会话。</p>
+<p><a id="ownership-and-geometry"></a></p>
+<h2 id="所有权与几何">所有权与几何</h2>
+<p>Measurements 暴露整层可见性、输入和清理。清层取消交互并删除测量，保留绘图/HUD。注册和 EndInteraction 是 Viewer 全局操作；会话内部用 context.Finish，避免影响替代会话。事件携带可编辑/删除的实时句柄，因此订阅并非纯只读能力。</p>
+<p>MeasurementStyle 配置每个 Viewer 的未来测量，调用线程复制冻结 Brush，已有测量保留正常/选中色；Options.Style 覆盖新项默认并在创建时快照。测量拥有不可变几何、主视觉、标签、可选查询及资源；集合独立登记模型和视觉索引。预览也是已拥有对象，Complete 保留并启用查询，取消释放未完成项，完成不重建 Visual。</p>
+<p>几何使用原图坐标，矩形标准化角点；编辑先更新模型，Presentation 再投射 WPF/标签/曲线。真实变化增加 GeometryVersion 并清结果，相等更新无操作，不可改变几何种类。点/线使用半开像素覆盖，线裁剪、floor，保留输入方向和端点；右下独占边缘在图像外。</p>
+<p>矩形拖动保留拖动开始的对角锚点，越过不改变固定角；程序更新在通知前刷新视觉、标签和控制点，拖动期间外部更新替换基线并沿用控制点索引。标签立即跟随，不等查询。</p>
+<p>ROI 统计和菜单导出共用 PixelRegion.Clip；菜单同时固定帧和区域，后续编辑不改变已捕获导出。不支持直接改 WPF 属性来改测量。</p>
+<p>删除、清空、曲线窗口关闭、Viewer 关闭汇入幂等释放，即使专用资源失败也尝试去掉标签和主视觉，移除后才通知。关闭先停交互和查询、释放测量，再清层和帧；DisposeAsync 等待在途查询及其租约，即使后端不立即响应取消。</p>
+<p><a id="interaction"></a></p>
+<h2 id="交互">交互</h2>
+<p>内部 coordinator 唯一拥有选中项、Idle/Editing/Measuring、工具和会话版本；registry 只存注册。编辑控制器拥有编辑会话和控制点，输入适配器翻译事件及视口效果，不复制交互状态；未登记视觉不能成为测量目标。测量集合独立订阅层清理，取消失败或缺少 coordinator 仍清模型、查询和资源。整个批量清理期间拒绝创建/新交互，重入 clear 幂等，失败后继续其他层。</p>
+<p>有效测量启动结束编辑，有效编辑取消测量，无效请求保留当前会话。Escape 取消创建或结束编辑，保留已应用修改；Delete 先结束编辑再释放对象。清空、隐藏测量层、禁用其配置命中、关闭 Viewer 都取消会话并释放捕获；隐藏保留完成项。丢失捕获结束拖动不删项，捕获失败保留编辑但没有活动拖动。</p>
+<p>临时抑制不改配置标志，恢复时按当前配置重算，包括新层。隐藏测量层不能启动工具。普通操作中回调同步创建的新会话优先，旧回调返回/抛错不取消替代会话。同样适用于取消打断外层启动。</p>
+<p>显式 API 传播工具错误；框架输入及曲线窗口回调记录错误。操作和清理失败聚合、原错误在前，并尝试全部资源。通知订阅错误逐个隔离。取消或正常完成先结束上下文，再执行回调及清未完成项；结束上下文不能创建，抛 ObjectDisposedException。旧清理不删除新会话项目。关闭开始后激活抛 ObjectDisposedException，清理所有完成/预览并等待查询。</p>
+<p><a id="query-execution"></a></p>
+<h2 id="查询执行">查询执行</h2>
+<p>一个共享 scheduler，一次一批，STA 捕获、后台读像素、STA 发布。最早到期请求选一个 ROI 或合并所有到期点/线 gather；各批独立发布，未选者保留到期时间下次捕获新状态。几何变化不绕过限频。每批拥有帧租约，释放某测量不停止其他订阅。</p>
+<p>发布检查同注册、测量身份、几何版本和描述符；重新订阅不接受旧工作。几何变化、非法区域、取消/释放阻止过期发布；失败按订阅隔离，结果无效。同描述符的新帧不必拒绝在途结果，允许 MaxResultAge 范围内发布避免高速视频饥饿；描述符变化或超龄拒绝，未变冻结帧结果继续有效。</p>
+<p>仅像素 HUD 使用移动结果策略，同会话保留整组坐标/值，完成后限 10 Hz、旧显示保留 300 ms，不改变测量规则。测试用 IQueryRuntime 手动推进时钟、工作和发布；生产用 DispatcherTimer、Stopwatch、Task.Run 与 Dispatcher。</p>
+<p><a id="tool-registration-ownership"></a></p>
+<h2 id="工具注册所有权">工具注册所有权</h2>
+<p>RegisterMeasurementTool 返回只撤销该注册实例的句柄，可任意线程幂等释放，关闭后安全，完成项存续；工具对象仍由调用方拥有。Id/DisplayName 在 STA 读取一次，getter 重入关闭后重新检查生命周期，拒绝且不保留工具。</p>
+<p>UnregisterMeasurementTool(id) 移除当前同 ID 注册；组件清理应释放自己的句柄，以免删除替代注册。先撤销再取消回调，失败不恢复注册。激活在打断旧会话前固定注册实例，无效初始请求保留交互；重入替换后不能误激活同名新注册。菜单捕获注册实例，点击时被撤销、隐藏、禁用或清理则忽略。</p>
+<p><a id="extension-boundary"></a></p>
+<h2 id="扩展边界">扩展边界</h2>
+<p>Id 区分大小写、非空，DisplayName 非空，重复 ID 拒绝；未知 ID 激活抛 KeyNotFoundException，隐藏或禁用层抛 InvalidOperationException。注册变化反映到后续菜单打开。EndInteraction 保留已完成项和应用编辑。</p>
+<p>CreateSession 在 STA 每次返回新 IMeasurementToolSession，预览、首击坐标等可变状态放会话，注册只保留可复用配置。跨 Viewer 共享注册需线程安全工厂/配置。OnClick 返回 Continue 或 Finish；只有显式 Complete 的测量保留。正常完成不调用 Cancel，中断在上下文结束后调用一次；每个返回会话在 STA 恰好 Dispose 一次，包括失败、工厂被替代。</p>
+<p>工厂可创建预览和重入；返回时激活已结束的会话会取消但不改变新会话。工厂失败或 null 返回清未完成项，未转移资源由工厂清理。异步工作可 context.Finish，只结束自身激活，旧/关闭上下文返回 false。Complete 只完成一项并释放上下文引用，不结束工具。Origin 保留 ToolId/SessionId，同次多项共享，会话间不同。</p>
+<p><a id="geometry-editing-and-notifications"></a></p>
+<h3 id="几何编辑与通知">几何、编辑与通知</h3>
+<p>通过 MeasurementGeometry.Point/Crosshair/Line/Rectangle/Circle 创建封闭不可变记录，用具体类型模式匹配。点/准星 Position，线 Start/End 保序，矩形标准化对角，圆 Center/Radius；Bounds 分别为点零范围、端点范围或直径框。坐标和 extent 有限，半径非负。</p>
+<p>框架生成主图形、标签和控制点；重合点优先 extent 控制点，因此零圆/零线/塌缩矩形可展开。标签文字、padding、偏移固定屏幕尺寸，锚点跟图像。用 UpdateGeometry；几何通知发生在模型、标签和结果失效之后。多形工具创建多个独立身份/生命周期的测量，不提供任意视觉附加。</p>
+<p>Completed 每项一次且排除预览，不代表像素结果就绪。Removed 仅对之前完成项发出，快照含 ID、完整几何和版本；实时句柄可从任意线程更新或释放，关闭后释放安全。</p>
+<p><a id="observing-built-in-and-custom-measurements"></a></p>
+<h3 id="观察内置与自定义测量">观察内置与自定义测量</h3>
+<p>MeasurementChanged 覆盖完成项的编辑、查询发布和失效，携带不可变 Snapshot/QueryResult；几何变化、失败或过期时结果 null。预览、相等几何或已空结果不发无意义事件。</p>
+<p>Viewer 和句柄共用 STA FIFO 通知队列，每次变化捕获载荷及订阅者，重入事件追加；几何版本不倒退，完成先于删除，删除为终止。较旧快照到达时实时句柄可能已变或释放。回调关闭仍交付排队事件，Closed 晚于删除；订阅异常隔离。可额外订阅 GeometryChanged/QueryResultChanged。</p>
+<p><a id="queries-and-retained-results"></a></p>
+<h3 id="查询与保留结果">查询与保留结果</h3>
+<table>
+<thead>
+<tr>
+<th>Query</th>
+<th>几何</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>None（默认）</td>
+<td>全部</td>
+<td>几何标签，无像素订阅</td>
+</tr>
+<tr>
+<td>Pixel</td>
+<td>点/准星</td>
+<td>一个样本和整数源坐标</td>
+</tr>
+<tr>
+<td>LineProfile</td>
+<td>线</td>
+<td>按顺序样本和坐标</td>
+</tr>
+<tr>
+<td>RegionStatistics</td>
+<td>矩形</td>
+<td>裁剪区域和通道统计</td>
+</tr>
+</tbody>
+</table>
+<p>非法组合在附加前拒绝，空目标无结果。点 floor，线裁剪，ROI/导出共用 Clip。ShowProfileWindow 独立请求完成时创建曲线窗，只允许线剖面查询；内置启用，显式查询默认仅数据，关闭曲线删除测量。</p>
+<p>LineMeasurementGeometry.Length 不读帧，稳健距离避免中间平方溢出/下溢，仅不可表示最终长度时正无穷。纯长度测量没有 QueryResult。</p>
+<p>结果含测量 ID、几何版本、FrameInfo、查询种类以及只读样本/坐标/统计副本，不借 scheduler 缓冲，可跨帧、编辑、删除保留。模式匹配 MeasurementSampleResult 或 MeasurementRegionStatisticsResult；公共基类只放来源和 Query，None 无结果。标签和曲线先于通知更新，几何立即失效，查询失败/描述符变化/无目标/超龄清旧结果。</p>
+<p><a id="resources-and-threads"></a></p>
+<h3 id="资源与线程">资源与线程</h3>
+<p>工具回调、上下文创建和通知在 STA；IMeasurement 的读取、更新、订阅会自行调度，后台可更新/完成仍存活预览。取消后晚到调用抛 ObjectDisposedException。关闭后 Dispose/退订安全，Id/Origin/IsDisposed 可读，其余需要运行 Viewer。不要 STA 等待会调用句柄的工作线程。</p>
+<p>AddResource 成功才转移所有权；失败不改变原所有权，重复同实例拒绝但既有所有权仍在。不得跨测量共享被拥有资源。OnDispose 绑定外部清理。撤销注册保留完成项；隐藏 Measurements 取消预览但保留完成项，Viewer.Hide 保留活动会话和预览；清空/关闭删除全部。</p>
+<p>释放撤销查询、执行回调、清资源、关曲线、移视觉，每一步失败后仍尝试其他安全步骤。显式释放/清理传播聚合错误，框架输入日志隔离，关闭错误汇入共享 DisposeAsync；幂等不重试已执行清理。scheduler 撤销订阅但不释放订阅者，测量和 HUD 分别拥有自己的订阅。完整工具代码见<a href="../../samples/MeasurementsAndExport/Program.cs">示例</a>。</p>
+<p><a id="line-profile-rendering"></a></p>
+<h2 id="线剖面渲染">线剖面渲染</h2>
+<p>X 为样本索引、Y 为像素值，仅数字刻度，主次虚线网格；曲线为柔和 RGB、圆角连接，不平滑样本。刻度随窗口尺寸，轴缓存至尺寸/范围/DPI 变化。WPF 使用冻结笔和缓存几何，数据不变保留，变化/缩放重建。</p>
+<p>每物理像素列按样本顺序保留有限段端点及 min/max，非有限值保留断点，单样本画点；仅限制显示细节，不改变原始数据。曲线直接消费不可变结果，通道缓冲几何增长且归窗口；纯数据查询不建 RGB 曲线缓冲。发布同时提供帧身份和批次数据，只同步消费；数据变化时 WPF 序列化和帧查询仍分配。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
