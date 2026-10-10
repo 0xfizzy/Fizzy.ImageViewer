@@ -87,6 +87,11 @@ read methods for backend-independent access.</p>
 </dd>
     </dl>
     <dl class="jumplist">
+      <dt><a class="xref" href="Fizzy.ImageViewer.Frames.D3D9ImageFrame.html">D3D9ImageFrame</a></dt>
+      <dd><p>Creates owned frames from ready, immutable D3D9 display surfaces.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
       <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameLease.html">FrameLease</a></dt>
       <dd><p>A single ownership token. Do not dispose concurrently with reading its memory.</p>
 </dd>
@@ -108,7 +113,7 @@ read methods for backend-independent access.</p>
     </dl>
     <dl class="jumplist">
       <dt><a class="xref" href="Fizzy.ImageViewer.Frames.PixelSamplesResult.html">PixelSamplesResult</a></dt>
-      <dd><p>Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame
+      <dd><p>Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with source frame
 provenance. Construction copies the supplied samples; retain the requested coordinates
 separately when their association is needed.</p>
 </dd>

@@ -42,6 +42,146 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaDiagnostics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaDiagnostics.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaDiagnostics",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaDiagnostics.yml\" sourcestartlinenumber=\"1\">Process-wide extension diagnostics; metrics do not control lifetime or admission.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaErrorDomain.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaErrorDomain.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaErrorDomain",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaErrorDomain.yml\" sourcestartlinenumber=\"1\">Origin of an extension native failure; NativeCode retains that domain's code.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaException",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaException.yml\" sourcestartlinenumber=\"1\">A CUDA extension native failure. Consumer execution exceptions are propagated unchanged.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaImageFrame.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaImageFrame.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaImageFrame",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaImageFrame.yml\" sourcestartlinenumber=\"1\">Constructs owned GPU frames with display surfaces and original-pixel access.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaMemoryKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaMemoryKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaMemoryKind",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaMemoryKind.yml\" sourcestartlinenumber=\"1\">Scratch storage required by an operation.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaQueryMetrics.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.CudaQueryMetrics.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.CudaQueryMetrics",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.CudaQueryMetrics.yml\" sourcestartlinenumber=\"1\">Extension query counters; scratch allocation/reuse and quarantined bytes belong to the bridge.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaExecutionScope.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.ICudaExecutionScope.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.ICudaExecutionScope",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaExecutionScope.yml\" sourcestartlinenumber=\"1\">A synchronous, thread-affine borrowed CUDA operation. Handles and scratch never escape it.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaFrameSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.ICudaFrameSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.ICudaFrameSource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaFrameSource.yml\" sourcestartlinenumber=\"1\">An independently retained, immutable CUDA image and its executable read access.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaResource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.ICudaResource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda.ICudaResource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Cuda.ICudaResource.yml\" sourcestartlinenumber=\"1\">An external resource whose cleanup is owned by a bridge after registration.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Cuda.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Cuda.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Cuda",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Drawing.CircleElement.yml",
       "output": {
         ".html": {
@@ -235,6 +375,20 @@
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.Frames.CpuFramePixelReader",
       "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.CpuFramePixelReader.yml\" sourcestartlinenumber=\"1\">Synchronous access to CPU-backed original pixels. Use FrameLease asynchronous\nread methods for backend-independent access.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.D3D9ImageFrame.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.D3D9ImageFrame.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.D3D9ImageFrame",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.D3D9ImageFrame.yml\" sourcestartlinenumber=\"1\">Creates owned frames from ready, immutable D3D9 display surfaces.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -458,7 +612,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.Frames.PixelSamplesResult",
-      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSamplesResult.yml\" sourcestartlinenumber=\"1\">Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame\nprovenance. Construction copies the supplied samples; retain the requested coordinates\nseparately when their association is needed.</p>\n"
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelSamplesResult.yml\" sourcestartlinenumber=\"1\">Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with source frame\nprovenance. Construction copies the supplied samples; retain the requested coordinates\nseparately when their association is needed.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1355,6 +1509,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docs/cuda.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/cuda.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docs/documentation.md",
       "output": {
         ".html": {
@@ -1492,6 +1656,16 @@
       "output": {
         ".html": {
           "relative_path": "docs/zh-CN/architecture.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/cuda.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/cuda.html"
         }
       },
       "version": ""

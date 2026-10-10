@@ -276,55 +276,6 @@ Class ImageFrame
 
 
 
-  <a id="Fizzy_ImageViewer_Frames_ImageFrame_TakeD3D9Surface_" data-uid="Fizzy.ImageViewer.Frames.ImageFrame.TakeD3D9Surface*"></a>
-
-  <h3 id="Fizzy_ImageViewer_Frames_ImageFrame_TakeD3D9Surface_Fizzy_ImageViewer_Frames_FrameDescriptor_System_IntPtr_Fizzy_ImageViewer_Frames_IFramePixelSource_System_Action_" data-uid="Fizzy.ImageViewer.Frames.ImageFrame.TakeD3D9Surface(Fizzy.ImageViewer.Frames.FrameDescriptor,System.IntPtr,Fizzy.ImageViewer.Frames.IFramePixelSource,System.Action)">
-  TakeD3D9Surface(FrameDescriptor, nint, IFramePixelSource, Action)
-  
-  </h3>
-
-  <div class="markdown level1 summary"><p>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
-The query provider reads only explicitly requested pixels and must return
-independent immutable CPU storage matching descriptor. Release runs after the last lease.
-Release runs synchronously on the final releasing thread, potentially the Viewer STA;
-the producer must satisfy thread affinity and avoid blocking.
-Ownership transfers even on construction failure. If construction and release both fail,
-throws an AggregateException containing both errors.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static ImageFrame TakeD3D9Surface(FrameDescriptor descriptor, nint surface, IFramePixelSource pixelSource, Action release)</code></pre>
-  </div>
-
-  <h4 class="section">Parameters</h4>
-  <dl class="parameters">
-    <dt><code>descriptor</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameDescriptor.html">FrameDescriptor</a></dt>
-    <dd></dd>
-    <dt><code>surface</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.intptr">nint</a></dt>
-    <dd></dd>
-    <dt><code>pixelSource</code> <a class="xref" href="Fizzy.ImageViewer.Frames.IFramePixelSource.html">IFramePixelSource</a></dt>
-    <dd></dd>
-    <dt><code>release</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action">Action</a></dt>
-    <dd></dd>
-  </dl>
-
-  <h4 class="section">Returns</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.ImageFrame.html">ImageFrame</a></dt>
-    <dd></dd>
-  </dl>
-
-
-
-
-
-
-
-
-
-
-
   <a id="Fizzy_ImageViewer_Frames_ImageFrame_TakeOwnership_" data-uid="Fizzy.ImageViewer.Frames.ImageFrame.TakeOwnership*"></a>
 
   <h3 id="Fizzy_ImageViewer_Frames_ImageFrame_TakeOwnership_Fizzy_ImageViewer_Frames_FrameDescriptor_System_ReadOnlyMemory_System_Byte__System_Action_" data-uid="Fizzy.ImageViewer.Frames.ImageFrame.TakeOwnership(Fizzy.ImageViewer.Frames.FrameDescriptor,System.ReadOnlyMemory{System.Byte},System.Action)">

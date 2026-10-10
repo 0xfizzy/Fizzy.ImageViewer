@@ -864,7 +864,7 @@ The caller owns disposal of the returned lease.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public Task&lt;ImageSnapshot&gt; CaptureSnapshotAsync(SnapshotKind kind, PixelRegion region, CancellationToken ct = default)</code></pre>
+    <pre><code class="lang-csharp hljs">public Task&lt;ImageSnapshot&gt; CaptureSnapshotAsync(SnapshotKind kind, PixelRegion region, CancellationToken cancellationToken = default)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
@@ -873,7 +873,7 @@ The caller owns disposal of the returned lease.</p>
     <dd></dd>
     <dt><code>region</code> <a class="xref" href="Fizzy.ImageViewer.Frames.PixelRegion.html">PixelRegion</a></dt>
     <dd></dd>
-    <dt><code>ct</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
+    <dt><code>cancellationToken</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
     <dd></dd>
   </dl>
 
@@ -914,14 +914,14 @@ The caller owns disposal of the returned lease.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public Task&lt;ImageSnapshot&gt; CaptureSnapshotAsync(SnapshotKind kind, CancellationToken ct = default)</code></pre>
+    <pre><code class="lang-csharp hljs">public Task&lt;ImageSnapshot&gt; CaptureSnapshotAsync(SnapshotKind kind, CancellationToken cancellationToken = default)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
   <dl class="parameters">
     <dt><code>kind</code> <a class="xref" href="Fizzy.ImageViewer.Snapshots.SnapshotKind.html">SnapshotKind</a></dt>
     <dd></dd>
-    <dt><code>ct</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
+    <dt><code>cancellationToken</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
     <dd></dd>
   </dl>
 
@@ -1522,7 +1522,7 @@ Awaiting reports commit/drop completion, not physical presentation. A frame cann
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ValueTask&lt;FrameSubmitResult&gt; SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken ct = default)</code></pre>
+    <pre><code class="lang-csharp hljs">public ValueTask&lt;FrameSubmitResult&gt; SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken cancellationToken = default)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
@@ -1531,7 +1531,7 @@ Awaiting reports commit/drop completion, not physical presentation. A frame cann
     <dd></dd>
     <dt><code>options</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameSubmissionOptions.html">FrameSubmissionOptions</a></dt>
     <dd></dd>
-    <dt><code>ct</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
+    <dt><code>cancellationToken</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a></dt>
     <dd></dd>
   </dl>
 

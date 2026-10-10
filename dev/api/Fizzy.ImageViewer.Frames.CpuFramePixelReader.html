@@ -89,7 +89,7 @@ read methods for backend-independent access.</p>
   <div class="markdown conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class CpuFramePixelReader</code></pre>
+    <pre><code class="lang-csharp hljs">public static class CpuFramePixelReader</code></pre>
   </div>
 
 
@@ -110,6 +110,9 @@ read methods for backend-independent access.</p>
     <dd>
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
     </div>
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
@@ -133,72 +136,6 @@ read methods for backend-independent access.</p>
 
 
 
-  <h2 class="section" id="constructors">Constructors
-</h2>
-
-
-  <a id="Fizzy_ImageViewer_Frames_CpuFramePixelReader__ctor_" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.#ctor*"></a>
-
-  <h3 id="Fizzy_ImageViewer_Frames_CpuFramePixelReader__ctor" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.#ctor">
-  CpuFramePixelReader()
-  
-  </h3>
-
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public CpuFramePixelReader()</code></pre>
-  </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-  <h2 class="section" id="properties">Properties
-</h2>
-
-
-  <a id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_Instance_" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.Instance*"></a>
-
-  <h3 id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_Instance" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.Instance">
-  Instance
-  
-  </h3>
-
-  <div class="markdown level1 summary"><p>Shared stateless decoder. Callers must keep each supplied frame lease alive during reads.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static CpuFramePixelReader Instance { get; }</code></pre>
-  </div>
-
-
-
-
-
-  <h4 class="section">Property Value</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.CpuFramePixelReader.html">CpuFramePixelReader</a></dt>
-    <dd></dd>
-  </dl>
-
-
-
-
-
-
-
-
   <h2 class="section" id="methods">Methods
 </h2>
 
@@ -215,7 +152,7 @@ read methods for backend-independent access.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public void ReadPixels(FrameLease frame, ReadOnlySpan&lt;PixelCoordinate&gt; coordinates, Span&lt;PixelSample&gt; samples)</code></pre>
+    <pre><code class="lang-csharp hljs">public static void ReadPixels(FrameLease frame, ReadOnlySpan&lt;PixelCoordinate&gt; coordinates, Span&lt;PixelSample&gt; samples)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
@@ -245,10 +182,10 @@ read methods for backend-independent access.</p>
 
 
 
-  <a id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_TryRead_" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.TryRead*"></a>
+  <a id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_TryReadPixel_" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.TryReadPixel*"></a>
 
-  <h3 id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_TryRead_Fizzy_ImageViewer_Frames_FrameLease_System_Int32_System_Int32_Fizzy_ImageViewer_Frames_PixelSample__" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.TryRead(Fizzy.ImageViewer.Frames.FrameLease,System.Int32,System.Int32,Fizzy.ImageViewer.Frames.PixelSample@)">
-  TryRead(FrameLease, int, int, out PixelSample)
+  <h3 id="Fizzy_ImageViewer_Frames_CpuFramePixelReader_TryReadPixel_Fizzy_ImageViewer_Frames_FrameLease_System_Int32_System_Int32_Fizzy_ImageViewer_Frames_PixelSample__" data-uid="Fizzy.ImageViewer.Frames.CpuFramePixelReader.TryReadPixel(Fizzy.ImageViewer.Frames.FrameLease,System.Int32,System.Int32,Fizzy.ImageViewer.Frames.PixelSample@)">
+  TryReadPixel(FrameLease, int, int, out PixelSample)
   
   </h3>
 
@@ -257,7 +194,7 @@ read methods for backend-independent access.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool TryRead(FrameLease frame, int x, int y, out PixelSample sample)</code></pre>
+    <pre><code class="lang-csharp hljs">public static bool TryReadPixel(FrameLease frame, int x, int y, out PixelSample sample)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>

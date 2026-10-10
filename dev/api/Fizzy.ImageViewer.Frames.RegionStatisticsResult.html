@@ -145,13 +145,13 @@ Class RegionStatisticsResult
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public RegionStatisticsResult(FrameInfo Frame, PixelRegion Region, RegionStatistics Statistics)</code></pre>
+    <pre><code class="lang-csharp hljs">public RegionStatisticsResult(FrameInfo SourceFrame, PixelRegion Region, RegionStatistics Statistics)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
   <dl class="parameters">
-    <dt><code>Frame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
-    <dd><p>Identity and layout of the queried frame.</p>
+    <dt><code>SourceFrame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
+    <dd><p>Identity and layout of the queried source frame.</p>
 </dd>
     <dt><code>Region</code> <a class="xref" href="Fizzy.ImageViewer.Frames.PixelRegion.html">PixelRegion</a></dt>
     <dd><p>Queried region in source coordinates.</p>
@@ -176,38 +176,6 @@ Class RegionStatisticsResult
 </h2>
 
 
-  <a id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_Frame_" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.Frame*"></a>
-
-  <h3 id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_Frame" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.Frame">
-  Frame
-  
-  </h3>
-
-  <div class="markdown level1 summary"><p>Identity and layout of the queried frame.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public FrameInfo Frame { get; init; }</code></pre>
-  </div>
-
-
-
-
-
-  <h4 class="section">Property Value</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
-    <dd></dd>
-  </dl>
-
-
-
-
-
-
-
-
   <a id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_Region_" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.Region*"></a>
 
   <h3 id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_Region" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.Region">
@@ -230,6 +198,38 @@ Class RegionStatisticsResult
   <h4 class="section">Property Value</h4>
   <dl class="parameters">
     <dt><a class="xref" href="Fizzy.ImageViewer.Frames.PixelRegion.html">PixelRegion</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_SourceFrame_" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.SourceFrame*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_RegionStatisticsResult_SourceFrame" data-uid="Fizzy.ImageViewer.Frames.RegionStatisticsResult.SourceFrame">
+  SourceFrame
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Identity and layout of the queried source frame.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public FrameInfo SourceFrame { get; init; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
     <dd></dd>
   </dl>
 
@@ -287,12 +287,12 @@ Class RegionStatisticsResult
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public void Deconstruct(out FrameInfo Frame, out PixelRegion Region, out RegionStatistics Statistics)</code></pre>
+    <pre><code class="lang-csharp hljs">public void Deconstruct(out FrameInfo SourceFrame, out PixelRegion Region, out RegionStatistics Statistics)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
   <dl class="parameters">
-    <dt><code>Frame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
+    <dt><code>SourceFrame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
     <dd></dd>
     <dt><code>Region</code> <a class="xref" href="Fizzy.ImageViewer.Frames.PixelRegion.html">PixelRegion</a></dt>
     <dd></dd>

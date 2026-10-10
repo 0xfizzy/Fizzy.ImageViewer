@@ -98,6 +98,10 @@
 <td>提交队列、已提交状态、CPU 与 D3D 呈现</td>
 </tr>
 <tr>
+<td>native/Cuda</td>
+<td>可选 CUDA/D3D9Ex kernel，借用标准 CUDA context 和 stream 句柄</td>
+</tr>
+<tr>
 <td>Imaging / Queries</td>
 <td>线采样、显示转换、查询设置及共享调度/执行</td>
 </tr>
@@ -158,11 +162,12 @@
 <p><a id="placement-rules"></a></p>
 <h3 id="放置规则">放置规则</h3>
 <p>按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。</p>
-<p>Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。根目录保留一个库项目；samples/tests/tools 不作为库源码收集。</p>
+<p>Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。核心项目保留在根目录，可选后端项目放在 extensions/；samples/tests/tools/extensions 不作为核心库源码收集。</p>
 <p>Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。</p>
 <p>可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。</p>
 <p><a id="frame-and-imaging-dependencies"></a></p>
 <h2 id="帧与图像依赖">帧与图像依赖</h2>
+<p>可选 <code>Fizzy.ImageViewer.Cuda</code> 程序集仅引用核心库和自有 native DLL。消费者桥接源帧所有权与执行作用域；扩展负责显示转换与像素查询。native 使用标准 CUDA 句柄，不创建第二套运行时，见 <a href="cuda.html">CUDA 集成</a>。</p>
 <p>Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。</p>
 <p>FrameLease 是后端无关读取边界，每次异步读取自持租约并验证请求/结果、提供来源。区域返回独立 CPU ImageFrame，RegionPixels 另存来源，不把源身份赋给派生像素。生产者 release 在最后源租约后清外部查询资源。Raw 快照接管区域，独立像素租约可越过快照。交付结果前先完成必要清理，无法交付时清理候选结果。</p>
 <p><a id="ownership-and-direction"></a></p>

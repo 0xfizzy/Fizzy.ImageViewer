@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="title" content="Class PixelSamplesResult | Fizzy.ImageViewer ">
       
-      <meta name="description" content="Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame provenance. Construction copies the supplied samples; retain the requested coordinates separately when their association is needed.">
+      <meta name="description" content="Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with source frame provenance. Construction copies the supplied samples; retain the requested coordinates separately when their association is needed.">
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
@@ -83,7 +83,7 @@ Class PixelSamplesResult
   <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
   </div>
 
-  <div class="markdown summary"><p>Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with frame
+  <div class="markdown summary"><p>Ordered original-pixel samples returned by FrameLease.ReadPixelsAsync, with source frame
 provenance. Construction copies the supplied samples; retain the requested coordinates
 separately when their association is needed.</p>
 </div>
@@ -145,17 +145,17 @@ separately when their association is needed.</p>
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Creates a result by copying the supplied samples and retaining their frame provenance.</p>
+  <div class="markdown level1 summary"><p>Creates a result by copying the supplied samples and retaining their source frame provenance.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PixelSamplesResult(FrameInfo frame, IEnumerable&lt;PixelSample&gt; samples)</code></pre>
+    <pre><code class="lang-csharp hljs">public PixelSamplesResult(FrameInfo sourceFrame, IEnumerable&lt;PixelSample&gt; samples)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
   <dl class="parameters">
-    <dt><code>frame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
+    <dt><code>sourceFrame</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
     <dd></dd>
     <dt><code>samples</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1">IEnumerable</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.PixelSample.html">PixelSample</a>&gt;</dt>
     <dd></dd>
@@ -174,38 +174,6 @@ separately when their association is needed.</p>
 
   <h2 class="section" id="properties">Properties
 </h2>
-
-
-  <a id="Fizzy_ImageViewer_Frames_PixelSamplesResult_Frame_" data-uid="Fizzy.ImageViewer.Frames.PixelSamplesResult.Frame*"></a>
-
-  <h3 id="Fizzy_ImageViewer_Frames_PixelSamplesResult_Frame" data-uid="Fizzy.ImageViewer.Frames.PixelSamplesResult.Frame">
-  Frame
-  
-  </h3>
-
-  <div class="markdown level1 summary"><p>Identity and layout of the queried frame.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public FrameInfo Frame { get; }</code></pre>
-  </div>
-
-
-
-
-
-  <h4 class="section">Property Value</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
-    <dd></dd>
-  </dl>
-
-
-
-
-
-
 
 
   <a id="Fizzy_ImageViewer_Frames_PixelSamplesResult_Samples_" data-uid="Fizzy.ImageViewer.Frames.PixelSamplesResult.Samples*"></a>
@@ -230,6 +198,38 @@ separately when their association is needed.</p>
   <h4 class="section">Property Value</h4>
   <dl class="parameters">
     <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.PixelSample.html">PixelSample</a>&gt;</dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_PixelSamplesResult_SourceFrame_" data-uid="Fizzy.ImageViewer.Frames.PixelSamplesResult.SourceFrame*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_PixelSamplesResult_SourceFrame" data-uid="Fizzy.ImageViewer.Frames.PixelSamplesResult.SourceFrame">
+  SourceFrame
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Identity and layout of the queried source frame.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public FrameInfo SourceFrame { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a></dt>
     <dd></dd>
   </dl>
 

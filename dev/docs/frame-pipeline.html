@@ -142,12 +142,13 @@ redraw or one whose update failed. A failed update leaves the requested value re
 call <code>SetDisplayRangeAsync</code> explicitly to request another update.</p>
 <h2 id="pixel-access-and-measurements">Pixel access and measurements</h2>
 <p>Original-pixel access belongs to <code>Fizzy.ImageViewer.Frames</code>, alongside storage and leases.
-It includes <code>IFramePixelSource</code>, <code>CpuFramePixelReader</code>, pixel coordinates/regions, samples,
+Query and measurement results identify their original frame through <code>SourceFrame</code>; region pixels use region-local coordinates.</p>
+<p>It includes <code>IFramePixelSource</code>, <code>CpuFramePixelReader</code>, pixel coordinates/regions, samples,
 statistics and read results. <code>Fizzy.ImageViewer.Imaging</code> consumes these contracts for
 display conversion, line sampling and query scheduling; Frames has no Imaging dependency.</p>
 <p><code>AcquireCurrentFrame()</code> returns an owned lease. <code>TryGetCpuPixels</code> exposes only existing
 CPU memory and returns false for GPU storage. There is no general <code>Data</code> accessor.
-<code>CpuFramePixelReader</code> is a CPU-only decoding helper; it never downloads GPU pixels.
+<code>CpuFramePixelReader.TryReadPixel</code> and <code>ReadPixels</code> are static CPU-only decoding helpers; they never download GPU pixels.
 Its <code>TryRead</code> returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
 <code>NotSupportedException</code>. Use lease asynchronous reads for backend-independent access.</p>
 <p>Use <code>FrameLease.ReadPixelsAsync(coordinates, token)</code>, <code>ComputeRegionStatisticsAsync(region, token)</code> and <code>ReadRegionAsync(region, token)</code> for backend-independent access. Coordinates use
@@ -175,7 +176,7 @@ the containing region/snapshot when source provenance is needed. <code>RegionPix
 independent CPU image and must be disposed. It is created by <code>FrameLease.ReadRegionAsync</code>
 after validating the provider result; consumers cannot construct it directly.
 Unsupported capabilities fail without download fallback.</p>
-<p>CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32. Statistics return
+<p>CPU formats remain Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32/Rgba32. Statistics return
 count/min/max/mean per semantic channel (Gray or R/G/B[/A]); non-finite floating values are ignored,
 with zero count and null statistics when no finite values exist. Premultiplied channels stay premultiplied.
 <code>RegionStatistics.Channels</code> uses Gray, R/G/B or R/G/B/A order regardless of source byte order;
@@ -296,13 +297,24 @@ returns <code>Closed</code>. Previously acquired leases and snapshots remain ind
 owned; drawing and HUD handles are invalidated during cleanup.</p>
 <p>Application integrations should adapt their own frame and image types to <code>ImageFrame</code>.
 Use <code>Copy</code> for borrowed storage, <code>TakeOwnership</code> to transfer immutable CPU storage, or
-<code>TakeD3D9Surface</code> to transfer a ready GPU surface. Producers own conversion, lifetime and
+<code>D3D9ImageFrame.TakeOwnership</code> to transfer a ready GPU surface. Producers own conversion, lifetime and
 device compatibility; integration tests for their adapters belong in the consumer repository.</p>
 <h2 id="gpu-surfaces-and-explicit-pixel-queries">GPU surfaces and explicit pixel queries</h2>
-<p><code>ImageFrame.TakeD3D9Surface(descriptor, surface, pixelSource, release)</code> transfers a ready,
+<p><code>D3D9ImageFrame.TakeOwnership(descriptor, surface, pixelSource, release)</code> transfers a ready,
 immutable BGRA <code>IDirect3DSurface9</code> and its producer-owned lifetime. The producer must supply
 matching dimensions, a WPF-compatible D3D9 render target, and raw pixels consistent with the
 standard display conversion. The surface cannot be overwritten while any lease exists.</p>
+<p>The external-surface entry is a trusted native boundary: a nonzero pointer is not proof of
+compatibility. Supply a valid, non-multisampled <code>D3DFMT_A8R8G8B8</code> render target in
+<code>D3DPOOL_DEFAULT</code>, with premultiplied alpha and dimensions matching the descriptor.
+Use a WPF-compatible device (the provided CUDA component uses D3D9Ex with
+<code>D3DCREATE_MULTITHREADED</code> and <code>D3DCREATE_FPU_PRESERVE</code>). The producer owns device compatibility,
+native metadata validation and GPU synchronization. Finish all writes and relinquish compute
+mappings before transfer; merely enqueueing GPU work is insufficient. Keep the device,
+surface and original query resources valid until the final release callback. The descriptor
+describes original pixels, not the BGRA surface's byte layout. No custom color mapping,
+orientation change or display range is represented by this API; Display snapshots reconstruct
+the standard display conversion from original pixels rather than reading the surface.</p>
 <p>GPU submissions share the same latest-frame scheduler, FrameId, freeze/cancellation semantics
 and commit callbacks. D3DImage is created and bound on the viewer STA; no DisplayConverter or
 CPU pixel provider is invoked on the normal GPU display path. Front-buffer restoration rebinds
@@ -325,10 +337,17 @@ access. The scheduler's single batch and the export gate do not serialize all pr
 submission. Consumers are responsible for converting source formats to the supported frame contract.
 Surface loss due to a driver reset is distinct from WPF front-buffer availability and is not
 recovered by recreating the producer's device here. No software rendering fallback is enabled.
+If a WPF front-buffer restoration callback fails, the presenter stops accepting GPU surfaces.
+The presentation owner retains that error for <code>Viewer.DisposeAsync()</code>, including after switching
+to CPU display; it does not throw the error out of the WPF event callback or retry restoration.
+This asynchronous failure does not change a previously returned submission result.
 If surface attachment fails, presentation stops using that presenter. A successful detach
 permits lease release; if detachment cannot be confirmed, the presenter and potentially
 attached leases are retained for process lifetime. This deliberate isolation prevents
 native use after release and is reported as a failure, not automatic recovery.</p>
+<p>The optional <a href="cuda.html">CUDA component</a> supplies native display conversion and original-pixel
+queries for Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32. Application adapters still supply their source-frame and runtime
+integration; the WPF assembly itself has no CUDA dependency.</p>
 <h2 id="internal-composition">Internal composition</h2>
 <p><code>ViewerHost</code> assembles components and owns STA startup and shutdown. <code>Viewer</code> forwards
 public API calls and raises notifications. It does not own rendering queue or menu-target state.
