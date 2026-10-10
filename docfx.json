@@ -2,7 +2,7 @@
   "build": {
     "content": [
       { "files": ["index.md", "toc.yml", "README*.md", "docs/**/*.md", "docs/**/toc.yml"], "exclude": ["docs/nuget-readme.md"] },
-      { "src": "artifacts/docs/api", "files": ["**/*.yml"], "dest": "api" }
+      { "src": "artifacts/docs/api", "files": ["**/*.yml", "index.md"], "dest": "api" }
     ],
     "resource": [{ "files": ["LICENSE", "assets/**", "samples/**/*.cs", "samples/**/*.csproj", "docs/site/**"], "exclude": ["**/bin/**", "**/obj/**"] }],
     "dest": "artifacts/docs/site",

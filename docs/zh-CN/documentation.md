@@ -56,3 +56,5 @@ pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
 归档分支保留生成站点，GitHub Release 资产独立保存原始发布包，不依赖 Actions 保留期。不得编辑已归档版本。首次配置、发布、部分失败和恢复见[发布 SOP](releasing.md)。构建不授权发布。
 
 `Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087` 仅按真实项目/版本前缀服务已有产物，不构建、不访问网络。开发部署取得共用部署锁后核对源 SHA，拒绝不再对应最新 main 的构建。
+
+每个新构建的快照包含记录页面和锚点的 `pages.json`。版本切换使用该清单，缺页时回退到对应的 API 或语言首页，仅保留存在的锚点。若旧快照没有清单或请求失败，选择器恢复当前版本，并在悬浮提示中显示错误；需要时可直接打开目标版本。历史快照不改写。

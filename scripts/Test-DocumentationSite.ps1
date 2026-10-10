@@ -28,4 +28,9 @@ foreach ($path in $pages.Keys) {
     }
 }
 if ($failures.Count) { throw (($failures | Sort-Object) -join "`n") }
+$inventory = @{}
+foreach ($path in $pages.Keys) {
+    $inventory[[IO.Path]::GetRelativePath($site, $path).Replace('\', '/')] = @($pages[$path].Ids)
+}
+$inventory | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $site 'pages.json') -Encoding utf8
 Write-Host "PASS: $($pages.Count) rendered HTML pages, local links and anchors."

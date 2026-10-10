@@ -1,26 +1,34 @@
-- name: 文档首页
-  href: index.md
-- name: 入门
-  href: getting-started.md
-- name: Viewer 与生命周期
-  href: public-api.md
-- name: 帧与像素
-  href: frame-pipeline.md
-- name: CUDA 集成
-  href: cuda.md
-- name: 绘制与 HUD
-  href: drawing-layers.md
-- name: 测量
-  href: measurements.md
-- name: 快照
-  href: snapshots.md
-- name: 菜单
-  href: menus.md
-- name: 架构
-  href: architecture.md
-- name: 验证
-  href: validation.md
-- name: 文档维护
-  href: documentation.md
-- name: 发布 SOP
-  href: releasing.md
+- name: 入门与集成
+  items:
+    - name: 文档首页
+      href: index.md
+    - name: 入门
+      href: getting-started.md
+    - name: Viewer 与生命周期
+      href: public-api.md
+- name: 帧与处理
+  items:
+    - name: 帧与像素
+      href: frame-pipeline.md
+    - name: CUDA 集成
+      href: cuda.md
+    - name: 快照
+      href: snapshots.md
+- name: 绘制与交互
+  items:
+    - name: 绘制与 HUD
+      href: drawing-layers.md
+    - name: 测量
+      href: measurements.md
+    - name: 菜单
+      href: menus.md
+- name: 开发与维护
+  items:
+    - name: 架构
+      href: architecture.md
+    - name: 验证
+      href: validation.md
+    - name: 文档维护
+      href: documentation.md
+    - name: 发布 SOP
+      href: releasing.md

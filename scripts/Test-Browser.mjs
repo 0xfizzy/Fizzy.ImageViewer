@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -25,6 +25,12 @@ const server = createServer(async (req, res) => {
     if (!target.startsWith(site + path.sep)) { res.writeHead(403).end(); return; }
     // Simulate a page removed in the older version to exercise language-preserving fallback.
     if (directory === 'v1.2.0' && relative === 'docs/zh-CN/snapshots.html') { res.writeHead(404).end(); return; }
+    if (relative === 'pages.json' && directory === 'v1.2.0') {
+      const pages = JSON.parse(await readFile(path.join(site, 'pages.json'), 'utf8'));
+      for (const page of ['docs/zh-CN/snapshots.html', 'docs/snapshots.html', 'api/Fizzy.ImageViewer.Frames.FrameLease.html']) delete pages[page];
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(pages)); return;
+    }
     if (relative === 'identity.json') {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ ...identity, version: directory.slice(1).split('/')[0], directory, channel: directory === 'dev' ? 'Development' : 'Release' })); return;
@@ -56,15 +62,39 @@ try {
   }
   if (!liveUrl) {
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
-    await page.waitForURL('**/v1.2.0/api/Fizzy.ImageViewer.Frames.FrameLease.html');
+    await page.waitForURL('**/v1.2.0/api/index.html');
     await page.goto(base + 'docs/zh-CN/snapshots.html');
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
     await page.waitForURL('**/v1.2.0/docs/zh-CN/index.html');
+    await page.goto(base + 'docs/snapshots.html');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/index.html');
+    await page.goto(base + 'docs/index.html');
+    const anchor = await page.locator('article h1').getAttribute('id');
+    await page.goto(base + 'docs/index.html#' + anchor);
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/index.html#' + anchor);
+    await page.goto(base + 'docs/index.html#removed-anchor');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/index.html');
+    await page.goto(base + 'docs/index.html');
+    await page.route('**/v1.2.0/pages.json', route => route.fulfill({ status: 404 }));
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await expect(page.locator('#documentation-version')).toHaveAttribute('title', /Page inventory unavailable/);
+    await expect(page.getByLabel('Documentation version')).toHaveValue('v1.2.1');
+    await expect(page.getByLabel('Documentation version')).toBeEnabled();
+    await page.unroute('**/v1.2.0/pages.json');
+    await page.route('**/versions.json', route => route.fulfill({ status: 404 }));
+    await page.goto(base + 'docs/index.html');
+    await expect(page.locator('#documentation-version')).toHaveAttribute('title', /No version index/);
+    await expect(page.getByLabel('Documentation version')).toBeDisabled();
+    await expect(page.getByLabel('Documentation version')).toHaveValue('v1.2.1');
+    await page.unroute('**/versions.json');
   }
   await page.goto(base + 'docs/index.html');
-  await page.getByRole('link', { name: '简体中文', exact: true }).click();
+  await page.locator('article').getByRole('link', { name: '简体中文', exact: true }).click();
   await page.waitForURL('**/docs/zh-CN/index.html');
-  await page.getByRole('link', { name: 'English', exact: true }).click();
+  await page.locator('article').getByRole('link', { name: 'English', exact: true }).click();
   await page.waitForURL('**/docs/index.html');
   await page.goto(base + 'index.html');
   const search = page.locator('input[type="search"], #search-query').first();

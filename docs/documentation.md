@@ -56,3 +56,5 @@ Dependency changes require an intentional unlocked restore/npm install, review o
 The archive branch retains generated sites; GitHub Release assets retain original bundles independently of Actions retention. Do not edit archived version files. Follow the [release SOP](releasing.md) for first-time setup, publication, partial failure and recovery. Building documentation never authorizes publication.
 
 `Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087` serves existing output at its true project/version prefix without building or network access. Development deployment rejects a build whose SHA is no longer current main after acquiring the shared deployment lock.
+
+Each newly built snapshot includes `pages.json` with its pages and anchors. Version switching uses that inventory, falls back to the corresponding API or language homepage when a page is absent, and retains only existing anchors. If an older snapshot has no inventory or a request fails, the selector restores the current version and exposes the error in its tooltip; open that version directly if needed. Historical snapshots are not rewritten.

@@ -1,7 +1,7 @@
-# Fizzy.ImageViewer documentation
+# Fizzy.ImageViewer
 
-[English guides](docs/index.md) · [简体中文](docs/zh-CN/index.md)
+[English documentation](docs/index.md) · [简体中文文档](docs/zh-CN/index.md)
 
-Use the version selector to match your installed package. Fixed paths use `/v{version}/`; development documentation describes unreleased source.
+View, draw, measure, and inspect images in .NET 8 WPF applications. Choose a guide above, or use **API reference (English)** in the navigation to look up public types and members.
 
-Start with the [first working application](docs/getting-started.md). **API reference** contains English symbol contracts generated from the matching DLL and XML.
+面向 .NET 8 WPF 应用的图像显示、绘制、测量与像素查询库。选择上方指南，或从导航中的 **API reference (English)** 查询公共类型和成员。

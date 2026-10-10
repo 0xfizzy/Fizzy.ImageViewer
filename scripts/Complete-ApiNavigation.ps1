@@ -23,3 +23,7 @@ foreach ($name in $namespaces | Sort-Object) {
     foreach ($child in $children) { $lines += @("- uid: $child", "  name: $child", "  fullName: $child", "  href: $child.html") }
     $lines | Set-Content -LiteralPath $path -Encoding utf8
 }
+
+$index = @('# API reference (English)', '', 'Select a namespace to browse its public types and members.', '')
+$index += @($namespaces | Sort-Object | ForEach-Object { "- [$($_)]($($_).yml)" })
+$index | Set-Content (Join-Path $apiRoot 'index.md') -Encoding utf8
