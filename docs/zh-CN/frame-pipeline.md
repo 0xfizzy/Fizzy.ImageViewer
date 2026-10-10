@@ -34,7 +34,7 @@ DisplayRange 读取最新请求；等待 `SetDisplayRangeAsync` 观察重绘失�
 
 ## 像素访问与测量
 
-像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。`AcquireCurrentFrame()` 返回调用方拥有的租约。`TryGetCpuPixels` 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。CpuFramePixelReader 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。
+像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。`AcquireCurrentFrame()` 返回调用方拥有的租约。`TryGetCpuPixels` 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。静态 `CpuFramePixelReader.TryReadPixel` 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。查询与测量结果通过 `SourceFrame` 标识原始帧，区域像素使用区域局部坐标。
 
 跨后端使用租约的 `ReadPixelsAsync`、`ComputeRegionStatisticsAsync`、`ReadRegionAsync`。输入坐标用 ReadOnlyMemory，结果保留顺序、原单位和格式；每次异步调用自行获取租约直至结束。CPU 可在调用线程同步完成，直接调用不承诺工作线程；Viewer 调度器及快照自行安排离开 STA。
 
@@ -42,7 +42,7 @@ DisplayRange 读取最新请求；等待 `SetDisplayRangeAsync` 观察重绘失�
 
 RegionPixels/ImageSnapshot 的 SourceFrame、Region 描述原输入。AcquirePixels 返回描述裁剪或转换后像素的独立租约，使用局部坐标，不冒充源帧身份。RegionPixels 自有 CPU 图像需释放，仅由经过验证的区域读取创建。不支持能力明确失败，无下载回退。
 
-CPU 支持 Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32。统计按语义 Gray、R/G/B[/A] 顺序返回 count/min/max/mean，忽略非有限浮点，无有限值时 count 为 0、统计为 null；预乘值仍预乘，Bgr32 填充不参与。格式和通道数必须匹配，显示范围不限制原始查询值。
+CPU 支持 Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32/Rgba32。统计按语义 Gray、R/G/B[/A] 顺序返回 count/min/max/mean，忽略非有限浮点，无有限值时 count 为 0、统计为 null；预乘值仍预乘，Bgr32 填充不参与。格式和通道数必须匹配，显示范围不限制原始查询值。
 
 一个调度器同一时刻一批：STA 捕获几何，后台查询，STA 发布。最早到期请求决定下一批是单个 ROI 或合并点/线采样；未选中者不持租约，下次捕获新状态。几何变化保留节流截止时间。
 
@@ -80,7 +80,13 @@ TIFF 为无压缩 Classic TIFF，Gray16 UINT、Gray32Float IEEEFP、左上方向
 
 ## GPU 表面与显式像素查询
 
-GPU 输入提供不可变 BGRA IDirect3DSurface9、所有者及显式像素源。呈现不触发像素读取，CPU 显示范围不应用于 GPU。查询仅下载明确请求数据，返回独立 CPU 存储；提供者支持协议要求的并发、格式与所有权。最后源租约释放才清理查询资源；不能证明 D3D 安全分离时隔离保留而不重用。真实 GPU/切换仍需设备验证。
+`D3D9ImageFrame.TakeOwnership` 接管已就绪的 GPU 表面，包括验证失败时的清理责任。GPU 输入提供不可变 BGRA IDirect3DSurface9、所有者及显式像素源。呈现不触发像素读取，CPU 显示范围不应用于 GPU。查询仅下载明确请求数据，返回独立 CPU 存储；提供者支持协议要求的并发、格式与所有权。最后源租约释放才清理查询资源；不能证明 D3D 安全分离时隔离保留而不重用。真实 GPU/切换仍需设备验证。
+
+外部表面入口是受信任的 native 边界，非零指针不证明兼容。调用方须提供有效、非多重采样、D3DPOOL_DEFAULT 中的 D3DFMT_A8R8G8B8 render target，使用预乘 alpha，尺寸与描述符一致。设备须兼容 WPF；可选 CUDA 组件使用带 D3DCREATE_MULTITHREADED 和 D3DCREATE_FPU_PRESERVE 的 D3D9Ex 设备。生产者负责设备兼容性、native 元数据验证和 GPU 同步；移交前必须完成全部写入并解除计算映射，仅入队不足以交付。设备、表面及原始查询资源保活至最终 release。描述符描述原始像素，不描述 BGRA 表面的字节布局。本入口不表达自定义颜色映射、方向变换或显示范围；Display 快照从原始像素重建标准显示转换，不读取显示表面。
+
+WPF 前缓冲恢复不等于驱动设备恢复。恢复回调失败后停止向该呈现器接纳 GPU 表面，不从 WPF 事件回调抛出，也不重试恢复。呈现所有者保留错误至 Viewer.DisposeAsync，即使之后切换为 CPU 显示也不丢失；已经返回的提交结果不追溯修改。本库不重建设备，不提供软件显示回退。
+
+可选 [CUDA 组件](cuda.md) 提供 Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32 的 native 显示转换及原始像素查询。应用仍适配自身帧和运行时；WPF 程序集没有 CUDA 依赖。
 
 <a id="internal-composition"></a>
 

@@ -52,30 +52,6 @@ public sealed class ImageFrame : IDisposable
 
     /// <summary>Acquires an independent reference to the pixels. The caller must dispose it; it can outlive this frame and the viewer.</summary>
     public FrameLease Acquire() => Storage.Acquire();
-    /// <summary>Transfers an immutable, GPU-ready BGRA IDirect3DSurface9 and its owner.
-    /// The query provider reads only explicitly requested pixels and must return
-    /// independent immutable CPU storage matching descriptor. Release runs after the last lease.
-    /// Release runs synchronously on the final releasing thread, potentially the Viewer STA;
-    /// the producer must satisfy thread affinity and avoid blocking.
-    /// Ownership transfers even on construction failure. If construction and release both fail,
-    /// throws an AggregateException containing both errors.</summary>
-    public static ImageFrame TakeD3D9Surface(FrameDescriptor descriptor, nint surface,
-        IFramePixelSource pixelSource, Action release)
-    {
-        ArgumentNullException.ThrowIfNull(release);
-        try
-        {
-            descriptor.Validate(descriptor.RequiredBytes);
-            if (surface == 0) throw new ArgumentException("A ready D3D9 surface is required.", nameof(surface));
-            ArgumentNullException.ThrowIfNull(pixelSource);
-            return new(new FrameStorage(descriptor, default, pixelSource, release, surface));
-        }
-        catch (Exception error)
-        {
-            ReleaseAfterFailure(release, error);
-            throw;
-        }
-    }
     private static void ReleaseAfterFailure(Action release, Exception error)
     {
         try { release(); }

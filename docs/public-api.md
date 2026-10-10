@@ -34,7 +34,7 @@ shutdown gate and have no independent disposal contract.
 using Fizzy.ImageViewer.Frames;
 
 static ValueTask<FrameSubmitResult> PublishAsync(IFrameSink sink, ImageFrame frame,
-    CancellationToken ct = default) => sink.SubmitFrameAsync(frame, ct: ct);
+    CancellationToken cancellationToken = default) => sink.SubmitFrameAsync(frame, cancellationToken: cancellationToken);
 ```
 
 Submission transfers ownership even when the sink rejects or cancels the frame; alternate
@@ -98,7 +98,7 @@ the adapter forwards removal notifications.
 separate public `Close` method. Event callbacks run on the viewer STA; do not block them
 waiting for shutdown or for work that needs that dispatcher.
 
-Frame submission retains its explicit ownership and terminal-result contract: submission
+Frame submission retains its explicit ownership and terminal-result contracancellationToken: submission
 after closure consumes the frame and returns `Closed`, rather than using the window
 property exception policy. Drawing and HUD handle disposal is idempotent after closure.
 See [frame contracts](frame-pipeline.md) and [drawing contracts](drawing-layers.md).

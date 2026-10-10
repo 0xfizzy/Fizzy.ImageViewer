@@ -6,6 +6,8 @@
   href: public-api.md
 - name: 帧与像素
   href: frame-pipeline.md
+- name: CUDA 集成
+  href: cuda.md
 - name: 绘制与 HUD
   href: drawing-layers.md
 - name: 测量

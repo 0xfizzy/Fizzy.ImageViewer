@@ -6,6 +6,8 @@
   href: public-api.md
 - name: Frames and pixels
   href: frame-pipeline.md
+- name: CUDA integration
+  href: cuda.md
 - name: Drawing and HUD
   href: drawing-layers.md
 - name: Measurements

@@ -21,14 +21,14 @@ public sealed class ImageSnapshot : IDisposable
     /// <summary>Saves using an independent pixel lease. Operation and cleanup failures are
     /// preserved together, with the operation failure first. A cleanup failure can be reported
     /// after the destination was successfully replaced.</summary>
-    public Task SaveAsync(string path, SnapshotEncoding encoding, CancellationToken ct = default)
+    public Task SaveAsync(string path, SnapshotEncoding encoding, CancellationToken cancellationToken = default)
     {
         var lease = AcquirePixels();
         return Task.Run(() =>
         {
             try
             {
-                SnapshotEncoder.Save(lease, Kind, path, encoding, ct);
+                SnapshotEncoder.Save(lease, Kind, path, encoding, cancellationToken);
                 lease.Dispose();
             }
             catch (Exception error)

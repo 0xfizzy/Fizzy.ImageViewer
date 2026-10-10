@@ -18,6 +18,13 @@ try {
     $inputDir = Join-Path (Get-Repo) 'artifacts/docs/input'
     [void][IO.Directory]::CreateDirectory($inputDir)
     Get-ChildItem (Split-Path $binary -Parent) -File | Where-Object { $_.Extension -in @('.dll','.xml') -or $_.Name -like '*.deps.json' } | Copy-Item -Destination $inputDir
+    $apiAssemblies = @('artifacts/docs/input/Fizzy.ImageViewer.dll')
+    if ($Channel -eq 'Development' -and !$Package) {
+        Invoke-Checked dotnet @('build','extensions/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
+        Copy-Item extensions/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.dll $inputDir
+        Copy-Item extensions/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.xml $inputDir
+        $apiAssemblies += 'artifacts/docs/input/Fizzy.ImageViewer.Cuda.dll'
+    }
     if ($Package) {
         $packageRoot = Join-Path (Get-Repo) 'artifacts/docs/package'
         Expand-SafeZip $Package $packageRoot
@@ -33,7 +40,7 @@ try {
         [pscustomobject]@{ Member = $member.name; Summary = [string]$member.summary; Inherits = $null -ne $member.SelectSingleNode('inheritdoc') }
     }
     $inventory | Export-Csv artifacts/docs/api-contracts.csv -NoTypeInformation
-    Write-Json @{ metadata = @(@{ src = @(@{ src = (Get-Repo); files = @('artifacts/docs/input/Fizzy.ImageViewer.dll') }); dest = (Join-Path (Get-Repo) 'artifacts/docs/api'); disableGitFeatures = $true }) } artifacts/docs/metadata.json
+    Write-Json @{ metadata = @(@{ src = @(@{ src = (Get-Repo); files = $apiAssemblies }); dest = (Join-Path (Get-Repo) 'artifacts/docs/api'); disableGitFeatures = $true }) } artifacts/docs/metadata.json
     Invoke-Checked dotnet @('docfx','metadata','artifacts/docs/metadata.json','--warningsAsErrors')
     & "$PSScriptRoot/Complete-ApiNavigation.ps1"
     Invoke-Checked dotnet @('docfx','build','docfx.json','--warningsAsErrors')

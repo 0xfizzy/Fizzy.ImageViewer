@@ -208,11 +208,11 @@ internal sealed class LineProfileWindow
                 }
                 int first = Math.Min(min, max), second = Math.Max(min, max);
                 // Read before compacting: the output can overlap the input bucket.
-                Point a = points[start], b = points[first], c = points[second], d = points[end - 1];
+                Point a = points[start], b = points[first], c = points[second], lastPoint = points[end - 1];
                 points[write++] = a;
                 if (first != start) points[write++] = b;
                 if (second != first && second != start) points[write++] = c;
-                if (end - 1 != second && end - 1 != start) points[write++] = d;
+                if (end - 1 != second && end - 1 != start) points[write++] = lastPoint;
                 start = end;
             }
             if (write < points.Count) points.RemoveRange(write, points.Count - write);

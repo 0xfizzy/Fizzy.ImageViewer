@@ -104,7 +104,7 @@ public class MeasurementQueryOptionsTests
             Assert.Equal(query, result!.Query);
             Assert.Equal(identity.ClientId, result.MeasurementId);
             Assert.Equal(identity.GeometryVersion, result.GeometryVersion);
-            Assert.Equal(frame, result.Frame);
+            Assert.Equal(frame, result.SourceFrame);
         }
     }
 }

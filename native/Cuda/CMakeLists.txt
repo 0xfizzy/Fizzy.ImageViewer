@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.24)
+project(FizzyImageViewerCuda LANGUAGES CXX CUDA)
+find_package(CUDAToolkit 11.8 REQUIRED)
+add_library(Fizzy.ImageViewer.Cuda.Native SHARED display.cu queries.cu)
+target_compile_definitions(Fizzy.ImageViewer.Cuda.Native PRIVATE FV_CUDA_EXPORTS)
+target_link_libraries(Fizzy.ImageViewer.Cuda.Native PRIVATE CUDA::cudart_static CUDA::cuda_driver d3d9)
+target_compile_options(Fizzy.ImageViewer.Cuda.Native PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo;--fmad=false;-Xcompiler=/utf-8>)
+set_target_properties(Fizzy.ImageViewer.Cuda.Native PROPERTIES
+  CXX_STANDARD 17 CUDA_STANDARD 17 CUDA_RUNTIME_LIBRARY Static MSVC_RUNTIME_LIBRARY MultiThreaded
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>")
+option(FIZZY_IMAGEVIEWER_CUDA_TESTS "Build hardware tests; execution is explicit" OFF)
+if(FIZZY_IMAGEVIEWER_CUDA_TESTS)
+  enable_testing()
+  add_executable(Fizzy.ImageViewer.Cuda.Tests native_tests.cpp)
+  target_link_libraries(Fizzy.ImageViewer.Cuda.Tests PRIVATE Fizzy.ImageViewer.Cuda.Native CUDA::cudart_static CUDA::cuda_driver d3d9)
+  set_target_properties(Fizzy.ImageViewer.Cuda.Tests PROPERTIES CXX_STANDARD 17 MSVC_RUNTIME_LIBRARY MultiThreaded
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>")
+  add_test(NAME cuda_images COMMAND Fizzy.ImageViewer.Cuda.Tests)
+  set_tests_properties(cuda_images PROPERTIES LABELS hardware)
+endif()

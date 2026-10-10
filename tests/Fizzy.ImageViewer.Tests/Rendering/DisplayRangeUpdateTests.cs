@@ -69,7 +69,7 @@ public class DisplayRangeUpdateTests
         {
             presenter.Fail = fail;
             update = viewer.SetDisplayRangeAsync(new(0, 200));
-            submission = viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 50 }), ct: cancellation.Token).AsTask();
+            submission = viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 50 }), cancellationToken: cancellation.Token).AsTask();
             if (cancel) cancellation.Cancel();
         }
         var result = await submission;
@@ -100,7 +100,7 @@ public class DisplayRangeUpdateTests
     {
         await using var viewer = new Viewer(showWindow: false);
         await viewer.SetDisplayRangeAsync(new(0, 100));
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 4, FramePixelFormat.Bgra32), (nint)1,
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 4, FramePixelFormat.Bgra32), (nint)1,
             new UnexpectedPixelSource(), () => { });
         using var current = frame.Acquire();
         // Install only the pipeline's retained lease; never bind the sentinel native surface.
@@ -120,9 +120,9 @@ public class DisplayRangeUpdateTests
 
     private sealed class UnexpectedPixelSource : IFramePixelSource
     {
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class FailingPresenter : ICpuImagePresenter

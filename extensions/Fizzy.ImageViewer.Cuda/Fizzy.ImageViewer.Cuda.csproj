@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>Fizzy.ImageViewer.Cuda</PackageId>
+    <Version>1.2.0</Version>
+    <Description>Optional CUDA image display and pixel queries with consumer-owned execution scopes.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../artifacts/cuda/$(Configuration)</CudaNativeDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Fizzy.ImageViewer.csproj" />
+    <InternalsVisibleTo Include="Fizzy.ImageViewer.Tests" />
+  </ItemGroup>
+  <Target Name="CollectCudaNative" BeforeTargets="AssignTargetPaths;_GetPackageFiles">
+    <ItemGroup>
+      <None Include="$(CudaNativeDirectory)/Fizzy.ImageViewer.Cuda.Native.dll"
+            Condition="Exists('$(CudaNativeDirectory)/Fizzy.ImageViewer.Cuda.Native.dll')"
+            Link="Fizzy.ImageViewer.Cuda.Native.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+            Pack="true" PackagePath="runtimes/win-x64/native/Fizzy.ImageViewer.Cuda.Native.dll" />
+    </ItemGroup>
+  </Target>
+  <Target Name="RequireCudaNativeForPackage" BeforeTargets="GenerateNuspec">
+    <Error Condition="!Exists('$(CudaNativeDirectory)/Fizzy.ImageViewer.Cuda.Native.dll')"
+           Text="Build the matching CUDA native component before packing this optional package." />
+  </Target>
+</Project>

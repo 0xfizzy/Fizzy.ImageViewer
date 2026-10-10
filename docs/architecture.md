@@ -14,6 +14,7 @@ public facade, drawing handles and measurement handles.
 | Frames | Immutable storage, frame descriptors, leases, original-pixel access and submission contracts |
 | Frames/Pixels | Pixel-source contract, CPU reading/decoding, coordinates, regions and owned or immutable read results |
 | Rendering | Submission queue, committed display state, CPU preparation/presentation and D3D presentation |
+| native/Cuda | Optional CUDA/D3D9Ex kernels using borrowed standard CUDA context and stream handles |
 | Imaging | Line sampling, shared query settings and display conversion shared by rendering and snapshots |
 | Imaging/Queries | Shared query protocol, scheduler and execution runtime |
 | Layers | Public layer composition and the container for transforms, input and lifetime |
@@ -60,7 +61,7 @@ subdirectories. Tests spanning measurement ownership, notifications or interacti
 at the Measurements level. Test namespaces remain stable so existing filters continue
 to work. Test-only helpers live beside their callers; benchmarks remain under tools.
 
-Keep the single library project at the repository root. Viewer partial files organize
+Keep the core project at the repository root; optional backend projects belong under extensions/. Viewer partial files organize
 one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Queries,
 Snapshots and Lifetime. These files are not independently owned services. `IViewer` aggregates
 borrowed capability interfaces placed with their owning features. `IViewerWindow` stays
@@ -85,6 +86,8 @@ when setup must precede display, and converge closure and disposal on their own
 idempotent cleanup before awaiting the viewer's disposal completion.
 
 ## Frame and imaging dependencies
+
+The optional `Fizzy.ImageViewer.Cuda` assembly references only the core library and its own native DLL. Consumers bridge their source ownership and execution scope; the extension owns display conversion and pixel queries. Native code uses standard CUDA handles without creating a second runtime. See [CUDA integration](cuda.md).
 
 Arrows show code dependencies within the single library project. Names match the source
 modules; Frames/Pixels is part of Frames and uses the same public namespace.

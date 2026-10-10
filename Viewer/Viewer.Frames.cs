@@ -9,8 +9,8 @@ public partial class Viewer
     public event Action<FrameInfo>? FrameCommitted;
 
     /// <inheritdoc cref="IFrameSink.SubmitFrameAsync"/>
-    public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken ct = default)
-        => _host.Pipeline.SubmitAsync(frame, options, ct);
+    public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken cancellationToken = default)
+        => _host.Pipeline.SubmitAsync(frame, options, cancellationToken);
 
     /// <inheritdoc/>
     public FrameLease? AcquireCurrentFrame() => _host.Pipeline.AcquireCurrentFrame();

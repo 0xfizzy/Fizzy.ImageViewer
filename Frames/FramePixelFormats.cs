@@ -11,6 +11,7 @@ public static class FramePixelFormats
     private static readonly FramePixelFormatInfo Bgr32 = new(FramePixelFormatInfo.ComponentOrder.Bgrx, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger);
     private static readonly FramePixelFormatInfo Bgra32 = new(FramePixelFormatInfo.ComponentOrder.Bgra, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger, FramePixelFormatInfo.AlphaKind.Straight);
     private static readonly FramePixelFormatInfo Pbgra32 = new(FramePixelFormatInfo.ComponentOrder.Bgra, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger, FramePixelFormatInfo.AlphaKind.Premultiplied);
+    private static readonly FramePixelFormatInfo Rgba32 = new(FramePixelFormatInfo.ComponentOrder.Rgba, 8, FramePixelFormatInfo.NumericKind.UnsignedInteger, FramePixelFormatInfo.AlphaKind.Straight);
 
     /// <summary>Returns bytes occupied by one stored pixel, including padding or alpha; throws NotSupportedException for an unknown format.</summary>
     public static int BytesPerPixel(this FramePixelFormat format) => format.GetInfo().BytesPerPixel;
@@ -25,6 +26,7 @@ public static class FramePixelFormats
         FramePixelFormat.Bgr32 => Bgr32,
         FramePixelFormat.Bgra32 => Bgra32,
         FramePixelFormat.Pbgra32 => Pbgra32,
+        FramePixelFormat.Rgba32 => Rgba32,
         _ => throw new NotSupportedException($"Unsupported pixel format: {format}")
     };
 }

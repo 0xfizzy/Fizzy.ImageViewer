@@ -112,13 +112,13 @@ public class QuerySchedulingTests
     {
         public TaskCompletionSource Entered=new(TaskCreationOptions.RunContinuationsAsynchronously),Release=new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int PointCount;public ApartmentState Apartment;
-        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates,CancellationToken ct)
+        public async ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates,CancellationToken cancellationToken)
         {
             PointCount=coordinates.Length;Apartment=Thread.CurrentThread.GetApartmentState();Entered.TrySetResult();await Release.Task;
             return Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8,42,0,0,0,255),coordinates.Length).ToArray();
         }
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken ct)=>throw new NotSupportedException();
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region,CancellationToken cancellationToken)=>throw new NotSupportedException();
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region,CancellationToken cancellationToken)=>throw new NotSupportedException();
     }
     private sealed class Client : IFrameQueryClient
     {

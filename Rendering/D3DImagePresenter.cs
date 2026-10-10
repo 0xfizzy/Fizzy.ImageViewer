@@ -14,15 +14,17 @@ internal sealed class D3DImagePresenter : IDisposable
     // these resources on the strength of a failed close, or retry destructive cleanup.
     private static readonly ConcurrentBag<D3DImagePresenter> Quarantined = [];
     private readonly ID3DImageTarget _target;
+    private readonly Action<Exception> _reportFailure;
     private FrameLease? _frame;
     private FrameLease? _uncertainFrame;
     private bool _faulted;
     private bool _disposed;
 
-    public D3DImagePresenter() : this(new D3DImageTarget()) { }
-    internal D3DImagePresenter(ID3DImageTarget target)
+    public D3DImagePresenter(Action<Exception> reportFailure) : this(new D3DImageTarget(), reportFailure) { }
+    internal D3DImagePresenter(ID3DImageTarget target, Action<Exception> reportFailure)
     {
         _target = target;
+        _reportFailure = reportFailure;
         _target.FrontBufferAvailableChanged += FrontBufferChanged;
     }
 
@@ -69,7 +71,13 @@ internal sealed class D3DImagePresenter : IDisposable
     {
         if (_disposed || _faulted || !_target.IsFrontBufferAvailable || _frame == null) return;
         try { Attach(_frame); }
-        catch { _faulted = true; throw; }
+        catch (Exception error)
+        {
+            _faulted = true;
+            // This WPF callback has no submission result. The presentation owner retains
+            // its failure for shutdown, including if a later CPU frame replaces this target.
+            _reportFailure(error);
+        }
     }
 
     public void Dispose()

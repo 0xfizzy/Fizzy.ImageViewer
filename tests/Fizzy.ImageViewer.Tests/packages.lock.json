@@ -1025,6 +1025,12 @@
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.1, )"
         }
+      },
+      "fizzy.imageviewer.cuda": {
+        "type": "Project",
+        "dependencies": {
+          "Fizzy.ImageViewer": "[1.2.0, )"
+        }
       }
     }
   }

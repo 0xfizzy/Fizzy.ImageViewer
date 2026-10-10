@@ -29,7 +29,7 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
     public void Move(double x, double y)
     {
         bool valid = double.IsFinite(x) && double.IsFinite(y) && x >= 0 && y >= 0 &&
-            (_descriptor is not { } d || (x < d.Width && y < d.Height));
+            (_descriptor is not { } descriptor || (x < descriptor.Width && y < descriptor.Height));
         if (!_inside || Math.Floor(x) != Math.Floor(_x) || Math.Floor(y) != Math.Floor(_y)) _positionVersion++;
         _x = x; _y = y;
         if (!valid) { if (_inside) Leave(); return; }
@@ -101,8 +101,8 @@ internal sealed class PixelInfoState(Action<string?> display) : IFrameQueryClien
     public void ClearResult() { _hasValue = false; SetText(null); }
     private void ShowWaiting()
     {
-        if (_enabled && _inside && _descriptor is { } d)
-            SetText(Format(d, (int)Math.Floor(_x), (int)Math.Floor(_y), null));
+        if (_enabled && _inside && _descriptor is { } descriptor)
+            SetText(Format(descriptor, (int)Math.Floor(_x), (int)Math.Floor(_y), null));
     }
     private void SetText(string? text)
     {

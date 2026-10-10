@@ -150,7 +150,7 @@ public class ViewerTests
         {
             using var current = viewer.AcquireCurrentFrame();
             Assert.Equal(info, current!.Info);
-            CpuFramePixelReader.Instance.TryRead(current, 0, 0, out var p); observed = p.Gray;
+            CpuFramePixelReader.TryReadPixel(current, 0, 0, out var p); observed = p.Gray;
         };
         var result = await viewer.SubmitFrameAsync(Frame(42), new() { OnCommitted = _ => throw new Exception("callback") });
         Assert.Equal(FrameSubmitStatus.Committed, result.Status); Assert.Equal(42, observed);
@@ -210,7 +210,7 @@ public class ViewerTests
             var failed = await viewer.SubmitFrameAsync(Frame(2, () => released++));
             Assert.Equal(FrameSubmitStatus.Failed, failed.Status); Assert.NotNull(failed.Error);
             using (var current = viewer.AcquireCurrentFrame()) Assert.Equal(1, current!.CpuPixels.Span[0]);
-            Assert.Equal(FrameSubmitStatus.Cancelled, (await viewer.SubmitFrameAsync(Frame(3, () => released++), ct: new CancellationToken(true))).Status);
+            Assert.Equal(FrameSubmitStatus.Cancelled, (await viewer.SubmitFrameAsync(Frame(3, () => released++), cancellationToken: new CancellationToken(true))).Status);
             await viewer.DisposeAsync();
             Assert.Equal(FrameSubmitStatus.Closed, (await viewer.SubmitFrameAsync(Frame(4, () => released++))).Status);
             Assert.Equal(3, released);

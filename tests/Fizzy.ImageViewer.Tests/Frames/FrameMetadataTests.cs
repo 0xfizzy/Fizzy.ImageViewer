@@ -33,8 +33,8 @@ public class FrameMetadataTests
         var stats = await lease.ComputeRegionStatisticsAsync(new(0, 0, 2, 2));
         Assert.Equal(0, lease.Info.FrameId);
         Assert.Equal(lease.Descriptor, lease.Info.Descriptor);
-        Assert.Equal(lease.Info, samples.Frame);
-        Assert.Equal(lease.Info, stats.Frame);
+        Assert.Equal(lease.Info, samples.SourceFrame);
+        Assert.Equal(lease.Info, stats.SourceFrame);
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public class FrameMetadataTests
         Assert.Equal(kind == SnapshotKind.Raw ? FramePixelFormat.Gray16 : FramePixelFormat.Pbgra32, pixels.Info.Descriptor.Format);
         var result = await pixels.ReadPixelsAsync(new[] { new PixelCoordinate(0, 0) });
         Assert.Equal(pixels.Descriptor.Format, result.Samples[0].Format);
-        Assert.Equal(pixels.Info, result.Frame);
+        Assert.Equal(pixels.Info, result.SourceFrame);
         using var nested = await pixels.ReadRegionAsync(new(0, 0, 1, 1));
         Assert.Equal(pixels.Info, nested.SourceFrame);
     }

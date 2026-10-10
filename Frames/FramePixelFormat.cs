@@ -18,5 +18,7 @@ public enum FramePixelFormat
     /// <summary>Blue, green, red and straight alpha, each 8 bits.</summary>
     Bgra32,
     /// <summary>Blue, green, red and alpha, each 8 bits; color values are premultiplied by alpha.</summary>
-    Pbgra32
+    Pbgra32,
+    /// <summary>Red, green, blue and straight alpha, each 8 bits.</summary>
+    Rgba32
 }

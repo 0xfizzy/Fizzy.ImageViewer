@@ -293,8 +293,8 @@ public class DrawingTests
             viewer.Layers.Collection.UpdateScale(2); viewer.Layers.Collection.FlushScale();
             var group = batch.Visual.Drawing;
             var drawings = group.Children.Cast<GeometryDrawing>().ToArray();
-            Assert.Equal(new double[] { 1, 4, 8 }, drawings.Select(d => d.Pen.Thickness));
-            Assert.All(drawings, d => Assert.True(d.Pen.IsFrozen));
+            Assert.Equal(new double[] { 1, 4, 8 }, drawings.Select(drawing => drawing.Pen.Thickness));
+            Assert.All(drawings, drawing => Assert.True(drawing.Pen.IsFrozen));
         });
     }
 

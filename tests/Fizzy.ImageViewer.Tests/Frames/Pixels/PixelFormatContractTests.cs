@@ -14,6 +14,7 @@ public class PixelFormatContractTests
     [InlineData(FramePixelFormat.Bgr32, new byte[] { 30, 20, 10, 99 }, new double[] { 10, 20, 30 })]
     [InlineData(FramePixelFormat.Bgra32, new byte[] { 30, 20, 10, 128 }, new double[] { 10, 20, 30, 128 })]
     [InlineData(FramePixelFormat.Pbgra32, new byte[] { 30, 20, 10, 128 }, new double[] { 10, 20, 30, 128 })]
+    [InlineData(FramePixelFormat.Rgba32, new byte[] { 10, 20, 30, 128 }, new double[] { 10, 20, 30, 128 })]
     public async Task StatisticsPreserveSemanticChannels(FramePixelFormat format, byte[] bytes, double[] expected)
     {
         Assert.Equal(bytes.Length, format.BytesPerPixel());
@@ -42,7 +43,7 @@ public class PixelFormatContractTests
     [Fact]
     public async Task ProviderStatisticsMustMatchSourceEvenWithTheSameChannelCount()
     {
-        using var image = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+        using var image = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, new WrongFormatSource(), () => { });
         using var lease = image.Acquire();
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -51,11 +52,11 @@ public class PixelFormatContractTests
 
     private sealed class WrongFormatSource : IFramePixelSource
     {
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
             => ValueTask.FromResult(new RegionStatistics(FramePixelFormat.Gray16, [new(1, 42, 42, 42)]));
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken)
             => throw new NotSupportedException();
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct)
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken)
             => throw new NotSupportedException();
     }
 }

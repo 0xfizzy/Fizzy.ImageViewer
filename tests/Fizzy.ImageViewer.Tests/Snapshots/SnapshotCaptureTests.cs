@@ -26,7 +26,7 @@ public class SnapshotCaptureTests
         var capture = new SnapshotCapture();
         var source = new BlockingRegionSource();
         int released = 0, cancelledReleased = 0;
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, source, () => Interlocked.Increment(ref released));
         using var owner = new CommittedViewLease(frame.Acquire(), null, 7);
         frame.Dispose();
@@ -35,7 +35,7 @@ public class SnapshotCaptureTests
         using var stop = new CancellationTokenSource();
         using var cancelledFrame = ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             new byte[] { 8 }, () => Interlocked.Increment(ref cancelledReleased));
-        var cancelled = capture.CaptureAsync(() => new(cancelledFrame.Acquire(), null, 7), SnapshotKind.Raw, ct: stop.Token);
+        var cancelled = capture.CaptureAsync(() => new(cancelledFrame.Acquire(), null, 7), SnapshotKind.Raw, cancellationToken: stop.Token);
         cancelledFrame.Dispose();
         Task<ImageSnapshot>? second = null;
         try
@@ -67,7 +67,7 @@ public class SnapshotCaptureTests
     {
         var capture = new SnapshotCapture();
         var source = new BlockingRegionSource();
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, source, () => { });
         using var owner = new CommittedViewLease(frame.Acquire(), null, 0);
         var first = capture.CaptureAsync(owner.Acquire, SnapshotKind.Raw);
@@ -123,7 +123,7 @@ public class SnapshotCaptureTests
         var source = new BlockingRegionSource { FailFirst = true };
         source.Release.SetResult();
         int released = 0;
-        using var frame = ImageFrame.TakeD3D9Surface(new(1, 1, 1, FramePixelFormat.Gray8),
+        using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             (nint)1, source, () => released++);
         using var owner = new CommittedViewLease(frame.Acquire(), null, 0);
         frame.Dispose();
@@ -141,11 +141,11 @@ public class SnapshotCaptureTests
         internal bool FailFirst;
         internal int Calls, MaxConcurrent;
         private int _active;
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken)
             => throw new NotSupportedException();
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
             => throw new NotSupportedException();
-        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct)
+        public async ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken)
         {
             var call = Interlocked.Increment(ref Calls);
             var active = Interlocked.Increment(ref _active);

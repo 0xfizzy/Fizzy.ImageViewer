@@ -73,7 +73,7 @@ public class MeasurementNotificationsTests
             Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
         var published = await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(completed.Snapshot.Id, published.Snapshot.Id);
-        Assert.Equal(submission.FrameId, published.QueryResult!.Frame.FrameId);
+        Assert.Equal(submission.FrameId, published.QueryResult!.SourceFrame.FrameId);
         Assert.Equal(published.Snapshot.GeometryVersion, published.QueryResult.GeometryVersion);
         Assert.Equal(2.5, Assert.Single(Assert.IsType<MeasurementRegionStatisticsResult>(published.QueryResult).Channels).Mean);
 

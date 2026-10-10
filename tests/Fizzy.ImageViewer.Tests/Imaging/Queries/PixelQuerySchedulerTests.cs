@@ -258,22 +258,22 @@ public class PixelQuerySchedulerTests
         public int GatherCalls, Coordinates, RegionCalls;
         public TimeSpan RegionDuration;
         public bool FailGather, FailRegion;
-        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken ct)
+        public ValueTask<PixelSample[]> ReadPixelsAsync(ReadOnlyMemory<PixelCoordinate> coordinates, CancellationToken cancellationToken)
         {
             Assert.True(runtime.InWorker); GatherCalls++; Coordinates = coordinates.Length;
             if (FailGather) throw new InvalidOperationException();
             return ValueTask.FromResult(Enumerable.Repeat(new PixelSample(FramePixelFormat.Gray8, 7, 0, 0, 0, 255), coordinates.Length).ToArray());
         }
-        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken ct)
+        public ValueTask<RegionStatistics> ComputeRegionStatisticsAsync(PixelRegion region, CancellationToken cancellationToken)
         {
             Assert.True(runtime.InWorker); RegionCalls++; runtime.Now += RegionDuration;
             if (FailRegion) throw new NotSupportedException();
             using var frame = ImageFrame.Copy(new(2, 1, 2, FramePixelFormat.Gray8), new byte[] { 7, 8 }).Transfer();
-            return Compute(frame, region, ct);
+            return Compute(frame, region, cancellationToken);
         }
-        private static async ValueTask<RegionStatistics> Compute(FrameLease frame, PixelRegion region, CancellationToken ct)
-            => (await frame.ComputeRegionStatisticsAsync(region, ct)).Statistics;
-        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken ct) => throw new NotSupportedException();
+        private static async ValueTask<RegionStatistics> Compute(FrameLease frame, PixelRegion region, CancellationToken cancellationToken)
+            => (await frame.ComputeRegionStatisticsAsync(region, cancellationToken)).Statistics;
+        public ValueTask<ImageFrame> ReadRegionAsync(PixelRegion region, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
     private static FrameLease Frame(Source source, Action? release = null)
     {
@@ -341,7 +341,7 @@ public class PixelQuerySchedulerTests
         var runtime = new Runtime(); using var frame = Frame(new(runtime));
         using var scheduler = new PixelQueryScheduler(frame.Acquire, NullLogger.Instance, runtime);
         var changed = new Client(runtime); var removed = new Client(runtime); var disabled = new Client(runtime);
-        using var a = scheduler.Register(changed); var old = scheduler.Register(removed); using var d = scheduler.Register(disabled);
+        using var a = scheduler.Register(changed); var old = scheduler.Register(removed); using var disabledRegistration = scheduler.Register(disabled);
         runtime.Tick!(); changed.Version++; disabled.Enabled = false; old.Dispose(); old.Dispose();
         using var replacement = scheduler.Register(removed);
         await runtime.Finish(scheduler);

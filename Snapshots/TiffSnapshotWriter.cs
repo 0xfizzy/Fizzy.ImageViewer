@@ -100,7 +100,7 @@ internal static class TiffSnapshotWriter
         foreach (var tag in tags)
             if (tag.ByteCount > 4) WriteValues(writer, tag);
 
-        byte[]? row = gray || info.Order == FramePixelFormatInfo.ComponentOrder.Rgb ? null : new byte[layout.RowBytes];
+        byte[]? row = gray || info.Order is FramePixelFormatInfo.ComponentOrder.Rgb or FramePixelFormatInfo.ComponentOrder.Rgba ? null : new byte[layout.RowBytes];
         long position = layout.PixelOffset;
         for (int y = 0; y < descriptor.Height; y++)
         {

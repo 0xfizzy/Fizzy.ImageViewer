@@ -12,9 +12,9 @@ public abstract record DrawingElement
     public OverlayScaleMode ScaleMode { get; init; } = OverlayScaleMode.FixedStroke;
     internal abstract DrawingElement Snapshot(ref Dictionary<Brush, Brush>? brushes);
     internal abstract void Draw(DrawingContext context, double scale, double pixelsPerDip, DrawingResources resources);
-    internal static void Finite(double a, double b, double c = 0, double d = 0)
+    internal static void Finite(double a, double b, double c = 0, double fourthValue = 0)
     {
-        if (!double.IsFinite(a) || !double.IsFinite(b) || !double.IsFinite(c) || !double.IsFinite(d)) throw new ArgumentException("Coordinates and dimensions must be finite.");
+        if (!double.IsFinite(a) || !double.IsFinite(b) || !double.IsFinite(c) || !double.IsFinite(fourthValue)) throw new ArgumentException("Coordinates and dimensions must be finite.");
     }
     internal static void Positive(double value, string name)
     {

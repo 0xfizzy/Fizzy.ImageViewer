@@ -7,12 +7,15 @@ namespace Fizzy.ImageViewer.Tests;
 
 public class PublicApiBaselineTests
 {
-    [Fact]
-    public void ExportedApiMatchesReviewedSignatures()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExportedApiMatchesReviewedSignatures(bool cuda)
     {
-        var actual = Describe(typeof(Viewer).Assembly).Order(StringComparer.Ordinal).ToArray();
-        var baseline = Path.Combine(AppContext.BaseDirectory, "PublicApi.txt");
-        var output = Path.Combine(AppContext.BaseDirectory, "PublicApi.actual.txt");
+        var actual = Describe(cuda ? typeof(Fizzy.ImageViewer.Cuda.CudaImageFrame).Assembly : typeof(Viewer).Assembly).Order(StringComparer.Ordinal).ToArray();
+        var name = cuda ? "CudaPublicApi" : "PublicApi";
+        var baseline = Path.Combine(AppContext.BaseDirectory, name + ".txt");
+        var output = Path.Combine(AppContext.BaseDirectory, name + ".actual.txt");
         File.WriteAllLines(output, actual);
         Assert.True(File.Exists(baseline), $"Missing API baseline. Review {output} before updating PublicApi.txt.");
         Assert.True(File.ReadAllLines(baseline).SequenceEqual(actual),
