@@ -66,8 +66,6 @@ jobs:
       - run: |
           ./scripts/Save-DocumentationArchive.ps1 -Archive artifacts/archive -Message 'docs: update development documentation'
         shell: pwsh
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/deploy-archive
         with:
-          path: artifacts/archive
-      - uses: actions/deploy-pages@v4
+          stage: development

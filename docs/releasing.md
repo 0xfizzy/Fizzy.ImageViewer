@@ -59,7 +59,7 @@ gh workflow run release.yml --ref main -f tag=v1.2.0
 gh run list --workflow release.yml --limit 5
 ```
 
-If a bundle already exists, the workflow downloads it and does not rebuild. Local diagnosis with authorized GitHub read access:
+Manual recovery uses the reviewed workflow and scripts from main, while package/source identity remains the original tag. Preparation needs `contents: write` to see draft Release assets; PR validation remains read-only. If a bundle already exists, the workflow downloads it and does not rebuild. If NuGet already contains the version but no archive is visible, preparation stops. Local diagnosis with access to the Release assets:
 
 ```powershell
 ./scripts/Resume-Release.ps1 -Tag v1.2.0
@@ -83,6 +83,20 @@ If a bundle already exists, the workflow downloads it and does not rebuild. Loca
 | Original bundle missing after package publication | Stop and investigate; do not rebuild a replacement pretending to be the original. |
 
 Network retries are bounded; indexing or CDN delay ends in a visible failure rather than presumed success. The audit performs no writes. Workflow logs and GitHub Actions failure notifications are the incident entrypoint. For an unrecoverable automation defect in tagged scripts, use a reviewed workflow fix and the retained bundle; do not mutate the tag or archived documentation.
+
+Pages deployment identifies each build by its documentation archive commit, not the package source commit. Development, fixed-version staging and index activation can share source code but contain different sites. Artifact names include the stage, run and attempt to avoid collisions on retries. Online content verification remains required after the deployment API reports success.
+
+## Optional CUDA package
+
+Publish `Fizzy.ImageViewer.Cuda` separately from the same source tag after the core package is available. On a Windows machine with the [CUDA build prerequisites](cuda.md#build-and-deployment), prepare from the tag's exported source, compile native tests without running hardware, run managed CUDA tests, and seal the original package:
+
+```powershell
+./scripts/New-CudaReleaseBundle.ps1 -Tag v1.2.0
+./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.2.0 -Bundle artifacts/cuda-release-preparation/bundle
+gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
+```
+
+Review the preparation transcript, test results and bundle validation before Archive. The separate immutable `cuda-release-bundle.zip` asset contains the package, native hash, source identity and validation report. It does not replace the core bundle or fixed documentation. The workflow downloads and validates this asset, publishes through the same NuGet Trusted Publishing policy, and compares the downloaded NuGet payload. The policy must authorize the CUDA package ID. Resume with the same dispatch; never rebuild an already published version. Hardware, driver and physical display validation are separate from managed tests and native compilation.
 
 ## Documentation corrections without publishing a package
 

@@ -16,3 +16,4 @@ Push-Location (Get-Repo)
 try { Invoke-Checked (Join-Path $binaryDir 'actionlint.exe') @() }
 finally { Pop-Location }
 Write-Host 'PASS: GitHub workflow syntax, expressions and action inputs.'
+Invoke-Checked node @((Join-Path $PSScriptRoot 'Test-PagesDeployment.cjs'))

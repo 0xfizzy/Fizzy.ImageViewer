@@ -59,7 +59,7 @@ gh workflow run release.yml --ref main -f tag=v1.2.0
 gh run list --workflow release.yml --limit 5
 ```
 
-已有 bundle 时下载原件，不重新构建。获得 GitHub 读取权限后，本地诊断：
+手动恢复使用 main 上已审阅的工作流和脚本，包及源码身份仍为原 tag。准备任务需要 `contents: write` 才能看到草稿 Release 附件；PR 验证仍只读。已有 bundle 时下载原件，不重新构建。NuGet 已有该版本但归档不可见时，准备任务停止。获得 Release 附件访问权限后，本地诊断：
 
 ```powershell
 ./scripts/Resume-Release.ps1 -Tag v1.2.0
@@ -83,6 +83,20 @@ gh run list --workflow release.yml --limit 5
 | 发包后原 bundle 缺失 | 停止调查，不能重建并冒充原产物。 |
 
 网络重试有上限，索引/CDN 延迟会明确失败，不假定成功。巡检只读，workflow 日志及 GitHub Actions 失败通知是故障入口。tag 内脚本存在不可恢复缺陷时，用审阅后的工作流修复处理保留 bundle，不改 tag 或历史文档。
+
+Pages 以文档归档提交标识部署版本，而非包的源码提交。开发站点、固定版本暂存和索引激活可能共享源码，但站点内容不同。产物名称包含阶段、运行和尝试编号，避免重试重名。部署 API 报告成功后仍须核验线上内容。
+
+## 可选 CUDA 包
+
+主包可用后，从同一源码 tag 独立发布 `Fizzy.ImageViewer.Cuda`。在满足 [CUDA 构建前提](cuda.md#构建与部署)的 Windows 主机上，从 tag 导出的源码准备产物，编译原生测试但不运行硬件，执行托管 CUDA 测试并封存原始包：
+
+```powershell
+./scripts/New-CudaReleaseBundle.ps1 -Tag v1.2.0
+./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.2.0 -Bundle artifacts/cuda-release-preparation/bundle
+gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
+```
+
+Archive 前审查准备日志、测试结果和 bundle 验证报告。独立且不可变的 `cuda-release-bundle.zip` 附件包含包、原生文件哈希、源码身份及验证报告，不替换主包归档或固定文档。工作流下载核验附件，通过同一 NuGet Trusted Publishing 策略发布，再比对下载的 NuGet 有效载荷；策略必须允许 CUDA 包 ID。恢复时重复同一 dispatch，不重新构建已发布版本。硬件、驱动和物理显示验证独立于托管测试及原生编译。
 
 ## 不发包的文档修订
 
