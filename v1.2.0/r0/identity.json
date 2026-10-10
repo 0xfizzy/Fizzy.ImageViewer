@@ -1,0 +1,10 @@
+{
+  "docfx": "2.78.3",
+  "basePath": "/Fizzy.ImageViewer/",
+  "commit": "ea9b2ad8d53bde6233ef02cc54677037108d9e02",
+  "directory": "v1.2.0/r0",
+  "revision": 0,
+  "channel": "Release",
+  "version": "1.2.0",
+  "sdk": "9.0.307"
+}

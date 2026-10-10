@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>架构 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="架构 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="架构">架构</h1>
+
+<p><a href="../architecture.html">English</a></p>
+<p>修改资源所有权或模块依赖前阅读本页。库每个 Viewer 拥有一个独立 WPF STA；消费者提交不可变帧，通过门面、绘图和测量句柄操作。</p>
+<p><a id="source-organization"></a></p>
+<h2 id="源码组织">源码组织</h2>
+<table>
+<thead>
+<tr>
+<th>目录</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Viewer</td>
+<td>公共门面、Host 组合、窗口和生命周期</td>
+</tr>
+<tr>
+<td>Frames / Pixels</td>
+<td>不可变存储、描述符、租约、提交、像素源协议、CPU 解码与独立结果</td>
+</tr>
+<tr>
+<td>Rendering</td>
+<td>提交队列、已提交状态、CPU 与 D3D 呈现</td>
+</tr>
+<tr>
+<td>native/Cuda</td>
+<td>可选 CUDA/D3D9Ex kernel，借用标准 CUDA context 和 stream 句柄</td>
+</tr>
+<tr>
+<td>Imaging / Queries</td>
+<td>线采样、显示转换、查询设置及共享调度/执行</td>
+</tr>
+<tr>
+<td>Layers</td>
+<td>公共层组合、变换、输入和生命周期容器</td>
+</tr>
+<tr>
+<td>Drawing</td>
+<td>元素、标记层、句柄、批量绘制</td>
+</tr>
+<tr>
+<td>Measurements</td>
+<td>集合、句柄、选项、快照、通知、样式与生命周期</td>
+</tr>
+<tr>
+<td>Measurements/Queries</td>
+<td>查询种类、几何兼容、请求、客户端与结果</td>
+</tr>
+<tr>
+<td>Measurements/Geometry</td>
+<td>封闭不可变几何族</td>
+</tr>
+<tr>
+<td>Measurements/Tools</td>
+<td>工具契约、注册、创建上下文；BuiltIn 为内置工具</td>
+</tr>
+<tr>
+<td>Measurements/Editing</td>
+<td>编辑会话和控制点</td>
+</tr>
+<tr>
+<td>Measurements/Presentation</td>
+<td>叠加、视觉投射、标签、曲线窗口</td>
+</tr>
+<tr>
+<td>Interaction</td>
+<td>测量协调、WPF 输入及共享捕获</td>
+</tr>
+<tr>
+<td>Viewport</td>
+<td>图像坐标、缩放与平移</td>
+</tr>
+<tr>
+<td>Hud</td>
+<td>屏幕坐标文字、像素查询与显示状态</td>
+</tr>
+<tr>
+<td>Snapshots</td>
+<td>独立整帧/区域捕获及编码</td>
+</tr>
+<tr>
+<td>Menus</td>
+<td>菜单契约、动作、注册、绑定和固定目标</td>
+</tr>
+</tbody>
+</table>
+<p><a id="placement-rules"></a></p>
+<h3 id="放置规则">放置规则</h3>
+<p>按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。</p>
+<p>Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。核心项目保留在根目录，可选后端项目放在 extensions/；samples/tests/tools/extensions 不作为核心库源码收集。</p>
+<p>Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。</p>
+<p>可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。</p>
+<p><a id="frame-and-imaging-dependencies"></a></p>
+<h2 id="帧与图像依赖">帧与图像依赖</h2>
+<p>可选 <code>Fizzy.ImageViewer.Cuda</code> 程序集仅引用核心库和自有 native DLL。消费者桥接源帧所有权与执行作用域；扩展负责显示转换与像素查询。native 使用标准 CUDA 句柄，不创建第二套运行时，见 <a href="cuda.html">CUDA 集成</a>。</p>
+<p>Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。</p>
+<p>FrameLease 是后端无关读取边界，每次异步读取自持租约并验证请求/结果、提供来源。区域返回独立 CPU ImageFrame，RegionPixels 另存来源，不把源身份赋给派生像素。生产者 release 在最后源租约后清外部查询资源。Raw 快照接管区域，独立像素租约可越过快照。交付结果前先完成必要清理，无法交付时清理候选结果。</p>
+<p><a id="ownership-and-direction"></a></p>
+<h2 id="所有权与依赖方向">所有权与依赖方向</h2>
+<p>Viewer 发布门面和通知；Host 按单次提交回调、公共事件顺序连接，每个订阅边界隔离异常。Host 拥有 STA、窗口、管线、呈现、调度、测量集合、注册表、交互及 HUD。门面先赋 Host 再启动线程，初始化失败走同一幂等关闭流程，各所有者独立尝试安全清理。释放等待实际 STA 退出。</p>
+<p>FramePipeline 计入所有已接纳提交直到释放和公开结果完成，包括提交线程上的替换清理。显示范围更新有独立版本结果，新请求/关闭取消等待。共享关闭结果保留资源/排空失败，通知失败隔离。D3D 附加无法证明安全分离时保留呈现器和表面租约至进程结束。</p>
+<p>ViewerLifetime 统一停止门和关闭安全的句柄移除调度，HUD 集合拥有视觉并使句柄失效。ViewerInputBinding 把 WPF 来源解析为测量身份和图像坐标，负责效果和临时输入抑制，不保存会话状态。公共视口接收兄弟叠加上的导航和像素查询；ViewportPan 使用屏幕坐标，共享 MouseCaptureSession 保证捕获失败不开始拖动，取消/卸载/关闭结束捕获。</p>
+<p>MeasurementInteractionCoordinator 唯一拥有工具、版本、模式、选中及转换策略，直接借用 MeasurementLayer。层可见和命中策略限制工具/编辑启动，重入取消后也检查；临时抑制不改配置。Registry 保存可复用注册，每次工厂生成一次性会话。激活聚合注册身份、创建上下文和会话；旧回调继续前验证身份，Finish 只作用所属上下文。所有预览通过所属上下文创建，结束后拒绝创建，每个会话终止恰好清理一次。</p>
+<p>MeasurementCollection 拥有成员、视觉索引、创建策略与 Viewer 样式，Host 显式创建并共享 MeasurementRuntime。Runtime 统一 STA/生命周期调度、查询注册和通知，不依赖视觉容器。集合关闭先停 Runtime 再清对象。通知共用 FIFO，重入追加；内部几何投射同步先完成，公共通知后发。</p>
+<p>Layers 容器拥有附加、变换、输入抑制及生命周期，不依赖具体绘图/测量类型；具体层依赖容器。ViewerLayers 组合消费者能力。DrawingLayer 统一单项和集合句柄；MeasurementLayer 通过清内容通知让集合清模型，层不反向拥有集合。清理门覆盖取消与资源释放全过程，finally 清残留视觉，不依赖 coordinator 存在。</p>
+<p>MeasurementItem 拥有模型、查询订阅、呈现与释放；完成/释放清上下文引用，Origin 保留不可变来源。先解除查询/视觉，再发移除。Presentation 拥有 WPF、标签及可选曲线，关闭曲线请求删除对象，主动释放先断该回调。终止句柄释放集合/Runtime 引用，终止读只保留稳定数据和轻量生命周期门；绘图失效同样释放层引用。呈现关闭在 STA 清图像源，未知 native 附加独立隔离。</p>
+<p>MeasurementQueryDefinition 统一几何/查询组合、构造与 ROI 裁剪，Client 独立缓存请求，每次保留几何版本和坐标。Geometry 是事实，GeometryEditing 定义控制点和拖动；LineProfileWindow 包装可选窗口。没有任意编辑器注册/动态工厂。EditController 拥有会话和控制点，先观察内部几何更新，程序更新重设拖动基线且保留控制点语义。</p>
+<p>HUD 独立订阅共享 scheduler。查询协议/运行时是内部 Imaging 能力；一次同步发布同时携带身份和载荷，不分两个暂存通知。测试 Runtime 控制时间、工作和 UI 发布。LineSampling 独立于显示，曲线消费不可变结果并拥有缓冲，纯数据查询不创建曲线或 RGB 中间缓冲。</p>
+<p>MenuManager 拥有注册和 WPF 绑定，句柄撤销禁用绑定并释放目标。普通菜单关闭保留绑定至输入排空，以支持 Closed-before-Click；新打开使旧绑定失效。执行可等待、错误隔离、同对象禁止并发。已开始工作自持资源可越过注册/Viewer。</p>
+<p>ViewerMenuController 负责内置策略，借用交互、工具、层、HUD 和快照；Menus 下 MenuSnapshotSession 唯一拥有冻结帧/ROI，Snapshots 不拥有菜单策略。Host 在关闭管线前断菜单策略和绑定。Rendering 的 CommittedViewLease 原子固定帧、映射和版本，消费者不拥有管线状态。</p>
+<p><a id="pixel-format-ownership"></a></p>
+<h2 id="像素格式归属">像素格式归属</h2>
+<p>FramePixelFormats.GetInfo 是分量顺序、位深、数字表示、alpha 的唯一事实源，字节数、灰度和语义通道数由其派生。Frames/Pixels 解码及统计，Imaging 映射，Rendering 适配 WPF，Snapshots 编码布局/通道/标签，各自保留算法。显示范围不是原值限制，曲线通道不是格式通道，编码行长不必等于源 stride。新增格式必须逐一支持或拒绝解码、统计、显示、HUD/测量、快照，不能只加描述符。</p>
+<p><a id="invariants-when-extending-the-library"></a></p>
+<h2 id="扩展不变量">扩展不变量</h2>
+<ul>
+<li>提交立即消耗所有权，任何终止路径公开结果及最终释放明确。</li>
+<li>CPU 缓冲与 native GPU 表面生命周期不同，ICpuImagePresenter 只抽象 CPU。</li>
+<li>批量标记和逐项 WPF 测量服务不同负载，不混淆所有权和交互。</li>
+<li>Brush 跨 STA 前复制冻结，每个 Viewer 独立样式，已有视觉保留快照。</li>
+<li>普通重入由最新会话接管；批量清理拒绝新会话、重入幂等、失败后继续其余层。</li>
+<li>公共扩展暴露稳定消费者能力，不暴露控件/缓存/服务实例；API 基线与调用方及指南一起审查。</li>
+</ul>
+<p><a id="query-policy-and-tool-admission"></a></p>
+<h2 id="查询策略与工具接纳">查询策略与工具接纳</h2>
+<p>查询策略独立选择接受旧几何及起始/完成间隔。完成指 STA 已处理结果，包含失败、过期和拒绝；订阅/会话/描述符检查始终保留。旧显示保留时间与新结果 MaxResultAge 独立。coordinator 统一激活接纳和重入检查，门面初始拒绝抛异常、菜单忽略不可用目标。操作固定注册实例，ID 撤销解析当前实例，注册关闭通过同一安全移除路径使引用失效。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
