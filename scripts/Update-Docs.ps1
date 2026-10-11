@@ -83,8 +83,8 @@ $previous = $env:DOCS_SOURCE_ROOT
 try {
  $env:DOCS_SOURCE_ROOT = $Source
  Import-Module "$PSScriptRoot/Release.Common.psm1" -Force
- Invoke-Checked dotnet @('build',(Join-Path $Source 'Fizzy.ImageViewer.csproj'),'-c','Release','--no-incremental','-p:DocumentationStrict=true')
- $binary = & dotnet msbuild (Join-Path $Source 'Fizzy.ImageViewer.csproj') -nologo -p:Configuration=Release -getProperty:TargetPath
+ Invoke-Checked dotnet @('build',(Join-Path $Source 'src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj'),'-c','Release','--no-incremental','-p:DocumentationStrict=true')
+ $binary = & dotnet msbuild (Join-Path $Source 'src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj') -nologo -p:Configuration=Release -getProperty:TargetPath
  if ($LASTEXITCODE) { throw 'Cannot locate reviewed XML.' }
  $xml = [IO.Path]::ChangeExtension(($binary -join '').Trim(), '.xml')
  & "$PSScriptRoot/Build-Docs.ps1" -Channel Release -Version $Version -Package $package -ReviewedXml $xml

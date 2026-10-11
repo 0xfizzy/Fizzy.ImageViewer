@@ -6,6 +6,8 @@ Maintain English XML as the symbol contract, English guides as cross-API protoco
 
 ## Build and preview
 
+The DocFX configuration is `docs/docfx.json`; the site homepage and top-level navigation are under `docs/landing/`. `Build-Docs` stages inputs under `artifacts/docs/source/` and runs this configuration there, preserving published URLs.
+
 Install PowerShell 7, the exact SDK in `global.json`, the .NET 8 Desktop Runtime, Node.js 22.14.0 and Git. The library still targets .NET 8; the pinned SDK compiler supports the existing test source. The repository pins DocFX and Playwright. Run from the repository root:
 
 ```powershell

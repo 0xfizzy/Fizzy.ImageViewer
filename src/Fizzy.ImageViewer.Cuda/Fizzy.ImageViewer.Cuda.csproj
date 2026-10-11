@@ -12,7 +12,7 @@
     <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../artifacts/cuda/$(Configuration)</CudaNativeDirectory>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Fizzy.ImageViewer.csproj" />
+    <ProjectReference Include="../Fizzy.ImageViewer/Fizzy.ImageViewer.csproj" />
     <InternalsVisibleTo Include="Fizzy.ImageViewer.Tests" />
   </ItemGroup>
   <Target Name="CollectCudaNative" BeforeTargets="AssignTargetPaths;_GetPackageFiles">

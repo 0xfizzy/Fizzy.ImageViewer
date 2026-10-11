@@ -9,9 +9,9 @@ try {
     & "$PSScriptRoot/Test-Documentation.ps1"
     Invoke-Checked dotnet @('tool','restore')
     $null = Reset-Output (Join-Path (Get-Repo) 'artifacts/docs')
-    Invoke-Checked dotnet @('restore','Fizzy.ImageViewer.csproj','--locked-mode')
-    Invoke-Checked dotnet @('build','Fizzy.ImageViewer.csproj','-c','Release','--no-restore','--no-incremental','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
-    $binary = & dotnet msbuild Fizzy.ImageViewer.csproj -nologo -p:Configuration=Release -getProperty:TargetPath
+    Invoke-Checked dotnet @('restore','src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','--locked-mode')
+    Invoke-Checked dotnet @('build','src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','-c','Release','--no-restore','--no-incremental','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
+    $binary = & dotnet msbuild src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -nologo -p:Configuration=Release -getProperty:TargetPath
     if ($LASTEXITCODE) { throw 'Cannot locate documentation assembly.' }
     $binary = ($binary -join '').Trim()
     $inputDir = Join-Path (Get-Repo) 'artifacts/docs/input'
@@ -19,9 +19,9 @@ try {
     Get-ChildItem (Split-Path $binary -Parent) -File | Where-Object { $_.Extension -in @('.dll','.xml') -or $_.Name -like '*.deps.json' } | Copy-Item -Destination $inputDir
     $apiAssemblies = @('artifacts/docs/input/Fizzy.ImageViewer.dll')
     if ($Channel -eq 'Development' -and !$Package) {
-        Invoke-Checked dotnet @('build','extensions/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
-        Copy-Item extensions/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.dll $inputDir
-        Copy-Item extensions/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.xml $inputDir
+        Invoke-Checked dotnet @('build','src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
+        Copy-Item src/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.dll $inputDir
+        Copy-Item src/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.xml $inputDir
         $apiAssemblies += 'artifacts/docs/input/Fizzy.ImageViewer.Cuda.dll'
     }
     if ($Package) {
@@ -42,7 +42,24 @@ try {
     Write-Json @{ metadata = @(@{ src = @(@{ src = (Get-Repo); files = $apiAssemblies }); dest = (Join-Path (Get-Repo) 'artifacts/docs/api'); disableGitFeatures = $true }) } artifacts/docs/metadata.json
     Invoke-Checked dotnet @('docfx','metadata','artifacts/docs/metadata.json','--warningsAsErrors')
     & "$PSScriptRoot/Complete-ApiNavigation.ps1"
-    Invoke-Checked dotnet @('docfx','build','docfx.json','--warningsAsErrors')
+    # DocFX requires source files beneath its config directory when exporting links.
+    # Stage the site inputs so repository layout does not change published URLs.
+    $siteSource = Join-Path (Get-Repo) 'artifacts/docs/source'
+    [void][IO.Directory]::CreateDirectory($siteSource)
+    foreach ($directory in @('docs','assets')) {
+        Copy-Item $directory $siteSource -Recurse
+    }
+    Copy-Item README*.md,LICENSE $siteSource
+    foreach ($file in Get-ChildItem samples -Recurse -File | Where-Object { $_.Extension -in @('.cs','.csproj') -and $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }) {
+        $target = Join-Path $siteSource ([IO.Path]::GetRelativePath((Get-Repo), $file.FullName))
+        [void][IO.Directory]::CreateDirectory((Split-Path $target -Parent))
+        Copy-Item $file.FullName $target
+    }
+    $apiSource = Join-Path $siteSource 'artifacts/docs'
+    [void][IO.Directory]::CreateDirectory($apiSource)
+    Copy-Item artifacts/docs/api $apiSource -Recurse
+    Copy-Item docs/docfx.json (Join-Path $siteSource 'docfx.json')
+    Invoke-Checked dotnet @('docfx','build',(Join-Path $siteSource 'docfx.json'),'--warningsAsErrors')
     Copy-Item (Join-Path $PSScriptRoot '../docs/site/versions.js') 'artifacts/docs/site/docs/site/versions.js' -Force
     $config = Get-SiteConfig
     $directory = if ($Channel -eq 'Release') { "v$Version" } else { 'dev' }

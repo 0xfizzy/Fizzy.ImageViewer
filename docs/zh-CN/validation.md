@@ -7,8 +7,8 @@
 ## 构建与测试
 
 ```powershell
-dotnet restore Fizzy.ImageViewer.csproj --locked-mode
-dotnet build Fizzy.ImageViewer.csproj -c Release --no-restore
+dotnet restore src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj --locked-mode
+dotnet build src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -c Release --no-restore
 dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release
 ./scripts/Test-Samples.ps1
 ```

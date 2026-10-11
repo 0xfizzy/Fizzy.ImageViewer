@@ -73,6 +73,10 @@ Set-Content "$source/Contract.cs" "/// <summary>Original.</summary>`npublic clas
 Invoke-Checked git @('-C',$source,'add','.')
 Invoke-Checked git @('-C',$source,'commit','--quiet','-m','original')
 Invoke-Checked git @('-C',$source,'tag','v1.2.0')
+[void][IO.Directory]::CreateDirectory("$source/docs/landing")
+Set-Content "$source/docs/landing/index.md" "# Documentation"
+Set-Content "$source/docs/landing/toc.yml" "- name: English`n  href: ../index.md"
+Invoke-Checked git @('-C',$source,'add','docs/landing')
 Set-Content "$source/Contract.cs" "/// <summary>Reviewed.</summary>`npublic class Contract { }"
 Invoke-Checked git @('-C',$source,'commit','--quiet','-am','comments')
 Assert-DocumentationUpdateChanges $source 1.2.0

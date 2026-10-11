@@ -8,6 +8,10 @@ public facade, drawing handles and measurement handles.
 
 ## Source organization
 
+Managed library projects live under `src/`: the core in `src/Fizzy.ImageViewer/`
+and the optional CUDA backend in `src/Fizzy.ImageViewer.Cuda/`. The feature paths
+below are relative to the core project, except `native/Cuda`, which is repository-relative.
+
 | Directory | Responsibility |
 | --- | --- |
 | Viewer | Public facade, host composition, window and lifetime |
@@ -61,7 +65,7 @@ subdirectories. Tests spanning measurement ownership, notifications or interacti
 at the Measurements level. Test namespaces remain stable so existing filters continue
 to work. Test-only helpers live beside their callers; benchmarks remain under tools.
 
-Keep the core project at the repository root; optional backend projects belong under extensions/. Viewer partial files organize
+Keep tests, samples, tools and native builds outside the managed library projects. Viewer partial files organize
 one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Queries,
 Snapshots and Lifetime. These files are not independently owned services. `IViewer` aggregates
 borrowed capability interfaces placed with their owning features. `IViewerWindow` stays

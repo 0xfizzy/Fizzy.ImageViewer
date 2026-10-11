@@ -35,7 +35,7 @@
 
 按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。
 
-Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。核心项目保留在根目录，可选后端项目放在 extensions/；samples/tests/tools/extensions 不作为核心库源码收集。
+Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。托管库项目统一放在 src/：核心项目位于 src/Fizzy.ImageViewer/，可选 CUDA 后端位于 src/Fizzy.ImageViewer.Cuda/。上表功能路径相对于核心项目，native/Cuda 相对于仓库根目录；测试、示例、工具和原生构建保留在托管库项目之外。
 
 Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
 

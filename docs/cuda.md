@@ -102,8 +102,8 @@ is required:
 
 ```powershell
 ./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-dotnet build extensions/Fizzy.ImageViewer.Cuda -c Release
-dotnet pack extensions/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
+dotnet build src/Fizzy.ImageViewer.Cuda -c Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
 ```
 
 Native outputs go to `artifacts/cuda/Release`. Packing without the native DLL fails; the core

@@ -15,12 +15,12 @@ $bundle = Join-Path $work 'bundle'
 [void][IO.Directory]::CreateDirectory($bundle)
 Push-Location $source
 try {
-    [xml]$project = Get-Content extensions/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj
+    [xml]$project = Get-Content src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj
     if ($project.Project.PropertyGroup.Version -cne $version) { throw 'CUDA project version differs from tag.' }
     & ./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
     Invoke-Checked dotnet @('restore','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','--locked-mode')
     Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c','Release','--no-restore','--filter','FullyQualifiedName~Cuda','--logger','trx;LogFileName=cuda.trx','--results-directory',"$work/tests")
-    Invoke-Checked dotnet @('pack','extensions/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','--no-restore','-o',$bundle,'-p:ContinuousIntegrationBuild=true',"-p:RepositoryCommit=$commit","-p:SourceRevisionId=$commit")
+    Invoke-Checked dotnet @('pack','src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','--no-restore','-o',$bundle,'-p:ContinuousIntegrationBuild=true',"-p:RepositoryCommit=$commit","-p:SourceRevisionId=$commit")
     $nativeHash = Get-Hash artifacts/cuda/Release/Fizzy.ImageViewer.Cuda.Native.dll
 } finally { Pop-Location }
 Write-Json @{ tag = $Tag; commit = $commit; nativeHash = $nativeHash; cuda = '11.8'; toolset = 'v142'; architectures = '75'; managedCudaTests = 'passed'; nativeTests = 'compiled, not executed'; unverified = @('real GPU','physical display','mixed DPI') } "$bundle/validation.json"

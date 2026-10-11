@@ -1,6 +1,6 @@
 # Fizzy.ImageViewer
 
-[English documentation](docs/index.md) · [简体中文文档](docs/zh-CN/index.md)
+[English documentation](../index.md) · [简体中文文档](../zh-CN/index.md)
 
 View, draw, measure, and inspect images in .NET 8 WPF applications. Choose a guide above, or use **API reference (English)** in the navigation to look up public types and members.
 

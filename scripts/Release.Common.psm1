@@ -58,7 +58,7 @@ function Get-Commit {
     $value.Trim()
 }
 function Get-PackageVersion {
-    $value = & dotnet msbuild (Join-Path $script:Repo 'Fizzy.ImageViewer.csproj') -nologo -getProperty:PackageVersion
+    $value = & dotnet msbuild (Join-Path $script:Repo 'src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj') -nologo -getProperty:PackageVersion
     if ($LASTEXITCODE) { throw 'Cannot resolve PackageVersion.' }
     ($value -join '').Trim()
 }

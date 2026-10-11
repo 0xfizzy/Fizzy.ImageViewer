@@ -12,7 +12,7 @@ try {
     Start-Transcript (Join-Path $output 'validation.log') | Out-Null
     try {
         & "$PSScriptRoot/Test-Workflows.ps1"
-        foreach ($project in @('Fizzy.ImageViewer.csproj','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj')) { Invoke-Checked dotnet @('restore',$project,'--locked-mode') }
+        foreach ($project in @('src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj')) { Invoke-Checked dotnet @('restore',$project,'--locked-mode') }
         Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c','Release','--no-restore','--logger',"trx;LogFileName=release.trx",'--results-directory',"$output/tests")
         foreach ($project in Get-ChildItem tools -Recurse -Filter '*.csproj') {
             Invoke-Checked dotnet @('restore',$project.FullName,'--locked-mode')
@@ -29,7 +29,7 @@ try {
         $readme = (Get-Content docs/nuget-readme.md -Raw).Replace("$($config.origin)$($config.basePath)", "$($config.origin)$($config.basePath)v$Version/").Replace('/blob/main/LICENSE', "/blob/$(Get-Commit)/LICENSE")
         $readmePath = Join-Path $output 'README.md'
         Set-Content $readmePath $readme -Encoding utf8NoBOM
-        Invoke-Checked dotnet @('pack','Fizzy.ImageViewer.csproj','-c','Release','--no-build','--no-restore','-o',"$output/packages","-p:ReleaseReadme=$readmePath",'-p:ContinuousIntegrationBuild=true')
+        Invoke-Checked dotnet @('pack','src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','-c','Release','--no-build','--no-restore','-o',"$output/packages","-p:ReleaseReadme=$readmePath",'-p:ContinuousIntegrationBuild=true')
         $packages = @(Get-ChildItem "$output/packages" -Filter '*.nupkg')
         if ($packages.Count -ne 1) { throw 'Expected exactly one package.' }
         if ($Release) {

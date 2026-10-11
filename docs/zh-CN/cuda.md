@@ -71,8 +71,8 @@ native 构建需要 Windows x64、CUDA Toolkit 11.8 和 MSVC v142，默认 SM 7.
 
 ```powershell
 ./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-dotnet build extensions/Fizzy.ImageViewer.Cuda -c Release
-dotnet pack extensions/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
+dotnet build src/Fizzy.ImageViewer.Cuda -c Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
 ```
 
 输出在 artifacts/cuda/Release；缺少 native DLL 时 CUDA 打包失败。核心包不包含 CUDA 二进制或源码。

@@ -1,7 +1,7 @@
 {
-  "docs/architecture.md": "7dc3cd481e9c0436b3050aa64b67dac59c0f22c15d05f0d78146a1a56f176822",
-  "docs/cuda.md": "189c5eca8c20f5248e158b44dd93c4e3006f999077d5f50e87f80f44fe3470f1",
-  "docs/documentation.md": "ddc5892998a8b7229031644729fd19ee15c6041e3eac5c41690cbb05f6a80584",
+  "docs/architecture.md": "afd5fa36a7fcde402b867cc9161ccc885973742c09e0c4720732decc15f849e4",
+  "docs/cuda.md": "13e39b0269cc88d996207e5cf09f0210d5e531cc33a55c0e39899303fc1f41c4",
+  "docs/documentation.md": "59aa8c0f9348b2c4e6e9f9c65bed34817ab6fc5ad4d0e9eaa06703395f21fd06",
   "docs/drawing-layers.md": "c6d0e663df651ea66eee3bd2679b93c064405ec1de4570daa27c603a129cd9be",
   "docs/frame-pipeline.md": "fea78e5e438c06fa76f9dab8e99b1ca1d6db213e0576ff5fd744c5a9b35eaf92",
   "docs/getting-started.md": "299786409b8ed053ccbeba9d7c95a67c25354b67b9c1ae7bd6cbccf700df6247",
@@ -11,6 +11,6 @@
   "docs/public-api.md": "f72560d21b08956ce1c5f84900cf7202f72f0a3eb080ce11aca102f8e6fb42e3",
   "docs/releasing.md": "c25a3e566f364501cbb2cfdd1f01f2e887e189cd185a2794f06e31dcdabafc17",
   "docs/snapshots.md": "4db2bc567eaf69f23f96afb192929aeaab33187f24f95d42149be03bf2d3480a",
-  "docs/validation.md": "1be4ab8a2fa63b2b54952315ec80b6ec1473a1587a0e7ebab00a2cd34f33fcd8",
+  "docs/validation.md": "e93ff28dd35adfea280b30e2475bf62313f0d54d7bde0442fce58d188a247f11",
   "README.md": "025083ca53a87b15f4e2fb265d3948a47e31dbc655933ad9223c026260455576"
 }

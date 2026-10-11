@@ -1,0 +1,66 @@
+{
+  "build": {
+    "content": [
+      {
+        "src": "docs/landing",
+        "files": [
+          "index.md",
+          "toc.yml"
+        ],
+        "dest": "."
+      },
+      {
+        "src": ".",
+        "files": [
+          "README*.md",
+          "docs/**/*.md",
+          "docs/**/toc.yml"
+        ],
+        "exclude": [
+          "docs/nuget-readme.md",
+          "docs/landing/**"
+        ],
+        "dest": "."
+      },
+      {
+        "src": "artifacts/docs/api",
+        "files": [
+          "**/*.yml",
+          "index.md"
+        ],
+        "dest": "api"
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "LICENSE",
+          "assets/**",
+          "samples/**/*.cs",
+          "samples/**/*.csproj",
+          "docs/site/**"
+        ],
+        "exclude": [
+          "**/bin/**",
+          "**/obj/**"
+        ],
+        "src": ".",
+        "dest": "."
+      }
+    ],
+    "dest": "../site",
+    "template": [
+      "default",
+      "modern",
+      "docs/template"
+    ],
+    "globalMetadata": {
+      "_appTitle": "Fizzy.ImageViewer",
+      "_appLogoPath": "assets/icon.png",
+      "_appFaviconPath": "assets/icon.png",
+      "_enableSearch": true,
+      "_disableContribution": true
+    },
+    "disableGitFeatures": true
+  }
+}
