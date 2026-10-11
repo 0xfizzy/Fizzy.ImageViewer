@@ -1,5 +1,5 @@
 {
-  "source_base_path": "D:/a/Fizzy.ImageViewer/Fizzy.ImageViewer",
+  "source_base_path": "D:/a/Fizzy.ImageViewer/Fizzy.ImageViewer/artifacts/docs/source",
   "xrefmap": "xrefmap.yml",
   "files": [
     {
@@ -1509,60 +1509,163 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/architecture.md",
+      "source_relative_path": "docs/en/architecture.md",
       "output": {
         ".html": {
-          "relative_path": "docs/architecture.html"
+          "relative_path": "docs/en/architecture.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/cuda.md",
+      "source_relative_path": "docs/en/cuda.md",
       "output": {
         ".html": {
-          "relative_path": "docs/cuda.html"
+          "relative_path": "docs/en/cuda.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/documentation.md",
+      "source_relative_path": "docs/en/documentation.md",
       "output": {
         ".html": {
-          "relative_path": "docs/documentation.html"
+          "relative_path": "docs/en/documentation.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/drawing-layers.md",
+      "source_relative_path": "docs/en/drawing-layers.md",
       "output": {
         ".html": {
-          "relative_path": "docs/drawing-layers.html"
+          "relative_path": "docs/en/drawing-layers.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/frame-pipeline.md",
+      "source_relative_path": "docs/en/frame-pipeline.md",
       "output": {
         ".html": {
-          "relative_path": "docs/frame-pipeline.html"
+          "relative_path": "docs/en/frame-pipeline.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/getting-started.md",
+      "source_relative_path": "docs/en/getting-started.md",
       "output": {
         ".html": {
-          "relative_path": "docs/getting-started.html"
+          "relative_path": "docs/en/getting-started.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/live-streaming.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/live-streaming.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/measurement-tools.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/measurement-tools.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/measurements.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/measurements.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/menus.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/menus.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/public-api.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/public-api.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/releasing.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/releasing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/snapshots.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/snapshots.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "docs/en/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/toc.html"
+        },
+        ".json": {
+          "relative_path": "docs/en/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/validation.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/validation.html"
         }
       },
       "version": ""
@@ -1572,47 +1675,7 @@
       "source_relative_path": "docs/index.md",
       "output": {
         ".html": {
-          "relative_path": "docs/index.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/measurements.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/measurements.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/menus.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/menus.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/public-api.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/public-api.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/releasing.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/releasing.html"
+          "relative_path": "index.html"
         }
       },
       "version": ""
@@ -1628,34 +1691,14 @@
       "version": ""
     },
     {
-      "type": "Conceptual",
-      "source_relative_path": "docs/snapshots.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/snapshots.html"
-        }
-      },
-      "version": ""
-    },
-    {
       "type": "Toc",
       "source_relative_path": "docs/toc.yml",
       "output": {
         ".html": {
-          "relative_path": "docs/toc.html"
+          "relative_path": "toc.html"
         },
         ".json": {
-          "relative_path": "docs/toc.json"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/validation.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/validation.html"
+          "relative_path": "toc.json"
         }
       },
       "version": ""
@@ -1726,6 +1769,26 @@
       "output": {
         ".html": {
           "relative_path": "docs/zh-CN/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/live-streaming.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/live-streaming.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/measurement-tools.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/measurement-tools.html"
         }
       },
       "version": ""
@@ -1804,16 +1867,6 @@
       "version": ""
     },
     {
-      "type": "Conceptual",
-      "source_relative_path": "index.md",
-      "output": {
-        ".html": {
-          "relative_path": "index.html"
-        }
-      },
-      "version": ""
-    },
-    {
       "type": "Resource",
       "source_relative_path": "samples/BasicViewer/BasicViewer.csproj",
       "output": {
@@ -1869,19 +1922,6 @@
       "output": {
         "resource": {
           "relative_path": "samples/MeasurementsAndExport/Program.cs"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Toc",
-      "source_relative_path": "toc.yml",
-      "output": {
-        ".html": {
-          "relative_path": "toc.html"
-        },
-        ".json": {
-          "relative_path": "toc.json"
         }
       },
       "version": ""

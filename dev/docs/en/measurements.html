@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Measurements and interaction | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Measurements and interaction | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="measurements-and-interaction">Measurements and interaction</h1>
+
+<p><a href="../zh-CN/measurements.html">简体中文</a></p>
+<p>Use built-in tools to measure points, lengths, rectangular regions and line profiles. Positions and lengths use image pixels; noninteractive annotations belong in <a href="drawing-layers.html">drawing layers</a>.</p>
+<h2 id="activate-a-built-in-tool">Activate a built-in tool</h2>
+<p>The snippets assume a live <code>viewer</code> from <a href="getting-started.html">Getting started</a>.</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Measurements;
+
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Tool ID</th>
+<th>Interaction</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Point</code></td>
+<td>Click a point</td>
+<td>Pixel value</td>
+</tr>
+<tr>
+<td><code>Length</code></td>
+<td>Click two endpoints</td>
+<td>Length in image pixels</td>
+</tr>
+<tr>
+<td><code>RectangleRoi</code></td>
+<td>Click opposite corners</td>
+<td>Region statistics</td>
+</tr>
+<tr>
+<td><code>LineProfile</code></td>
+<td>Click two endpoints</td>
+<td>Pixel samples and a profile window</td>
+</tr>
+</tbody>
+</table>
+<p>Use the context menu to choose a tool, or activate its ID. Unknown IDs throw <code>KeyNotFoundException</code>; a hidden or input-disabled measurement layer rejects activation with <code>InvalidOperationException</code>. Activation after shutdown starts throws <code>ObjectDisposedException</code>.</p>
+<h2 id="observing-built-in-and-custom-measurements">Observing built-in and custom measurements</h2>
+<p>Use <code>Viewer.MeasurementChanged</code> (also on <code>IViewer</code>) to observe completed items without
+implementing a tool or accessing WPF visuals. Geometry edits, query publication and result
+invalidation all carry the measurement ID, immutable geometry/version and current immutable
+<code>QueryResult</code>. <code>QueryResult</code> is null after geometry changes, query failure or expiration. Previews do
+not emit this event, and an unchanged geometry or already-empty result does not emit it.</p>
+<pre><code class="lang-csharp">viewer.MeasurementChanged += (_, e) =&gt;
+{
+    var id = e.Snapshot.Id;
+    var geometry = e.Snapshot.Geometry;
+    var result = e.QueryResult; // Null means the measurement currently has no valid pixel result.
+    // Retain these immutable values or dispatch them to the application's UI.
+};
+viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
+</code></pre>
+<p>Viewer and handle notifications share one FIFO queue on the viewer STA. Each mutation
+captures immutable payloads and its subscribers before delivery; reentrant mutations append
+their events after the current mutation's notifications. Every subscriber sees nondecreasing
+geometry versions, completion precedes removal, and removal is terminal. The live handle
+may already reflect a later mutation or disposal while an older snapshot is delivered.
+Closing from a subscriber preserves queued measurement events and emits <code>Closed</code> after
+removals. Subscriber exceptions are logged and isolated. The event's <code>Measurement</code> can be
+disposed from any thread, including reentrantly from a callback. Completion and removal events carry the same result snapshot field,
+but completion does not promise query readiness. Custom tools may additionally subscribe to
+<code>IMeasurement.GeometryChanged</code> and <code>QueryResultChanged</code> on their own items.</p>
+<h2 id="edit-and-remove">Edit and remove</h2>
+<p>Click a completed measurement to edit it, and drag its control points. Delete removes the selected item; Escape ends creation or editing and retains already-applied edits. Use the event's <code>Measurement</code> handle for programmatic <code>UpdateGeometry</code> or <code>Dispose</code>, and <code>viewer.Measurements.Clear()</code> to remove all measurements.</p>
+<h2 id="geometry-editing-and-notifications">Geometry, editing and notifications</h2>
+<p>Create geometry with <code>MeasurementGeometry.Point</code>, <code>Crosshair</code>, <code>Line</code>, <code>Rectangle</code> or
+<code>Circle</code>. Point and crosshair use <code>Position</code>; lines use <code>Start</code>/<code>End</code>; rectangles normalize
+opposite corners. Circles use <code>Center</code> and <code>Radius</code>. Factories return the sealed concrete
+records <code>PointMeasurementGeometry</code>, <code>CrosshairMeasurementGeometry</code>, <code>LineMeasurementGeometry</code>,
+<code>RectangleMeasurementGeometry</code> and <code>CircleMeasurementGeometry</code>. Pattern-match these types
+when reading a handle or event snapshot; unsupported coordinate properties do not exist.
+Kinds use the measurement-specific <code>MeasurementGeometryKind</code> enum. <code>Bounds</code> returns normalized
+image-space bounds: endpoint bounds for lines and rectangles, diameter bounds for circles,
+and zero extent for points and crosshairs. Line endpoints retain their original order.
+Coordinates and extents must be finite; circle radii must be nonnegative.</p>
+<p>The framework creates the shape, label and supported control points. Coincident control
+points prioritize extent handles, allowing zero-radius circles, zero-length lines and
+collapsed rectangles to expand. The entire label uses inverse scale, keeping text,
+padding and offset fixed in screen space while its anchor follows image coordinates. Use
+<code>UpdateGeometry</code> for previews and programmatic updates. Directly changing WPF properties
+is not a measurement mutation API. <code>GeometryChanged</code> reports the new immutable geometry
+after model, label and result invalidation have been applied. Use it to write edits back
+to an application model. A multi-shape tool creates multiple measurements, each with its
+own identity, completion and removal lifetime; there is no arbitrary visual attachment path.</p>
+<p><code>Viewer.MeasurementCompleted</code> and <code>MeasurementRemoved</code> cover every tool. Completion fires
+once, excludes previews and does not imply query readiness. Removal fires only for a
+previously completed item. Snapshots include <code>Id</code>, complete <code>Geometry</code> and <code>GeometryVersion</code>.
+The event's <code>Measurement</code> handle supports updates and disposal from any thread; disposal
+is idempotent and safe after closure.</p>
+<h2 id="queries-and-retained-results">Queries and retained results</h2>
+<p><code>MeasurementOptions.Query</code> selects a <code>MeasurementQueryKind</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Supported geometry</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>None</code> (default)</td>
+<td>All</td>
+<td>Geometry label; no pixel subscription</td>
+</tr>
+<tr>
+<td><code>Pixel</code></td>
+<td>Point, crosshair</td>
+<td>Sample and integer source coordinate</td>
+</tr>
+<tr>
+<td><code>LineProfile</code></td>
+<td>Line</td>
+<td>Ordered samples and source coordinates</td>
+</tr>
+<tr>
+<td><code>RegionStatistics</code></td>
+<td>Rectangle</td>
+<td>Clipped region and channel statistics</td>
+</tr>
+</tbody>
+</table>
+<p>Incompatible combinations are rejected before any visual attaches. Pixel queries use
+floor coordinates and reject points outside the frame. Line profiles clip to the frame;
+ROI queries and export share <code>PixelRegion.Clip</code>. Empty targets have no result.
+Use <code>MeasurementQueryKind.Pixel</code>, <code>LineProfile</code>, <code>RegionStatistics</code> or <code>None</code>.
+Set <code>ShowProfileWindow = true</code> independently to request an owned plot window on completion.
+Closing that window removes the measurement. This option requires a line-profile query.
+The built-in line-profile tool enables it; explicit queries default to data only. Geometry compatibility
+and the window/query combination are validated before attachment.</p>
+<p><code>LineMeasurementGeometry.Length</code> provides the geometric length in image pixels without reading a frame. A length-only measurement therefore has no query result.
+Distance calculation avoids intermediate square overflow and underflow; positive infinity
+is returned only when the resulting length cannot be represented by a <code>double</code>.</p>
+<p><code>IMeasurement.QueryResult</code> is null until successful publication. <code>QueryResultChanged</code> provides an
+immutable <code>MeasurementQueryResult</code>, or null when a previous result becomes invalid. The result
+includes measurement ID, geometry version, source <code>FrameInfo</code>, query kind and read-only
+copies of samples, coordinates or channel statistics. It is safe to retain the result
+after another frame, editing or removal. Collections never borrow scheduler buffers.</p>
+<p>Results are a closed class family. Pattern-match <code>MeasurementSampleResult</code> to read
+<code>Coordinates</code> and <code>Samples</code>: <code>Query</code> is <code>Pixel</code> for one pair or <code>LineProfile</code> for ordered
+pairs. <code>MeasurementRegionStatisticsResult</code> exposes a non-null clipped <code>Region</code> and <code>Channels</code>.
+Common <code>MeasurementQueryResult</code> properties contain only provenance and <code>Query</code>, so unrelated
+payload fields cannot be accidentally read. <code>None</code> produces no result.</p>
+<p>Labels and plots update before notification. Geometry changes invalidate immediately;
+query failure, descriptor change, missing targets and expiration clear obsolete results.
+The scheduler and query protocol remain internal.</p>
+<h2 id="ownership-and-geometry">Ownership and geometry</h2>
+<p><code>IViewerMeasurements.Measurements</code> exposes the entire measurement layer for visibility,
+input policy and clearing. Clear cancels the current interaction and removes all measurements,
+while retaining drawing layers and HUD. Tool registration and <code>EndInteraction</code> likewise
+manage viewer-wide state, not only resources created by the caller. Within a tool session,
+use the context's <code>Finish</code> to end that activation without affecting a replacement session.
+Measurement events carry immutable snapshots alongside a live editable/removable handle;
+subscribing is therefore not a read-only observation capability.</p>
+<p><code>MeasurementStyle</code> belongs to <code>.Measurements</code>. <code>Viewer.MeasurementStyle</code> configures newly created measurements independently for each
+viewer. Assignment copies and freezes all brushes on the caller's thread before UI
+dispatch. Existing measurements retain their normal and selected colors. <code>MeasurementOptions.Style</code>
+overrides the viewer default for a new measurement and is snapshotted on creation.</p>
+<p>Each measurement owns immutable <code>MeasurementGeometry</code>, a framework-generated primary
+visual and label, an optional pixel query subscription and its registered resources.
+Each tool session owns its own unfinished measurements. A preview is
+already an owned measurement; <code>Complete</code> retains it and enables queries. Cancelling
+creation disposes unfinished measurements.
+Visuals attach once and are not replaced on completion.</p>
+<p>Geometry uses source-image coordinates. A rectangle stores normalized opposite
+corners. Editing updates the model before the visual, label and optional plot window.
+Point and line queries use half-open pixel coverage <code>[0, Width) × [0, Height)</code>.
+Line queries floor clipped endpoints to pixel indices, so fractional coordinates in
+the last row/column remain sampleable. Input direction and endpoint pixels are retained;
+lines lying on the exclusive right/bottom boundary are outside the image.
+Every actual geometry change increments <code>IMeasurement.GeometryVersion</code> and clears results.
+An equal geometry update is a no-op. Geometry kind cannot change after creation.
+During a rectangle drag, the opposite corner comes from the drag-start snapshot,
+so crossing it does not change which corner is fixed. Programmatic updates refresh
+the primary visual, label and editing control points before public notifications.
+An external update during dragging replaces the drag baseline; subsequent pointer
+moves use the same control-point index in that new geometry, preserving its fixed anchor.
+Labels follow geometry immediately, even when queries are slow or fail.</p>
+<p>ROI statistics and menu export use the same <code>PixelRegion.Clip</code> conversion of the
+selected item's geometry. The menu freezes the frame lease and region together;
+subsequent editing does not change an already captured export request. Editing
+WPF properties directly is not a supported way to change measurements.</p>
+<p>Deletion, clear, plot-window closure and viewer closure converge on idempotent
+item disposal: release specialized resources, then remove the label and primary
+visual even if a resource fails to close. Removing a visual notifies observers <strong>after</strong> it is
+removed, making repeated and reentrant removal harmless. Closing the viewer first
+stops interaction, cancels queries and disposes items, then clears layers and
+releases its frames. <code>DisposeAsync</code> waits for in-flight queries to release their own
+leases, including sources that do not immediately honor cancellation.</p>
+<h2 id="interaction">Interaction</h2>
+<p>Starting a valid measurement ends editing; starting valid editing cancels a
+measurement. Invalid edit requests do not replace the current session. Escape
+cancels creation or ends editing; edits already applied are retained. Delete ends
+the selected editing session before disposing its owner. Clear, hiding the
+measurement layer, disabling its configured hit testing and viewer shutdown
+cancel active sessions and release mouse capture. Hiding retains completed items.
+Losing capture finishes the current drag without deleting the item.
+Capture failure leaves the editing session active without leaving an active drag.</p>
+<p>Temporary input suppression never changes configured layer hit-testing flags.
+Restoring input recomputes effective flags for every layer, including layers
+created while measuring. A hidden measurement layer does not start new tools.</p>
+<h2 id="query-execution">Query execution</h2>
+<p>Configure shared query rates with <code>QueryOptions</code> and inspect <code>QueryMetrics</code>; see <a href="frame-pipeline.html#pixel-access-and-measurements">query scheduling</a>.</p>
+<p>Subscriptions have distinct lifetimes. Publication requires the same registration,
+stable measurement identity, geometry version and frame descriptor. Re-registering
+an object never accepts work from its previous subscription. Geometry changes,
+invalid regions, cancellation and disposal prevent stale publication. Query and
+publication failures are isolated per subscriber; failed results remain invalid.</p>
+<p>The pixel HUD alone opts into a moving-result policy: geometry changes retain the
+last coordinate/value pair, and completed samples can publish within the same
+interaction session. Session and descriptor changes still reject old work. Its
+completion-based 10 Hz cap and 300 ms display retention do not alter other tools'
+rates or geometry validation. See <a href="frame-pipeline.html">pixel query contracts</a>.</p>
+<p>The scheduler tracks the source frame ID of published results. A newer frame with the same descriptor does
+not by itself reject an in-flight result: it may publish within <code>MaxResultAge</code>.
+This bounded-age policy prevents starvation when video arrives faster than queries
+finish. Changed descriptors and expired results are rejected. A result from an
+unchanged frozen frame remains valid without repeated queries.</p>
+<h2 id="threads-and-disposal">Threads and disposal</h2>
+<p>Measurement handles dispatch reads, updates and subscriptions to the Viewer STA. Keep callbacks short and never wait there for a worker that calls Viewer APIs. After closure, <code>Dispose</code> and unsubscription remain safe; <code>Id</code>, <code>Origin</code> and <code>IsDisposed</code> remain readable. Other access requires a running Viewer. Cleanup errors from explicit disposal/clear propagate after safe cleanup; shutdown cleanup failures enter <code>DisposeAsync</code>. Notification exceptions are logged and isolated.</p>
+<h2 id="custom-tools">Custom tools</h2>
+<p>See <a href="measurement-tools.html">custom measurement tools</a> for registration, session creation, resource transfer, reentry and failure handling.</p>
+<p>The profile window plots sample index against pixel value without changing stored samples. Closing it removes its measurement. Rendering details belong to <a href="architecture.html#line-profile-rendering">architecture</a>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

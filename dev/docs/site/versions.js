@@ -39,9 +39,11 @@ try {
       const response = await fetch(new URL('pages.json', targetRoot));
       if (!response.ok) throw new Error('Page inventory unavailable');
       const pages = await response.json();
-      if (!Object.hasOwn(pages, relative)) relative = relative.startsWith('api/') ? 'api/index.html' :
-        relative.startsWith('docs/zh-CN/') ? 'docs/zh-CN/index.html' : 'docs/index.html';
-      if (!Object.hasOwn(pages, relative)) relative = 'index.html';
+      const homes = relative.startsWith('api/') ? ['api/index.html'] :
+        relative.startsWith('docs/zh-CN/') ? ['docs/zh-CN/index.html'] :
+        relative.startsWith('docs/en/') ? ['docs/en/index.html'] : [];
+      relative = [relative, ...homes, 'index.html']
+        .find(candidate => Object.hasOwn(pages, candidate)) || 'index.html';
       const candidate = new URL(relative, targetRoot);
       const anchor = decodeURIComponent(location.hash.slice(1));
       if (anchor && pages[relative].includes(anchor)) candidate.hash = location.hash;

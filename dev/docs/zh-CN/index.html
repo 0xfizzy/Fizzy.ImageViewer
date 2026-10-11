@@ -87,23 +87,56 @@
         <article data-uid="">
 <h1 id="fizzyimageviewer-文档">Fizzy.ImageViewer 文档</h1>
 
-<p><a href="../index.html">English</a></p>
+<p><a href="../en/index.html">English</a></p>
 <p>按应用需要选择组件指南，集成图像显示、绘制、测量与像素查询。</p>
+<h2 id="按需求选择">按需求选择</h2>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>从这里开始</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>显示第一张图像</td>
+<td><a href="getting-started.html">入门</a></td>
+</tr>
+<tr>
+<td>集成相机或连续结果</td>
+<td><a href="live-streaming.html">实时流集成</a></td>
+</tr>
+<tr>
+<td>编写交互工具</td>
+<td><a href="measurement-tools.html">自定义测量工具</a></td>
+</tr>
+<tr>
+<td>查询类型或成员</td>
+<td><a href="../../api/index.html">英文 API 参考</a></td>
+</tr>
+<tr>
+<td>修改库的实现</td>
+<td><a href="architecture.html">架构</a>与<a href="validation.html">验证</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="入门与集成">入门与集成</h2>
 <ul>
 <li><a href="getting-started.html">入门</a>: 创建第一个图像显示应用。</li>
+<li><a href="live-streaming.html">实时流集成</a>：限制生产和叠加工作量。</li>
 <li><a href="public-api.html">Viewer 与生命周期</a>: 配置 Viewer 并管理窗口生命周期。</li>
 </ul>
 <h2 id="帧与处理">帧与处理</h2>
 <ul>
 <li><a href="frame-pipeline.html">帧与像素</a>: 提交帧并查询原始像素。</li>
 <li><a href="cuda.html">CUDA 集成</a>: 集成 CUDA 图像存储。</li>
-<li><a href="snapshots.html">快照</a>: 获取图像与视口快照。</li>
+<li><a href="snapshots.html">快照</a>: 捕获整幅图像或指定区域。</li>
 </ul>
 <h2 id="绘制与交互">绘制与交互</h2>
 <ul>
 <li><a href="drawing-layers.html">绘制与 HUD</a>: 管理叠加绘制、图层与 HUD 内容。</li>
 <li><a href="measurements.html">测量</a>: 使用和扩展交互测量。</li>
+<li><a href="measurement-tools.html">自定义测量工具</a>：创建并管理交互会话。</li>
 <li><a href="menus.html">菜单</a>: 自定义上下文菜单。</li>
 </ul>
 <h2 id="开发与维护">开发与维护</h2>

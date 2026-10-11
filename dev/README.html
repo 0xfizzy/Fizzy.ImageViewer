@@ -72,96 +72,79 @@
 
         <article data-uid="">
 
-<p align="center">
-  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108">
-</p>
-<h1 align="center">Fizzy.ImageViewer</h1>
+<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer" width="108" height="108"></p>
+<h1 id="fizzyimageviewer">Fizzy.ImageViewer</h1>
 <p><a href="README.zh-CN.html">简体中文</a></p>
-<p align="center">
-  <a href="#install">Install</a> ·
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#features">Features</a> ·
-  <a href="docs/frame-pipeline.html">Frame pipeline</a>
-</p>
-<p align="center">
-  <strong>View, measure, and inspect images in WPF applications.</strong>
-</p>
-<p align="center">
-  A fast, standalone image viewer for .NET 8 with zoom and pan, shape overlays,
-  measurements, interactive editing, HUD content, and pixel inspection.
-</p>
-<p align="center">
-  <a href="https://www.nuget.org/packages/Fizzy.ImageViewer"><img src="https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg" alt="NuGet version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/.NET-8-512BD4.svg" alt=".NET 8">
-  <img src="https://img.shields.io/badge/platform-WPF-0078D4.svg" alt="Platform: WPF">
-</p>
+<p>View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.</p>
+<p>Read the <a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">documentation website</a> for bilingual guides and the API reference.</p>
 <h2 id="install">Install</h2>
 <pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
 </code></pre>
-<p>The consuming project must target <code>net8.0-windows</code> (or a compatible newer target)
-and set <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>.</p>
+<p>Target <code>net8.0-windows</code> or a compatible newer target, and set <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>.</p>
 <h2 id="quick-start">Quick start</h2>
+<p>With implicit usings enabled, this console entry point displays a gray image until you close the window:</p>
 <pre><code class="lang-csharp">using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Measurements;
 
-await using var viewer = new Viewer();
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) =&gt; closed.TrySetResult();
 var pixels = new byte[640 * 480];
-var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
-    FramePixelFormat.Gray8), pixels);
-var result = await viewer.SubmitFrameAsync(frame);
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+viewer.Show();
+await closed.Task;
 </code></pre>
-<p>Submission transfers ownership immediately. Awaiting returns a commit/drop result,
-not a physical presentation timestamp. One frame is processed while only the newest
-waiting frame is retained. Measurements read original pixels independently of display.
-Frame leases and original-pixel access types share the <code>Fizzy.ImageViewer.Frames</code> namespace.</p>
-<p>For thousands of markers, submit a collection as one visual:</p>
-<pre><code class="lang-csharp">using var markers = viewer.Layers.Markers.Add(
-    Enumerable.Range(0, 10000).Select(i =&gt;
-        new Fizzy.ImageViewer.Drawing.CircleElement(
-            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
-            3, System.Windows.Media.Brushes.Red)));
-viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
-</code></pre>
-<p>See <a href="docs/measurements.html">measurement ownership and interaction</a>.
-See <a href="docs/public-api.html">supported public API and window lifetime</a>.
-Application adapters own a sealed <code>Viewer</code>; use <code>showWindow: false</code> to configure and
-subscribe before <code>Show()</code>, and await <code>DisposeAsync()</code> when the adapter stops.
-See <a href="docs/drawing-layers.html">drawing layers</a> for updates, hit testing, and API behavior.
-For camera streams, retain batches and replace their content; follow the
-<a href="docs/drawing-layers.html#live-camera-overlays-consumer-requirements">live overlay consumer requirements</a>.
-See <a href="docs/frame-pipeline.html">frame, rendering and snapshot contracts</a> and
-<a href="docs/validation.html">validation commands</a>.</p>
+<p>Submission immediately transfers frame ownership, even on rejection or cancellation. <code>Committed</code> means the UI accepted the frame, not that the monitor has displayed it.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>Independent STA window with thread-safe API dispatch</li>
-<li>Low-allocation frame rendering and bounded render queue</li>
-<li>Zoom, pan, fit-to-window, and borderless modes</li>
-<li>Lines, text, crosshairs, rectangles, circles, and HUD text</li>
-<li><a href="docs/drawing-layers.html">Batch drawing and configurable layers</a>: one visual per collection</li>
-<li>Built-in point, line, rectangle, and line-profile measurements</li>
-<li>Shape selection and interactive editing</li>
-<li>Model-driven custom measurements with shared editing, queries and notifications</li>
-<li>Extensible context menus</li>
-<li>Pixel value inspection</li>
+<li>Zoom, pan, fit-to-window, and borderless display</li>
+<li>Shape overlays, batched markers, and screen-space HUD text</li>
+<li>Point, length, rectangle ROI, and line-profile measurements with editing</li>
+<li>Original-pixel queries, image/region snapshots, and custom menus</li>
+<li>Bounded latest-frame submission and optional CUDA integration</li>
 </ul>
-<h2 id="build">Build</h2>
-<p>Read the <a href="docs/index.html">guides</a>, <a href="docs/getting-started.html">complete examples</a>,
-<a href="docs/documentation.html">documentation maintenance</a> and <a href="docs/releasing.html">release SOP</a>.
-The <a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">online documentation</a> retains
-<code>/v{version}/</code> pages starting at v1.2.0; <code>/dev/</code> follows main.</p>
-<pre><code class="lang-powershell">./scripts/Build-Docs.ps1
-./scripts/Serve-Docs.ps1
-</code></pre>
-<p>See <a href="docs/architecture.html">architecture and ownership</a> before changing module boundaries.</p>
-<pre><code class="lang-powershell">dotnet build -c Release
-dotnet pack -c Release -o ./artifacts
-</code></pre>
-<p>Releases use GitHub Actions and NuGet Trusted Publishing. Follow the
-<a href="docs/releasing.html">release SOP</a> for configuration, validation and recovery.</p>
+<h2 id="documentation">Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>I want to…</th>
+<th>Read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run my first application</td>
+<td><a href="docs/en/getting-started.html">Getting started</a></td>
+</tr>
+<tr>
+<td>Display a live stream</td>
+<td><a href="docs/en/live-streaming.html">Live streaming</a></td>
+</tr>
+<tr>
+<td>Draw or measure</td>
+<td><a href="docs/en/drawing-layers.html">Drawing and HUD</a></td>
+</tr>
+<tr>
+<td>Use interactive measurements</td>
+<td><a href="docs/en/measurements.html">Measurements</a></td>
+</tr>
+<tr>
+<td>Find a component or API</td>
+<td><a href="docs/en/index.html">Guide index</a></td>
+</tr>
+</tbody>
+</table>
+<p><a href="index.html">Bilingual entry</a></p>
+<h2 id="development">Development</h2>
+<p>See <a href="docs/en/validation.html">validation</a> for build and test commands, <a href="docs/en/architecture.html">architecture</a> for module boundaries, and <a href="docs/en/documentation.html">documentation maintenance</a> or <a href="docs/en/releasing.html">release SOP</a> for maintenance tasks.</p>
 <h2 id="license">License</h2>
-<p>MIT</p>
+<p><a href="LICENSE">MIT</a>.</p>
 
 </article>
 

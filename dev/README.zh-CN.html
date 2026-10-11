@@ -72,53 +72,77 @@
 
         <article data-uid="">
 
-<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108"></p>
+<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer" width="108" height="108"></p>
 <h1 id="fizzyimageviewer">Fizzy.ImageViewer</h1>
 <p><a href="README.html">English</a></p>
-<p>用于 .NET 8 WPF 应用的图像显示、绘制、测量、交互编辑、HUD 和像素查询库。每个 Viewer 拥有独立 STA 窗口，帧提交使用有界队列。</p>
+<p>用于 Windows/.NET 8 WPF 应用的图像显示、绘制、测量与像素查询库。每个 Viewer 拥有独立窗口和 STA 线程；相机采集、设备控制和业务适配由应用负责。</p>
+<p>访问<a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">文档网站</a>，阅读双语指南和 API 参考。</p>
 <h2 id="安装">安装</h2>
 <pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
 </code></pre>
-<p>消费者目标必须为 <code>net8.0-windows</code> 或兼容的新目标，设置 <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>。</p>
+<p>项目目标使用 <code>net8.0-windows</code> 或兼容的新目标，并设置 <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>。</p>
 <h2 id="快速开始">快速开始</h2>
+<p>启用隐式 using 后，以下完整控制台入口会显示灰度图像，并等待用户关闭窗口：</p>
 <pre><code class="lang-csharp">using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Measurements;
 
-await using var viewer = new Viewer();
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) =&gt; closed.TrySetResult();
 var pixels = new byte[640 * 480];
-var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
-    FramePixelFormat.Gray8), pixels);
-var result = await viewer.SubmitFrameAsync(frame);
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+viewer.Show();
+await closed.Task;
 </code></pre>
-<p>提交立即转移所有权；等待返回提交或丢弃结果，不代表物理屏幕已显示。一次处理一帧，仅保留最新等待帧。测量独立读取原始像素，租约和原始像素访问类型位于 <code>Fizzy.ImageViewer.Frames</code>。</p>
-<p>大量标记应作为一个集合提交：</p>
-<pre><code class="lang-csharp">using var markers = viewer.Layers.Markers.Add(
-    Enumerable.Range(0, 10000).Select(i =&gt;
-        new Fizzy.ImageViewer.Drawing.CircleElement(
-            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
-            3, System.Windows.Media.Brushes.Red)));
-viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
-</code></pre>
-<p>参见<a href="docs/zh-CN/measurements.html">测量</a>、<a href="docs/zh-CN/public-api.html">公共 API 与生命周期</a>及<a href="docs/zh-CN/drawing-layers.html">绘制层</a>。应用适配器拥有 sealed <code>Viewer</code>；需要先配置时使用 <code>showWindow: false</code>，配置订阅后 <code>Show()</code>，停止时等待 <code>DisposeAsync()</code>。实时流复用绘制句柄并替换内容，遵循指南中的消费者要求。</p>
-<h2 id="功能">功能</h2>
+<p>提交会立即转移帧所有权，包括拒绝和取消的情况。<code>Committed</code> 表示 UI 已接纳该帧，不代表物理屏幕已显示。</p>
+<h2 id="核心功能">核心功能</h2>
 <ul>
-<li>独立 STA 窗口与公共 API 调度</li>
-<li>低分配渲染及有界帧队列</li>
-<li>缩放、平移、适应窗口和无边框</li>
-<li>线、文本、准星、矩形、圆及 HUD</li>
-<li>集合绘制、可配置图层和交互测量</li>
-<li>模型驱动自定义测量、编辑、查询与通知</li>
-<li>可扩展菜单及像素查询</li>
+<li>缩放、平移、适应窗口与无边框显示</li>
+<li>图形叠加、批量标记与屏幕坐标 HUD 文字</li>
+<li>点、长度、矩形 ROI 和线剖面测量，支持交互编辑</li>
+<li>原始像素查询、整图/区域快照与自定义菜单</li>
+<li>有界最新帧提交，以及可选 CUDA 集成</li>
 </ul>
-<h2 id="构建与文档">构建与文档</h2>
-<p>阅读<a href="docs/zh-CN/index.html">组件指南</a>、<a href="docs/zh-CN/getting-started.html">完整示例</a>及<a href="docs/zh-CN/architecture.html">架构</a>。<a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">在线文档</a>从 v1.2.0 起按 <code>/v{version}/</code> 留存，<code>/dev/</code> 对应主分支。</p>
-<pre><code class="lang-powershell">./scripts/Build-Docs.ps1
-./scripts/Serve-Docs.ps1
-dotnet build -c Release
-dotnet pack -c Release -o ./artifacts
-</code></pre>
-<p>构建、发布和恢复入口见<a href="docs/zh-CN/validation.html">验证</a>、<a href="docs/zh-CN/documentation.html">文档维护</a>及<a href="docs/zh-CN/releasing.html">发布 SOP</a>。发布使用 GitHub Actions 和 NuGet Trusted Publishing。</p>
+<h2 id="阅读入口">阅读入口</h2>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>文档</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>运行第一个程序</td>
+<td><a href="docs/zh-CN/getting-started.html">入门</a></td>
+</tr>
+<tr>
+<td>显示实时图像流</td>
+<td><a href="docs/zh-CN/live-streaming.html">实时流集成</a></td>
+</tr>
+<tr>
+<td>绘制或测量</td>
+<td><a href="docs/zh-CN/drawing-layers.html">绘制与 HUD</a></td>
+</tr>
+<tr>
+<td>使用交互测量</td>
+<td><a href="docs/zh-CN/measurements.html">测量与交互</a></td>
+</tr>
+<tr>
+<td>查找组件或 API</td>
+<td><a href="docs/zh-CN/index.html">指南目录</a></td>
+</tr>
+</tbody>
+</table>
+<p><a href="index.html">双语入口</a></p>
+<h2 id="开发入口">开发入口</h2>
+<p>构建与测试见<a href="docs/zh-CN/validation.html">验证</a>，模块边界见<a href="docs/zh-CN/architecture.html">架构</a>。维护工作参见<a href="docs/zh-CN/documentation.html">文档维护</a>与<a href="docs/zh-CN/releasing.html">发布 SOP</a>。</p>
 <h2 id="许可证">许可证</h2>
 <p><a href="LICENSE">MIT</a>。</p>
 

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>测量与交互 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="测量与交互 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="测量与交互">测量与交互</h1>
+
+<p><a href="../en/measurements.html">English</a></p>
+<p>使用内置工具测量点、长度、矩形区域和线剖面。位置与长度采用图像像素单位；不需要交互编辑的标记使用<a href="drawing-layers.html">绘制层</a>。</p>
+<h2 id="激活内置工具">激活内置工具</h2>
+<p>以下片段假定已有<a href="getting-started.html">入门示例</a>中的存活 <code>viewer</code>。</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Measurements;
+
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>工具 ID</th>
+<th>操作</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Point</code></td>
+<td>点击一个点</td>
+<td>像素值</td>
+</tr>
+<tr>
+<td><code>Length</code></td>
+<td>点击两个端点</td>
+<td>图像像素单位的长度</td>
+</tr>
+<tr>
+<td><code>RectangleRoi</code></td>
+<td>点击两个对角点</td>
+<td>区域统计</td>
+</tr>
+<tr>
+<td><code>LineProfile</code></td>
+<td>点击两个端点</td>
+<td>像素样本和曲线窗口</td>
+</tr>
+</tbody>
+</table>
+<p>也可从右键菜单选择工具。未知 ID 抛出 <code>KeyNotFoundException</code>；测量层隐藏或禁用命中测试时，激活抛出 <code>InvalidOperationException</code>；关闭开始后抛出 <code>ObjectDisposedException</code>。</p>
+<h2 id="读取结果与通知">读取结果与通知</h2>
+<p>订阅 <code>Viewer.MeasurementChanged</code> 即可观察所有工具产生的已完成测量，无需访问 WPF 视觉树。几何编辑、查询发布及结果失效都会携带不可变几何、版本和当前 <code>QueryResult</code>。几何变化、查询失败或过期后，结果为 <code>null</code>。预览不触发该事件；相等的几何更新和已经为空的结果也不重复通知。</p>
+<pre><code class="lang-csharp">viewer.MeasurementChanged += (_, e) =&gt;
+{
+    var id = e.Snapshot.Id;
+    var geometry = e.Snapshot.Geometry;
+    var result = e.QueryResult; // Null means the measurement currently has no valid pixel result.
+    // Retain these immutable values or dispatch them to the application's UI.
+};
+viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
+</code></pre>
+<p><code>MeasurementCompleted</code> 每项只触发一次，且不代表像素查询已经就绪；<code>MeasurementRemoved</code> 只对曾完成的测量触发。事件快照包含 <code>Id</code>、完整 <code>Geometry</code>、<code>GeometryVersion</code> 和查询结果。可保留不可变载荷，或将其转交应用 UI 线程。</p>
+<p>Viewer 和句柄的通知共用 STA 上的 FIFO 队列。每次变化先捕获载荷和订阅者；订阅者重入产生的新事件排在当前通知之后。几何版本不会倒退，完成先于删除，删除后不再变更。收到旧快照时，事件中的实时 <code>Measurement</code> 句柄可能已经变化或释放。</p>
+<p>订阅者中关闭窗口仍会交付已排队的测量通知，<code>Closed</code> 晚于删除通知。订阅异常逐个记录并隔离。事件中的句柄可从任意线程更新或释放，也可在通知中重入释放。自定义工具还可订阅句柄的 <code>GeometryChanged</code> 和 <code>QueryResultChanged</code>。</p>
+<h2 id="编辑与删除">编辑与删除</h2>
+<p>点击已完成测量进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 <code>Measurement</code> 句柄调用 <code>UpdateGeometry</code> 或 <code>Dispose</code>；<code>viewer.Measurements.Clear()</code> 清空全部测量。</p>
+<h2 id="几何与更新">几何与更新</h2>
+<p><code>MeasurementGeometry.Point</code>、<code>Crosshair</code>、<code>Line</code>、<code>Rectangle</code> 和 <code>Circle</code> 创建封闭的不可变几何记录。通过具体类型模式匹配读取属性：点和准星使用 <code>Position</code>，线使用保留方向的 <code>Start</code>/<code>End</code>，矩形标准化两个对角，圆使用 <code>Center</code>/<code>Radius</code>。<code>Bounds</code> 分别为零范围、端点包围框或圆的直径框。坐标和范围必须有限，圆半径允许为零。</p>
+<p>每次真实几何变化增加 <code>GeometryVersion</code> 并清除查询结果；相等更新不产生变化，已有测量不能改换几何种类。框架在通知前更新模型、标签、主图形和编辑控制点。标签的文字、内边距和偏移保持屏幕尺寸，锚点跟随图像；查询缓慢或失败不会延迟几何标签。</p>
+<p>控制点重合时，优先命中用于调整范围的控制点，因此零半径圆、零长度线和塌缩矩形仍可展开。矩形拖动使用开始时的对角锚点，越过该点不会改变固定角；拖动期间的程序更新替换基线，后续拖动继续使用相同控制点索引。直接修改 WPF 属性不属于测量 API。</p>
+<h2 id="查询与保留结果">查询与保留结果</h2>
+<p>自定义工具通过 <code>MeasurementOptions.Query</code> 选择查询：</p>
+<table>
+<thead>
+<tr>
+<th>查询</th>
+<th>支持几何</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>None</code>（默认）</td>
+<td>全部</td>
+<td>几何标签，不订阅像素</td>
+</tr>
+<tr>
+<td><code>Pixel</code></td>
+<td>点、准星</td>
+<td>样本及整数源坐标</td>
+</tr>
+<tr>
+<td><code>LineProfile</code></td>
+<td>线</td>
+<td>有序样本及源坐标</td>
+</tr>
+<tr>
+<td><code>RegionStatistics</code></td>
+<td>矩形</td>
+<td>裁剪区域及通道统计</td>
+</tr>
+</tbody>
+</table>
+<p>非法组合在附加视觉前拒绝。点坐标向下取整；线查询裁剪至图像并保留方向和两个端点。点和线使用半开覆盖 <code>[0, Width) × [0, Height)</code>，因此最后一行/列的小数位置仍可采样，但仅位于右/下边界的线没有样本。ROI 查询和区域导出共用 <code>PixelRegion.Clip</code>；空目标没有结果。</p>
+<p><code>ShowProfileWindow = true</code> 请求在完成时创建曲线窗口，只能与线剖面查询组合；内置线剖面工具开启它，自定义查询默认只返回数据。关闭曲线窗口会删除测量。<code>LineMeasurementGeometry.Length</code> 不读取帧，纯长度测量没有查询结果；计算避免中间平方溢出/下溢，仅当最终长度超出 <code>double</code> 表示范围时返回正无穷。</p>
+<p><code>QueryResult</code> 在成功发布前为 <code>null</code>。结果包含测量 ID、几何版本、来源 <code>FrameInfo</code>、查询种类，以及只读样本、坐标或统计副本；不借用调度器缓冲区，可跨帧、编辑和删除保留。</p>
+<p>模式匹配 <code>MeasurementSampleResult</code> 可读取 <code>Coordinates</code>/<code>Samples</code>：<code>Pixel</code> 为一对，<code>LineProfile</code> 为有序多对。<code>MeasurementRegionStatisticsResult</code> 提供非空裁剪 <code>Region</code> 和 <code>Channels</code>。公共基类只提供来源与查询种类，<code>None</code> 没有结果。标签和曲线先于通知更新；失败、描述符变化、目标消失和过期会清除旧结果。</p>
+<h2 id="所有权与样式">所有权与样式</h2>
+<p><code>IViewerMeasurements.Measurements</code> 暴露整层设置和清理，影响其中所有测量；清空会取消交互并删除测量，但保留绘图和 HUD。工具注册和 <code>EndInteraction</code> 也作用于 Viewer 全局状态；工具内部应使用上下文的 <code>Finish</code> 结束自身激活。事件携带可编辑、可删除的实时句柄，并非只读能力。</p>
+<p><code>Viewer.MeasurementStyle</code> 控制未来创建的测量。赋值在调用线程复制并冻结所有画刷；已有项保留其普通和选中样式。创建时的 <code>MeasurementOptions.Style</code> 可覆盖默认值，也会生成快照。</p>
+<p>每项测量拥有几何、框架视觉、标签、可选查询和注册资源。预览已经是被拥有的测量；<code>Complete</code> 保留它并启用查询，取消会释放未完成项。完成时不重新附加视觉。菜单同时固定帧和 ROI，后续编辑不改变已捕获导出目标。</p>
+<p>删除、清空、曲线关闭和 Viewer 关闭都进入幂等释放。专用资源清理失败后仍尝试移除标签和主图形；移除后才发出通知。Viewer 关闭先停止交互和查询、释放测量，再清图层和帧；<code>DisposeAsync</code> 等待在途查询释放自己的租约，包括不立即响应取消的后端。</p>
+<h2 id="交互规则">交互规则</h2>
+<p>有效的测量启动结束编辑，有效的编辑启动取消创建；无效编辑请求保留当前会话。隐藏测量层、禁用其配置的命中测试、清空或关闭 Viewer 会取消活动会话并释放鼠标捕获。隐藏测量层保留完成项，但取消预览；<code>Viewer.Hide()</code> 保留活动工具和预览。丢失鼠标捕获结束当前拖动但不删除项；捕获失败保留编辑状态，不开始拖动。</p>
+<p>测量期间的临时输入抑制不修改图层的配置标志。恢复输入时重新读取每层当前配置，包括期间新增的层。批量清理期间拒绝创建测量和启动新会话；重入清理是幂等的，一层失败后仍尝试其他层。</p>
+<h2 id="查询发布">查询发布</h2>
+<p><code>QueryOptions</code> 控制共享查询频率，<code>QueryMetrics</code> 提供测量数据；执行规则见<a href="frame-pipeline.html#%E5%83%8F%E7%B4%A0%E8%AE%BF%E9%97%AE%E4%B8%8E%E6%B5%8B%E9%87%8F">帧与像素</a>。发布要求注册实例、测量身份、几何版本和帧描述符仍有效；重新订阅不会接纳旧工作的结果。查询和发布失败按订阅隔离。</p>
+<p>同描述符的新帧不会自动否定在途结果，结果可在 <code>MaxResultAge</code> 范围内发布，避免高帧率下持续饥饿。描述符变化和超龄结果被拒绝；未变化冻结帧的有效结果无需反复查询。像素 HUD 单独使用移动结果策略：同会话内发布完整坐标/值，完成后限频至 10 Hz，变化时旧显示最多保留 300 ms；不放宽测量的几何检查。</p>
+<h2 id="线程与释放">线程与释放</h2>
+<p>句柄的读取、更新和订阅调度到 Viewer STA。回调保持短小，不要同步等待会调用 Viewer 的工作线程。关闭后 <code>Dispose</code> 和退订仍安全，<code>Id</code>、<code>Origin</code>、<code>IsDisposed</code> 仍可读；其他访问要求 Viewer 存活。显式释放和清空在必要安全清理后传播错误，关闭清理失败进入共享 <code>DisposeAsync</code>；通知异常记录并隔离。</p>
+<h2 id="自定义工具">自定义工具</h2>
+<p>注册、会话创建、资源转移、重入和失败处理见<a href="measurement-tools.html">自定义测量工具</a>。</p>
+<p>曲线窗口以样本索引为横轴、像素值为纵轴，不改变原始样本；关闭窗口会删除测量。渲染实现见<a href="architecture.html#%E7%BA%BF%E5%89%96%E9%9D%A2%E6%B8%B2%E6%9F%93">架构</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

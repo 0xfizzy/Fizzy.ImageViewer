@@ -87,13 +87,17 @@
         <article data-uid="">
 <h1 id="cuda-集成">CUDA 集成</h1>
 
-<p><a href="../cuda.html">English</a></p>
+<p><a href="../en/cuda.html">English</a></p>
 <p>可选 <code>Fizzy.ImageViewer.Cuda</code> 包支持 CUDA 驻留的 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32，
 提供 WPF 显示转换及原始像素查询。消费者实现小型执行桥接；核心和扩展均不依赖特定应用或计算运行时。</p>
 <h2 id="创建帧">创建帧</h2>
 <p>为独立保留的不可变源图实现 <code>ICudaFrameSource</code>，<code>Descriptor</code> 描述原始像素：</p>
-<pre><code class="lang-csharp">ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
-await viewer.SubmitFrameAsync(frame);
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Cuda;
+
+ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
 </code></pre>
 <p>工厂立即接管非空 source，包括验证失败和取消。返回帧自带 <code>IFramePixelSource</code>，消费者不再实现另一套查询适配。
 提交照常转移帧所有权。最终帧/租约引用释放源图及独立显示资源令牌。独立租约可越过 Viewer 生命周期，
@@ -150,7 +154,7 @@ context 的活动表面共享 D3D9Ex device。仍要求设备/适配器兼容并
 没有隐式整图缓存或下载回退。CudaDiagnostics.QueryMetrics 统计扩展传输及活动查询回调，不代表运行时实际分配
 或隔离字节。<code>EnqueuedQueries</code> 和 <code>EnqueuedResultBytes</code> 统计成功返回的 native 查询，每个 gather 分块单独计数，不承诺完整统计失败前的部分入队。<code>ActiveQueries</code> 和 <code>ActiveResultBytes</code> 覆盖查询执行及托管结果复制；归零不证明 GPU 已完成或隔离区为空。GetLiveSurfaceCount() 会加载 native DLL，包含保留的 native 表面 owner。</p>
 <p>不提供高位深 CUDA 映射、预乘 RGBA、Bayer、自定义 LUT/显示范围、D3D11/12 输入、软件回退或设备重建。
-WPF 附加与恢复遵循<a href="frame-pipeline.html#gpu-surfaces-and-explicit-pixel-queries">帧契约</a>。</p>
+WPF 附加与恢复遵循<a href="frame-pipeline.html#gpu-%E8%A1%A8%E9%9D%A2%E4%B8%8E%E6%98%BE%E5%BC%8F%E5%83%8F%E7%B4%A0%E6%9F%A5%E8%AF%A2">帧契约</a>。</p>
 <h2 id="构建与部署">构建与部署</h2>
 <p>核心 WPF 项目无需 CUDA 工具链；可选托管项目也不初始化 CUDA。CUDA 包将匹配的
 Fizzy.ImageViewer.Cuda.Native.dll 放在 runtimes/win-x64/native，不兼容 ABI 明确失败。
@@ -158,8 +162,8 @@ native ABI 1 定义于 native/Cuda/imageviewer_cuda.h，只接受标准 CUDA 句
 <p>native 构建需要 Windows x64、CUDA Toolkit 11.8 和 MSVC v142，默认 SM 7.5 及 PTX，可按部署 GPU 调整架构。
 无需外部运行时 SDK 或同级检出：</p>
 <pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-dotnet build extensions/Fizzy.ImageViewer.Cuda -c Release
-dotnet pack extensions/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
+dotnet build src/Fizzy.ImageViewer.Cuda -c Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
 </code></pre>
 <p>输出在 artifacts/cuda/Release；缺少 native DLL 时 CUDA 打包失败。核心包不包含 CUDA 二进制或源码。
 执行需要兼容 NVIDIA 驱动，应用启动时不自动下载或编译依赖。</p>

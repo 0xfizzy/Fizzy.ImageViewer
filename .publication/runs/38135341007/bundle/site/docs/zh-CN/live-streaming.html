@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>实时流集成 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="实时流集成 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="实时流集成">实时流集成</h1>
+
+<p><a href="../en/live-streaming.html">English</a></p>
+<p>完成<a href="getting-started.html">入门</a>后，可按本指南集成相机或其他连续图像源。Viewer 限制自身的帧队列；应用负责采集、上游缓冲、叠加更新调度和生产者关闭。</p>
+<p>先阅读 <a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a>：该示例使用模拟图像源，复用绘图句柄，并在释放 Viewer 前停止生产。</p>
+<h2 id="在提交前限制工作量">在提交前限制工作量</h2>
+<p>Viewer 同时处理一个提交，只保留最新的一个等待帧；被替换的等待帧返回 <code>Superseded</code>。这适合实时显示，不是无损录像队列。</p>
+<p>拉取式生产者可像 <a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a> 一样，等待每次提交后再生成下一帧，自然限制生产工作量。推送式相机回调则应在应用侧设置有界的“只保留最新帧”交接，由工作线程提交并观察每个结果；提交前丢弃的自有帧也必须释放。避免不断增长的 <code>Task.Run</code> 队列、无界通道或提交任务列表：Viewer 内部的有界队列不能限制上游已经分配的工作。关闭时停止接纳并排空生产者。</p>
+<p>等待提交只能观察提交或丢弃结果，以及该提交的释放错误，不能证明相机缓冲区可复用。对于已转移的存储，只有最终释放回调能确定这一点。统计各状态数量和错误，避免在热路径回调中逐帧记录成功日志。</p>
+<h2 id="实时相机叠加的消费者要求">实时相机叠加的消费者要求</h2>
+<p>层和批次应持续整个显示会话。初始化时创建句柄，在更新循环调用 <code>Replace</code>；关闭时先停止生产并等待在途更新，再清理句柄。</p>
+<table>
+<thead>
+<tr>
+<th>避免</th>
+<th>使用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每帧 Clear/Add 或释放重建</td>
+<td>保留句柄并 Replace</td>
+</tr>
+<tr>
+<td>每检测目标调用一个 Draw</td>
+<td>每独立管理组提交整个集合</td>
+</tr>
+<tr>
+<td>每结果投递 Dispatcher 或启动任务</td>
+<td>一个最新等待结果及单个限频消费循环</td>
+</tr>
+<tr>
+<td>每帧重绘静态 ROI/准星/标签</td>
+<td>单独保留静态批次，仅变化时更新</td>
+</tr>
+<tr>
+<td>每帧创建可变 Brush</td>
+<td>复用 Brushes.Lime 等冻结 Brush</td>
+</tr>
+<tr>
+<td>每状态重建 HUD</td>
+<td>保留句柄，内容变化时 Update</td>
+</tr>
+</tbody>
+</table>
+<p>以下操作分别属于初始化、更新和关闭阶段，不应全部放入每帧回调：</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Drawing;
+using System.Windows;
+using System.Windows.Media;
+
+// Initialization: retain these handles for the display session.
+var detections = viewer.Layers.CreateDrawingLayer(&quot;camera-detections&quot;);
+var batch = detections.Add(Array.Empty&lt;DrawingElement&gt;());
+
+// Display update: call from ONE serialized consumer at the chosen display rate.
+// Build this collection only for the latest result selected for display.
+batch.Replace(new DrawingElement[] {
+    new CircleElement(new Point(100, 100), 8, Brushes.Lime, 2),
+    new RectangleElement(new Rect(20, 20, 50, 40), Brushes.Yellow)
+});
+
+// A valid result with no detections clears content while retaining the visual.
+batch.Replace(Array.Empty&lt;DrawingElement&gt;());
+
+// Shutdown: first stop and await the producer/display loop, then release handles.
+batch.Dispose();
+viewer.Layers.RemoveLayer(detections);
+</code></pre>
+<p>显示频率与采集/推理独立，可按实测成本选择 30/60 Hz。旧等待结果被覆盖而不积队列；没有新结果不 Replace，新空结果 Replace 空集合。选定最新结果后才创建绘图对象，释放被覆盖结果的池化资源，不在消费者读取时修改结果。</p>
+<p>Replace 同步调度到 STA，不限频、不合并、不丢弃；帧管线的最新帧队列不适用于叠加。提交图像和替换叠加并非原子同帧呈现，消费者自行跟踪身份和过期策略。调用 Viewer 时不持生产者锁。</p>
+<p>复用 Visual 不等于无分配：集合会复制，冻结 Brush 的不可变元素可共享，可变 Brush 需克隆冻结；WPF 命令、资源和文本仍分配。一次准备内用有界缓存共享相同画笔，不承诺零 GC 或帧率，也不要每帧 GC.Collect。</p>
+<p>Clear、移除层和关闭使句柄失效。如果实时运行支持 Clear All Shapes，应与更新循环串行，恢复前重建一次句柄，不逐帧重试失效对象。停止订阅/计时器并等待在途更新再销毁。</p>
+<p>按预期标记数量和缩放行为测量分配、GC 次数与更新延迟；基准范围见<a href="validation.html#%E7%BB%98%E5%88%B6%E5%9F%BA%E5%87%86%E8%8C%83%E5%9B%B4">验证</a>。</p>
+<h2 id="减少复制与转换">减少复制与转换</h2>
+<ul>
+<li>保留源数据已支持的格式和步长，不要仅为显示而将 Gray8 扩展成 BGRA，或交换 RGB/BGR 通道。支持的原生 8 位 CPU 布局会保留；Gray16、Gray32Float、Rgba32 和调整显示范围的 Gray8 需要显示转换。</li>
+<li>使用 <code>Copy</code> 时可复用生产者缓冲区；使用 <code>TakeOwnership</code> 时应转移独立拥有、不可变的缓冲区。<code>Copy</code> 内部已租用内存，生产者侧额外池化应先测量分配和保留情况。绝不能提前覆写已转移的内存。</li>
+<li>在一次窗口生命周期内复用 Viewer。尺寸和显示格式稳定时，可复用内部两张 CPU WriteableBitmap。只在需要时修改显示范围，不要逐帧请求重绘。</li>
+<li>原始像素已在 GPU 上时，用支持的 GPU 适配器避免整图往返传输。对于 CPU 输入，GPU 适配并不自动更快，仍需考虑分配、同步与复制成本。</li>
+</ul>
+<h2 id="限制查询开销">限制查询开销</h2>
+<p>像素查询、线剖面和区域统计不必跟随相机帧率。可在显示窗口前配置较低频率：</p>
+<pre><code class="lang-csharp">viewer.QueryOptions = new Fizzy.ImageViewer.Imaging.PixelQueryOptions
+{
+    PixelQueryRateHz = 15,
+    LineQueryRateHz = 10,
+    RegionQueryRateHz = 5,
+    MaxResultAge = TimeSpan.FromMilliseconds(200)
+};
+</code></pre>
+<p>这些数值是应用取舍，不是性能保证。Viewer 同时只执行一个共享查询批次，像素 HUD 还额外限制为最高 10 Hz。<code>MaxResultAge</code> 控制是否接受过期结果，不会加快查询。使用 <code>QueryMetrics</code> 观察耗时与过期结果数量。优先请求点或 ROI，避免整图快照，GPU 源尤其如此。及时释放自有租约、区域和快照，它们会占用内存并可能延长相机缓冲区寿命。直接调用 CPU 查询方法可能在调用线程同步执行，昂贵分析应移出 UI 线程。</p>
+<h2 id="保持回调短小测量完整链路">保持回调短小，测量完整链路</h2>
+<p><code>OnCommitted</code> 和 <code>FrameCommitted</code> 在 Viewer STA 执行。不要在其中编码、等待设备、执行重分析、同步等待任务，或再次提交并等待结果。需要异步处理时，在回调返回前获取独立租约，工作完成后释放；不能直接保留回调借用的租约。此类后台工作同样需要有界。</p>
+<p>分别测量生产者的转换与复制成本、托管分配、提交状态数量、查询耗时和叠加更新成本。提交完成不等于物理显示延迟。对调整的路径运行<a href="validation.html#%E7%BA%BF%E5%89%96%E9%9D%A2%E5%88%86%E9%85%8D">帧、绘图和查询基准</a>，再在目标机器验证交互和显示。合成基准不能证明持续相机吞吐量或混合 DPI 表现。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

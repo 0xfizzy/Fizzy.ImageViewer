@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Viewer 与生命周期 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Viewer 与生命周期 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="viewer-与生命周期">Viewer 与生命周期</h1>
+
+<p><a href="../en/public-api.html">English</a></p>
+<p>本指南说明窗口配置和关闭责任。<code>Viewer</code> 为 sealed，应用适配器通过组合拥有它，不访问底层 WPF 窗口。<a href="getting-started.html">入门</a>提供等待用户关闭的完整程序。</p>
+<h2 id="配置与显示">配置与显示</h2>
+<pre><code class="lang-csharp">await using var viewer = new Fizzy.ImageViewer.Viewer(showWindow: false);
+viewer.Title = &quot;Inspection&quot;;
+viewer.HudLabelText = &quot;Ready&quot;;
+viewer.Show();
+// Keep the viewer alive for the owning feature's lifetime.
+</code></pre>
+<h2 id="线程与窗口生命周期">线程与窗口生命周期</h2>
+<p>构造函数的 <code>ILogger&lt;Viewer&gt;</code> 可省略或传入 null，此时使用 <code>NullLogger&lt;Viewer&gt;.Instance</code>；接入应用日志时再传入 logger。默认构造立即显示窗口。使用 <code>showWindow: false</code> 可以先配置、订阅事件和提交帧，再调用 <code>Show()</code>。隐藏窗口已有运行的 STA，即使从未显示，也必须由拥有者等待 <code>DisposeAsync()</code>。</p>
+<p>窗口属性和操作同步调度到 Viewer STA，关闭开始后抛出 <code>ObjectDisposedException</code>。<code>Show</code> 显示、恢复最小化并请求激活；<code>Hide</code> 隐藏但保留帧、绘图和测量；<code>Minimize</code> 改变状态但不隐藏，也不隐式显示原本隐藏的窗口。<code>IsVisible</code> 遵循 WPF 可见性，已显示但最小化的窗口仍可见；<code>IsMinimized</code> 独立反映最小化状态。</p>
+<p><code>DisposeAsync</code> 关闭窗口，等待所属后台工作与 STA 停止。重复调用观察同一个完成任务及其固定成功或失败结果。资源清理失败在其他安全清理和真实 STA 退出后报告；通知订阅异常记录并隔离。<code>Closed</code> 的订阅在终止通知交付后释放。Viewer 只对应一次窗口生命周期，关闭后不能重新显示，应创建新实例。</p>
+<p>构造时在启动 STA 前验证窗口边界。初始化失败在所属线程执行安全清理并排空后台工作，然后重新抛出原始异常；清理也失败时，聚合保留两类错误。无法证明安全分离的 native 资源保持隔离，不释放或复用；关闭任务失败不证明资源全部释放。</p>
+<p>应用适配器应在显示前注册所需资源，适配器初始化失败时也释放 Viewer。用户关闭通知与显式适配器释放汇入同一个幂等清理任务：释放应用资源并等待 Viewer 的 <code>DisposeAsync</code>。转发测量删除事件的适配器应保留订阅直到窗口清理结束。</p>
+<p><code>Closed</code> 只报告窗口关闭，不代表渲染、查询或窗口线程结束；没有独立的公共 <code>Close</code> 方法。Viewer 回调运行在其 STA，不得同步等待关闭或依赖该 Dispatcher 的工作。</p>
+<p>关闭后的帧提交仍立即接管帧并返回 <code>Closed</code>，不采用窗口属性的异常策略。绘图和 HUD 句柄关闭后仍可幂等释放。帧排空与租约责任见<a href="frame-pipeline.html">帧与像素</a>，绘图句柄见<a href="drawing-layers.html">绘制</a>。</p>
+<p><code>HudLabelText</code> 控制右上文字；<code>IsPixelInfoEnabled</code> 默认为 true，控制左下像素显示和查询订阅，右键菜单共享该设置。两者都可在显示前配置。<code>EndInteraction()</code> 取消未完成创建或结束编辑，保留已完成测量和已应用修改。</p>
+<p><code>FitToViewport</code> 将完整图像居中，可能选择超出滚轮常规 0.01–100 范围的缩放。此时滚轮允许朝该范围变化，拒绝继续远离该范围。</p>
+<p>用 <code>await SetDisplayRangeAsync(range)</code> 请求灰度映射并观察重绘失败。<code>DisplayRange</code> 读取最新请求，快照保留最后成功提交的映射；较新请求或关闭会取消等待中的更新。没有当前帧时，只配置后续输入并立即完成。完整规则见<a href="frame-pipeline.html#%E6%8F%90%E4%BA%A4%E4%B8%8E%E6%98%BE%E7%A4%BA">显示契约</a>。</p>
+<h3 id="排空与独立租约">排空与独立租约</h3>
+<p>关闭排空已接纳提交，直到释放和公开结果完成，包括提交线程上的替换清理以及冻结/取消丢弃。不响应取消的像素源可使关闭等待其工作释放租约。程序释放不受 <code>CanUserClose</code> 或取消窗口关闭事件的处理器阻止。所属查询租约和菜单固定帧的清理错误保留至关闭结果；普通查询/提供者失败仍归查询结果，不自动变成关闭失败。</p>
+<p>关闭开始后，帧获取、快照捕获、注册和图层操作抛出 <code>ObjectDisposedException</code>；提交仍接管所有权并返回 <code>Closed</code>。外部独立租约和快照继续由持有者拥有；Viewer 不等待这些租约，也不提前回收其存储。已接纳且自持依赖的捕获或导出可在关闭后完成。</p>
+<h2 id="借用能力接口">借用能力接口</h2>
+<p><code>IViewer</code> 汇总以下接口与 <code>IAsyncDisposable</code>。同一个 Viewer 实现所有能力，共享 STA、状态和关闭接纳边界；仅拥有者释放 Viewer，借用能力没有独立释放协议。</p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>命名空间</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IFrameSink</code></td>
+<td><code>.Frames</code></td>
+<td>提交拥有的帧并等待提交/丢弃结果</td>
+</tr>
+<tr>
+<td><code>ICommittedFrameSource</code></td>
+<td><code>.Frames</code></td>
+<td>获取当前原始帧租约，观察提交</td>
+</tr>
+<tr>
+<td><code>IViewerWindow</code></td>
+<td>根命名空间</td>
+<td>显示、位置、标题、关闭策略及 <code>Closed</code></td>
+</tr>
+<tr>
+<td><code>IViewerDisplay</code></td>
+<td><code>.Viewport</code></td>
+<td>适应窗口与显示范围</td>
+</tr>
+<tr>
+<td><code>ISnapshotSource</code></td>
+<td><code>.Snapshots</code></td>
+<td>捕获独立拥有的整图/区域快照</td>
+</tr>
+<tr>
+<td><code>IViewerDrawing</code></td>
+<td><code>.Drawing</code></td>
+<td>默认 <code>Markers</code> 层和绘图辅助方法</td>
+</tr>
+<tr>
+<td><code>IViewerMeasurements</code></td>
+<td><code>.Measurements</code></td>
+<td>测量层、工具、交互、样式和事件</td>
+</tr>
+<tr>
+<td><code>IViewerHud</code></td>
+<td><code>.Hud</code></td>
+<td>屏幕文字及像素显示</td>
+</tr>
+<tr>
+<td><code>IViewerMenu</code></td>
+<td><code>.Menus</code></td>
+<td>可撤销菜单注册</td>
+</tr>
+<tr>
+<td><code>IViewerQueries</code></td>
+<td><code>.Imaging</code></td>
+<td>测量和 HUD 共用查询设置及指标</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Frames;
+
+static ValueTask&lt;FrameSubmitResult&gt; PublishAsync(IFrameSink sink, ImageFrame frame,
+    CancellationToken cancellationToken = default) =&gt; sink.SubmitFrameAsync(frame, cancellationToken: cancellationToken);
+</code></pre>
+<p>帧接收器即使拒绝或取消也接管帧；替代实现和测试替身必须在每个终止路径释放它。读取者拥有获得的租约。提交事件与后续获取不是原子操作；需要特定提交的帧时，使用 <code>FrameSubmissionOptions.OnCommitted</code> 中仅在回调期间借用的租约。</p>
+<p>只有 <code>IViewer.Layers</code> 暴露跨图层创建、枚举、移除和清空。<code>Layers.Items</code> 是成员快照，元素仍为可变句柄。<code>IViewerDrawing.Markers</code> 和 <code>IViewerMeasurements.Measurements</code> 分别暴露整个对应图层；清一层不清另一层。组件只更新一项时，传入 <code>DrawingHandle</code>；需要管理一层时，传入 <code>DrawingLayer</code>。图层能力包括该层全部内容和点击句柄，不限于当前调用方创建的项。</p>
+<p>测量事件带有不可变快照和可编辑/删除的句柄；工具注册与 <code>EndInteraction</code> 管理 Viewer 全局状态，工具会话应使用自己的 <code>context.Finish()</code>。查询设置影响测量和 HUD 的共享调度器，也影响其他调用方；菜单和 HUD 句柄只管理自己的注册或文字。</p>
+<p>这些接口表达类型依赖，不提供安全隔离。实现和事件 sender 都是同一个 Viewer，可通过转换恢复完整门面；绘图也仍依赖 WPF。拥有者始终需要等待 <code>IViewer.DisposeAsync()</code>。</p>
+<h2 id="相关能力">相关能力</h2>
+<ul>
+<li><a href="measurements.html">测量</a>：交互、不可变结果及通知顺序。</li>
+<li><a href="measurement-tools.html">自定义工具</a>：注册与一次性创建会话。</li>
+<li><a href="menus.html">菜单</a>：注册、目标捕获和异步执行。</li>
+<li><a href="drawing-layers.html">绘制与 HUD</a>：图层及单项句柄。</li>
+</ul>
+<p><a href="../../api/index.html">英文 API 参考</a>列出公共符号。内部 WPF 控件和视觉树不是扩展点；实现边界和 API 基线见<a href="architecture.html">架构</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
