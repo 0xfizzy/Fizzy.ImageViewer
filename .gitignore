@@ -2,6 +2,7 @@ bin/
 obj/
 artifacts/
 .vs/
+/.vscode/
 *.user
 *.nupkg
 *.snupkg
