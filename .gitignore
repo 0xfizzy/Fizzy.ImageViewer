@@ -8,3 +8,4 @@ artifacts/
 *.snupkg
 /plans/
 node_modules/
+*.log
