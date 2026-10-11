@@ -4,6 +4,8 @@ namespace Fizzy.ImageViewer.Drawing;
 
 /// <summary>Immutable image-coordinate drawing data. Brushes are snapshotted when submitted.</summary>
 /// <remarks>Coordinates and dimensions are validated when added or replaced, not at construction.
+/// Image positions are continuous: (0, 0) is the top-left image boundary and (0.5, 0.5) is the first pixel center.
+/// No rounding or pixel-center offset is applied to supplied positions.
 /// Dimensional units follow <see cref="ScaleMode"/>; screen dimensions use device-independent pixels (DIPs).</remarks>
 public abstract record DrawingElement
 {

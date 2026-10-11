@@ -169,6 +169,15 @@ physical presentation; it does not establish sustained camera-stream GC performa
 
 ## Coordinates, size and input
 
+Drawing and measurement positions are continuous image coordinates: `(0, 0)` is
+the top-left image boundary, and `(0.5, 0.5)` is the first pixel center. Positions
+retain fractional values; drawing does not round them or add a center offset.
+`PixelCoordinate` is an integer pixel index; use `ToImageCenter()` when marking
+that pixel's center. Algorithms using integer coordinates for pixel centers must
+be converted once in the consumer's display adapter by adding `(0.5, 0.5)` to
+their continuous results. Do not round subpixel results or shift image boundaries,
+mouse positions, or positions already expressed in viewer coordinates.
+
 `OverlayScaleMode` describes scaling, independently of element positioning.
 Each element supports the modes listed below; unsupported modes are rejected by
 `Add` or `Replace` before content changes. Fixed screen dimensions use WPF DIPs,

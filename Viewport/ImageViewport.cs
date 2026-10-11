@@ -90,6 +90,9 @@ namespace Fizzy.ImageViewer.Viewport
                 IsHitTestVisible = false          // 图片本身不拦截，由 Canvas 拦截
             };
 
+            // Preserve small image features when minifying beneath vector overlays.
+            RenderOptions.SetBitmapScalingMode(ImageDisplay, BitmapScalingMode.HighQuality);
+
             // 3. 初始化容器
             Container = new Canvas
             {

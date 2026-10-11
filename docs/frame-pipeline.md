@@ -60,6 +60,12 @@ an undisplayed bitmap is written before switching the source. WPF-native 8-bit f
 their native layout; mapped grayscale and display snapshots use Pbgra32.
 Only the CPU presenter knows about mutable WPF bitmaps. GPU surface submissions use the D3DImage presenter described below.
 Image coordinates are source pixels, independent of DPI; WPF still handles pan/zoom/overlays.
+The image origin is its top-left boundary; integer pixel indices are distinct from
+continuous positions. Pixel `(x, y)` has center `(x+0.5, y+0.5)`; use
+`PixelCoordinate.ToImageCenter()` to obtain it. See [drawing coordinates](drawing-layers.md#coordinates-size-and-input)
+for adapting algorithm results. The viewport requests WPF high-quality bitmap
+scaling to reduce loss of small features when shrinking images. Display resampling
+does not change original pixels or query results, and is not a subpixel accuracy guarantee.
 
 `DisplayRange` is the latest requested grayscale mapping. Use
 `await viewer.SetDisplayRangeAsync(range)` to change it and observe redraw failures.

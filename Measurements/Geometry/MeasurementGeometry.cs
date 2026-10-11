@@ -3,6 +3,8 @@ using System.Windows;
 namespace Fizzy.ImageViewer.Measurements;
 
 /// <summary>Closed immutable geometry family in source-image coordinates.</summary>
+/// <remarks>Positions are continuous: (0, 0) is the top-left image boundary and (0.5, 0.5)
+/// is the first pixel center. No rounding or pixel-center offset is applied.</remarks>
 public abstract record MeasurementGeometry
 {
     private protected MeasurementGeometry() { }

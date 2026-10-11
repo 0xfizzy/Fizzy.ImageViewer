@@ -213,6 +213,7 @@ Fizzy.ImageViewer.Frames.PixelCoordinate: System.Int32 X { public get; public in
 Fizzy.ImageViewer.Frames.PixelCoordinate: System.Int32 Y { public get; public init; }
 Fizzy.ImageViewer.Frames.PixelCoordinate: public System.Boolean Equals(Fizzy.ImageViewer.Frames.PixelCoordinate other)
 Fizzy.ImageViewer.Frames.PixelCoordinate: public System.Void Deconstruct(out System.Int32 X, out System.Int32 Y)
+Fizzy.ImageViewer.Frames.PixelCoordinate: public System.Windows.Point ToImageCenter()
 Fizzy.ImageViewer.Frames.PixelCoordinate: public ctor(System.Int32 X, System.Int32 Y)
 Fizzy.ImageViewer.Frames.PixelCoordinate: public static System.Boolean op_Equality(Fizzy.ImageViewer.Frames.PixelCoordinate left, Fizzy.ImageViewer.Frames.PixelCoordinate right)
 Fizzy.ImageViewer.Frames.PixelCoordinate: public static System.Boolean op_Inequality(Fizzy.ImageViewer.Frames.PixelCoordinate left, Fizzy.ImageViewer.Frames.PixelCoordinate right)

@@ -4,6 +4,8 @@ using System.Windows.Media;
 namespace Fizzy.ImageViewer.Drawing;
 
 /// <summary>Management and convenience drawing in the default marker layer.</summary>
+/// <remarks>Positions are continuous image coordinates with (0, 0) at the top-left image boundary.
+/// The first pixel center is (0.5, 0.5). Supplied positions are not rounded or shifted.</remarks>
 public interface IViewerDrawing
 {
     /// <summary>The entire default drawing layer, including its content and input policy.</summary>
