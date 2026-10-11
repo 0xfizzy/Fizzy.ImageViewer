@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../../public/docfx.min.css">
       <link rel="stylesheet" href="../../public/main.css">
       <meta name="docfx:navrel" content="../../toc.html">
-      <meta name="docfx:tocrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -86,6 +100,10 @@
 <p>每个 Viewer 一个 STA 和渲染循环，最多一帧处理中、一帧等待，新帧替换等待帧。状态为 <code>Committed</code>、<code>Superseded</code>、<code>Frozen</code>、<code>Cancelled</code>、<code>Closed</code>、<code>Failed</code>；同时检查 Status 和 Error，丢帧也可能有清理错误，清理失败不改变提交或丢弃原因。</p>
 <p>取消在 UI 提交前尽力生效，提交后不撤销。等待帧在出队、替换、冻结或关闭时结束，不为每帧注册取消回调。Committed 表示 UI 已更换源和当前帧，不证明显示器已呈现。FrameId 在 Viewer 内单调递增。写像素后先执行单次 OnCommitted，再发 FrameCommitted；回调中的租约仅借用至回调结束。查询通知独立调度，禁止回调阻塞等待另一提交；异步工作自行获取租约。订阅异常隔离。</p>
 <p>CPU 呈现器复用两个 WriteableBitmap，后台转换，先写未显示位图再切换。WPF 原生八位布局保留，映射灰度和显示快照使用 Pbgra32。GPU 使用 D3DImage。图像坐标始终是原图像素，不随 DPI 改变。</p>
+<p>图像原点是左上边界；整数像素索引与连续位置不同。像素 <code>(x,y)</code> 的中心是 <code>(x+0.5,y+0.5)</code>，
+可用 <code>PixelCoordinate.ToImageCenter()</code> 获取。算法结果的适配见<a href="drawing-layers.html#coordinates-size-and-input">绘图坐标</a>。
+视口使用 WPF 高质量位图缩放，减少缩小时细小特征的丢失。显示重采样不改变原始像素或查询结果，
+也不保证亚像素显示精度。</p>
 <p>DisplayRange 读取最新请求；等待 <code>SetDisplayRangeAsync</code> 观察重绘失败。默认 Gray8 0–255、Gray16 0–65535、Gray32Float 0–1。边界有限且严格递增，范围外裁剪，NaN/负无穷黑、正无穷白。存在帧时等该显示版本成功提交；新请求或关闭取消旧等待，无帧时只配置后续提交。当前 GPU 帧拒绝非空范围，拒绝前不改请求。禁止 STA 同步等待。</p>
 <p>第一帧正在准备时仍可能提交其之前捕获的映射，需要重绘时先等待第一帧。失败更新的请求值仍可读，重试需显式再次设置。快照使用最后成功提交的映射与版本。</p>
 <p><a id="pixel-access-and-measurements"></a></p>

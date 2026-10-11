@@ -2,16 +2,16 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Fizzy.ImageViewer guides | Fizzy.ImageViewer </title>
+      <title>Fizzy.ImageViewer documentation | Fizzy.ImageViewer </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Fizzy.ImageViewer guides | Fizzy.ImageViewer ">
+      <meta name="title" content="Fizzy.ImageViewer documentation | Fizzy.ImageViewer ">
       
       
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
       <meta name="docfx:navrel" content="../toc.html">
-      <meta name="docfx:tocrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../">
       
@@ -63,31 +63,57 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
 
         <article data-uid="">
-<h1 id="fizzyimageviewer-guides">Fizzy.ImageViewer guides</h1>
+<h1 id="fizzyimageviewer-documentation">Fizzy.ImageViewer documentation</h1>
 
 <p><a href="zh-CN/index.html">简体中文</a></p>
-<p>Choose a guide for your task. English XML defines symbol contracts; guides define cross-API protocols. Both languages share API identifiers and examples.</p>
+<p>Choose a component guide to integrate image viewing, drawing, measurements, and pixel inspection.</p>
+<h2 id="getting-started-and-integration">Getting started and integration</h2>
 <ul>
-<li><a href="getting-started.html">Getting started</a></li>
-<li><a href="public-api.html">Viewer and lifetime</a></li>
-<li><a href="frame-pipeline.html">Frames and pixels</a></li>
-<li><a href="drawing-layers.html">Drawing and HUD</a></li>
-<li><a href="measurements.html">Measurements</a></li>
-<li><a href="snapshots.html">Snapshots</a></li>
-<li><a href="menus.html">Menus</a></li>
-<li><a href="architecture.html">Architecture</a></li>
-<li><a href="validation.html">Validation</a></li>
-<li><a href="documentation.html">Documentation maintenance</a></li>
-<li><a href="releasing.html">Release SOP</a></li>
+<li><a href="getting-started.html">Getting started</a>: Build your first viewer application.</li>
+<li><a href="public-api.html">Viewer and lifetime</a>: Configure the viewer and manage its window lifetime.</li>
 </ul>
+<h2 id="frames-and-processing">Frames and processing</h2>
+<ul>
+<li><a href="frame-pipeline.html">Frames and pixels</a>: Submit frames and query original pixels.</li>
+<li><a href="cuda.html">CUDA integration</a>: Integrate CUDA-backed image storage.</li>
+<li><a href="snapshots.html">Snapshots</a>: Capture image and viewport snapshots.</li>
+</ul>
+<h2 id="drawing-and-interaction">Drawing and interaction</h2>
+<ul>
+<li><a href="drawing-layers.html">Drawing and HUD</a>: Manage overlays, layers, and HUD content.</li>
+<li><a href="measurements.html">Measurements</a>: Use and extend interactive measurements.</li>
+<li><a href="menus.html">Menus</a>: Customize context menus.</li>
+</ul>
+<h2 id="development-and-maintenance">Development and maintenance</h2>
+<ul>
+<li><a href="architecture.html">Architecture</a>: Understand module boundaries and ownership.</li>
+<li><a href="validation.html">Validation</a>: Choose build, test, and interaction checks.</li>
+<li><a href="documentation.html">Documentation maintenance</a>: Build the site and maintain translations.</li>
+<li><a href="releasing.html">Release SOP</a>: Publish and recover versioned releases.</li>
+</ul>
+<p>English XML and the generated <strong>API reference (English)</strong> define symbol contracts; component guides define cross-API protocols. Both languages share API identifiers and examples.</p>
 
 </article>
 

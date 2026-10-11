@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../../public/docfx.min.css">
       <link rel="stylesheet" href="../../public/main.css">
       <meta name="docfx:navrel" content="../../toc.html">
-      <meta name="docfx:tocrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -106,6 +120,7 @@ pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
 <p><code>docs/site.json</code> 集中配置仓库、域名、项目路径、最低留存版本和归档分支。固定文档使用 <code>/v{version}/</code>，更新整体覆盖该目录；主分支使用 <code>/dev/</code>。每个版本保留独立搜索、资源、示例及源码身份。Git 历史保留旧内容供回滚，不再公开修订路径或修订选择。</p>
 <p>归档分支保留生成站点，GitHub Release 资产独立保存原始发布包，不依赖 Actions 保留期。不得编辑已归档版本。首次配置、发布、部分失败和恢复见<a href="releasing.html">发布 SOP</a>。构建不授权发布。</p>
 <p><code>Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087</code> 仅按真实项目/版本前缀服务已有产物，不构建、不访问网络。开发部署取得共用部署锁后核对源 SHA，拒绝不再对应最新 main 的构建。</p>
+<p>每个新构建的快照包含记录页面和锚点的 <code>pages.json</code>。版本切换使用该清单，缺页时回退到对应的 API 或语言首页，仅保留存在的锚点。若旧快照没有清单或请求失败，选择器恢复当前版本，并在悬浮提示中显示错误；需要时可直接打开目标版本。历史快照不改写。</p>
 
 </article>
 

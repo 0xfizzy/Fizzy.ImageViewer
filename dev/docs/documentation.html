@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
       <meta name="docfx:navrel" content="../toc.html">
-      <meta name="docfx:tocrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -106,6 +120,7 @@ pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
 <p><code>docs/site.json</code> is the single source for repository, origin, project prefix, minimum retained version and archive branch. Fixed documentation uses <code>/v{version}/</code>; updates replace that directory. Main uses <code>/dev/</code>. Each version retains its search, assets, examples and source identity. Git history keeps prior contents for rollback; public revision paths and revision selection do not exist.</p>
 <p>The archive branch retains generated sites; GitHub Release assets retain original bundles independently of Actions retention. Do not edit archived version files. Follow the <a href="releasing.html">release SOP</a> for first-time setup, publication, partial failure and recovery. Building documentation never authorizes publication.</p>
 <p><code>Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087</code> serves existing output at its true project/version prefix without building or network access. Development deployment rejects a build whose SHA is no longer current main after acquiring the shared deployment lock.</p>
+<p>Each newly built snapshot includes <code>pages.json</code> with its pages and anchors. Version switching uses that inventory, falls back to the corresponding API or language homepage when a page is absent, and retains only existing anchors. If an older snapshot has no inventory or a request fails, the selector restores the current version and exposes the error in its tooltip; open that version directly if needed. Historical snapshots are not rewritten.</p>
 
 </article>
 

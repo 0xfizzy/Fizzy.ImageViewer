@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
       <meta name="docfx:navrel" content="../toc.html">
-      <meta name="docfx:tocrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -74,15 +88,131 @@
 <h1 id="getting-started">Getting started</h1>
 
 <p><a href="zh-CN/getting-started.html">简体中文</a></p>
-<p>Use Windows and .NET 8 with a <code>net8.0-windows</code> project and <code>UseWPF=true</code>. Viewer creates its own STA; a console application can use the facade without creating an application dispatcher.</p>
-<ol>
-<li>Create <code>Viewer(showWindow: false)</code> and arrange unconditional asynchronous disposal.</li>
-<li>Subscribe to <code>Closed</code> and configure before <code>Show()</code>.</li>
-<li>Create immutable input with <code>ImageFrame.Copy</code>. Submit once; submission transfers ownership even if the viewer has closed.</li>
-<li>Await commit/drop, then show the window.</li>
-<li>Stop production on closure. Await production and <code>DisposeAsync</code>; never block the STA callback waiting for either.</li>
-</ol>
-<p><code>Closed</code> is a notification, not proof of render/query drain. Viewer has one window lifetime; create a new instance after closure.</p>
+<p>This guide starts with a single image, introduces representative CPU frames and GPU entry points, then explains how to feed a live viewer efficiently.</p>
+<h2 id="create-a-viewer">Create a viewer</h2>
+<p>Use Windows and .NET 8 with a <code>net8.0-windows</code> project and <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>. Install the package:</p>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
+</code></pre>
+<p>Viewer creates its own STA; a console application can use it without creating an application dispatcher. With implicit usings enabled, this is a complete console entry point:</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer;
+using Fizzy.ImageViewer.Frames;
+
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) =&gt; closed.TrySetResult();
+viewer.Title = &quot;My first image&quot;;
+
+var pixels = new byte[640 * 480];
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+
+viewer.Show();
+await closed.Task;
+// await using waits for shutdown and reports cleanup failures.
+</code></pre>
+<p>Configure and subscribe before <code>Show()</code>. Submission transfers ownership immediately, even when cancelled or closed: do not submit the same frame twice or dispose its transferred storage. <code>Committed</code> means the UI accepted the frame, not that the monitor has displayed it. Inspect both <code>Status</code> and <code>Error</code>, including for dropped frames.</p>
+<p><code>Closed</code> is a notification, not proof that rendering and queries have drained. Stop and await your producer before awaiting <code>DisposeAsync</code>; never synchronously wait for either from a Viewer callback. A Viewer has one window lifetime; create a new instance after closure.</p>
+<h2 id="choose-a-cpu-frame-format">Choose a CPU frame format</h2>
+<p>The first example uses Gray8: one byte per pixel, with a default display range of 0–255. For other CPU images, use the same creation and submission API with a descriptor matching the source layout. The examples below cover the additional concerns of high-bit-depth grayscale and color with alpha; they assume the same <code>viewer</code> and namespaces. Check submission results as in the first example.</p>
+<p><code>FrameDescriptor(width, height, stride, format)</code> describes top-down, single-plane pixels. <strong>Stride is bytes between row starts</strong>, including padding, and must be positive and at least the packed row size. Supply at least <code>descriptor.RequiredBytes</code> bytes. Negative strides, planar images and Bayer data need conversion in the consumer. <code>ImageFrame.Copy</code> finishes copying before returning, so the source array or camera buffer can then be reused.</p>
+<h3 id="high-bit-depth-grayscale-set-the-display-range">High-bit-depth grayscale: set the display range</h3>
+<p>Gray16 uses two little-endian bytes per pixel. For a sensor storing 12-bit values in 16-bit words, set the display range to 0–4095 before the first submission. This changes display contrast without changing original query or raw export values; the default is 0–65535.</p>
+<pre><code class="lang-csharp">ushort[] values = { 0, 1024, 2048, 4095 };
+var pixels = new byte[values.Length * 2];
+for (int i = 0; i &lt; values.Length; i++)
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
+        pixels.AsSpan(i * 2, 2), values[i]);
+await viewer.SetDisplayRangeAsync(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
+</code></pre>
+<p>If the camera already supplies little-endian bytes with a valid stride, pass those bytes directly instead of repacking each value. Packed 10/12-bit camera formats must first be unpacked. Gray32Float uses four little-endian IEEE 754 bytes per pixel and defaults to a display range of 0–1; set the range in original-value units for temperature or depth data.</p>
+<p>To adjust an existing image, await its submission first, then await <code>SetDisplayRangeAsync</code> to observe redraw completion or failure. Pass <code>null</code> to restore format defaults.</p>
+<h3 id="color-match-channel-order-and-alpha">Color: match channel order and alpha</h3>
+<p>Choose the format matching the source bytes. For example, this Bgra32 frame contains a half-transparent red pixel followed by an opaque green pixel:</p>
+<pre><code class="lang-csharp">byte[] pixels = { 0, 0, 255, 128,  0, 255, 0, 255 };
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(2, 1, 8, FramePixelFormat.Bgra32), pixels));
+</code></pre>
+<p>Rgb24/Bgr24 use three bytes per pixel in the named channel order; Bgr32 uses four, with padding rather than alpha in the fourth byte. Bgra32/Rgba32 use straight alpha. Pbgra32 stores colors already multiplied by alpha: the half-transparent red above would be <code>{ 0, 0, 128, 128 }</code>. Do not label straight-alpha bytes as premultiplied or premultiply them twice.</p>
+<p>See the <a href="frame-pipeline.html">frame pipeline</a> for complete format, display and original-pixel query contracts.</p>
+<h2 id="transfer-owned-cpu-memory">Transfer owned CPU memory</h2>
+<p>Use <code>Copy</code> for a borrowed camera buffer that the SDK will overwrite. Use <code>TakeOwnership</code> only when you control the storage until the final frame reference is released. It avoids the input copy; it does <strong>not</strong> eliminate CPU display preparation or WPF bitmap writes.</p>
+<pre><code class="lang-csharp">var descriptor = new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8);
+var pixels = new byte[descriptor.RequiredBytes];
+Array.Fill(pixels, (byte)128); // Finish all writes before transfer.
+var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () =&gt; { });
+var result = await viewer.SubmitFrameAsync(frame);
+// Never write pixels again. This managed array needs no external release action.
+</code></pre>
+<p>For an existing memory-pool or camera-buffer owner, pass its exact memory slice and a release action that returns that buffer. Do not dispose the owner immediately after submission or after awaiting <code>Committed</code>: the current image, queries and independent leases may still retain it. A frozen viewer can retain a frame indefinitely. <code>TakeOwnership</code> calls the supplied release action once at final release, including construction validation failure; do not return the buffer again in a catch/finally block. Keep release short, nonthrowing and safe on the final releasing thread, which may be the Viewer STA. If the producer cannot meet these retention and threading requirements, use <code>Copy</code>.</p>
+<h2 id="submit-gpu-frames">Submit GPU frames</h2>
+<p>GPU frames use the same <code>ImageFrame</code> submission API. They require producer integration; a CPU array or arbitrary native pointer is not a GPU frame.</p>
+<h3 id="ready-d3d9-surface">Ready D3D9 surface</h3>
+<p>This adapter accepts resources already created and synchronized by the producer:</p>
+<pre><code class="lang-csharp">static ValueTask&lt;FrameSubmitResult&gt; SubmitSurfaceAsync(
+    Viewer viewer, FrameDescriptor originalDescriptor, nint readySurface,
+    IFramePixelSource originalPixels, Action releaseResources)
+{
+    var frame = D3D9ImageFrame.TakeOwnership(
+        originalDescriptor, readySurface, originalPixels, releaseResources);
+    return viewer.SubmitFrameAsync(frame);
+}
+</code></pre>
+<p>Supply a WPF-compatible, non-multisampled <code>IDirect3DSurface9</code> render target in <code>D3DPOOL_DEFAULT</code>, using premultiplied <code>D3DFMT_A8R8G8B8</code> pixels. Finish GPU writes and release compute mappings before transfer. The descriptor and <code>IFramePixelSource</code> describe original pixels; the surface must match their standard display conversion. Keep the device, surface and query resources valid and immutable until <code>releaseResources</code> runs. Ownership transfers even on factory failure. See the <a href="frame-pipeline.html#gpu-surfaces-and-explicit-pixel-queries">GPU contract</a> before implementing an adapter.</p>
+<h3 id="cuda-source">CUDA source</h3>
+<p>With the optional <code>Fizzy.ImageViewer.Cuda</code> package and a consumer implementation of <code>ICudaFrameSource</code>, the extension creates the surface and pixel-query provider:</p>
+<pre><code class="lang-csharp">static async Task&lt;FrameSubmitResult&gt; SubmitCudaAsync(
+    Viewer viewer, Fizzy.ImageViewer.Cuda.ICudaFrameSource source,
+    CancellationToken cancellationToken)
+{
+    var frame = await Fizzy.ImageViewer.Cuda.CudaImageFrame.TakeOwnershipAsync(
+        source, cancellationToken);
+    return await viewer.SubmitFrameAsync(frame, cancellationToken: cancellationToken);
+}
+</code></pre>
+<p>The factory owns <code>source</code> immediately, including failure or cancellation. Supported inputs are Gray8, Rgb24, Bgr24, Bgra32, Pbgra32 and Rgba32. Display avoids CPU readback but still performs device-memory copies. GPU frames do not support <code>SetDisplayRangeAsync</code> with a non-null range. See <a href="cuda.html">CUDA integration</a> for the execution bridge, deployment and device requirements.</p>
+<h2 id="use-imageviewer-efficiently">Use ImageViewer efficiently</h2>
+<h3 id="bound-work-before-submission">Bound work before submission</h3>
+<p>The viewer processes one submission and retains only the newest waiting frame. Replaced waiting frames complete as <code>Superseded</code>; it is a live display, not a lossless recording queue.</p>
+<p>For a pull-based producer, await each submission before producing the next frame, as in <a href="../samples/LiveOverlays/Program.cs">LiveOverlays</a>. This limits producer work naturally. For a push camera callback, keep an application-owned bounded latest-frame handoff and a worker that observes every submission result. Release any owned frame discarded before submission. Avoid a growing <code>Task.Run</code> queue, unbounded channel or list of submission tasks: the viewer's queue cannot bound work allocated upstream. Stop admission and drain the producer during shutdown.</p>
+<p>Awaiting a submission observes commit/drop and any release error for that submission; it does not mean the camera buffer is reusable. Only the final release callback establishes that for transferred storage. Track status counts and errors without logging every successful frame in a hot callback.</p>
+<h3 id="reduce-copies-and-conversion">Reduce copies and conversion</h3>
+<ul>
+<li>Keep the source's supported format and stride. Do not expand Gray8 to BGRA or reorder RGB/BGR solely for display. Native 8-bit CPU layouts are preserved where supported; Gray16, Gray32Float, Rgba32 and remapped Gray8 require display conversion.</li>
+<li>Reuse a producer buffer with <code>Copy</code>, or transfer a separately owned immutable buffer with <code>TakeOwnership</code>. <code>Copy</code> already rents internal memory; add producer pooling only after measuring allocations and retention. Never refill transferred memory early.</li>
+<li>Reuse one Viewer for the window lifetime. Stable image dimensions and display format allow its two CPU WriteableBitmaps to be reused. Change display range when needed, rather than requesting a redraw every frame.</li>
+<li>For pixels already on the GPU, use a supported GPU adapter to avoid a full-image round trip. GPU integration is not automatically faster for CPU input and still has allocation, synchronization and copy costs.</li>
+</ul>
+<h3 id="batch-overlays-and-limit-query-work">Batch overlays and limit query work</h3>
+<p>Create one drawing handle per independently updated group, retain it for the stream, and call <code>Replace</code> when results change:</p>
+<pre><code class="lang-csharp">using var markers = viewer.Layers.Markers.Add(
+    Array.Empty&lt;Fizzy.ImageViewer.Drawing.DrawingElement&gt;());
+// In the update loop, replace the whole batch using current detection results.
+markers.Replace(new Fizzy.ImageViewer.Drawing.DrawingElement[]
+{
+    new Fizzy.ImageViewer.Drawing.CircleElement(
+        new System.Windows.Point(100, 100), 5, System.Windows.Media.Brushes.Red)
+});
+</code></pre>
+<p>Thousands of individual <code>Add</code> calls create thousands of visuals and dispatches. One collection creates one visual; batch replacement still costs geometry construction and drawing. Throttle expensive detection/overlay updates independently of image rate. For frame-aligned overlays, follow the <a href="drawing-layers.html#live-camera-overlays-consumer-requirements">live overlay protocol</a>.</p>
+<p>Pixel inspection, profiles and region statistics need not run at camera frame rate. For example, configure lighter query limits before showing the viewer:</p>
+<pre><code class="lang-csharp">viewer.QueryOptions = new Fizzy.ImageViewer.Imaging.PixelQueryOptions
+{
+    PixelQueryRateHz = 15,
+    LineQueryRateHz = 10,
+    RegionQueryRateHz = 5,
+    MaxResultAge = TimeSpan.FromMilliseconds(200)
+};
+</code></pre>
+<p>These are application choices, not performance guarantees. The viewer shares one query batch at a time; the pixel HUD also caps itself at 10 Hz. <code>MaxResultAge</code> controls stale-result acceptance, not how quickly a query executes. Use <code>QueryMetrics</code> to inspect duration and expired results. Prefer point/ROI requests over full snapshots, especially for GPU sources. Dispose owned leases, regions and snapshots promptly; they retain memory and may extend a camera buffer's lifetime. Direct CPU query methods can run synchronously on the caller, so move expensive analysis off the UI thread.</p>
+<h3 id="keep-callbacks-short-and-measure-the-whole-path">Keep callbacks short and measure the whole path</h3>
+<p><code>OnCommitted</code> and <code>FrameCommitted</code> run on the Viewer STA. Do not perform encoding, device waits, heavy analysis, synchronous task waits or a submission-and-wait inside them. For asynchronous work, acquire an independent lease before the callback returns and release it when work finishes; the callback's borrowed lease cannot be retained as-is. Bound this background work too.</p>
+<p>Measure producer conversion/copy cost, managed allocation, submission status counts, query duration and overlay update cost separately. Submission completion is not physical presentation latency. Run the <a href="validation.html#line-profile-allocations">frame, drawing and query benchmarks</a> for the path you change, then validate interaction and display on the target machine. Synthetic benchmarks do not establish sustained camera throughput or mixed-DPI behavior.</p>
 <h2 id="complete-examples">Complete examples</h2>
 <p>Run from the repository root. These manual checks open WPF windows:</p>
 <pre><code class="lang-powershell">dotnet run --project samples/BasicViewer

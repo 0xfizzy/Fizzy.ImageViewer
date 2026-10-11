@@ -6,12 +6,12 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="title" content="Struct PixelCoordinate | Fizzy.ImageViewer ">
       
-      <meta name="description" content="Zero-based integer location in an image.">
+      <meta name="description" content="Zero-based integer pixel index, not a continuous image position.">
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
       <meta name="docfx:navrel" content="../toc.html">
-      <meta name="docfx:tocrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -83,7 +97,7 @@ Struct PixelCoordinate
   <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
   </div>
 
-  <div class="markdown summary"><p>Zero-based integer location in an image.</p>
+  <div class="markdown summary"><p>Zero-based integer pixel index, not a continuous image position.</p>
 </div>
   <div class="markdown conceptual"></div>
 
@@ -120,6 +134,9 @@ Struct PixelCoordinate
 
 
 
+  <h2 id="Fizzy_ImageViewer_Frames_PixelCoordinate_remarks">Remarks</h2>
+  <div class="markdown level0 remarks"><p>Pixel (X, Y) covers [X, X+1) by [Y, Y+1) in image coordinates.</p>
+</div>
 
 
   <h2 class="section" id="constructors">Constructors
@@ -133,7 +150,7 @@ Struct PixelCoordinate
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Zero-based integer location in an image.</p>
+  <div class="markdown level1 summary"><p>Zero-based integer pixel index, not a continuous image position.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -158,6 +175,9 @@ Struct PixelCoordinate
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Frames_PixelCoordinate__ctor_System_Int32_System_Int32__remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Pixel (X, Y) covers [X, X+1) by [Y, Y+1) in image coordinates.</p>
+</div>
 
 
 
@@ -357,6 +377,38 @@ Struct PixelCoordinate
   <h4 class="section">Returns</h4>
   <dl class="parameters">
     <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Frames_PixelCoordinate_ToImageCenter_" data-uid="Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Frames_PixelCoordinate_ToImageCenter" data-uid="Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter">
+  ToImageCenter()
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Returns this pixel's center in continuous image coordinates, without bounds validation.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Point ToImageCenter()</code></pre>
+  </div>
+
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><span class="xref">Point</span></dt>
     <dd></dd>
   </dl>
 

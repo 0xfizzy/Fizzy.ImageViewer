@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../../public/docfx.min.css">
       <link rel="stylesheet" href="../../public/main.css">
       <meta name="docfx:navrel" content="../../toc.html">
-      <meta name="docfx:tocrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -128,6 +142,11 @@
 <p>持续负载测量每次分配、GC 次数、延迟分位数、预期标记/文本量与缩放。基准的 50 次热身后替换使用两组预建圆，排除结果创建、跨线程及物理呈现，不能证明真实持续流 GC 性能。</p>
 <p><a id="coordinates-size-and-input"></a></p>
 <h2 id="坐标尺寸与输入">坐标、尺寸与输入</h2>
+<p>绘图和测量位置使用连续图像坐标：<code>(0,0)</code> 为图像左上边界，<code>(0.5,0.5)</code> 为首像素中心。
+位置保留小数，绘图不取整，也不自动添加中心偏移。<code>PixelCoordinate</code> 表示整数像素索引，
+标记该像素中心时使用 <code>ToImageCenter()</code>。若算法以整数坐标表示像素中心，消费者的显示适配器
+应对连续结果统一加 <code>(0.5,0.5)</code>，仅转换一次；不得取整亚像素结果，也不得偏移图像边界、
+鼠标位置或已经采用 Viewer 坐标的位置。</p>
 <p>OverlayScaleMode 与定位独立，不支持模式在内容变更前拒绝。屏幕尺寸为 WPF DIP，不是物理像素。</p>
 <ul>
 <li>线、矩形、圆默认 FixedStroke：几何为图像像素，线宽为 DIP；ScaleWithImage 同时缩放。</li>

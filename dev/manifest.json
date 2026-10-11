@@ -570,7 +570,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.Frames.PixelCoordinate",
-      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelCoordinate.yml\" sourcestartlinenumber=\"1\">Zero-based integer location in an image.</p>\n"
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.PixelCoordinate.yml\" sourcestartlinenumber=\"1\">Zero-based integer pixel index, not a continuous image position.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1453,6 +1453,16 @@
       "IsMRef": true,
       "Title": "Fizzy",
       "Summary": null
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "artifacts/docs/api/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "api/index.html"
+        }
+      },
+      "version": ""
     },
     {
       "type": "Toc",

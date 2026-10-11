@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="../../public/docfx.min.css">
       <link rel="stylesheet" href="../../public/main.css">
       <meta name="docfx:navrel" content="../../toc.html">
-      <meta name="docfx:tocrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
       
       <meta name="docfx:rel" content="../../">
       
@@ -63,9 +63,23 @@
     </header>
 
     <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
 
       <div class="content">
         <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
 
           <nav id="breadcrumb"></nav>
         </div>
@@ -74,20 +88,32 @@
 <h1 id="fizzyimageviewer-文档">Fizzy.ImageViewer 文档</h1>
 
 <p><a href="../index.html">English</a></p>
-<p>按使用任务选择组件指南。英文 XML 定义符号级契约，指南定义跨 API 协议。中英文共用 API 标识及示例。</p>
+<p>按应用需要选择组件指南，集成图像显示、绘制、测量与像素查询。</p>
+<h2 id="入门与集成">入门与集成</h2>
 <ul>
-<li><a href="getting-started.html">入门</a></li>
-<li><a href="public-api.html">Viewer 与生命周期</a></li>
-<li><a href="frame-pipeline.html">帧与像素</a></li>
-<li><a href="drawing-layers.html">绘制与 HUD</a></li>
-<li><a href="measurements.html">测量</a></li>
-<li><a href="snapshots.html">快照</a></li>
-<li><a href="menus.html">菜单</a></li>
-<li><a href="architecture.html">架构</a></li>
-<li><a href="validation.html">验证</a></li>
-<li><a href="documentation.html">文档维护</a></li>
-<li><a href="releasing.html">发布 SOP</a></li>
+<li><a href="getting-started.html">入门</a>: 创建第一个图像显示应用。</li>
+<li><a href="public-api.html">Viewer 与生命周期</a>: 配置 Viewer 并管理窗口生命周期。</li>
 </ul>
+<h2 id="帧与处理">帧与处理</h2>
+<ul>
+<li><a href="frame-pipeline.html">帧与像素</a>: 提交帧并查询原始像素。</li>
+<li><a href="cuda.html">CUDA 集成</a>: 集成 CUDA 图像存储。</li>
+<li><a href="snapshots.html">快照</a>: 获取图像与视口快照。</li>
+</ul>
+<h2 id="绘制与交互">绘制与交互</h2>
+<ul>
+<li><a href="drawing-layers.html">绘制与 HUD</a>: 管理叠加绘制、图层与 HUD 内容。</li>
+<li><a href="measurements.html">测量</a>: 使用和扩展交互测量。</li>
+<li><a href="menus.html">菜单</a>: 自定义上下文菜单。</li>
+</ul>
+<h2 id="开发与维护">开发与维护</h2>
+<ul>
+<li><a href="architecture.html">架构</a>: 了解模块边界与所有权。</li>
+<li><a href="validation.html">验证</a>: 选择构建、测试与交互检查。</li>
+<li><a href="documentation.html">文档维护</a>: 构建站点并维护翻译。</li>
+<li><a href="releasing.html">发布 SOP</a>: 发布和恢复版本化产物。</li>
+</ul>
+<p>英文 XML 和生成的 <strong>API reference (English)</strong> 定义符号级契约；组件指南定义跨 API 协议。中英文共用 API 标识及示例。</p>
 
 </article>
 

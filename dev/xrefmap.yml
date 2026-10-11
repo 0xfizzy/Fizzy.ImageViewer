@@ -3254,6 +3254,18 @@ references:
   commentId: Overload:Fizzy.ImageViewer.Frames.PixelCoordinate.GetHashCode
   fullName: Fizzy.ImageViewer.Frames.PixelCoordinate.GetHashCode
   nameWithType: PixelCoordinate.GetHashCode
+- uid: Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter
+  name: ToImageCenter()
+  href: api/Fizzy.ImageViewer.Frames.PixelCoordinate.html#Fizzy_ImageViewer_Frames_PixelCoordinate_ToImageCenter
+  commentId: M:Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter
+  fullName: Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter()
+  nameWithType: PixelCoordinate.ToImageCenter()
+- uid: Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter*
+  name: ToImageCenter
+  href: api/Fizzy.ImageViewer.Frames.PixelCoordinate.html#Fizzy_ImageViewer_Frames_PixelCoordinate_ToImageCenter_
+  commentId: Overload:Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter
+  fullName: Fizzy.ImageViewer.Frames.PixelCoordinate.ToImageCenter
+  nameWithType: PixelCoordinate.ToImageCenter
 - uid: Fizzy.ImageViewer.Frames.PixelCoordinate.ToString
   name: ToString()
   href: api/Fizzy.ImageViewer.Frames.PixelCoordinate.html#Fizzy_ImageViewer_Frames_PixelCoordinate_ToString

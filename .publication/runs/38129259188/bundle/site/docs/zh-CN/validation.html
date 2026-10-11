@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>验证 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="验证 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="验证">验证</h1>
+
+<p><a href="../validation.html">English</a></p>
+<p>使用 Windows、PowerShell 7 和固定 SDK，独立检出即可构建，不需要相机或机器人。共享库输出的命令串行执行。自动 WPF 测试使用隐藏窗口和注入边界，不证明物理显示、混合 DPI、远程桌面或真实 GPU 行为。</p>
+<h2 id="构建与测试">构建与测试</h2>
+<pre><code class="lang-powershell">dotnet restore Fizzy.ImageViewer.csproj --locked-mode
+dotnet build Fizzy.ImageViewer.csproj -c Release --no-restore
+dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Release
+./scripts/Test-Samples.ps1
+</code></pre>
+<p><code>./scripts/Test-Release.ps1</code> 是库、工具、示例、文档和包的完整门禁，不发布。依赖和浏览器安装见<a href="documentation.html">文档维护</a>。发布前检查包 README、XML 和固定版本 URL；只有干净且 tag 匹配的 release-mode 验证能创建可发布 bundle。</p>
+<p><a id="pixel-queries"></a></p>
+<h2 id="像素查询">像素查询</h2>
+<p>格式、来源或查询变更运行像素源、帧元数据、scheduler、HUD 和快照测试，覆盖独立租约、区域局部坐标、不可变结果、不支持能力、订阅/几何失效、有界接纳、公平、取消和操作/清理双重失败。TIFF 读取验证使用仅测试依赖 LibTIFF，不以写入器自证。</p>
+<p><a id="measurement-ownership-and-interaction"></a></p>
+<h2 id="测量所有权与交互">测量所有权与交互</h2>
+<p>会话/生命周期变更运行测量、交互和层测试，覆盖独立激活、工厂重入及失败、结束上下文、预览清理、恰好一次会话释放、通知顺序、程序编辑、控制点越界、注册撤销、关闭后外部租约。删除不再支持的恢复行为时保留线程/资源安全验证。</p>
+<p><a id="architectural-boundaries"></a></p>
+<h2 id="架构边界">架构边界</h2>
+<p>公共 API 对照 PublicApi.txt 审查签名、可空性及默认值，不能盲目更新。联合工作区 API/行为变化还需父约定要求的消费者 Source 构建及测试；纯 XML 不改变签名，也不授权无关运行时修改。</p>
+<p>初始化/关闭检查原错误、部分组合清理、共享终止失败、不重复破坏性释放、native 隔离和实际 STA 退出。菜单覆盖 Closed-before-Click、重新打开、撤销、独立动作资源和异步失败。</p>
+<p><a id="line-profile-allocations"></a></p>
+<h2 id="线剖面分配">线剖面分配</h2>
+<p>热路径变化运行相关基准；合成结果不等于物理呈现或持续设备性能。</p>
+<pre><code class="lang-powershell">dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+dotnet run --project tools/DrawingBenchmark -c Release
+dotnet run --project tools/ResizeBenchmark -c Release
+dotnet run --project tools/LineProfileBenchmark -c Release
+dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
+</code></pre>
+<p>帧/快照报告耗时和托管分配，不是进程峰值内存。绘制排除消费者结果构造、跨线程和物理呈现；线剖面区分数据、WPF 命令、离屏呈现和查询复制，不可变结果所有权必须保留。</p>
+<p><a id="tool-sessions-and-layer-ownership"></a></p>
+<h2 id="工具会话与图层所有权">工具会话与图层所有权</h2>
+<p>覆盖单项/集合/空内容替换、Visual 和点击身份、失败保留旧内容、整层清理、重入和句柄失效，确认清业务层不清 HUD。取消/释放失败不应终止替代会话；几何/查询保留半开像素覆盖、极大有限坐标及非有限样本断点验证。</p>
+<h2 id="人工检查">人工检查</h2>
+<p>运行三个<a href="getting-started.html">示例</a>，记录系统、缩放、显示器布局和 commit。检查首次显示、叠加上滚轮/中键、工具启动/取消、选择/编辑/删除、层隐藏、曲线关闭、HUD、菜单导出、实时流中关窗。按支持范围重复 DPI 变化和远程桌面。真实 GPU 附加/切换及设备需要另外授权的环境，明确报告未执行场景。</p>
+<p>检查双语页面、搜索、项目路径下嵌套 API 和版本选择。发布/恢复还需<a href="releasing.html">发布 SOP</a>、故障门禁及隔离服务演练；本地测试不授权正式发布。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
