@@ -1,6 +1,62 @@
-# Frame pipeline
+# Frames and pixels
 
-[简体中文](zh-CN/frame-pipeline.md)
+[简体中文](../zh-CN/frame-pipeline.md)
+
+Create an image from CPU memory, submit it, or read original pixels through a lease. Start with [a complete viewer](getting-started.md); the examples below assume that viewer remains alive.
+
+## Choose a CPU frame format
+
+[Getting started](getting-started.md) uses Gray8: one byte per pixel, with a default display range of 0–255. For other CPU images, use the same creation and submission API with a descriptor matching the source layout. The examples below cover the additional concerns of high-bit-depth grayscale and color with alpha; they assume a live `viewer` and the `Fizzy.ImageViewer` and `Fizzy.ImageViewer.Frames` namespaces. Check submission results as in the first example.
+
+`FrameDescriptor(width, height, stride, format)` describes top-down, single-plane pixels. **Stride is bytes between row starts**, including padding, and must be positive and at least the packed row size. Supply at least `descriptor.RequiredBytes` bytes. Negative strides, planar images and Bayer data need conversion in the consumer. `ImageFrame.Copy` finishes copying before returning, so the source array or camera buffer can then be reused.
+
+### High-bit-depth grayscale: set the display range
+
+Gray16 uses two little-endian bytes per pixel. For a sensor storing 12-bit values in 16-bit words, set the display range to 0–4095 before the first submission. This changes display contrast without changing original query or raw export values; the default is 0–65535.
+
+```csharp
+ushort[] values = { 0, 1024, 2048, 4095 };
+var pixels = new byte[values.Length * 2];
+for (int i = 0; i < values.Length; i++)
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
+        pixels.AsSpan(i * 2, 2), values[i]);
+await viewer.SetDisplayRangeAsync(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
+```
+
+If the camera already supplies little-endian bytes with a valid stride, pass those bytes directly instead of repacking each value. Packed 10/12-bit camera formats must first be unpacked. Gray32Float uses four little-endian IEEE 754 bytes per pixel and defaults to a display range of 0–1; set the range in original-value units for temperature or depth data.
+
+To adjust an existing image, await its submission first, then await `SetDisplayRangeAsync` to observe redraw completion or failure. Pass `null` to restore format defaults.
+
+### Color: match channel order and alpha
+
+Choose the format matching the source bytes. For example, this Bgra32 frame contains a half-transparent red pixel followed by an opaque green pixel:
+
+```csharp
+byte[] pixels = { 0, 0, 255, 128,  0, 255, 0, 255 };
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(2, 1, 8, FramePixelFormat.Bgra32), pixels));
+```
+
+Rgb24/Bgr24 use three bytes per pixel in the named channel order; Bgr32 uses four, with padding rather than alpha in the fourth byte. Bgra32/Rgba32 use straight alpha. Pbgra32 stores colors already multiplied by alpha: the half-transparent red above would be `{ 0, 0, 128, 128 }`. Do not label straight-alpha bytes as premultiplied or premultiply them twice.
+
+The following sections define storage lifetime, display and original-pixel query contracts.
+
+## Transfer owned CPU memory
+
+Use `Copy` for a borrowed camera buffer that the SDK will overwrite. Use `TakeOwnership` only when you control the storage until the final frame reference is released. It avoids the input copy; it does **not** eliminate CPU display preparation or WPF bitmap writes.
+
+```csharp
+var descriptor = new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8);
+var pixels = new byte[descriptor.RequiredBytes];
+Array.Fill(pixels, (byte)128); // Finish all writes before transfer.
+var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () => { });
+var result = await viewer.SubmitFrameAsync(frame);
+// Never write pixels again. This managed array needs no external release action.
+```
+
+For an existing memory-pool or camera-buffer owner, pass its exact memory slice and a release action that returns that buffer. Do not dispose the owner immediately after submission or after awaiting `Committed`: the current image, queries and independent leases may still retain it. A frozen viewer can retain a frame indefinitely. `TakeOwnership` calls the supplied release action once at final release, including construction validation failure; do not return the buffer again in a catch/finally block. Keep release short, nonthrowing and safe on the final releasing thread, which may be the Viewer STA. If the producer cannot meet these retention and threading requirements, use `Copy`.
 
 ## Input and lifetime
 
@@ -96,7 +152,7 @@ display conversion, line sampling and query scheduling; Frames has no Imaging de
 `AcquireCurrentFrame()` returns an owned lease. `TryGetCpuPixels` exposes only existing
 CPU memory and returns false for GPU storage. There is no general `Data` accessor.
 `CpuFramePixelReader.TryReadPixel` and `ReadPixels` are static CPU-only decoding helpers; they never download GPU pixels.
-Its `TryRead` returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
+Its `TryReadPixel` returns false for an out-of-bounds coordinate; an in-bounds GPU read throws
 `NotSupportedException`. Use lease asynchronous reads for backend-independent access.
 
 Use `FrameLease.ReadPixelsAsync(coordinates, token)`, `ComputeRegionStatisticsAsync(region,
@@ -195,74 +251,34 @@ in-flight pre-freeze submissions. Closing it resumes new input. A menu-scoped le
 frame and display settings through Click/Closed ordering; saving acquires its own lease before
 the file dialog. The menu lease is released when input drains or on viewer shutdown.
 
-`CaptureSnapshotAsync(Raw|Display)` captures the current committed frame at call time and
-returns independent immutable storage. `Raw` preserves input values; `Display` applies the
-committed display mapping without annotations, HUD or viewport scaling.
-The overload accepting PixelRegion reads only that region. Snapshots record `SourceFrame` and
-region origin. Full snapshots explicitly request the entire region; GPU results are never cached
-back into source storage. One export read per Viewer executes at a time, with at most one
-additional capture admitted to wait. Further calls throw `InvalidOperationException`
-synchronously before acquiring a frame lease. Accepted captures retain the frame current
-at the call, including while waiting. Completion, cancellation or failure frees the slot.
-The ROI save menu pins both frame and integer region before opening the file dialog.
-Dispose snapshots when finished. A save retains its own lease until completion.
-Raw capture takes ownership of the independently read CPU region without copying it
-again. That region's release callback runs when the snapshot's final pixel reference
-is released, including independent pixel leases retained after snapshot disposal.
-Capture cleans up a candidate snapshot if another owned resource fails to
-release before delivery; operation and cleanup failures are preserved together.
-
-`ImageSnapshot.SaveAsync(path, encoding, token)` writes a temporary file in the destination
-directory and replaces the target only after successful encoding. Cancellation is checked
-before replacement and between TIFF rows; WPF PNG/JPEG/BMP encoding itself is not interruptible.
-Display exports support PNG, JPEG, BMP and TIFF. JPEG composites transparency onto black.
-Raw exports require TIFF and never silently quantize high-bit-depth values.
-Encoding/cancellation and cleanup failures are preserved together, with the operation failure
-first. Cleanup can fail after the target was successfully replaced; a failed save task does
-not by itself prove that the destination is unchanged.
-The context menu's **Save Image As...** action selects display PNG/JPEG/BMP or raw TIFF
-through the file dialog's file type. **Save Region Image As...** offers the same choices
-when a completed rectangular measurement is selected.
-
-TIFF uses uncompressed Classic TIFF, UINT Gray16 or IEEEFP Gray32Float, top-left orientation,
-RGB channel order and associated/unassociated alpha tags. Bgr32 padding is omitted. Images
-exceeding the conservative Classic TIFF size bound are rejected; BigTIFF is not implemented.
-The context menu allows one save at a time. Independently created snapshot objects may be saved
-concurrently by application code. Captured snapshots remain usable after closing the viewer.
+Capture, encoding and ownership contracts are in [snapshots](snapshots.md). Export retains the committed mapping, never an uncommitted display-range request.
 
 ## Shutdown and integrations
 
-Use `await viewer.DisposeAsync()` or `await using` to terminate queued/rendering and
-measurement work without blocking the STA. `Viewer` and `IViewer` implement
-`IAsyncDisposable`. `Closed` reports window closure; it does not signal that background
-rendering, measurement queries or the window thread have finished. Await `DisposeAsync()`
-to wait for those operations to finish and release their frame leases.
-Once closed the Viewer cannot be reopened.
+Stop and await the producer before awaiting Viewer disposal; never block the Viewer STA. Admitted submissions drain through final release and public result completion, including replacement cleanup on submitting threads. Independent leases can outlive the Viewer. See [Viewer shutdown](public-api.md#threads-and-window-lifetime) for the shared completion and failure contract.
 
-Disposal is idempotent and waits for rendering, in-flight measurement queries and
-the window thread to finish. Submission calls admitted before shutdown are also
-drained through final release and public result completion, including calls replaced
-on another caller's thread or dropped while frozen/cancelled. Pixel sources that ignore cancellation can delay this
-completion until their operations release their leases. Programmatic closure is
-not blocked by `CanUserClose` or a cancelling window-closing handler.
-Repeated calls share the same completion and failure result. Owned-resource cleanup
-failures are reported after the remaining safe cleanup and actual STA exit; notification
-subscriber failures remain isolated and logged. Failure does not prove all resources were
-released. Resources that cannot be safely detached must not be reused.
-Cleanup failures from internally owned query leases and menu snapshot pins are retained
-until shutdown, even if later queries or menu sessions succeed. Ordinary query/provider
-failures remain query failures and do not become shutdown failures.
+Application adapters convert their own images to `ImageFrame`. Use `Copy` for borrowed CPU storage, `TakeOwnership` for immutable owned storage, and `D3D9ImageFrame.TakeOwnership` for ready GPU surfaces. Conversion, device compatibility and adapter tests belong to the consumer.
 
-Once disposal begins, viewer properties, window commands, measurement registration,
-frame acquisition, snapshot capture and layer operations reject new work with
-`ObjectDisposedException`. Frame submission retains its ownership contract and
-returns `Closed`. Previously acquired leases and snapshots remain independently
-owned; drawing and HUD handles are invalidated during cleanup.
+## Submit GPU frames
 
-Application integrations should adapt their own frame and image types to `ImageFrame`.
-Use `Copy` for borrowed storage, `TakeOwnership` to transfer immutable CPU storage, or
-`D3D9ImageFrame.TakeOwnership` to transfer a ready GPU surface. Producers own conversion, lifetime and
-device compatibility; integration tests for their adapters belong in the consumer repository.
+GPU frames use the same `ImageFrame` submission API. They require producer integration; a CPU array or arbitrary native pointer is not a GPU frame.
+
+### Ready D3D9 surface
+
+This adapter accepts resources already created and synchronized by the producer:
+
+```csharp
+static ValueTask<FrameSubmitResult> SubmitSurfaceAsync(
+    Viewer viewer, FrameDescriptor originalDescriptor, nint readySurface,
+    IFramePixelSource originalPixels, Action releaseResources)
+{
+    var frame = D3D9ImageFrame.TakeOwnership(
+        originalDescriptor, readySurface, originalPixels, releaseResources);
+    return viewer.SubmitFrameAsync(frame);
+}
+```
+
+Supply a WPF-compatible, non-multisampled `IDirect3DSurface9` render target in `D3DPOOL_DEFAULT`, using premultiplied `D3DFMT_A8R8G8B8` pixels. Finish GPU writes and release compute mappings before transfer. The descriptor and `IFramePixelSource` describe original pixels; the surface must match their standard display conversion. Keep the device, surface and query resources valid and immutable until `releaseResources` runs. Ownership transfers even on factory failure. See the [GPU contract](frame-pipeline.md#gpu-surfaces-and-explicit-pixel-queries) before implementing an adapter.
 
 ## GPU surfaces and explicit pixel queries
 
@@ -320,34 +336,3 @@ native use after release and is reported as a failure, not automatic recovery.
 The optional [CUDA component](cuda.md) supplies native display conversion and original-pixel
 queries for Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32. Application adapters still supply their source-frame and runtime
 integration; the WPF assembly itself has no CUDA dependency.
-
-## Internal composition
-
-`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
-public API calls and raises notifications. It does not own rendering queue or menu-target state.
-`FramePipeline` and presentation implementations belong to Rendering; Frames contains
-storage, leases and submission contracts.
-
-| Component | State and responsibility |
-| --- | --- |
-| `FramePipeline` | Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results |
-| `FramePresentation` | Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal |
-| `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
-| `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
-
-`CommittedViewLease` owns a frame lease plus the range and version captured atomically
-from the last committed display. Crop regions are separate values; export synchronization
-belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
-before showing a file dialog.
-
-The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
-Expensive upload runs outside that gate; image attachment and current-frame publication run
-inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
-The commit callback invokes the submission callback and then the public frame event;
-display-only redraws do not invoke it. Measurements and the pixel HUD independently
-subscribe to the shared query scheduler, which samples acquired committed frames.
-
-Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
-resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
-query completion and the window thread. Already acquired export work retains its own
-lease and export gate and may finish after the Viewer closes.

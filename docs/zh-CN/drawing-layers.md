@@ -1,53 +1,74 @@
-# 绘制与业务图层
+# 绘制与 HUD
 
-[English](../drawing-layers.md)
+[English](../en/drawing-layers.md)
 
-Viewer.Layers 拥有图像坐标业务层。CreateDrawingLayer 创建自定义层，ClearContents 清内容保留层，RemoveLayer 清除并移除自定义层。Markers 默认 ZIndex 0、不命中；Measurements 1000、可命中；自定义层 100、不命中。较高 ZIndex 在上，相同按创建顺序；图像在业务层下，HUD 在上。
+在图像坐标中绘制标记，在屏幕坐标中显示状态文字。以下示例假定已有存活的 `viewer`；请保留返回的句柄，直到该功能结束。
 
-Markers/自定义层为 DrawingLayer，提供 Add/ DrawingClicked。Measurements 为工具管理的模型层，不提供批量绘图。ViewerLayers/ViewerLayer 属于 Layers 命名空间，共享名称、可见性、命中、ZIndex、Clear，Items 返回共有句柄快照。
+## 绘制标记
 
-内置 LineProfile 启用曲线窗口，关闭曲线会删除线与标签，删除线会关闭曲线；自定义查询可仅返回数据。清测量或关闭 Viewer 清所有曲线窗口。
+```csharp
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
+using System.Windows;
+using System.Windows.Media;
 
-<a id="drawing-handles"></a>
+using var marker = viewer.Layers.Markers.Add(
+    new CircleElement(new Point(100, 100), 8, Brushes.Red));
+marker.Replace(new CircleElement(new Point(120, 100), 8, Brushes.Lime));
+```
+
+`Viewer.Layers` 管理图像坐标中的业务图层。用 `CreateDrawingLayer` 创建自定义层，`ClearContents` 清空内容并保留图层，`RemoveLayer` 清空并移除自定义层。
+
+默认标记层 `Markers` 的 `ZIndex` 为 0，关闭命中测试；测量层 `Measurements` 为 1000，开启命中测试；自定义层为 100，关闭命中测试。较高的 `ZIndex` 显示在上方，相同时按创建顺序排列。图像位于业务图层下方，HUD 位于其上方。
+
+`Markers` 和自定义层都是 `DrawingLayer`，提供 `Add` 和 `DrawingClicked`。`Measurements` 由测量工具管理模型内容，不提供批量绘图。`ViewerLayers` 和 `ViewerLayer` 位于 `Fizzy.ImageViewer.Layers`；图层共享名称、可见性、命中测试、`ZIndex` 和 `Clear`，`Items` 返回这些公共图层句柄的成员快照。
 
 ## 绘制句柄
 
-DrawingHandle 拥有零个或多个元素组成的一项绘图。单元素或集合 Add 都只创建一个 Visual，Replace 替换整个内容而不是追加；可在单项、集合、空集合和不同形状之间变化，不改句柄身份或叠放顺序。空集合保留对象但不绘制或命中；点击参数标识整项而非元素索引，Dispose 删除整项。
+`DrawingHandle` 管理一项绘图，可以包含零个或多个元素。`Add` 的单元素和集合重载都只创建一个视觉对象；`Replace` 替换完整内容，不追加元素。替换可在不同形状、单项、集合和空集合之间切换，同时保留句柄身份和叠放顺序。
 
-DrawLine/DrawCircle/DrawRectangle/DrawCrosshair/DrawText 返回同一种句柄，名字只表示初始内容。每次调用创建独立 Visual；大量标记应按独立管理组一次提交集合。指定层使用其 Add。
+空集合保留句柄但不绘制，也不参与命中。`DrawingClickedEventArgs.Drawing` 标识整项绘图，不提供单个元素索引；释放句柄会移除整项。
 
-<a id="batch-markers-alongside-measurements"></a>
+`DrawLine`、`DrawCircle`、`DrawRectangle`、`DrawCrosshair` 和 `DrawText` 都返回相同的 `DrawingHandle`，方法名只限定初始内容。每次调用创建独立视觉对象；大量标记应按独立管理组一次提交集合。需要指定图层时，使用该层的 `Add`。
 
 ## 批量标记与测量共存
 
-批量标记与交互测量独立：批量减少 Visual 数量，测量仍为独立 WPF 元素与模型。文本使用 FormattedText，不为每个标签创建布局控件。完整持续更新示例见 [LiveOverlays](../../samples/LiveOverlays/Program.cs)。
+批量标记用于减少视觉对象数量；交互测量则保留独立 WPF 元素及模型。文本通过 `FormattedText` 绘制，不为每个标签创建布局控件。
 
-<a id="live-camera-overlays-consumer-requirements"></a>
+```csharp
+using Fizzy.ImageViewer.Measurements;
+using Fizzy.ImageViewer.Drawing;
+using System.Windows;
+using System.Windows.Media;
 
-## 实时相机叠加的消费者要求
+var markers = viewer.Layers.CreateDrawingLayer("detections");
+using var batch = markers.Add(Enumerable.Range(0, 10000).Select(i =>
+    new CircleElement(new Point(i % 100 * 10, i / 100 * 10), 3,
+        Brushes.Red, 1, Brushes.Red) { ScaleMode = OverlayScaleMode.FixedSize }));
 
-层和批次应存续整个显示会话，不随相机每帧重建。初始化创建，循环 Replace，停止生产并等待在途更新后清理。
+viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Also: Point, RectangleRoi, LineProfile IDs.
+// Measurement results and their editing controls belong to Measurements.
+// Marker visuals do not intercept input by default.
 
-| 避免 | 使用 |
-| --- | --- |
-| 每帧 Clear/Add 或释放重建 | 保留句柄并 Replace |
-| 每检测目标调用一个 Draw | 每独立管理组提交整个集合 |
-| 每结果投递 Dispatcher 或启动任务 | 一个最新等待结果及单个限频消费循环 |
-| 每帧重绘静态 ROI/准星/标签 | 单独保留静态批次，仅变化时更新 |
-| 每帧创建可变 Brush | 复用 Brushes.Lime 等冻结 Brush |
-| 每状态重建 HUD | 保留句柄，内容变化时 Update |
+batch.Replace(new DrawingElement[] {
+    new CircleElement(new Point(100, 100), 8, Brushes.Lime, 2),
+    new LineElement(new Point(10, 10), new Point(90, 90), Brushes.Cyan, 3),
+    new RectangleElement(new Rect(20, 20, 50, 40), Brushes.Yellow),
+    new CrosshairElement(new Point(200, 100), Brushes.Red, 12),
+    new TextElement(new Point(100, 100), "target", Brushes.White, 18, new Vector(8, -20))
+});
+markers.IsVisible = true;
+markers.ZIndex = 200;
+markers.IsHitTestVisible = true;
+markers.DrawingClicked += (_, e) => {
+    // e.Drawing identifies the entire drawing; no per-element hit index or editing.
+    // e.ImagePosition is in image pixels; e.Button identifies the mouse button.
+};
+// markers.Clear();                 // Invalidates every batch in this layer.
+// viewer.Layers.RemoveLayer(markers); // Clears and removes a custom layer.
+```
 
-显示频率与采集/推理独立，可按实测成本选择 30/60 Hz。旧等待结果被覆盖而不积队列；没有新结果不 Replace，新空结果 Replace 空集合。选定最新结果后才创建绘图对象，释放被覆盖结果的池化资源，不在消费者读取时修改结果。
-
-Replace 同步调度到 STA，不限频、不合并、不丢弃；帧管线的最新帧队列不适用于叠加。提交图像和替换叠加并非原子同帧呈现，消费者自行跟踪身份和过期策略。调用 Viewer 时不持生产者锁。
-
-复用 Visual 不等于无分配：集合会复制，冻结 Brush 的不可变元素可共享，可变 Brush 需克隆冻结；WPF 命令、资源和文本仍分配。一次准备内用有界缓存共享相同画笔，不承诺零 GC 或帧率，也不要每帧 GC.Collect。
-
-Clear、移除层和关闭使句柄失效。如果实时运行支持 Clear All Shapes，应与更新循环串行，恢复前重建一次句柄，不逐帧重试失效对象。停止订阅/计时器并等待在途更新再销毁。
-
-持续负载测量每次分配、GC 次数、延迟分位数、预期标记/文本量与缩放。基准的 50 次热身后替换使用两组预建圆，排除结果创建、跨线程及物理呈现，不能证明真实持续流 GC 性能。
-
-<a id="coordinates-size-and-input"></a>
+完整持续更新示例见 [LiveOverlays](../../samples/LiveOverlays/Program.cs)。
 
 ## 坐标、尺寸与输入
 
@@ -69,13 +90,13 @@ OverlayScaleMode 与定位独立，不支持模式在内容变更前拒绝。屏
 - DrawingClicked 在 STA 消耗鼠标按下，回调保持短小；订阅错误逐个记录隔离，后续订阅仍接收，事件仍被消费。
 - 测量暂时抑制业务层命中，不改配置标志；结束恢复当前配置，包括期间变更和新增层。
 
-<a id="ownership-and-lifetime"></a>
-
 ## 所有权与生命周期
 
-提交复制集合，后续修改不影响绘图。可变 WPF Brush 在所属调用线程复制冻结，不可冻结资源、null 元素、非有限坐标、非正半径/线宽/字号、不支持模式在内容改变前失败。Replace 验证并录制后发布，录制失败保留旧图。所有视觉操作调度 STA；Dispose 同步幂等，失效后 Replace 抛 ObjectDisposedException。
+提交会复制集合，后续修改原集合不会更新绘图。带冻结画刷的不可变元素可以共享；可变 WPF 画刷必须在其所属调用线程复制并冻结。不可冻结的资源、null 元素、非有限坐标、非正半径/线宽/字号，以及不支持的缩放模式都会在内容改变前被拒绝。
 
-内置层不可移除，名称非空且区分大小写唯一，层不可跨 Viewer 传递。Items 是成员快照但其中句柄仍可变。Clear 保留设置和订阅，移除/关闭释放资源及订阅；新增点击订阅拒绝失效层或关闭 Viewer，退订关闭后仍安全。
+`Replace` 完成验证和绘制命令录制后才发布内容；录制失败保留原有绘图。所有视觉操作调度到 Viewer STA。`Dispose` 同步移除且幂等；清空、移除图层及 Viewer 关闭会使句柄失效，之后调用 `Replace` 抛出 `ObjectDisposedException`。
+
+内置层不可移除；图层名称非空且按大小写区分唯一，图层句柄不能交给另一 Viewer 的管理器。`Items` 是成员快照，其中句柄仍可变。`Clear` 保留设置和订阅，移除及关闭则释放资源和订阅。新增点击订阅会调度到 STA，并拒绝已移除的层或正在关闭的 Viewer；退订在关闭后仍安全。
 
 IViewer.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。
 
@@ -83,15 +104,18 @@ IViewer.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测
 
 ClearContents/Clear All Shapes 取消测量并清全部业务层，保留 HUD。先取得层快照，回调新建层存续，已被移除层跳过，其余按顺序清理。清测量层也取消创建/编辑。显式清理尝试所有安全步骤并传播聚合错误，菜单/输入记录错误，关闭错误进入 DisposeAsync。快照只导出图像，不导出叠加。
 
-<a id="hud-text"></a>
-
 ## HUD 文字
 
-HudLabelText 控制右上标签，null/空值隐藏且读回空字符串。IsPixelInfoEnabled 独立控制像素 HUD，可显示前设置。HudTextHandle/AnchorAlignment 属于 Hud。
+```csharp
+using var status = viewer.DrawHudText("Ready", System.Windows.Media.Brushes.White);
+status.Update("Running", System.Windows.Media.Brushes.Lime);
+```
 
-DrawHudText 返回可更新文字/颜色的句柄；位置、对齐和 double 字号在其生命周期固定，改变布局需新建。创建/更新在调用线程复制 Brush 并调度 STA。null 文字/Brush、不可冻结 Brush、非法锚点/对齐、非正或非有限字号拒绝。释放幂等，关闭使句柄失效，之后 Update 抛 ObjectDisposedException。清业务层不清 HUD。
+`HudLabelText` 控制右上标签，设为 null 或空字符串会隐藏标签，再次读取返回空字符串。`IsPixelInfoEnabled` 独立控制像素 HUD，可在显示前设置。`HudTextHandle` 和 `AnchorAlignment` 位于 `Fizzy.ImageViewer.Hud`。
 
-<a id="validation"></a>
+`DrawHudText` 返回可更新文字和颜色的句柄。位置、对齐方式及 `double` 字号在句柄生命周期内固定，改变布局需要重新创建。创建和更新在调用线程复制画刷，再调度到 Viewer STA；可变画刷必须从所属线程访问。
+
+null 文字或画刷、不可冻结画刷、非法锚点/对齐方式，以及非正或非有限字号都会被拒绝。释放幂等；Viewer 关闭使句柄失效，之后 `Update` 抛出 `ObjectDisposedException`。清空业务层不清除 HUD。
 
 ## 验证
 

@@ -1,8 +1,6 @@
 # Fizzy.ImageViewer
 
-View, measure, and inspect images in WPF applications. A standalone .NET 8 image
-viewer with zoom and pan, drawing overlays, interactive measurements, HUD content,
-and pixel inspection.
+View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window; applications provide image acquisition and device integration.
 
 ## Install
 
@@ -10,8 +8,7 @@ and pixel inspection.
 dotnet add package Fizzy.ImageViewer
 ```
 
-The consuming project must target `net8.0-windows` (or a compatible newer target)
-and set `<UseWPF>true</UseWPF>`.
+Target `net8.0-windows` (or a compatible newer target) and enable `<UseWPF>true</UseWPF>` and implicit usings.
 
 ## Quick start
 
@@ -19,24 +16,29 @@ and set `<UseWPF>true</UseWPF>`.
 using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
 
-await using var viewer = new Viewer();
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) => closed.TrySetResult();
 var pixels = new byte[640 * 480];
-var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
-    FramePixelFormat.Gray8), pixels);
-var result = await viewer.SubmitFrameAsync(frame);
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($"Initial frame: {result.Status}");
+viewer.Show();
+await closed.Task;
 ```
 
-Submission transfers frame ownership immediately. Awaiting returns a commit/drop
-result, not a physical presentation timestamp. The viewer runs on its own STA
-thread and dispatches public API calls to it.
+Submission transfers ownership immediately, including rejection or cancellation. A committed frame has been accepted by the UI; completion is not a physical presentation timestamp.
 
 ## Features
 
-- Zoom, pan, fit-to-window, and borderless modes
-- Drawing layers with individual shapes and batched markers
-- Interactive point, line, region, and line-profile measurements
-- Custom measurement tools, shape editing, and change notifications
-- Pixel queries, HUD content, snapshots, and extensible context menus
+- Zoom, pan, fit-to-window, and borderless display
+- Drawing layers, batch markers, and HUD text
+- Editable point, length, ROI, and line-profile measurements
+- Original-pixel queries, snapshots, and extensible menus
 
 ## Documentation
 

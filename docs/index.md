@@ -1,31 +1,11 @@
-# Fizzy.ImageViewer documentation
+# Fizzy.ImageViewer
 
-[简体中文](zh-CN/index.md)
+[GitHub repository / GitHub 仓库](https://github.com/0xfizzy/Fizzy.ImageViewer)
 
-Choose a component guide to integrate image viewing, drawing, measurements, and pixel inspection.
+View, draw, measure, and inspect images in Windows/.NET WPF applications. Each Viewer owns an independent window; applications provide image acquisition and business integration.
 
-## Getting started and integration
+用于 Windows/.NET WPF 应用的图像显示、绘制、测量与像素查询。每个 Viewer 拥有独立窗口，图像采集和业务集成由应用负责。
 
-- [Getting started](getting-started.md): Build your first viewer application.
-- [Viewer and lifetime](public-api.md): Configure the viewer and manage its window lifetime.
-
-## Frames and processing
-
-- [Frames and pixels](frame-pipeline.md): Submit frames and query original pixels.
-- [CUDA integration](cuda.md): Integrate CUDA-backed image storage.
-- [Snapshots](snapshots.md): Capture image and viewport snapshots.
-
-## Drawing and interaction
-
-- [Drawing and HUD](drawing-layers.md): Manage overlays, layers, and HUD content.
-- [Measurements](measurements.md): Use and extend interactive measurements.
-- [Menus](menus.md): Customize context menus.
-
-## Development and maintenance
-
-- [Architecture](architecture.md): Understand module boundaries and ownership.
-- [Validation](validation.md): Choose build, test, and interaction checks.
-- [Documentation maintenance](documentation.md): Build the site and maintain translations.
-- [Release SOP](releasing.md): Publish and recover versioned releases.
-
-English XML and the generated **API reference (English)** define symbol contracts; component guides define cross-API protocols. Both languages share API identifiers and examples.
+- [English guides](en/index.md) — start with a working example, then choose a component guide.
+- [简体中文指南](zh-CN/index.md) — 从可运行示例开始，按需阅读组件指南。
+- [API reference (English)](../artifacts/docs/api/index.md) — public types and members / 公共类型与成员。

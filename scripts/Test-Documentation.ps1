@@ -4,8 +4,8 @@ $ErrorActionPreference = 'Stop'
 $repo = if ($env:DOCS_SOURCE_ROOT) { $env:DOCS_SOURCE_ROOT } else { Split-Path -Parent $PSScriptRoot }
 $manifestPath = Join-Path $repo 'docs/translations.json'
 $pairs = [ordered]@{ 'README.md' = 'README.zh-CN.md' }
-foreach ($file in Get-ChildItem (Join-Path $repo 'docs') -File -Filter '*.md' | Where-Object Name -NE 'nuget-readme.md' | Sort-Object Name) {
-    $pairs["docs/$($file.Name)"] = "docs/zh-CN/$($file.Name)"
+foreach ($file in Get-ChildItem (Join-Path $repo 'docs/en') -File -Filter '*.md' | Where-Object Name -NE 'nuget-readme.md' | Sort-Object Name) {
+    $pairs["docs/en/$($file.Name)"] = "docs/zh-CN/$($file.Name)"
 }
 function Get-SourceHash([string]$Path) {
     $normalized = [IO.File]::ReadAllText($Path).Replace("`r`n", "`n")
@@ -28,7 +28,7 @@ foreach ($source in $pairs.Keys) {
     if ($manifest[$source] -ne (Get-SourceHash (Join-Path $repo $source))) { $failures.Add("Translation needs review: $source -> $($pairs[$source])") }
 }
 foreach ($translation in Get-ChildItem (Join-Path $repo 'docs/zh-CN') -Filter '*.md' -File -ErrorAction SilentlyContinue) {
-    if (!(Test-Path -LiteralPath (Join-Path $repo "docs/$($translation.Name)"))) { $failures.Add("Translation has no source: $($translation.Name)") }
+    if (!(Test-Path -LiteralPath (Join-Path $repo "docs/en/$($translation.Name)"))) { $failures.Add("Translation has no source: $($translation.Name)") }
 }
 foreach ($source in $pairs.Keys) {
     $translation = $pairs[$source]
@@ -48,7 +48,7 @@ foreach ($source in $pairs.Keys) {
     }
 }
 # Check repository-local Markdown file targets before DocFX checks rendered links and xrefs.
-foreach ($relative in @($pairs.Keys) + @($pairs.Values)) {
+foreach ($relative in @($pairs.Keys) + @($pairs.Values) + @('docs/index.md','docs/nuget-readme.md')) {
     $path = Join-Path $repo $relative
     if (!(Test-Path -LiteralPath $path)) { continue }
     $body = [IO.File]::ReadAllText($path)
@@ -58,6 +58,7 @@ foreach ($relative in @($pairs.Keys) + @($pairs.Values)) {
         if ($target -match '^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|/)') { continue }
         $target = [Uri]::UnescapeDataString(($target -split '[#?]', 2)[0])
         if (!$target -or $target -notmatch '\.(md|cs|csproj|json|ps1|yml)$') { continue }
+        if ($target -match '^(?:\.\./)+artifacts/docs/api/index\.md$') { continue } # Generated and checked by DocFX.
         if (!(Test-Path -LiteralPath (Join-Path (Split-Path $path -Parent) $target))) { $failures.Add("Broken link in ${relative}: $target") }
     }
 }

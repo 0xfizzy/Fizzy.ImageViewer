@@ -1,10 +1,8 @@
 # 架构
 
-[English](../architecture.md)
+[English](../en/architecture.md)
 
 修改资源所有权或模块依赖前阅读本页。库每个 Viewer 拥有一个独立 WPF STA；消费者提交不可变帧，通过门面、绘图和测量句柄操作。
-
-<a id="source-organization"></a>
 
 ## 源码组织
 
@@ -29,8 +27,6 @@
 | Snapshots | 独立整帧/区域捕获及编码 |
 | Menus | 菜单契约、动作、注册、绑定和固定目标 |
 
-<a id="placement-rules"></a>
-
 ### 放置规则
 
 按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。
@@ -41,8 +37,6 @@ Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、
 
 可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。
 
-<a id="frame-and-imaging-dependencies"></a>
-
 ## 帧与图像依赖
 
 可选 `Fizzy.ImageViewer.Cuda` 程序集仅引用核心库和自有 native DLL。消费者桥接源帧所有权与执行作用域；扩展负责显示转换与像素查询。native 使用标准 CUDA 句柄，不创建第二套运行时，见 [CUDA 集成](cuda.md)。
@@ -50,8 +44,6 @@ Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、
 Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。
 
 FrameLease 是后端无关读取边界，每次异步读取自持租约并验证请求/结果、提供来源。区域返回独立 CPU ImageFrame，RegionPixels 另存来源，不把源身份赋给派生像素。生产者 release 在最后源租约后清外部查询资源。Raw 快照接管区域，独立像素租约可越过快照。交付结果前先完成必要清理，无法交付时清理候选结果。
-
-<a id="ownership-and-direction"></a>
 
 ## 所有权与依赖方向
 
@@ -77,13 +69,9 @@ MenuManager 拥有注册和 WPF 绑定，句柄撤销禁用绑定并释放目标
 
 ViewerMenuController 负责内置策略，借用交互、工具、层、HUD 和快照；Menus 下 MenuSnapshotSession 唯一拥有冻结帧/ROI，Snapshots 不拥有菜单策略。Host 在关闭管线前断菜单策略和绑定。Rendering 的 CommittedViewLease 原子固定帧、映射和版本，消费者不拥有管线状态。
 
-<a id="pixel-format-ownership"></a>
-
 ## 像素格式归属
 
 FramePixelFormats.GetInfo 是分量顺序、位深、数字表示、alpha 的唯一事实源，字节数、灰度和语义通道数由其派生。Frames/Pixels 解码及统计，Imaging 映射，Rendering 适配 WPF，Snapshots 编码布局/通道/标签，各自保留算法。显示范围不是原值限制，曲线通道不是格式通道，编码行长不必等于源 stride。新增格式必须逐一支持或拒绝解码、统计、显示、HUD/测量、快照，不能只加描述符。
-
-<a id="invariants-when-extending-the-library"></a>
 
 ## 扩展不变量
 
@@ -94,8 +82,30 @@ FramePixelFormats.GetInfo 是分量顺序、位深、数字表示、alpha 的唯
 - 普通重入由最新会话接管；批量清理拒绝新会话、重入幂等、失败后继续其余层。
 - 公共扩展暴露稳定消费者能力，不暴露控件/缓存/服务实例；API 基线与调用方及指南一起审查。
 
-<a id="query-policy-and-tool-admission"></a>
-
 ## 查询策略与工具接纳
 
 查询策略独立选择接受旧几何及起始/完成间隔。完成指 STA 已处理结果，包含失败、过期和拒绝；订阅/会话/描述符检查始终保留。旧显示保留时间与新结果 MaxResultAge 独立。coordinator 统一激活接纳和重入检查，门面初始拒绝抛异常、菜单忽略不可用目标。操作固定注册实例，ID 撤销解析当前实例，注册关闭通过同一安全移除路径使引用失效。
+
+## 帧组件协作
+
+FramePipeline 管等待帧、当前帧、冻结代次、请求/已提交显示设置及结果；FramePresentation 管后台准备、STA 呈现和后端资源；MenuSnapshotSession 管菜单目标与保存互斥；SnapshotCapture 管串行区域读取和独立快照。
+
+CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染、查询及 STA。
+
+## 交互实现与查询测试
+
+`MeasurementInteractionCoordinator` 唯一拥有选中项、交互模式、工具及会话版本；注册表只保留注册。编辑控制器直接接收测量对象，持有编辑会话和控制点。命中测试通过集合解析已登记视觉，未登记的视觉不能参与编辑。
+
+`ViewerInputBinding` 将 WPF 输入转换为图像坐标，并通过 `IInteractionView` 提供比例、指针效果和临时输入抑制，不复制交互状态。协调器借用测量层接收接纳策略与生命周期通知。测量集合独立订阅图层清理：先取消输入和选中状态，再尝试清理模型、查询和资源，即使没有协调器或取消失败，也不跳过清理。清理期间拒绝创建和新会话，重入清理幂等，一层失败后继续其他层。
+
+`IQueryRuntime` 提供单调时钟、tick、工作执行和 UI 发布。测试手动推进这些边界，不依赖真实窗口或时间等待；生产实现使用 `DispatcherTimer`、`Stopwatch`、`Task.Run` 和 Dispatcher 发布。测量与像素 HUD 分别拥有自己的查询订阅，调度器撤销订阅而不释放订阅者。
+
+## 线剖面渲染
+
+横轴表示样本索引，纵轴表示像素值，仅显示数值刻度。主次虚线网格和柔和 RGB 曲线帮助区分数据；曲线使用圆角连接但不平滑样本。刻度随窗口尺寸调整，轴缓存直到尺寸、范围或 DPI 改变。冻结画笔与曲线几何由 WPF 复用，数据或尺寸变化时重建。
+
+每个物理像素列按样本顺序保留有限段的端点及极值，非有限值形成间断，单样本显示为点。这仅限制显示细节，不改变原始样本。通道缓冲按几何级数增长并归曲线窗口所有；纯数据查询不创建 RGB 曲线缓冲。发布同步提供帧身份和只读样本，回调在返回前消费；数据变化时 WPF 序列化和帧查询仍会分配。
+
+## API 基线
+
+`tests/Fizzy.ImageViewer.Tests/PublicApi.txt` 记录经过审阅的导出类型、成员、可空性和默认值。API 测试在测试输出旁生成 `PublicApi.actual.txt`。先审查有意差异、更新调用方与契约，再接受基线；不能以更新基线代替契约审查。

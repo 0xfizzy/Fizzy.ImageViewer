@@ -1,69 +1,84 @@
-# 公共 API 与 Viewer 生命周期
+# Viewer 与生命周期
 
-[English](../public-api.md)
+[English](../en/public-api.md)
 
-`Viewer` 创建独立 STA 窗口，`IViewer` 是完整消费者契约；Viewer 为 sealed，应用适配器通过组合拥有它，不访问原始窗口。生成式 API 参考列出类型和成员，XML 定义符号契约，组件指南定义协作协议。
+本指南说明窗口配置和关闭责任。`Viewer` 为 sealed，应用适配器通过组合拥有它，不访问底层 WPF 窗口。[入门](getting-started.md)提供等待用户关闭的完整程序。
 
-<a id="borrowing-viewer-capabilities"></a>
+## 配置与显示
 
-## 借用能力接口
-
-拥有窗口生命周期的组件使用 `IViewer` 并等待异步释放。只使用部分能力的组件借用帧输入、已提交帧读取、窗口、显示、绘制、HUD、测量、菜单、查询或快照接口。接口由同一个 Viewer 实现，并不建立独立生命周期或安全隔离。
-
-全局图层管理只在 `IViewer.Layers` 上。绘制接口只暴露默认 Markers，测量接口暴露 Measurements。图层句柄允许管理整层，包括清空他人内容；只需更新单项时传递单项句柄。使用能力接口不会让调用方获得私有实现、线程或调度器所有权。
-
-<a id="threads-and-window-lifetime"></a>
+```csharp
+await using var viewer = new Fizzy.ImageViewer.Viewer(showWindow: false);
+viewer.Title = "Inspection";
+viewer.HudLabelText = "Ready";
+viewer.Show();
+// Keep the viewer alive for the owning feature's lifetime.
+```
 
 ## 线程与窗口生命周期
 
-`showWindow: false` 支持显示前配置、订阅和提交。`Show` 显示、恢复最小化并请求激活；`Hide` 隐藏但保留内容；`Minimize` 不隐式显示已隐藏窗口。已显示但最小化的窗口仍为可见，最小化状态独立查询。普通属性和窗口操作在关闭开始后抛出 `ObjectDisposedException`。
+构造函数的 `ILogger<Viewer>` 可省略或传入 null，此时使用 `NullLogger<Viewer>.Instance`；接入应用日志时再传入 logger。默认构造立即显示窗口。使用 `showWindow: false` 可以先配置、订阅事件和提交帧，再调用 `Show()`。隐藏窗口已有运行的 STA，即使从未显示，也必须由拥有者等待 `DisposeAsync()`。
 
-Viewer 只对应一次窗口生命周期，关闭后不能重新打开。无论是否显示过，都需 `await DisposeAsync()`；它关闭窗口并排空已接纳工作，等待真实 STA 退出。重复调用观察同一成功或失败结果，不重复破坏性清理。安全清理后传播资源清理错误，通知订阅者错误被日志隔离；不能证明安全分离的 native 资源继续隔离保留。
+窗口属性和操作同步调度到 Viewer STA，关闭开始后抛出 `ObjectDisposedException`。`Show` 显示、恢复最小化并请求激活；`Hide` 隐藏但保留帧、绘图和测量；`Minimize` 改变状态但不隐藏，也不隐式显示原本隐藏的窗口。`IsVisible` 遵循 WPF 可见性，已显示但最小化的窗口仍可见；`IsMinimized` 独立反映最小化状态。
 
-构造前验证窗口边界。初始化失败在所属线程清理并排空后台工作，重新抛出原始异常；清理同时失败时保留两个错误。应用适配器将用户关闭和显式释放汇入一个幂等清理流程；如果转发测量删除通知，保留订阅直到清理结束。
+`DisposeAsync` 关闭窗口，等待所属后台工作与 STA 停止。重复调用观察同一个完成任务及其固定成功或失败结果。资源清理失败在其他安全清理和真实 STA 退出后报告；通知订阅异常记录并隔离。`Closed` 的订阅在终止通知交付后释放。Viewer 只对应一次窗口生命周期，关闭后不能重新显示，应创建新实例。
 
-`Closed` 只是窗口通知，不能替代等待释放。回调在 Viewer STA，不得同步等待关闭或其他依赖该 Dispatcher 的工作。关闭后的帧提交仍消耗帧并返回 `Closed`；绘图和 HUD 句柄关闭后仍可幂等释放。
+构造时在启动 STA 前验证窗口边界。初始化失败在所属线程执行安全清理并排空后台工作，然后重新抛出原始异常；清理也失败时，聚合保留两类错误。无法证明安全分离的 native 资源保持隔离，不释放或复用；关闭任务失败不证明资源全部释放。
 
-`HudLabelText` 控制右上标签，`IsPixelInfoEnabled` 默认开启，控制左下像素查询。`EndInteraction()` 结束创建或编辑，保留已完成测量和已应用编辑。
+应用适配器应在显示前注册所需资源，适配器初始化失败时也释放 Viewer。用户关闭通知与显式适配器释放汇入同一个幂等清理任务：释放应用资源并等待 Viewer 的 `DisposeAsync`。转发测量删除事件的适配器应保留订阅直到窗口清理结束。
 
-`FitToViewport` 可产生超出普通滚轮 0.01–100 范围的缩放；此时滚轮只允许朝该范围方向变化。使用 `SetDisplayRangeAsync` 观察重绘失败。属性读取最新请求，快照使用最后成功提交的映射；较新请求或关闭取消等待中的更新。无帧时只配置后续输入，立即完成。详见[帧](frame-pipeline.md)。
+`Closed` 只报告窗口关闭，不代表渲染、查询或窗口线程结束；没有独立的公共 `Close` 方法。Viewer 回调运行在其 STA，不得同步等待关闭或依赖该 Dispatcher 的工作。
 
-<a id="measurement-notifications-and-extensions"></a>
+关闭后的帧提交仍立即接管帧并返回 `Closed`，不采用窗口属性的异常策略。绘图和 HUD 句柄关闭后仍可幂等释放。帧排空与租约责任见[帧与像素](frame-pipeline.md)，绘图句柄见[绘制](drawing-layers.md)。
 
-## 测量通知与扩展
+`HudLabelText` 控制右上文字；`IsPixelInfoEnabled` 默认为 true，控制左下像素显示和查询订阅，右键菜单共享该设置。两者都可在显示前配置。`EndInteraction()` 取消未完成创建或结束编辑，保留已完成测量和已应用修改。
 
-只对完成项发出完成、变更和删除通知，预览不发出。快照不可变并含 ID、几何、来源及版本，实时句柄可能已反映后续变化；回调在 STA，订阅者失败被隔离。完成不代表查询结果就绪。重入通知排队保持顺序，删除后不再变更，`Closed` 晚于删除通知。
+`FitToViewport` 将完整图像居中，可能选择超出滚轮常规 0.01–100 范围的缩放。此时滚轮允许朝该范围变化，拒绝继续远离该范围。
 
-工具每次激活创建独立会话；通过上下文创建预览，Complete 保留结果，Finish 只结束所属激活。查询种类和几何组合在附加前验证；曲线窗口只能配合线剖面查询，数据查询可不建窗口。详细协议见[测量](measurements.md)。
+用 `await SetDisplayRangeAsync(range)` 请求灰度映射并观察重绘失败。`DisplayRange` 读取最新请求，快照保留最后成功提交的映射；较新请求或关闭会取消等待中的更新。没有当前帧时，只配置后续输入并立即完成。完整规则见[显示契约](frame-pipeline.md#提交与显示)。
 
-<a id="tool-registration-lifetime"></a>
+### 排空与独立租约
 
-## 工具注册生命周期
+关闭排空已接纳提交，直到释放和公开结果完成，包括提交线程上的替换清理以及冻结/取消丢弃。不响应取消的像素源可使关闭等待其工作释放租约。程序释放不受 `CanUserClose` 或取消窗口关闭事件的处理器阻止。所属查询租约和菜单固定帧的清理错误保留至关闭结果；普通查询/提供者失败仍归查询结果，不自动变成关闭失败。
 
-注册句柄仅撤销其所属注册实例，不删除已完成测量。ID 撤销作用于当前同名注册。注册元数据在 STA 读取一次；关闭和替换使旧句柄失效。替换、重入和清理规则见[工具所有权](measurements.md#tool-registration-ownership)。
+关闭开始后，帧获取、快照捕获、注册和图层操作抛出 `ObjectDisposedException`；提交仍接管所有权并返回 `Closed`。外部独立租约和快照继续由持有者拥有；Viewer 不等待这些租约，也不提前回收其存储。已接纳且自持依赖的捕获或导出可在关闭后完成。
 
-<a id="internal-implementation"></a>
+## 借用能力接口
 
-## 内部实现
+`IViewer` 汇总以下接口与 `IAsyncDisposable`。同一个 Viewer 实现所有能力，共享 STA、状态和关闭接纳边界；仅拥有者释放 Viewer，借用能力没有独立释放协议。
 
-内部 Host、渲染、查询调度器、测量显示层和 WPF 控件不构成公共扩展接口。测试可观察内部对象，但消费者应依赖公开门面、句柄、几何及工具会话。详见[架构](architecture.md)。
+| 接口 | 命名空间 | 职责 |
+| --- | --- | --- |
+| `IFrameSink` | `.Frames` | 提交拥有的帧并等待提交/丢弃结果 |
+| `ICommittedFrameSource` | `.Frames` | 获取当前原始帧租约，观察提交 |
+| `IViewerWindow` | 根命名空间 | 显示、位置、标题、关闭策略及 `Closed` |
+| `IViewerDisplay` | `.Viewport` | 适应窗口与显示范围 |
+| `ISnapshotSource` | `.Snapshots` | 捕获独立拥有的整图/区域快照 |
+| `IViewerDrawing` | `.Drawing` | 默认 `Markers` 层和绘图辅助方法 |
+| `IViewerMeasurements` | `.Measurements` | 测量层、工具、交互、样式和事件 |
+| `IViewerHud` | `.Hud` | 屏幕文字及像素显示 |
+| `IViewerMenu` | `.Menus` | 可撤销菜单注册 |
+| `IViewerQueries` | `.Imaging` | 测量和 HUD 共用查询设置及指标 |
 
-<a id="menu-registration-lifetime"></a>
+```csharp
+using Fizzy.ImageViewer.Frames;
 
-## 菜单注册生命周期
+static ValueTask<FrameSubmitResult> PublishAsync(IFrameSink sink, ImageFrame frame,
+    CancellationToken cancellationToken = default) => sink.SubmitFrameAsync(frame, cancellationToken: cancellationToken);
+```
 
-注册返回独立释放句柄，菜单对象仍归调用方。撤销使旧绑定失效；已经开始的异步动作可在关闭后继续，必须自行拥有依赖。菜单状态和动作启动发生在 STA，异步执行失败被记录隔离。完整规则见[菜单](menus.md)。
+帧接收器即使拒绝或取消也接管帧；替代实现和测试替身必须在每个终止路径释放它。读取者拥有获得的租约。提交事件与后续获取不是原子操作；需要特定提交的帧时，使用 `FrameSubmissionOptions.OnCommitted` 中仅在回调期间借用的租约。
 
-<a id="layer-capabilities"></a>
+只有 `IViewer.Layers` 暴露跨图层创建、枚举、移除和清空。`Layers.Items` 是成员快照，元素仍为可变句柄。`IViewerDrawing.Markers` 和 `IViewerMeasurements.Measurements` 分别暴露整个对应图层；清一层不清另一层。组件只更新一项时，传入 `DrawingHandle`；需要管理一层时，传入 `DrawingLayer`。图层能力包括该层全部内容和点击句柄，不限于当前调用方创建的项。
 
-## 图层能力
+测量事件带有不可变快照和可编辑/删除的句柄；工具注册与 `EndInteraction` 管理 Viewer 全局状态，工具会话应使用自己的 `context.Finish()`。查询设置影响测量和 HUD 的共享调度器，也影响其他调用方；菜单和 HUD 句柄只管理自己的注册或文字。
 
-Markers 和自定义绘图层支持单元素或集合 `Add`，返回支持相同两种 `Replace` 的 `DrawingHandle`；替换整个内容，不改变身份和叠放顺序。点击标识整项绘图。测量层由工具创建模型内容，没有批量绘图接口。
+这些接口表达类型依赖，不提供安全隔离。实现和事件 sender 都是同一个 Viewer，可通过转换恢复完整门面；绘图也仍依赖 WPF。拥有者始终需要等待 `IViewer.DisposeAsync()`。
 
-两种层共享名称、可见、命中测试、ZIndex、Clear。Items 返回成员快照，ClearContents 保留图层；内置层不可移除，消费者不可派生层基类。
+## 相关能力
 
-<a id="api-baseline"></a>
+- [测量](measurements.md)：交互、不可变结果及通知顺序。
+- [自定义工具](measurement-tools.md)：注册与一次性创建会话。
+- [菜单](menus.md)：注册、目标捕获和异步执行。
+- [绘制与 HUD](drawing-layers.md)：图层及单项句柄。
 
-## API 基线
-
-`tests/Fizzy.ImageViewer.Tests/PublicApi.txt` 记录导出类型、成员、可空性及默认值。测试输出 `PublicApi.actual.txt`；先审查差异并更新调用方、XML 和指南，再接受基线，不能以更新基线代替契约审查。
+[英文 API 参考](../../artifacts/docs/api/index.md)列出公共符号。内部 WPF 控件和视觉树不是扩展点；实现边界和 API 基线见[架构](architecture.md)。

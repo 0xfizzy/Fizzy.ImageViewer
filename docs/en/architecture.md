@@ -1,6 +1,6 @@
 # Architecture
 
-[简体中文](zh-CN/architecture.md)
+[简体中文](../zh-CN/architecture.md)
 
 Use this guide when changing resource ownership or module dependencies. The library
 owns an independent WPF STA per Viewer; callers submit immutable frames and use the
@@ -305,3 +305,86 @@ facade maps initial rejection to public exceptions; menus ignore unavailable tar
 Both activate a specific registration instance. Registration handles use ViewerLifetime
 for shutdown-safe removal, and registry removal/closure invalidates their owner references.
 Global ID-based revocation resolves the current instance and uses the same cleanup path.
+
+## Interaction implementation
+
+The internal MeasurementInteractionCoordinator owns the selected measurement, Idle/Editing/Measuring mode,
+active measurement tool and session version. The tool registry only stores registrations.
+MeasurementEditController receives a MeasurementItem directly and owns its MeasurementEditSession
+and control-point visuals. Hit testing resolves visuals through the collection before selection;
+unregistered visuals cannot become measurement interaction targets. The session retains
+drag-start geometry and writes changes through the measurement model; capability checks do not allocate a session.
+ViewerInputBinding translates WPF input, supplies image scale and applies pointer effects
+and temporary layer input suppression through IInteractionView without storing interaction state.
+The coordinator borrows MeasurementLayer for admission and lifecycle notifications.
+The overlay only performs display, hit testing and selection styling.
+It holds no coordinator or measurement-owner reference. The coordinator receives
+translated input and layer lifecycle notifications. MeasurementCollection subscribes to MeasurementLayer content cleanup without exposing the collection to the layer. Clearing first cancels input and selection, then always releases measurement
+owners and their queries/resources, even if cancellation throws or no coordinator exists.
+The layer remains in its clearing state throughout both phases. Batch layers independently
+invalidate their batches.
+Bulk clearing rejects new measurement/editing sessions and measurement creation from cleanup
+callbacks; reentrant clears are idempotent, and other layers are still cleared after a failure.
+
+## Query test runtime
+
+`IQueryRuntime` supplies monotonic time, ticks, worker execution and UI
+publication. Deterministic tests manually advance those boundaries without a real
+window or wall-clock waits. The production runtime uses DispatcherTimer,
+Stopwatch, Task.Run and Dispatcher publication.
+
+## Line-profile rendering
+
+The X axis represents sample index and the Y axis pixel value. Both show numeric
+ticks without axis titles. Horizontal/vertical dashed grids use lighter minor lines.
+Curves use muted RGB colors and rounded joins without smoothing the samples. Tick spacing
+adapts to the window size; axis drawings are cached until size, range or DPI changes.
+The plot uses native WPF drawing with frozen shared pens and cached curve geometry.
+Unchanged samples retain the geometry; data changes and resizing rebuild it.
+Within each physical pixel column, rendering retains each finite run's endpoints
+and minimum/maximum in sample order. Non-finite samples remain gaps; a finite run with only
+one sample is drawn as a point, including a one-pixel profile. This bounds
+dense curve detail by display resolution without changing raw measurement samples.
+Plots consume immutable measurement-result samples directly. Channel buffers grow
+geometrically and remain owned by the plot; data-only queries do not build RGB curve buffers. Query publication
+delivers frame identity and read-only spans into the batch result together; callbacks consume
+them synchronously.
+WPF geometry serialization and frame queries still allocate when data changes.
+
+## API baseline
+
+`tests/Fizzy.ImageViewer.Tests/PublicApi.txt` is the reviewed exported API baseline,
+including types, public/protected members, nullability and default arguments. API tests
+write `PublicApi.actual.txt` beside the test assembly. Review intentional differences,
+update consumers and this contract, then copy that output to the baseline before committing.
+
+## Frame composition
+
+`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
+public API calls and raises notifications. It does not own rendering queue or menu-target state.
+`FramePipeline` and presentation implementations belong to Rendering; Frames contains
+storage, leases and submission contracts.
+
+| Component | State and responsibility |
+| --- | --- |
+| `FramePipeline` | Latest waiting submission, current frame, freeze epoch, requested/committed display settings, render completion and submission results |
+| `FramePresentation` | Background pixel preparation, STA CPU/GPU upload and image attachment, backend resources and disposal |
+| `MenuSnapshotSession` | Menu-owned frame and ROI, delayed target release, menu-save exclusion |
+| `SnapshotCapture` | Serial region reads and independent Raw/Display snapshot generation |
+
+`CommittedViewLease` owns a frame lease plus the range and version captured atomically
+from the last committed display. Crop regions are separate values; export synchronization
+belongs to `SnapshotCapture`, not to the lease. Menu save targets acquire independent leases
+before showing a file dialog.
+
+The pipeline shares `ViewerLifetime.Gate` for submission, publication and shutdown admission.
+Expensive upload runs outside that gate; image attachment and current-frame publication run
+inside it. Commit, freeze/resume and presentation disposal are serialized by the STA.
+The commit callback invokes the submission callback and then the public frame event;
+display-only redraws do not invoke it. Measurements and the pixel HUD independently
+subscribe to the shared query scheduler, which samples acquired committed frames.
+
+Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
+resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
+query completion and the window thread. Already acquired export work retains its own
+lease and export gate and may finish after the Viewer closes.

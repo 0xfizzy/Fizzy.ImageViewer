@@ -4,6 +4,8 @@
       href: index.md
     - name: 入门
       href: getting-started.md
+    - name: 实时流集成
+      href: live-streaming.md
     - name: Viewer 与生命周期
       href: public-api.md
 - name: 帧与处理
@@ -20,6 +22,8 @@
       href: drawing-layers.md
     - name: 测量
       href: measurements.md
+    - name: 自定义测量工具
+      href: measurement-tools.md
     - name: 菜单
       href: menus.md
 - name: 开发与维护

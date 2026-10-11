@@ -1,6 +1,6 @@
 # CUDA 集成
 
-[English](../cuda.md)
+[English](../en/cuda.md)
 
 可选 `Fizzy.ImageViewer.Cuda` 包支持 CUDA 驻留的 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32，
 提供 WPF 显示转换及原始像素查询。消费者实现小型执行桥接；核心和扩展均不依赖特定应用或计算运行时。
@@ -10,8 +10,12 @@
 为独立保留的不可变源图实现 `ICudaFrameSource`，`Descriptor` 描述原始像素：
 
 ```csharp
+using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Cuda;
+
 ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
-await viewer.SubmitFrameAsync(frame);
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
 ```
 
 工厂立即接管非空 source，包括验证失败和取消。返回帧自带 `IFramePixelSource`，消费者不再实现另一套查询适配。
@@ -58,7 +62,7 @@ context 的活动表面共享 D3D9Ex device。仍要求设备/适配器兼容并
 或隔离字节。`EnqueuedQueries` 和 `EnqueuedResultBytes` 统计成功返回的 native 查询，每个 gather 分块单独计数，不承诺完整统计失败前的部分入队。`ActiveQueries` 和 `ActiveResultBytes` 覆盖查询执行及托管结果复制；归零不证明 GPU 已完成或隔离区为空。GetLiveSurfaceCount() 会加载 native DLL，包含保留的 native 表面 owner。
 
 不提供高位深 CUDA 映射、预乘 RGBA、Bayer、自定义 LUT/显示范围、D3D11/12 输入、软件回退或设备重建。
-WPF 附加与恢复遵循[帧契约](frame-pipeline.md#gpu-surfaces-and-explicit-pixel-queries)。
+WPF 附加与恢复遵循[帧契约](frame-pipeline.md#gpu-表面与显式像素查询)。
 
 ## 构建与部署
 

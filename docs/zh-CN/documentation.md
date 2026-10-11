@@ -1,12 +1,12 @@
 # 文档构建与维护
 
-[English](../documentation.md)
+[English](../en/documentation.md)
 
 英文 XML 定义符号契约，英文指南定义跨 API 协议，中文指南同步维护。不要为使注释检查通过而改变运行时行为。审查所有权、返回含义、取消、线程与清理时，对照实现和测试；编译通过不等于语义覆盖完整。
 
 ## 构建与预览
 
-DocFX 配置位于 `docs/docfx.json`，站点首页与顶层导航位于 `docs/landing/`。`Build-Docs` 将输入暂存到 `artifacts/docs/source/`，在其中运行此配置，保持发布 URL 不变。
+DocFX 配置位于 `docs/docfx.json`，站点首页与顶层导航位于 `docs/index.md` / `docs/toc.yml`。`Build-Docs` 将输入暂存到 `artifacts/docs/source/`，在其中运行此配置，使用下文定义的输出路径。
 
 安装 PowerShell 7、`global.json` 指定的 SDK、.NET 8 Desktop Runtime、Node.js 22.14.0 和 Git。库仍目标 .NET 8，固定 SDK 的编译器支持现有测试源码。仓库固定 DocFX 和 Playwright。在根目录运行：
 
@@ -20,18 +20,18 @@ node scripts/Test-Browser.mjs
 
 `Build-Docs` 验证翻译、锁定还原依赖、严格重编译 XML、从实际 DLL/XML 提取 API、构建站点、检查 HTML 链接并运行浏览器冒烟。不运行 WPF 示例、设备或发布部署。API 输入、清单和站点位于 `artifacts/docs/`。预览使用项目路径及 `/dev/` 或 `/v{version}/`，打开打印的 HTTP 地址，不使用文件 URL；Ctrl+C 停止。
 
-`Test-Browser` 用固定 Chromium 和本地服务器检查双语入口、一个 API 页面、语言切换、搜索结果跳转、版本切换、缺页回退和页面错误。仅失败时截图，结果报告及失败截图位于 `artifacts/docs/browser/`。模拟版本挂载不表示实际发布已上线。部署后运行 `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` 检查线上行为；版本缺页回退只使用本地夹具。
+`Test-Browser` 用固定 Chromium 和本地服务器检查双语入口、一个 API 页面、语言切换、搜索结果跳转、版本切换、缺页回退和页面错误。保存两种语言的桌面和窄屏审阅截图，结果报告及失败截图位于 `artifacts/docs/browser/`。模拟版本挂载不表示实际发布已上线。部署后运行 `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` 检查线上行为；版本缺页回退只使用本地夹具。
 
 公共 XML/声明、指南/翻译、README、导航、模板或工具变更必须完整构建文档并运行浏览器冒烟。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。
 
 ## 翻译审阅
 
-英文指南位于 `docs/`，中文同名文件位于 `docs/zh-CN/`。保持对应链接、API 标识和示例源码一致。检查器要求双向语言链接及两份导航入口，并拒绝孤立译文。NuGet README 是英文打包模板，不属于指南翻译对。
+英文指南位于 `docs/en/`，中文同名文件位于 `docs/zh-CN/`。保持对应链接、API 标识和示例源码一致。检查器要求双向语言链接及两份导航入口，并拒绝孤立译文。NuGet README 是英文打包模板，不属于指南翻译对。
 
 人工核对最终英文和中文后执行：
 
 ```powershell
-./scripts/Test-Documentation.ps1 -AcceptTranslation docs/snapshots.md
+./scripts/Test-Documentation.ps1 -AcceptTranslation docs/en/snapshots.md
 ./scripts/Test-Documentation.ps1
 ```
 
@@ -60,3 +60,5 @@ pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
 `Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087` 仅按真实项目/版本前缀服务已有产物，不构建、不访问网络。开发部署取得共用部署锁后核对源 SHA，拒绝不再对应最新 main 的构建。
 
 每个新构建的快照包含记录页面和锚点的 `pages.json`。版本切换使用该清单，缺页时回退到对应的 API 或语言首页，仅保留存在的锚点。若旧快照没有清单或请求失败，选择器恢复当前版本，并在悬浮提示中显示错误；需要时可直接打开目标版本。历史快照不改写。
+
+双语首页不属于翻译配对。英文与中文指南分别位于 `docs/en/` 和 `docs/zh-CN/`，使用同名文件；NuGet README 是独立包装模板。发布后的首页为 `index.html`，指南保留语言目录，API 位于 `api/`。版本切换优先打开相同路径，不存在时回退到目标语言首页或站点首页；不重写历史归档。模板、脚本和构建配置变更走正常开发/发布流程，不能通过“仅文档更新”门禁绕过限制。

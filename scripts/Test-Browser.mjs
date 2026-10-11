@@ -24,10 +24,10 @@ const server = createServer(async (req, res) => {
     const target = path.resolve(site, relative);
     if (!target.startsWith(site + path.sep)) { res.writeHead(403).end(); return; }
     // Simulate a page removed in the older version to exercise language-preserving fallback.
-    if (directory === 'v1.2.0' && relative === 'docs/zh-CN/snapshots.html') { res.writeHead(404).end(); return; }
+    if (directory === 'v1.2.0' && ['docs/zh-CN/snapshots.html', 'docs/en/snapshots.html', 'docs/en/live-streaming.html'].includes(relative)) { res.writeHead(404).end(); return; }
     if (relative === 'pages.json' && directory === 'v1.2.0') {
       const pages = JSON.parse(await readFile(path.join(site, 'pages.json'), 'utf8'));
-      for (const page of ['docs/zh-CN/snapshots.html', 'docs/snapshots.html', 'api/Fizzy.ImageViewer.Frames.FrameLease.html']) delete pages[page];
+      for (const page of ['docs/zh-CN/snapshots.html', 'docs/en/snapshots.html', 'docs/en/live-streaming.html', 'api/Fizzy.ImageViewer.Frames.FrameLease.html']) delete pages[page];
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(pages)); return;
     }
@@ -51,7 +51,7 @@ try {
   page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  for (const relative of ['docs/index.html', 'docs/zh-CN/index.html', 'api/Fizzy.ImageViewer.Frames.FrameLease.html']) {
+  for (const relative of ['index.html', 'docs/en/index.html', 'docs/zh-CN/index.html', 'docs/en/live-streaming.html', 'docs/zh-CN/measurement-tools.html', 'api/Fizzy.ImageViewer.Frames.FrameLease.html']) {
     const response = await page.goto(base + relative);
     assert.equal(response.status(), 200, relative);
     await page.locator('#documentation-version').waitFor();
@@ -66,18 +66,26 @@ try {
     await page.goto(base + 'docs/zh-CN/snapshots.html');
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
     await page.waitForURL('**/v1.2.0/docs/zh-CN/index.html');
-    await page.goto(base + 'docs/snapshots.html');
+    await page.goto(base + 'docs/en/snapshots.html');
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
-    await page.waitForURL('**/v1.2.0/docs/index.html');
-    await page.goto(base + 'docs/index.html');
+    await page.waitForURL('**/v1.2.0/docs/en/index.html');
+    await page.goto(base + 'docs/en/measurements.html#queries-and-retained-results');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/en/measurements.html#queries-and-retained-results');
+    await page.getByLabel('Documentation version').selectOption('v1.2.1');
+    await page.waitForURL('**/v1.2.1/docs/en/measurements.html#queries-and-retained-results');
+    await page.goto(base + 'docs/en/live-streaming.html');
+    await page.getByLabel('Documentation version').selectOption('v1.2.0');
+    await page.waitForURL('**/v1.2.0/docs/en/index.html');
+    await page.goto(base + 'docs/en/index.html');
     const anchor = await page.locator('article h1').getAttribute('id');
-    await page.goto(base + 'docs/index.html#' + anchor);
+    await page.goto(base + 'docs/en/index.html#' + anchor);
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
-    await page.waitForURL('**/v1.2.0/docs/index.html#' + anchor);
-    await page.goto(base + 'docs/index.html#removed-anchor');
+    await page.waitForURL('**/v1.2.0/docs/en/index.html#' + anchor);
+    await page.goto(base + 'docs/en/index.html#removed-anchor');
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
-    await page.waitForURL('**/v1.2.0/docs/index.html');
-    await page.goto(base + 'docs/index.html');
+    await page.waitForURL('**/v1.2.0/docs/en/index.html');
+    await page.goto(base + 'docs/en/index.html');
     await page.route('**/v1.2.0/pages.json', route => route.fulfill({ status: 404 }));
     await page.getByLabel('Documentation version').selectOption('v1.2.0');
     await expect(page.locator('#documentation-version')).toHaveAttribute('title', /Page inventory unavailable/);
@@ -85,17 +93,19 @@ try {
     await expect(page.getByLabel('Documentation version')).toBeEnabled();
     await page.unroute('**/v1.2.0/pages.json');
     await page.route('**/versions.json', route => route.fulfill({ status: 404 }));
-    await page.goto(base + 'docs/index.html');
+    await page.goto(base + 'docs/en/index.html');
     await expect(page.locator('#documentation-version')).toHaveAttribute('title', /No version index/);
     await expect(page.getByLabel('Documentation version')).toBeDisabled();
     await expect(page.getByLabel('Documentation version')).toHaveValue('v1.2.1');
     await page.unroute('**/versions.json');
   }
-  await page.goto(base + 'docs/index.html');
+  await page.goto(base + 'index.html');
+  await page.locator('article').getByRole('link', { name: 'English guides', exact: true }).click();
+  await page.waitForURL('**/docs/en/index.html');
   await page.locator('article').getByRole('link', { name: '简体中文', exact: true }).click();
   await page.waitForURL('**/docs/zh-CN/index.html');
   await page.locator('article').getByRole('link', { name: 'English', exact: true }).click();
-  await page.waitForURL('**/docs/index.html');
+  await page.waitForURL('**/docs/en/index.html');
   await page.goto(base + 'index.html');
   const search = page.locator('input[type="search"], #search-query').first();
   await search.fill('FrameLease');
@@ -104,6 +114,18 @@ try {
   assert(results.some(href => href.startsWith(base + 'api/')));
   await page.goto(results.find(href => href.startsWith(base + 'api/')));
   await page.locator('#documentation-version').waitFor();
+  await mkdir(output, { recursive: true });
+  for (const language of ['en', 'zh-CN']) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(base + `docs/${language}/getting-started.html`);
+    await expect(page.locator('article pre').first()).toBeVisible();
+    await page.screenshot({ path: path.join(output, `${language}-desktop.png`), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(base + `docs/${language}/index.html`);
+    await expect(page.locator('article a[href="live-streaming.html"]').first()).toBeVisible();
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Narrow viewport overflows');
+    await page.screenshot({ path: path.join(output, `${language}-mobile.png`), fullPage: true });
+  }
   assert.deepEqual(errors, []);
   await mkdir(output, { recursive: true });
   await writeFile(path.join(output, 'result.json'), JSON.stringify({ passed: true, chromium: browser.version(), sourceCommit: identity.commit }));

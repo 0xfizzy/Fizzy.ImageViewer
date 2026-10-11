@@ -32,5 +32,5 @@ calls below; binaries compiled against 1.1.2 are not guaranteed to be compatible
 - Update named cancellation arguments from `ct:` to `cancellationToken:` and
   `PixelRegion` descriptor arguments from `d:` to `descriptor:`.
 
-Review the [public API](docs/public-api.md) and
-[frame ownership contracts](docs/frame-pipeline.md) when updating adapters.
+Review the [public API](docs/en/public-api.md) and
+[frame ownership contracts](docs/en/frame-pipeline.md) when updating adapters.

@@ -1,6 +1,6 @@
 # Release SOP
 
-[简体中文](zh-CN/releasing.md)
+[简体中文](../zh-CN/releasing.md)
 
 For maintainers publishing v1.2.0 or later. Older releases are not backfilled. A release is complete only when NuGet payload, `/v{version}/` documentation, version index and GitHub Release agree. Never move a published tag or overwrite a package. Documentation updates replace the same version directory. NuGet and Pages are separate services; partial publication is recoverable, not atomic.
 

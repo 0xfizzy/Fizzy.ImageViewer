@@ -73,13 +73,31 @@ Set-Content "$source/Contract.cs" "/// <summary>Original.</summary>`npublic clas
 Invoke-Checked git @('-C',$source,'add','.')
 Invoke-Checked git @('-C',$source,'commit','--quiet','-m','original')
 Invoke-Checked git @('-C',$source,'tag','v1.2.0')
-[void][IO.Directory]::CreateDirectory("$source/docs/landing")
-Set-Content "$source/docs/landing/index.md" "# Documentation"
-Set-Content "$source/docs/landing/toc.yml" "- name: English`n  href: ../index.md"
-Invoke-Checked git @('-C',$source,'add','docs/landing')
+[void][IO.Directory]::CreateDirectory("$source/docs/en")
+Set-Content "$source/docs/en/index.md" "# Documentation"
+Set-Content "$source/docs/en/toc.yml" "- name: English`n  href: index.md"
+Invoke-Checked git @('-C',$source,'add','docs/en')
 Set-Content "$source/Contract.cs" "/// <summary>Reviewed.</summary>`npublic class Contract { }"
 Invoke-Checked git @('-C',$source,'commit','--quiet','-am','comments')
 Assert-DocumentationUpdateChanges $source 1.2.0
+# The new guide layout and bilingual entry are documentation; tooling is not.
+[void][IO.Directory]::CreateDirectory("$source/docs/zh-CN")
+Set-Content "$source/docs/index.md" '# Bilingual entry'
+Set-Content "$source/docs/toc.yml" "- name: English`n  href: en/index.md"
+Set-Content "$source/docs/zh-CN/index.md" '# 中文'
+Invoke-Checked git @('-C',$source,'add','docs')
+Invoke-Checked git @('-C',$source,'commit','--quiet','-m','language guides')
+Assert-DocumentationUpdateChanges $source 1.2.0
+foreach ($forbidden in @('docs/docfx.json','docs/en/settings.yml','docs/template/custom.md','scripts/change.ps1')) {
+    $target = Join-Path $source $forbidden
+    [void][IO.Directory]::CreateDirectory((Split-Path $target -Parent))
+    Set-Content $target 'fixture'
+    Invoke-Checked git @('-C',$source,'add',$forbidden)
+    Invoke-Checked git @('-C',$source,'commit','--quiet','-m','forbidden change')
+    Expect-Failure { Assert-DocumentationUpdateChanges $source 1.2.0 } 'build/runtime configuration'
+    Invoke-Checked git @('-C',$source,'rm','--quiet',$forbidden)
+    Invoke-Checked git @('-C',$source,'commit','--quiet','-m','remove forbidden fixture')
+}
 Expect-Failure { & "$PSScriptRoot/Update-Docs.ps1" -Action Check -Tag v1.2.0 -Source $source -SourceRef main } 'full committed SHA'
 Expect-Failure { & "$PSScriptRoot/Update-Docs.ps1" -Action Check -Tag v1.2.0 -Source $source -SourceRef ('b'*40) } 'differs from the selected source'
 Set-Content "$source/Contract.cs" "/// <summary>Reviewed.</summary>`npublic class Changed { }"

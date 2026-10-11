@@ -58,16 +58,16 @@ Write-Host 'PASS: invalid references, malformed XML and nonexistent parameter de
 # Exercise the actual translation checker in its own miniature repository, so its
 # PSScriptRoot-based paths and manifest writes cannot affect the real guides.
 $translationRoot = Join-Path $fixture 'translation-repo'
-[void](New-Item -ItemType Directory -Force -Path (Join-Path $translationRoot 'scripts'), (Join-Path $translationRoot 'docs/zh-CN'))
+[void](New-Item -ItemType Directory -Force -Path (Join-Path $translationRoot 'scripts'), (Join-Path $translationRoot 'docs/zh-CN'), (Join-Path $translationRoot 'docs/en'))
 $checker = Join-Path $translationRoot 'scripts/Test-Documentation.ps1'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Test-Documentation.ps1') -Destination $checker
-$englishGuide = Join-Path $translationRoot 'docs/guide.md'
+$englishGuide = Join-Path $translationRoot 'docs/en/guide.md'
 $chineseGuide = Join-Path $translationRoot 'docs/zh-CN/guide.md'
-[IO.File]::WriteAllText((Join-Path $translationRoot 'README.md'), "# Example`n`n[中文](README.zh-CN.md)`n[Guide](docs/guide.md)`n")
+[IO.File]::WriteAllText((Join-Path $translationRoot 'README.md'), "# Example`n`n[中文](README.zh-CN.md)`n[Guide](docs/en/guide.md)`n")
 [IO.File]::WriteAllText((Join-Path $translationRoot 'README.zh-CN.md'), "# 示例`n`n[English](README.md)`n[指南](docs/zh-CN/guide.md)`n")
-[IO.File]::WriteAllText($englishGuide, "# Guide`n`n[中文](zh-CN/guide.md)`nInitial behavior.`n")
-[IO.File]::WriteAllText($chineseGuide, "# 指南`n`n[English](../guide.md)`n初始行为。`n")
-Set-Content (Join-Path $translationRoot 'docs/toc.yml') "- name: Guide`n  href: guide.md"
+[IO.File]::WriteAllText($englishGuide, "# Guide`n`n[中文](../zh-CN/guide.md)`nInitial behavior.`n")
+[IO.File]::WriteAllText($chineseGuide, "# 指南`n`n[English](../en/guide.md)`n初始行为。`n")
+Set-Content (Join-Path $translationRoot 'docs/en/toc.yml') "- name: Guide`n  href: guide.md"
 Set-Content (Join-Path $translationRoot 'docs/zh-CN/toc.yml') "- name: 指南`n  href: guide.md"
 
 function Assert-TranslationCheck([string[]]$Accept = @(), [string]$ExpectedError = '') {
@@ -83,26 +83,36 @@ function Assert-TranslationCheck([string[]]$Accept = @(), [string]$ExpectedError
     }
 }
 
-Assert-TranslationCheck -Accept @('README.md', 'docs/guide.md')
+Assert-TranslationCheck -Accept @('README.md', 'docs/en/guide.md')
 # Source hashes normalize CRLF, so changing only line endings keeps the review valid.
 foreach ($path in @((Join-Path $translationRoot 'README.md'), $englishGuide)) {
     [IO.File]::WriteAllText($path, [IO.File]::ReadAllText($path).Replace("`n", "`r`n"))
 }
 Assert-TranslationCheck
 [IO.File]::AppendAllText($englishGuide, "`r`nUpdated behavior.`r`n")
-Assert-TranslationCheck -ExpectedError 'Translation needs review: docs/guide.md -> docs/zh-CN/guide.md'
+Assert-TranslationCheck -ExpectedError 'Translation needs review: docs/en/guide.md -> docs/zh-CN/guide.md'
 [IO.File]::AppendAllText($chineseGuide, "`n更新后的行为。`n")
-Assert-TranslationCheck -Accept @('docs/guide.md')
+Assert-TranslationCheck -Accept @('docs/en/guide.md')
+
+# Unpaired entry and package README links are still validated.
+foreach ($entry in @('docs/index.md','docs/nuget-readme.md')) {
+    Set-Content (Join-Path $translationRoot $entry) '[Broken](missing.md)'
+    Assert-TranslationCheck -ExpectedError "Broken link in ${entry}: missing.md"
+    Set-Content (Join-Path $translationRoot $entry) '# Entry'
+}
+Set-Content (Join-Path $translationRoot 'docs/zh-CN/orphan.md') '# Orphan'
+try { Assert-TranslationCheck -ExpectedError 'Translation has no source: orphan.md' }
+finally { Remove-Item -LiteralPath (Join-Path $translationRoot 'docs/zh-CN/orphan.md') }
 
 $savedTranslation = "$chineseGuide.saved"
 Move-Item -LiteralPath $chineseGuide -Destination $savedTranslation
 try {
-    Assert-TranslationCheck -ExpectedError "Missing translation: docs/zh-CN/guide.md`nBroken link in docs/guide.md: zh-CN/guide.md`nBroken link in README.zh-CN.md: docs/zh-CN/guide.md"
+    Assert-TranslationCheck -ExpectedError "Missing translation: docs/zh-CN/guide.md`nBroken link in docs/en/guide.md: ../zh-CN/guide.md`nBroken link in README.zh-CN.md: docs/zh-CN/guide.md"
 } finally {
     Move-Item -LiteralPath $savedTranslation -Destination $chineseGuide
 }
 [IO.File]::AppendAllText($englishGuide, "`r`n[Missing page](missing.md)`r`n")
 [IO.File]::AppendAllText($chineseGuide, "`n[缺失页面](../missing.md)`n")
 # Accepting the source revision must never bypass the independent link check.
-Assert-TranslationCheck -Accept @('docs/guide.md') -ExpectedError "Broken link in docs/guide.md: missing.md`nBroken link in docs/zh-CN/guide.md: ../missing.md"
+Assert-TranslationCheck -Accept @('docs/en/guide.md') -ExpectedError "Broken link in docs/en/guide.md: missing.md`nBroken link in docs/zh-CN/guide.md: ../missing.md"
 Write-Host 'PASS: translation acceptance, normalized line endings, changed sources, missing translations and broken local links are enforced.'

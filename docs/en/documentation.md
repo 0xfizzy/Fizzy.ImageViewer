@@ -1,12 +1,12 @@
 # Building and maintaining documentation
 
-[简体中文](zh-CN/documentation.md)
+[简体中文](../zh-CN/documentation.md)
 
 Maintain English XML as the symbol contract, English guides as cross-API protocols, and matching Chinese guides. Do not add runtime behavior to make comments pass. Review ownership, return meaning, cancellation, threading and cleanup against implementation and tests; compiler success is not semantic coverage.
 
 ## Build and preview
 
-The DocFX configuration is `docs/docfx.json`; the site homepage and top-level navigation are under `docs/landing/`. `Build-Docs` stages inputs under `artifacts/docs/source/` and runs this configuration there, preserving published URLs.
+The DocFX configuration is `docs/docfx.json`; the site homepage and top-level navigation are under `docs/index.md` / `docs/toc.yml`. `Build-Docs` stages inputs under `artifacts/docs/source/` and runs this configuration there, using the output paths defined below.
 
 Install PowerShell 7, the exact SDK in `global.json`, the .NET 8 Desktop Runtime, Node.js 22.14.0 and Git. The library still targets .NET 8; the pinned SDK compiler supports the existing test source. The repository pins DocFX and Playwright. Run from the repository root:
 
@@ -20,18 +20,18 @@ node scripts/Test-Browser.mjs
 
 `Build-Docs` validates translations, restores locked packages, recompiles strict XML, extracts reference metadata from actual DLL/XML, builds the site, checks HTML links and runs browser smoke. No WPF example, device, publication or deployment is started. API input, inventory and site output stay in `artifacts/docs/`. Preview uses the configured project prefix and `/dev/` or `/v{version}/`; use the printed HTTP URL, not a file URL. Ctrl+C stops preview.
 
-`Test-Browser` runs pinned Chromium against a local server, checking English/Chinese entrypoints, one API page, language switching, search result navigation, version selection, missing-page fallback and page errors. Only failures produce screenshots; the result report and failure image are in `artifacts/docs/browser/`. Simulated version mounts do not establish that any real release was deployed. After deployment, use `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` for live checks; version fallback remains a local fixture.
+`Test-Browser` runs pinned Chromium against a local server, checking English/Chinese entrypoints, one API page, language switching, search result navigation, version selection, missing-page fallback and page errors. Desktop and narrow-screen review images are saved for both languages; the result report and failure image are in `artifacts/docs/browser/`. Simulated version mounts do not establish that any real release was deployed. After deployment, use `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` for live checks; version fallback remains a local fixture.
 
 Run the full documentation build and browser smoke when changing public XML/declarations, guides/translations, README, navigation, templates or tooling. CI applies the complete gate on every push and pull request. Internal-only changes preserving contracts need no unrelated guide edits. Builds sharing library output must be sequential.
 
 ## Translation review
 
-English guides are under `docs/`, matching Chinese filenames under `docs/zh-CN/`. Keep counterpart links, API identifiers and example source consistent. The checker requires both language links and both navigation entries, and rejects orphan translations. The package README is an English packaging template, excluded from guide translation pairs.
+English guides are under `docs/en/`, matching Chinese filenames under `docs/zh-CN/`. Keep counterpart links, API identifiers and example source consistent. The checker requires both language links and both navigation entries, and rejects orphan translations. The package README is an English packaging template, excluded from guide translation pairs.
 
 After reviewing the final source against its translation:
 
 ```powershell
-./scripts/Test-Documentation.ps1 -AcceptTranslation docs/snapshots.md
+./scripts/Test-Documentation.ps1 -AcceptTranslation docs/en/snapshots.md
 ./scripts/Test-Documentation.ps1
 ```
 
@@ -60,3 +60,5 @@ The archive branch retains generated sites; GitHub Release assets retain origina
 `Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087` serves existing output at its true project/version prefix without building or network access. Development deployment rejects a build whose SHA is no longer current main after acquiring the shared deployment lock.
 
 Each newly built snapshot includes `pages.json` with its pages and anchors. Version switching uses that inventory, falls back to the corresponding API or language homepage when a page is absent, and retains only existing anchors. If an older snapshot has no inventory or a request fails, the selector restores the current version and exposes the error in its tooltip; open that version directly if needed. Historical snapshots are not rewritten.
+
+The bilingual homepage is not a translation pair. Guide pairs use identical filenames under `docs/en/` and `docs/zh-CN/`; the NuGet README remains a packaging template. The published homepage is `index.html`, guides retain their language directories, and API output remains under `api/`. Version switching opens the same path if it exists, otherwise the target language homepage or site homepage. Historical archives are not rewritten. Changes to templates, scripts or build configuration require the normal development/release workflow; the documentation-only update gate does not authorize them.

@@ -1,6 +1,6 @@
 # 发布 SOP
 
-[English](../releasing.md)
+[English](../en/releasing.md)
 
 适用于 v1.2.0 及以后，不补档旧版。NuGet 有效载荷、`/v{version}/` 文档、版本索引和 GitHub Release 一致才算完成。禁止移动已发布 tag 或覆盖包；文档更新整体覆盖同版本目录。NuGet 和 Pages 是独立服务，部分发布可以恢复，但不是原子事务。
 

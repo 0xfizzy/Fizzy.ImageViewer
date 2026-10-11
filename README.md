@@ -1,33 +1,12 @@
-<p align="center">
-  <img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108">
-</p>
+<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer" width="108" height="108"></p>
 
-<h1 align="center">Fizzy.ImageViewer</h1>
+# Fizzy.ImageViewer
 
 [简体中文](README.zh-CN.md)
 
-<p align="center">
-  <a href="#install">Install</a> ·
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#features">Features</a> ·
-  <a href="docs/frame-pipeline.md">Frame pipeline</a>
-</p>
+View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.
 
-<p align="center">
-  <strong>View, measure, and inspect images in WPF applications.</strong>
-</p>
-
-<p align="center">
-  A fast, standalone image viewer for .NET 8 with zoom and pan, shape overlays,
-  measurements, interactive editing, HUD content, and pixel inspection.
-</p>
-
-<p align="center">
-  <a href="https://www.nuget.org/packages/Fizzy.ImageViewer"><img src="https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg" alt="NuGet version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/.NET-8-512BD4.svg" alt=".NET 8">
-  <img src="https://img.shields.io/badge/platform-WPF-0078D4.svg" alt="Platform: WPF">
-</p>
+Read the [documentation website](https://0xfizzy.github.io/Fizzy.ImageViewer/) for bilingual guides and the API reference.
 
 ## Install
 
@@ -35,84 +14,57 @@
 dotnet add package Fizzy.ImageViewer
 ```
 
-The consuming project must target `net8.0-windows` (or a compatible newer target)
-and set `<UseWPF>true</UseWPF>`.
+Target `net8.0-windows` or a compatible newer target, and set `<UseWPF>true</UseWPF>`.
 
 ## Quick start
+
+With implicit usings enabled, this console entry point displays a gray image until you close the window:
 
 ```csharp
 using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Measurements;
 
-await using var viewer = new Viewer();
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) => closed.TrySetResult();
 var pixels = new byte[640 * 480];
-var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
-    FramePixelFormat.Gray8), pixels);
-var result = await viewer.SubmitFrameAsync(frame);
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($"Initial frame: {result.Status}");
+viewer.Show();
+await closed.Task;
 ```
 
-Submission transfers ownership immediately. Awaiting returns a commit/drop result,
-not a physical presentation timestamp. One frame is processed while only the newest
-waiting frame is retained. Measurements read original pixels independently of display.
-Frame leases and original-pixel access types share the `Fizzy.ImageViewer.Frames` namespace.
-
-For thousands of markers, submit a collection as one visual:
-
-```csharp
-using var markers = viewer.Layers.Markers.Add(
-    Enumerable.Range(0, 10000).Select(i =>
-        new Fizzy.ImageViewer.Drawing.CircleElement(
-            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
-            3, System.Windows.Media.Brushes.Red)));
-viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
-```
-
-See [measurement ownership and interaction](docs/measurements.md).
-See [supported public API and window lifetime](docs/public-api.md).
-Application adapters own a sealed `Viewer`; use `showWindow: false` to configure and
-subscribe before `Show()`, and await `DisposeAsync()` when the adapter stops.
-See [drawing layers](docs/drawing-layers.md) for updates, hit testing, and API behavior.
-For camera streams, retain batches and replace their content; follow the
-[live overlay consumer requirements](docs/drawing-layers.md#live-camera-overlays-consumer-requirements).
-See [frame, rendering and snapshot contracts](docs/frame-pipeline.md) and
-[validation commands](docs/validation.md).
+Submission immediately transfers frame ownership, even on rejection or cancellation. `Committed` means the UI accepted the frame, not that the monitor has displayed it.
 
 ## Features
 
-- Independent STA window with thread-safe API dispatch
-- Low-allocation frame rendering and bounded render queue
-- Zoom, pan, fit-to-window, and borderless modes
-- Lines, text, crosshairs, rectangles, circles, and HUD text
-- [Batch drawing and configurable layers](docs/drawing-layers.md): one visual per collection
-- Built-in point, line, rectangle, and line-profile measurements
-- Shape selection and interactive editing
-- Model-driven custom measurements with shared editing, queries and notifications
-- Extensible context menus
-- Pixel value inspection
+- Zoom, pan, fit-to-window, and borderless display
+- Shape overlays, batched markers, and screen-space HUD text
+- Point, length, rectangle ROI, and line-profile measurements with editing
+- Original-pixel queries, image/region snapshots, and custom menus
+- Bounded latest-frame submission and optional CUDA integration
 
-## Build
+## Documentation
 
-Read the [guides](docs/index.md), [complete examples](docs/getting-started.md),
-[documentation maintenance](docs/documentation.md) and [release SOP](docs/releasing.md).
-The [online documentation](https://0xfizzy.github.io/Fizzy.ImageViewer/) retains
-`/v{version}/` pages starting at v1.2.0; `/dev/` follows main.
+| I want to… | Read |
+| --- | --- |
+| Run my first application | [Getting started](docs/en/getting-started.md) |
+| Display a live stream | [Live streaming](docs/en/live-streaming.md) |
+| Draw or measure | [Drawing and HUD](docs/en/drawing-layers.md) |
+| Use interactive measurements | [Measurements](docs/en/measurements.md) |
+| Find a component or API | [Guide index](docs/en/index.md) |
 
-```powershell
-./scripts/Build-Docs.ps1
-./scripts/Serve-Docs.ps1
-```
+[Bilingual entry](docs/index.md)
 
-See [architecture and ownership](docs/architecture.md) before changing module boundaries.
+## Development
 
-```powershell
-dotnet build -c Release
-dotnet pack -c Release -o ./artifacts
-```
-
-Releases use GitHub Actions and NuGet Trusted Publishing. Follow the
-[release SOP](docs/releasing.md) for configuration, validation and recovery.
+See [validation](docs/en/validation.md) for build and test commands, [architecture](docs/en/architecture.md) for module boundaries, and [documentation maintenance](docs/en/documentation.md) or [release SOP](docs/en/releasing.md) for maintenance tasks.
 
 ## License
 
-MIT
+[MIT](LICENSE).

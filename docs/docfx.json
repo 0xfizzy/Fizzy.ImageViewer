@@ -1,8 +1,9 @@
 {
   "build": {
+    "maxParallelism": 1,
     "content": [
       {
-        "src": "docs/landing",
+        "src": "docs",
         "files": [
           "index.md",
           "toc.yml"
@@ -18,7 +19,8 @@
         ],
         "exclude": [
           "docs/nuget-readme.md",
-          "docs/landing/**"
+          "docs/index.md",
+          "docs/toc.yml"
         ],
         "dest": "."
       },

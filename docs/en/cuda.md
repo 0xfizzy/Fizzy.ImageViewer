@@ -1,6 +1,6 @@
 # CUDA integration
 
-[简体中文](zh-CN/cuda.md)
+[简体中文](../zh-CN/cuda.md)
 
 Use the optional `Fizzy.ImageViewer.Cuda` package for CUDA-resident Gray8, Bgr24, Rgb24,
 Bgra32, Pbgra32 and Rgba32 images. It supplies WPF-compatible display conversion and original
@@ -13,8 +13,12 @@ Implement `ICudaFrameSource` for one independently retained, immutable source im
 `Descriptor` describes original pixels. Pass that source to the factory:
 
 ```csharp
+using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Cuda;
+
 ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
-await viewer.SubmitFrameAsync(frame);
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
 ```
 
 The factory immediately owns a nonnull source, including on validation failure or cancellation.

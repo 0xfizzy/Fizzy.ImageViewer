@@ -9,7 +9,7 @@ function Assert-DocumentationUpdateChanges([string]$Source, [string]$Version) {
     $changed = @(& git -C $Source diff --name-only "v$Version" HEAD)
     if ($LASTEXITCODE) { throw 'Cannot compare update source with the original release.' }
     foreach ($file in $changed) {
-        if ($file -match '^(README(?:\.zh-CN)?\.md|docs/landing/(?:index\.md|toc\.yml)|docs/(?:zh-CN/)?[^/]+\.(md|yml)|docs/translations\.json|samples/.*\.cs)$') { continue }
+        if ($file -match '^(README(?:\.zh-CN)?\.md|docs/(?:index\.md|toc\.yml|nuget-readme\.md)|docs/(?:en|zh-CN)/(?:[^/]+\.md|toc\.yml)|docs/translations\.json|samples/.*\.cs)$') { continue }
         if ($file -notmatch '\.cs$') { throw "Update cannot change build/runtime configuration: $file" }
         # A /// line inside a multiline string is runtime data, not an XML comment.
         # Conservatively reject those files rather than accepting a textual false positive.

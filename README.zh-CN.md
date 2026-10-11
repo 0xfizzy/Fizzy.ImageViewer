@@ -1,10 +1,12 @@
-<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer icon" width="108" height="108"></p>
+<p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer" width="108" height="108"></p>
 
 # Fizzy.ImageViewer
 
 [English](README.md)
 
-用于 .NET 8 WPF 应用的图像显示、绘制、测量、交互编辑、HUD 和像素查询库。每个 Viewer 拥有独立 STA 窗口，帧提交使用有界队列。
+用于 Windows/.NET 8 WPF 应用的图像显示、绘制、测量与像素查询库。每个 Viewer 拥有独立窗口和 STA 线程；相机采集、设备控制和业务适配由应用负责。
+
+访问[文档网站](https://0xfizzy.github.io/Fizzy.ImageViewer/)，阅读双语指南和 API 参考。
 
 ## 安装
 
@@ -12,59 +14,56 @@
 dotnet add package Fizzy.ImageViewer
 ```
 
-消费者目标必须为 `net8.0-windows` 或兼容的新目标，设置 `<UseWPF>true</UseWPF>`。
+项目目标使用 `net8.0-windows` 或兼容的新目标，并设置 `<UseWPF>true</UseWPF>`。
 
 ## 快速开始
+
+启用隐式 using 后，以下完整控制台入口会显示灰度图像，并等待用户关闭窗口：
 
 ```csharp
 using Fizzy.ImageViewer;
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Measurements;
 
-await using var viewer = new Viewer();
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) => closed.TrySetResult();
 var pixels = new byte[640 * 480];
-var frame = ImageFrame.Copy(new FrameDescriptor(640, 480, 640,
-    FramePixelFormat.Gray8), pixels);
-var result = await viewer.SubmitFrameAsync(frame);
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Committed)
+    throw new InvalidOperationException($"Initial frame: {result.Status}");
+viewer.Show();
+await closed.Task;
 ```
 
-提交立即转移所有权；等待返回提交或丢弃结果，不代表物理屏幕已显示。一次处理一帧，仅保留最新等待帧。测量独立读取原始像素，租约和原始像素访问类型位于 `Fizzy.ImageViewer.Frames`。
+提交会立即转移帧所有权，包括拒绝和取消的情况。`Committed` 表示 UI 已接纳该帧，不代表物理屏幕已显示。
 
-大量标记应作为一个集合提交：
+## 核心功能
 
-```csharp
-using var markers = viewer.Layers.Markers.Add(
-    Enumerable.Range(0, 10000).Select(i =>
-        new Fizzy.ImageViewer.Drawing.CircleElement(
-            new System.Windows.Point(i % 100 * 10, i / 100 * 10),
-            3, System.Windows.Media.Brushes.Red)));
-viewer.ActivateMeasurementTool(MeasurementToolIds.Length); // Independent interactive measurement layer.
-```
+- 缩放、平移、适应窗口与无边框显示
+- 图形叠加、批量标记与屏幕坐标 HUD 文字
+- 点、长度、矩形 ROI 和线剖面测量，支持交互编辑
+- 原始像素查询、整图/区域快照与自定义菜单
+- 有界最新帧提交，以及可选 CUDA 集成
 
-参见[测量](docs/zh-CN/measurements.md)、[公共 API 与生命周期](docs/zh-CN/public-api.md)及[绘制层](docs/zh-CN/drawing-layers.md)。应用适配器拥有 sealed `Viewer`；需要先配置时使用 `showWindow: false`，配置订阅后 `Show()`，停止时等待 `DisposeAsync()`。实时流复用绘制句柄并替换内容，遵循指南中的消费者要求。
+## 阅读入口
 
-## 功能
+| 需求 | 文档 |
+| --- | --- |
+| 运行第一个程序 | [入门](docs/zh-CN/getting-started.md) |
+| 显示实时图像流 | [实时流集成](docs/zh-CN/live-streaming.md) |
+| 绘制或测量 | [绘制与 HUD](docs/zh-CN/drawing-layers.md) |
+| 使用交互测量 | [测量与交互](docs/zh-CN/measurements.md) |
+| 查找组件或 API | [指南目录](docs/zh-CN/index.md) |
 
-- 独立 STA 窗口与公共 API 调度
-- 低分配渲染及有界帧队列
-- 缩放、平移、适应窗口和无边框
-- 线、文本、准星、矩形、圆及 HUD
-- 集合绘制、可配置图层和交互测量
-- 模型驱动自定义测量、编辑、查询与通知
-- 可扩展菜单及像素查询
+[双语入口](docs/index.md)
 
-## 构建与文档
+## 开发入口
 
-阅读[组件指南](docs/zh-CN/index.md)、[完整示例](docs/zh-CN/getting-started.md)及[架构](docs/zh-CN/architecture.md)。[在线文档](https://0xfizzy.github.io/Fizzy.ImageViewer/)从 v1.2.0 起按 `/v{version}/` 留存，`/dev/` 对应主分支。
-
-```powershell
-./scripts/Build-Docs.ps1
-./scripts/Serve-Docs.ps1
-dotnet build -c Release
-dotnet pack -c Release -o ./artifacts
-```
-
-构建、发布和恢复入口见[验证](docs/zh-CN/validation.md)、[文档维护](docs/zh-CN/documentation.md)及[发布 SOP](docs/zh-CN/releasing.md)。发布使用 GitHub Actions 和 NuGet Trusted Publishing。
+构建与测试见[验证](docs/zh-CN/validation.md)，模块边界见[架构](docs/zh-CN/architecture.md)。维护工作参见[文档维护](docs/zh-CN/documentation.md)与[发布 SOP](docs/zh-CN/releasing.md)。
 
 ## 许可证
 

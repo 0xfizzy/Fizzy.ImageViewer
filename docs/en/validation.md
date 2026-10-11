@@ -1,6 +1,6 @@
 # Validation
 
-[简体中文](zh-CN/validation.md)
+[简体中文](../zh-CN/validation.md)
 
 Use Windows, PowerShell 7 and the pinned .NET SDK. This repository builds independently; no camera or robot is required. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.
 
@@ -53,3 +53,13 @@ Validate drawing replacement across single/collection/empty content, visual and 
 Run the three [examples](getting-started.md) and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report any unperformed scenario explicitly.
 
 Inspect rendered English/Chinese guides, search, direct nested API links and version selection at the project prefix. Publication and recovery additionally require the [release SOP](releasing.md), fault gates and an isolated service rehearsal. Local tests never authorize a production release.
+
+## Drawing benchmark scope
+
+Validate sustained workloads using allocated bytes per update, GC collection
+counts, and update latency percentiles, including the expected marker/text count
+and zoom behavior. The drawing benchmark also measures average allocated
+bytes and time across 50 warmed-up replacements on the viewer thread, alternating
+between two prebuilt circle collections with different positions. It excludes
+consumer result creation, cross-thread dispatch, and
+physical presentation; it does not establish sustained camera-stream GC performance.

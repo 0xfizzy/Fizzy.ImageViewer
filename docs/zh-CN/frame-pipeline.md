@@ -1,8 +1,62 @@
-# 帧管线
+# 帧与像素
 
-[English](../frame-pipeline.md)
+[English](../en/frame-pipeline.md)
 
-<a id="input-and-lifetime"></a>
+本指南说明如何从 CPU 内存创建图像、提交帧，以及通过租约读取原始像素。请先运行[完整 Viewer 示例](getting-started.md)；以下代码假定该 Viewer 仍然存活。
+
+## 选择 CPU 帧格式
+
+[入门示例](getting-started.md)使用 Gray8：每像素一个字节，默认显示范围为 0–255。其他 CPU 图像沿用相同的创建和提交 API，只需使用与源数据布局一致的描述符。下面仅演示高位深灰度和彩色透明度带来的额外要点，假定已有存活 `viewer`，并导入 `Fizzy.ImageViewer` 与 `Fizzy.ImageViewer.Frames`；应用中也应按首个示例检查提交结果。
+
+`FrameDescriptor(width, height, stride, format)` 描述自上而下的单平面像素。**Stride 是相邻行起点之间的字节数**，包含行尾填充，必须为正且不小于一行有效像素的字节数。缓冲区至少提供 `descriptor.RequiredBytes` 字节。负步长、多平面和 Bayer 数据需要在消费者中转换。`ImageFrame.Copy` 返回前已完成复制，随后可以复用源数组或相机缓冲区。
+
+### 高位深灰度：设置显示范围
+
+Gray16 每像素使用两个小端字节。如果传感器将 12 位数值存入 16 位容器，可在首次提交前将显示范围设置为 0–4095。这只调整显示对比度，不改变原始像素查询或原始导出的数值；默认范围为 0–65535。
+
+```csharp
+ushort[] values = { 0, 1024, 2048, 4095 };
+var pixels = new byte[values.Length * 2];
+for (int i = 0; i < values.Length; i++)
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
+        pixels.AsSpan(i * 2, 2), values[i]);
+await viewer.SetDisplayRangeAsync(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
+```
+
+相机已提供小端字节且步长有效时，直接传入这些字节，无需逐值重新打包。紧凑打包的 10/12 位相机格式需要先解包。Gray32Float 每像素使用四个小端 IEEE 754 字节，默认显示范围为 0–1；温度、深度等数据应按原始单位设置范围。
+
+调整已有图像时，先等待其提交，再等待 `SetDisplayRangeAsync` 以观察重绘完成或失败。传入 `null` 可恢复格式默认范围。
+
+### 彩色：匹配通道顺序与透明度
+
+选择与源字节一致的格式。例如，下面的 Bgra32 帧依次包含一个半透明红色像素和一个不透明绿色像素：
+
+```csharp
+byte[] pixels = { 0, 0, 255, 128,  0, 255, 0, 255 };
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(2, 1, 8, FramePixelFormat.Bgra32), pixels));
+```
+
+Rgb24/Bgr24 每像素三字节，通道顺序与名称一致；Bgr32 每像素四字节，第四字节是填充而非透明度。Bgra32/Rgba32 使用非预乘透明度。Pbgra32 的颜色已乘以透明度，上面的半透明红色应写为 `{ 0, 0, 128, 128 }`。不要把非预乘字节标记为预乘，也不要重复预乘。
+
+以下章节说明存储生命周期、显示和原始像素查询契约。
+
+## 转移自有 CPU 内存
+
+相机 SDK 会覆写的借用缓冲区应使用 `Copy`。只有能在最后一个帧引用释放前控制存储时，才使用 `TakeOwnership`。它省去输入复制，**不代表**省去 CPU 显示准备或 WPF 位图写入。
+
+```csharp
+var descriptor = new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8);
+var pixels = new byte[descriptor.RequiredBytes];
+Array.Fill(pixels, (byte)128); // Finish all writes before transfer.
+var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () => { });
+var result = await viewer.SubmitFrameAsync(frame);
+// Never write pixels again. This managed array needs no external release action.
+```
+
+已有内存池或相机缓冲区所有者时，传入准确的内存切片，并提供归还该缓冲区的释放回调。不要在提交后或等到 `Committed` 后立即释放所有者：当前图像、查询和独立租约仍可能保留该帧，冻结的 Viewer 还可能无限期保留它。`TakeOwnership` 在最终释放时调用一次释放回调，构造验证失败也会调用；不要再在 catch/finally 中重复归还缓冲区。回调应短小、不抛异常，并能安全地在最终释放引用的线程上执行，该线程可能是 Viewer STA。生产者无法满足这些保留时间与线程要求时，应使用 `Copy`。
 
 ## 输入与生命周期
 
@@ -16,8 +70,6 @@
 
 Viewer 保留原帧供查询，冻结可能无限期保留；相机池必须允许这种保留，或适配器主动复制。只读接口不能阻止其他持有者修改内存，不可变性是生产者契约。
 
-<a id="submission-and-display"></a>
-
 ## 提交与显示
 
 每个 Viewer 一个 STA 和渲染循环，最多一帧处理中、一帧等待，新帧替换等待帧。状态为 `Committed`、`Superseded`、`Frozen`、`Cancelled`、`Closed`、`Failed`；同时检查 Status 和 Error，丢帧也可能有清理错误，清理失败不改变提交或丢弃原因。
@@ -27,15 +79,13 @@ Viewer 保留原帧供查询，冻结可能无限期保留；相机池必须允�
 CPU 呈现器复用两个 WriteableBitmap，后台转换，先写未显示位图再切换。WPF 原生八位布局保留，映射灰度和显示快照使用 Pbgra32。GPU 使用 D3DImage。图像坐标始终是原图像素，不随 DPI 改变。
 
 图像原点是左上边界；整数像素索引与连续位置不同。像素 `(x,y)` 的中心是 `(x+0.5,y+0.5)`，
-可用 `PixelCoordinate.ToImageCenter()` 获取。算法结果的适配见[绘图坐标](drawing-layers.md#coordinates-size-and-input)。
+可用 `PixelCoordinate.ToImageCenter()` 获取。算法结果的适配见[绘图坐标](drawing-layers.md#坐标尺寸与输入)。
 视口使用 WPF 高质量位图缩放，减少缩小时细小特征的丢失。显示重采样不改变原始像素或查询结果，
 也不保证亚像素显示精度。
 
 DisplayRange 读取最新请求；等待 `SetDisplayRangeAsync` 观察重绘失败。默认 Gray8 0–255、Gray16 0–65535、Gray32Float 0–1。边界有限且严格递增，范围外裁剪，NaN/负无穷黑、正无穷白。存在帧时等该显示版本成功提交；新请求或关闭取消旧等待，无帧时只配置后续提交。当前 GPU 帧拒绝非空范围，拒绝前不改请求。禁止 STA 同步等待。
 
 第一帧正在准备时仍可能提交其之前捕获的映射，需要重绘时先等待第一帧。失败更新的请求值仍可读，重试需显式再次设置。快照使用最后成功提交的映射与版本。
-
-<a id="pixel-access-and-measurements"></a>
 
 ## 像素访问与测量
 
@@ -61,42 +111,53 @@ QueryMetrics.Batches 计完成批次含失败，不等于发布数；ExpiredResu
 
 HUD 无背景，固定文化数字格式，每值至少七字符，长值不截断，窄视口裁剪不换行。每次捕获用当前容器指针和变换重算坐标，即使无鼠标移动；隐藏/卸载或容器外无目标。FrameId 不作为 HUD 标签。
 
-<a id="freeze-snapshot-and-save"></a>
-
 ## 冻结、快照与保存
 
-菜单打开冻结当前帧，清等待帧并使冻结前在途提交失效；关闭后恢复新输入。菜单租约跨 Click/Closed 次序保留帧和显示设置；保存弹窗前获取独立租约。输入排空或 Viewer 关闭释放菜单租约。
+打开右键菜单会冻结当前帧，清除等待输入并使冻结前的在途提交失效。关闭菜单恢复新输入。菜单租约固定图像、显示映射和 ROI，处理 Click/Closed 顺序；保存动作在打开文件对话框前获得独立租约。
 
-快照调用时固定帧，Raw 保留原值，Display 应用已提交映射，不含叠加、HUD 或视口缩放。整帧也显式请求完整区域，GPU 读取不缓存回源。一次读、一次等待，更多请求在获取租约前同步拒绝；完成、取消、失败释放容量。ROI 同时固定帧与整数区域。
-
-Raw 接管独立 CPU 区域，不额外复制；最后像素引用才触发区域 release，包括越过快照的独立租约。交付前其他清理失败会清理候选快照并保留全部错误。
-
-保存先在目标目录写临时文件，编码成功后替换。替换前及 TIFF 行间检查取消，WPF PNG/JPEG/BMP 编码本身不可中断。Display 支持四种格式，JPEG 黑底；Raw 仅 TIFF，不默默降精度。清理错误可能发生在替换成功之后。菜单整图和选中已完成矩形区域都可保存，菜单一次一个保存，独立快照可并发保存且关闭后仍可用。
-
-TIFF 为无压缩 Classic TIFF，Gray16 UINT、Gray32Float IEEEFP、左上方向、RGB 顺序、正确 alpha 标签，不写 Bgr32 填充；超保守尺寸限制拒绝，不支持 BigTIFF。参见[快照指南](snapshots.md)。
-
-<a id="shutdown-and-integrations"></a>
+捕获、编码和所有权详见[快照](snapshots.md)。导出使用已提交映射，不使用尚未提交的显示范围请求。
 
 ## 关闭与集成
 
-使用 await using 或等待 DisposeAsync，不能阻塞 STA。关闭停止接纳，排空已接纳提交、渲染和查询至公开结果完成并等待线程退出，包括提交线程上的替换清理。重复等待同一结果；清理失败不变为成功，不重做。Viewer 不等外部独立租约，也不提前回收其存储；已接纳且独立持依赖的导出可继续。
+先停止并等待生产者，再等待 Viewer 释放；不能阻塞 Viewer STA。已接纳提交排空至释放和公开结果完成，包括提交线程上的替换清理。独立租约可越过 Viewer 生命周期；共享完成及失败结果见 [Viewer 关闭协议](public-api.md#线程与窗口生命周期)。
 
-<a id="gpu-surfaces-and-explicit-pixel-queries"></a>
+应用适配器负责将自身图像转换为 `ImageFrame`：借用 CPU 存储用 `Copy`，不可变自有存储用 `TakeOwnership`，已就绪 GPU 表面用 `D3D9ImageFrame.TakeOwnership`。转换、设备兼容性及适配器测试归消费者负责。
+
+## 提交 GPU 帧
+
+GPU 帧沿用同一套 `ImageFrame` 提交 API，但需要生产者适配；CPU 数组或任意 native 指针都不能直接当作 GPU 帧。
+
+### 已就绪的 D3D9 表面
+
+以下适配方法接收生产者已创建并完成同步的资源：
+
+```csharp
+static ValueTask<FrameSubmitResult> SubmitSurfaceAsync(
+    Viewer viewer, FrameDescriptor originalDescriptor, nint readySurface,
+    IFramePixelSource originalPixels, Action releaseResources)
+{
+    var frame = D3D9ImageFrame.TakeOwnership(
+        originalDescriptor, readySurface, originalPixels, releaseResources);
+    return viewer.SubmitFrameAsync(frame);
+}
+```
+
+需提供兼容 WPF、非多重采样、位于 `D3DPOOL_DEFAULT` 的 `IDirect3DSurface9` 渲染目标，像素为预乘透明度的 `D3DFMT_A8R8G8B8`。转移前完成 GPU 写入并解除计算映射。描述符和 `IFramePixelSource` 描述原始像素，表面必须与这些像素的标准显示转换一致。在 `releaseResources` 执行前，设备、表面和查询资源必须保持有效且不可变；工厂失败也会转移所有权。实现适配器前先阅读 [GPU 契约](#gpu-表面与显式像素查询)。
 
 ## GPU 表面与显式像素查询
 
-`D3D9ImageFrame.TakeOwnership` 接管已就绪的 GPU 表面，包括验证失败时的清理责任。GPU 输入提供不可变 BGRA IDirect3DSurface9、所有者及显式像素源。呈现不触发像素读取，CPU 显示范围不应用于 GPU。查询仅下载明确请求数据，返回独立 CPU 存储；提供者支持协议要求的并发、格式与所有权。最后源租约释放才清理查询资源；不能证明 D3D 安全分离时隔离保留而不重用。真实 GPU/切换仍需设备验证。
+`D3D9ImageFrame.TakeOwnership` 接管已就绪且不可变的 GPU 表面，包括验证失败时的清理责任。只要还有租约，就不能覆写表面。描述符和像素源描述原始像素，显示表面必须匹配其尺寸及标准显示转换。
 
-外部表面入口是受信任的 native 边界，非零指针不证明兼容。调用方须提供有效、非多重采样、D3DPOOL_DEFAULT 中的 D3DFMT_A8R8G8B8 render target，使用预乘 alpha，尺寸与描述符一致。设备须兼容 WPF；可选 CUDA 组件使用带 D3DCREATE_MULTITHREADED 和 D3DCREATE_FPU_PRESERVE 的 D3D9Ex 设备。生产者负责设备兼容性、native 元数据验证和 GPU 同步；移交前必须完成全部写入并解除计算映射，仅入队不足以交付。设备、表面及原始查询资源保活至最终 release。描述符描述原始像素，不描述 BGRA 表面的字节布局。本入口不表达自定义颜色映射、方向变换或显示范围；Display 快照从原始像素重建标准显示转换，不读取显示表面。
+这是受信任的 native 边界，非零指针不证明兼容。生产者提供非多重采样、`D3DPOOL_DEFAULT` 中的 `D3DFMT_A8R8G8B8` 渲染目标，使用预乘 alpha。设备必须兼容 WPF；CUDA 扩展使用带 `D3DCREATE_MULTITHREADED` 和 `D3DCREATE_FPU_PRESERVE` 的 D3D9Ex 设备。生产者负责设备兼容性、native 元数据验证和同步；转移前完成全部写入并解除计算映射，仅提交 GPU 工作不足以交付。
 
-WPF 前缓冲恢复不等于驱动设备恢复。恢复回调失败后停止向该呈现器接纳 GPU 表面，不从 WPF 事件回调抛出，也不重试恢复。呈现所有者保留错误至 Viewer.DisposeAsync，即使之后切换为 CPU 显示也不丢失；已经返回的提交结果不追溯修改。本库不重建设备，不提供软件显示回退。
+设备、表面和原始查询资源持续有效至最终释放回调。本入口不表达自定义颜色映射、方向或显示范围；Display 快照从原始像素重建标准映射，不读取显示表面。GPU 帧共享最新帧调度、FrameId、冻结/取消和提交回调。D3DImage 在 STA 创建和绑定；正常显示路径不调用 CPU 转换或像素提供者。前缓冲恢复会重新绑定保留的当前表面；CPU 帧切回 WriteableBitmap。
 
-可选 [CUDA 组件](cuda.md) 提供 Gray8/Bgr24/Rgb24/Bgra32/Pbgra32/Rgba32 的 native 显示转换及原始像素查询。应用仍适配自身帧和运行时；WPF 程序集没有 CUDA 依赖。
+`IFramePixelSource` 独立提供异步点采样、统计和区域读取。查询失败影响交互，不影响显示，也不能触发隐式整图下载。区域读取交付具有请求尺寸和源格式的独立 CPU `ImageFrame`；坐标从区域原点开始，`FrameLease` 在 `RegionPixels` 中补充来源。帧释放回调负责提供者的资源，库不另行释放提供者。
 
-<a id="internal-composition"></a>
+每个提供者方法在返回或抛出前都必须结束对源资源的访问，包括取消路径。GPU 工作已经入队时，取消发布也不能提前释放缓冲区和租约。独立租约、直接读取、查询调度器和快照可以并发调用同一提供者的不同方法；提供者必须支持并发或串行化后端。调度器的单批和导出的容量限制并不串行化所有提供者调用。
 
-## 内部组成
+GPU 帧不支持非 null `DisplayRange`。生产者自行转换为支持的帧契约。驱动重置与 WPF 前缓冲可用性不同；库不重建设备，也不提供软件显示回退。
 
-FramePipeline 管等待帧、当前帧、冻结代次、请求/已提交显示设置及结果；FramePresentation 管后台准备、STA 呈现和后端资源；MenuSnapshotSession 管菜单目标与保存互斥；SnapshotCapture 管串行区域读取和独立快照。
+前缓冲恢复回调失败后，呈现器停止接纳 GPU 表面，不从 WPF 事件回调抛出或重试。该错误保留至 `Viewer.DisposeAsync`，切回 CPU 也不丢失；不追溯修改已返回的提交结果。表面附加失败后停止使用该呈现器；只有确认分离成功才能释放租约。无法确认时，呈现器和可能仍附加的租约隔离保留至进程结束，以防 native 释放后访问，并作为失败报告。
 
-CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染、查询及 STA。
+可选 [CUDA 组件](cuda.md)提供 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32 的显示转换和原始像素查询；应用仍负责帧与执行环境适配，核心 WPF 程序集没有 CUDA 依赖。

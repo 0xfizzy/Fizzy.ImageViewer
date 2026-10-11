@@ -1,34 +1,10 @@
-- name: Getting started and integration
-  items:
-    - name: Overview
-      href: index.md
-    - name: Getting started
-      href: getting-started.md
-    - name: Viewer and lifetime
-      href: public-api.md
-- name: Frames and processing
-  items:
-    - name: Frames and pixels
-      href: frame-pipeline.md
-    - name: CUDA integration
-      href: cuda.md
-    - name: Snapshots
-      href: snapshots.md
-- name: Drawing and interaction
-  items:
-    - name: Drawing and HUD
-      href: drawing-layers.md
-    - name: Measurements
-      href: measurements.md
-    - name: Menus
-      href: menus.md
-- name: Development and maintenance
-  items:
-    - name: Architecture
-      href: architecture.md
-    - name: Validation
-      href: validation.md
-    - name: Documentation maintenance
-      href: documentation.md
-    - name: Release SOP
-      href: releasing.md
+- name: Home / 首页
+  href: index.md
+- name: English
+  href: en/
+  topicHref: en/index.md
+- name: 简体中文
+  href: zh-CN/
+  topicHref: zh-CN/index.md
+- name: API reference (English)
+  href: ../artifacts/docs/api/
