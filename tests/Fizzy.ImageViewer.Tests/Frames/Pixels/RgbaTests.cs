@@ -25,7 +25,9 @@ public class RgbaTests
         using var display = DisplayConverter.Convert(lease, null, default);
         using var normalized = DisplayConverter.Convert(other, null, default, true);
         Assert.Equal(FramePixelFormat.Pbgra32, display.Format);
-        Assert.Equal(normalized.Bytes, display.Bytes);
+        Assert.Equal(normalized.Length, display.Length);
+        Assert.Equal(normalized.Bytes.AsSpan(0, normalized.Length).ToArray(),
+            display.Bytes.AsSpan(0, display.Length).ToArray());
         using var region = await lease.ReadRegionAsync(new(0, 1, 1, 1));
         using var pixels = region.AcquirePixels();
         Assert.Equal(new byte[] {91, 173, 239, (byte)alpha}, pixels.CpuPixels.ToArray());

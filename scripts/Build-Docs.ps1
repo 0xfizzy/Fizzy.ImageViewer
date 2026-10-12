@@ -11,12 +11,22 @@ try {
     $null = Reset-Output (Join-Path (Get-Repo) 'artifacts/docs')
     Invoke-Checked dotnet @('restore','src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','--locked-mode')
     Invoke-Checked dotnet @('build','src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','-c','Release','--no-restore','--no-incremental','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
-    $binary = & dotnet msbuild src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -nologo -p:Configuration=Release -getProperty:TargetPath
+    $binary = & dotnet msbuild src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -nologo -p:Configuration=Release -p:TargetFramework=net8.0-windows -getProperty:TargetPath
     if ($LASTEXITCODE) { throw 'Cannot locate documentation assembly.' }
     $binary = ($binary -join '').Trim()
     $inputDir = Join-Path (Get-Repo) 'artifacts/docs/input'
     [void][IO.Directory]::CreateDirectory($inputDir)
     Get-ChildItem (Split-Path $binary -Parent) -File | Where-Object { $_.Extension -in @('.dll','.xml') -or $_.Name -like '*.deps.json' } | Copy-Item -Destination $inputDir
+    if (!$Package) {
+        foreach ($framework in @('net10.0-windows','net8.0-windows')) {
+            $targetBinary = & dotnet msbuild src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -nologo -p:Configuration=Release "-p:TargetFramework=$framework" -getProperty:TargetPath
+            if ($LASTEXITCODE) { throw "Cannot locate $framework documentation assembly." }
+            $targetBinary = ($targetBinary -join '').Trim()
+            $targetInput = Join-Path $inputDir "${framework}7.0"
+            [void][IO.Directory]::CreateDirectory($targetInput)
+            Copy-Item $targetBinary,([IO.Path]::ChangeExtension($targetBinary, '.xml')) $targetInput
+        }
+    }
     $apiAssemblies = @('artifacts/docs/input/Fizzy.ImageViewer.dll')
     if ($Channel -eq 'Development' -and !$Package) {
         Invoke-Checked dotnet @('build','src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
@@ -27,10 +37,11 @@ try {
     if ($Package) {
         $packageRoot = Join-Path (Get-Repo) 'artifacts/docs/package'
         Expand-SafeZip $Package $packageRoot
-        $packageDll = @(Get-ChildItem "$packageRoot/lib" -Recurse -Filter Fizzy.ImageViewer.dll)
-        if ($packageDll.Count -ne 1) { throw 'Expected one original package assembly.' }
-        Copy-Item $packageDll[0].FullName $inputDir -Force
-        Copy-Item ([IO.Path]::ChangeExtension($packageDll[0].FullName, '.xml')) $inputDir -Force
+        Get-ChildItem "$packageRoot/lib" -Directory | Copy-Item -Destination $inputDir -Recurse
+        $packageDll = Join-Path $packageRoot 'lib/net8.0-windows7.0/Fizzy.ImageViewer.dll'
+        if (!(Test-Path $packageDll)) { throw 'Expected the original net8.0-windows package assembly.' }
+        Copy-Item $packageDll $inputDir -Force
+        Copy-Item ([IO.Path]::ChangeExtension($packageDll, '.xml')) $inputDir -Force
         if ($ReviewedXml) { Copy-Item $ReviewedXml (Join-Path $inputDir 'Fizzy.ImageViewer.xml') -Force }
     }
     [xml]$xml = Get-Content (Join-Path $inputDir 'Fizzy.ImageViewer.xml') -Raw

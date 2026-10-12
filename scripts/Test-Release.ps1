@@ -13,7 +13,9 @@ try {
     try {
         & "$PSScriptRoot/Test-Workflows.ps1"
         foreach ($project in @('src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj')) { Invoke-Checked dotnet @('restore',$project,'--locked-mode') }
-        Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c','Release','--no-restore','--logger',"trx;LogFileName=release.trx",'--results-directory',"$output/tests")
+        foreach ($framework in @('net10.0-windows','net8.0-windows')) {
+            Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c','Release','-f',$framework,'--no-restore','--logger',"trx;LogFileName=release.trx",'--results-directory',"$output/tests/$framework")
+        }
         foreach ($project in Get-ChildItem tools -Recurse -Filter '*.csproj') {
             Invoke-Checked dotnet @('restore',$project.FullName,'--locked-mode')
             Invoke-Checked dotnet @('build',$project.FullName,'-c','Release','--no-restore')

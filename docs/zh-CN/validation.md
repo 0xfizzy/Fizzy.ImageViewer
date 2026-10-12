@@ -2,7 +2,7 @@
 
 [English](../en/validation.md)
 
-使用 Windows、PowerShell 7 和固定 SDK，独立检出即可构建，不需要相机或机器人。共享库输出的命令串行执行。自动 WPF 测试使用隐藏窗口和注入边界，不证明物理显示、混合 DPI、远程桌面或真实 GPU 行为。
+使用 Windows、PowerShell 7 和`global.json` 选择的 .NET 10 SDK，独立检出即可构建，不需要相机或机器人。库和测试同时面向 `net10.0-windows` 与 `net8.0-windows`；运行测试需要安装两个版本的 Desktop Runtime。共享库输出的命令串行执行。自动 WPF 测试使用隐藏窗口和注入边界，不证明物理显示、混合 DPI、远程桌面或真实 GPU 行为。
 
 ## 构建与测试
 

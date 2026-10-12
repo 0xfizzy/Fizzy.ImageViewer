@@ -2,9 +2,14 @@
 
 # Fizzy.ImageViewer
 
-[简体中文](README.zh-CN.md)
+[![NuGet](https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg?style=flat)](https://www.nuget.org/packages/Fizzy.ImageViewer/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+[![.NET 8 / 10](https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4.svg?style=flat)](https://dotnet.microsoft.com/)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue.svg?style=flat)](docs/en/getting-started.md)
 
-View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.
+English | [简体中文](README.zh-CN.md)
+
+View, draw, measure, and inspect images in Windows/.NET 8 and .NET 10 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.
 
 Read the [documentation website](https://0xfizzy.github.io/Fizzy.ImageViewer/) for bilingual guides and the API reference.
 
@@ -14,7 +19,7 @@ Read the [documentation website](https://0xfizzy.github.io/Fizzy.ImageViewer/) f
 dotnet add package Fizzy.ImageViewer
 ```
 
-Target `net8.0-windows` or a compatible newer target, and set `<UseWPF>true</UseWPF>`.
+The NuGet package includes `net10.0-windows` and `net8.0-windows` assemblies. Target either framework (or a compatible newer target), and set `<UseWPF>true</UseWPF>`.
 
 ## Quick start
 

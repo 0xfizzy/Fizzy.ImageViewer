@@ -8,7 +8,7 @@ View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each
 dotnet add package Fizzy.ImageViewer
 ```
 
-Target `net8.0-windows` (or a compatible newer target) and enable `<UseWPF>true</UseWPF>` and implicit usings.
+This package includes `net10.0-windows` and `net8.0-windows` assemblies. Target either framework (or a compatible newer target) and enable `<UseWPF>true</UseWPF>` and implicit usings.
 
 ## Quick start
 

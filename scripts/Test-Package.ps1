@@ -18,7 +18,9 @@ try {
     $config = Get-SiteConfig
     if (!$readme.Contains("$($config.origin)$($config.basePath)v$Version/")) { throw 'README must link to the fixed release documentation.' }
     $dlls = @($zip.Entries | Where-Object FullName -Match '^lib/[^/]+/Fizzy\.ImageViewer\.dll$')
-    if (!$dlls.Count) { throw 'No library targets in package.' }
+    $expectedTargets = @('net10.0-windows7.0','net8.0-windows7.0')
+    $actualTargets = @($dlls | ForEach-Object { $_.FullName.Split('/')[1] })
+    if (Compare-Object $expectedTargets $actualTargets) { throw 'Expected both net10.0-windows and net8.0-windows library targets in package.' }
     foreach ($dll in $dlls) {
         $xmlEntry = $zip.GetEntry([IO.Path]::ChangeExtension($dll.FullName, '.xml').Replace('\','/'))
         [xml]$contracts = Read-Entry $xmlEntry
@@ -30,7 +32,8 @@ try {
                 $stream = $entry.Open()
                 try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)).ToLowerInvariant() }
                 finally { $stream.Dispose() }
-                if ($hash -cne (Get-Hash (Join-Path $DocumentationInput $entry.Name))) { throw "API input/package mismatch: $($entry.Name)" }
+                $inputPath = Join-Path $DocumentationInput ($entry.FullName.Substring('lib/'.Length))
+                if ($hash -cne (Get-Hash $inputPath)) { throw "API input/package mismatch: $($entry.FullName)" }
             }
         }
     }

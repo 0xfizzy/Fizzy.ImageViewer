@@ -2,9 +2,14 @@
 
 # Fizzy.ImageViewer
 
-[English](README.md)
+[![NuGet](https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg?style=flat)](https://www.nuget.org/packages/Fizzy.ImageViewer/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+[![.NET 8 / 10](https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4.svg?style=flat)](https://dotnet.microsoft.com/)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue.svg?style=flat)](docs/zh-CN/getting-started.md)
 
-用于 Windows/.NET 8 WPF 应用的图像显示、绘制、测量与像素查询库。每个 Viewer 拥有独立窗口和 STA 线程；相机采集、设备控制和业务适配由应用负责。
+[English](README.md) | 简体中文
+
+用于 Windows/.NET 8 和 .NET 10 WPF 应用的图像显示、绘制、测量与像素查询库。每个 Viewer 拥有独立窗口和 STA 线程；相机采集、设备控制和业务适配由应用负责。
 
 访问[文档网站](https://0xfizzy.github.io/Fizzy.ImageViewer/)，阅读双语指南和 API 参考。
 
@@ -14,7 +19,7 @@
 dotnet add package Fizzy.ImageViewer
 ```
 
-项目目标使用 `net8.0-windows` 或兼容的新目标，并设置 `<UseWPF>true</UseWPF>`。
+同一个 NuGet 包包含 `net10.0-windows` 和 `net8.0-windows` 程序集。项目使用其中一个目标（或兼容的新目标），并设置 `<UseWPF>true</UseWPF>`。
 
 ## 快速开始
 

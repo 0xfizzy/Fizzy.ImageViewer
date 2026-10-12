@@ -8,7 +8,7 @@
 
 DocFX 配置位于 `docs/docfx.json`，站点首页与顶层导航位于 `docs/index.md` / `docs/toc.yml`。`Build-Docs` 将输入暂存到 `artifacts/docs/source/`，在其中运行此配置，使用下文定义的输出路径。
 
-安装 PowerShell 7、`global.json` 指定的 SDK、.NET 8 Desktop Runtime、Node.js 22.14.0 和 Git。库仍目标 .NET 8，固定 SDK 的编译器支持现有测试源码。仓库固定 DocFX 和 Playwright。在根目录运行：
+安装 PowerShell 7、`global.json` 选择的 .NET 10 SDK、.NET 8 Desktop Runtime、Node.js 22.14.0 和 Git。SDK 基线为 10.0.401，允许后续稳定的 10.0 功能带。包同时面向 .NET 10 和 .NET 8；API 参考使用 .NET 8 程序集生成两者共有的契约。仓库固定 DocFX 和 Playwright。在根目录运行：
 
 ```powershell
 npm ci

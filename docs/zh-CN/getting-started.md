@@ -6,7 +6,7 @@
 
 ## 创建 Viewer
 
-使用 Windows 和 .NET 8。创建控制台项目并使用下面的项目文件，再安装包：
+使用 Windows，项目面向 `net10.0-windows` 或 `net8.0-windows` 并启用 `<UseWPF>true</UseWPF>`。同一个 NuGet 包包含两个目标。创建控制台项目并使用下面的 .NET 8 项目文件（也可将目标改为 `net10.0-windows`），再安装包：
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

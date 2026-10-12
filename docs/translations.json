@@ -1,10 +1,10 @@
 {
   "docs/en/architecture.md": "b4ede1e9b39f3aaba5b80800038998815e8efe3543264cea3c240a51feead91f",
   "docs/en/cuda.md": "edd6d41864a008f86b7fa626ea3cd7931e4ee221cd04f820c1077b066954a986",
-  "docs/en/documentation.md": "e2ba525e1ad3e6c6d3c1bfc463a82ab4e12e2e86ac6128f70b6173ac8c7b45e4",
+  "docs/en/documentation.md": "80f36ed9bf8e39f144897fd7426f476ab519671f65a008a37251699707f71b3e",
   "docs/en/drawing-layers.md": "43e29df9b6308b5ae60fa86ab50a1b1a6f696c0dd9b69b90dc8ac08beb8dbd1a",
   "docs/en/frame-pipeline.md": "15956db76bc593909c57caab785f5a1c27f0da2cb910067641d2860e3d443df3",
-  "docs/en/getting-started.md": "4c45f2772235152ed5015eeb907b54fadd6717d911db76aec7c23873b480f52b",
+  "docs/en/getting-started.md": "bfc606a557a44b9555e262f3b5a96c36e5fe7b759de2b57a7fb355e6514745c8",
   "docs/en/index.md": "5d96c2012288565f90e4d4c9df21bdee564b5ca5ac9f2956bf0d8485ea2d770e",
   "docs/en/live-streaming.md": "1c2c3fdb9a3d6dcc0cbb8c1359fb8c55a99a12a73e946bf39e063c6335deee4b",
   "docs/en/measurement-tools.md": "344c4cf694fafc80e7ccdd6ed5ca7002601c95b8c9f6f2a72f9c5c5d1a64ff69",
@@ -13,6 +13,6 @@
   "docs/en/public-api.md": "f358b01d859b8689315f983c368d58e65acbf162a959fd24fd5d4c134ab8124c",
   "docs/en/releasing.md": "690802a7bc3f866270ab728fb1b439b6677c9901d202f7471dc1ada0eee61f3e",
   "docs/en/snapshots.md": "27e0c7f86156422e090ba2cd91804ef02df15877d42e6ecdfcaee0ebbe414d74",
-  "docs/en/validation.md": "60807b5fe354d5a39021607839e0f8d44004753846889c25177462bb31ac6e96",
-  "README.md": "04ff190ec99d813d01b2f095eb3a21dfe1b3e24c36b6f3aacd765b66b449189d"
+  "docs/en/validation.md": "89c656dc41747fc1d1d94377c8d984db5bde3d2df893e6beb531bba507786f80",
+  "README.md": "4e0a89423902b6dc9ec598b9edf299e33a3c47848184bba769a7ebf3069f3c83"
 }

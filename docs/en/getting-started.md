@@ -6,7 +6,7 @@ Build a small application that displays an image, then choose a component guide 
 
 ## Create a viewer
 
-Use Windows and .NET 8 with a `net8.0-windows` project and `<UseWPF>true</UseWPF>`. Create a console project with this project file, then install the package:
+Use Windows with a `net10.0-windows` or `net8.0-windows` project and `<UseWPF>true</UseWPF>`. Both targets are included in one NuGet package. Create a console project with the following .NET 8 project file (or change its target to `net10.0-windows`), then install the package:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

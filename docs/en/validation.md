@@ -2,7 +2,7 @@
 
 [简体中文](../zh-CN/validation.md)
 
-Use Windows, PowerShell 7 and the pinned .NET SDK. This repository builds independently; no camera or robot is required. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.
+Use Windows, PowerShell 7 and the .NET 10 SDK selected by `global.json`. This repository builds independently; no camera or robot is required. The library and tests target both `net10.0-windows` and `net8.0-windows`; install both Desktop Runtimes to run the tests. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.
 
 ## Build and test
 
