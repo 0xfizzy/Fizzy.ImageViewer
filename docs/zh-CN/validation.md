@@ -57,3 +57,9 @@ dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publicatio
 ## 绘制基准范围
 
 持续负载测量每次分配、GC 次数、延迟分位数、预期标记/文本量与缩放。基准的 50 次热身后替换使用两组预建圆，排除结果创建、跨线程及物理呈现，不能证明真实持续流 GC 性能。
+
+## 构建输出布局
+
+应用和库输出统一位于本仓库 `build/Debug/` 或 `build/Release/`。独立库、工具按项目分目录，必要时继续按目标框架或 RID 隔离。测试程序及夹具位于 `build/<Configuration>/tests/<Project>/`，测试结果位于该项目的 `TestResults/` 子目录。中间文件及还原缓存位于 `build/obj/`，按项目和配置隔离。源码依赖使用各自仓库的输出根目录。
+
+共享输出的构建串行执行。`artifacts/` 用于临时日志、报告、包暂存和发布校验。旧项目内 `bin/`、`obj/` 已排除在编译输入之外，仅在确认不再使用后清理。

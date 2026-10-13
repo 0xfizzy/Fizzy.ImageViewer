@@ -9,7 +9,7 @@
     <Version>1.2.0</Version>
     <Description>Optional CUDA image display and pixel queries with consumer-owned execution scopes.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../artifacts/cuda/$(Configuration)</CudaNativeDirectory>
+    <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../build/$(Configuration)/native</CudaNativeDirectory>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Fizzy.ImageViewer/Fizzy.ImageViewer.csproj" />

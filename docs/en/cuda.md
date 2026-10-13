@@ -110,11 +110,11 @@ dotnet build src/Fizzy.ImageViewer.Cuda -c Release
 dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
 ```
 
-Native outputs go to `artifacts/cuda/Release`. Packing without the native DLL fails; the core
+Native outputs go to `build/Release/native`. Packing without the native DLL fails; the core
 package contains neither CUDA binaries nor CUDA source. Runtime execution requires a compatible
 NVIDIA driver. No dependency is downloaded or compiled at application startup.
 
 The build script compiles native tests without executing them. After separate hardware authorization,
-run `ctest --test-dir artifacts/cuda -C Release --output-on-failure -L hardware` to check surface
+run `ctest --test-dir build/obj/cuda -C Release --output-on-failure -L hardware` to check surface
 pixels, six formats, alpha, padded pitch, gather and ROI boundaries. This does not establish physical
 presentation latency, remote desktop, adapter migration or driver-reset recovery.

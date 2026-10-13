@@ -9,3 +9,5 @@ artifacts/
 /plans/
 node_modules/
 *.log
+# Repository build outputs
+/build/

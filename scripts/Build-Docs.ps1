@@ -30,8 +30,8 @@ try {
     $apiAssemblies = @('artifacts/docs/input/Fizzy.ImageViewer.dll')
     if ($Channel -eq 'Development' -and !$Package) {
         Invoke-Checked dotnet @('build','src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','-p:DocumentationStrict=true','-p:ContinuousIntegrationBuild=true')
-        Copy-Item src/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.dll $inputDir
-        Copy-Item src/Fizzy.ImageViewer.Cuda/bin/Release/net8.0-windows/Fizzy.ImageViewer.Cuda.xml $inputDir
+        Copy-Item build/Release/Fizzy.ImageViewer.Cuda/net8.0-windows/Fizzy.ImageViewer.Cuda.dll $inputDir
+        Copy-Item build/Release/Fizzy.ImageViewer.Cuda/net8.0-windows/Fizzy.ImageViewer.Cuda.xml $inputDir
         $apiAssemblies += 'artifacts/docs/input/Fizzy.ImageViewer.Cuda.dll'
     }
     if ($Package) {

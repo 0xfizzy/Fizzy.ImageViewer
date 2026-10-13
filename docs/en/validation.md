@@ -63,3 +63,9 @@ bytes and time across 50 warmed-up replacements on the viewer thread, alternatin
 between two prebuilt circle collections with different positions. It excludes
 consumer result creation, cross-thread dispatch, and
 physical presentation; it does not establish sustained camera-stream GC performance.
+
+## Build output layout
+
+Outputs are rooted at this repository's `build/Debug/` or `build/Release/`. Independent libraries and tools use project subdirectories (with framework/RID subdirectories where needed). Test binaries and fixtures use `build/<Configuration>/tests/<Project>/`; test results use that project's `TestResults/` directory. Intermediate and restore files use `build/obj/`, isolated by project and configuration. Source dependencies keep their own repository output roots.
+
+Builds sharing outputs must run serially. `artifacts/` is reserved for temporary logs, reports, package staging and release validation. Old project-local `bin/` and `obj/` trees are excluded from compilation; remove them only after checking that they are no longer in use.

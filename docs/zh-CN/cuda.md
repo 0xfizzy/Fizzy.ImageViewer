@@ -79,9 +79,9 @@ dotnet build src/Fizzy.ImageViewer.Cuda -c Release
 dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
 ```
 
-输出在 artifacts/cuda/Release；缺少 native DLL 时 CUDA 打包失败。核心包不包含 CUDA 二进制或源码。
+输出在 build/Release/native；缺少 native DLL 时 CUDA 打包失败。核心包不包含 CUDA 二进制或源码。
 执行需要兼容 NVIDIA 驱动，应用启动时不自动下载或编译依赖。
 
 构建脚本仅编译 native 测试。单独获得硬件授权后执行
-`ctest --test-dir artifacts/cuda -C Release --output-on-failure -L hardware`，验证表面像素、六种格式、alpha、
+`ctest --test-dir build/obj/cuda -C Release --output-on-failure -L hardware`，验证表面像素、六种格式、alpha、
 padding、gather 和 ROI 边界，不证明物理延迟、远程桌面、多适配器迁移或驱动重置恢复。

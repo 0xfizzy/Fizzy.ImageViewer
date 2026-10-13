@@ -1,7 +1,20 @@
 <Project>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+  </PropertyGroup>
   <!-- Standalone library: do not inherit parent application output paths or RID. -->
   <PropertyGroup>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <WarningsAsErrors Condition="'$(DocumentationStrict)' == 'true'">$(WarningsAsErrors);CS1591;CS1570;CS1572;CS1573;CS1574;CS1584;CS1587;CS1658</WarningsAsErrors>
+  </PropertyGroup>
+  <!-- Repository-local outputs; keep projects and test fixtures isolated. -->
+  <PropertyGroup>
+    <RepositoryBuildRoot>$(MSBuildThisFileDirectory)build/</RepositoryBuildRoot>
+    <RepositoryProjectPath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</RepositoryProjectPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**;$(RepositoryBuildRoot)**</DefaultItemExcludes>
+    <BaseIntermediateOutputPath>$(RepositoryBuildRoot)obj/$(RepositoryProjectPath)/</BaseIntermediateOutputPath>
+    <OutputPath>$(RepositoryBuildRoot)$(Configuration)/$(MSBuildProjectName)/</OutputPath>
+    <OutputPath Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(RepositoryProjectPath)', '(^|[/\\])tests([/\\]|$)'))">$(RepositoryBuildRoot)$(Configuration)/tests/$(MSBuildProjectName)/</OutputPath>
+    <VSTestResultsDirectory>$(RepositoryBuildRoot)$(Configuration)/tests/$(MSBuildProjectName)/TestResults/</VSTestResultsDirectory>
   </PropertyGroup>
 </Project>
