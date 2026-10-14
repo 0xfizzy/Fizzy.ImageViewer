@@ -4,6 +4,8 @@
 
 Use Windows, PowerShell 7 and the .NET 10 SDK selected by `global.json`. This repository builds independently; no camera or robot is required. The library and tests target both `net10.0-windows` and `net8.0-windows`; install both Desktop Runtimes to run the tests. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.
 
+Select checks below for task requirements, applicable gates and changed behavior. Additional checks require a specific defect or a call, data or resource dependency from the change to the behavior being checked. The scenarios below are coverage choices, not a checklist for every change. Report performed checks and results, plus any required checks left incomplete; do not list unrelated untested scenarios.
+
 ## Build and test
 
 ```powershell
@@ -21,7 +23,7 @@ Run pixel-source, frame metadata, scheduler, HUD and snapshot tests for format, 
 
 ## Measurement ownership and interaction
 
-Run measurement/interaction/layer suites for session or lifetime changes. Exercise independent activations, factory reentry and failure, ended contexts, preview cleanup, exactly-once session disposal, notification ordering, programmatic edits, control-point crossing, registration revocation and external leases surviving Viewer closure. Preserve resource/thread safety coverage when removing unsupported recovery behavior.
+For session or lifetime changes, select measurement/interaction/layer tests covering the changed behavior and its direct dependencies. Coverage includes independent activations, factory reentry and failure, ended contexts, preview cleanup, exactly-once session disposal, notification ordering, programmatic edits, control-point crossing, registration revocation and external leases surviving Viewer closure. Preserve resource/thread safety coverage when removing unsupported recovery behavior.
 
 ## Architectural boundaries
 
@@ -31,7 +33,7 @@ Startup/shutdown tests must check original errors, safe cleanup after partial co
 
 ## Line-profile allocations
 
-Run affected benchmarks for hot-path changes; these synthetic measurements do not establish physical presentation timing or sustained device-stream performance.
+Run corresponding benchmarks when changing hot-path allocation, copying, queuing, synchronization or scheduling; renames, file moves and comment-only edits do not trigger benchmarks. These synthetic measurements do not establish physical presentation timing or sustained device-stream performance.
 
 ```powershell
 dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
@@ -50,9 +52,9 @@ Validate drawing replacement across single/collection/empty content, visual and 
 
 ## Manual checks
 
-Run the three [examples](getting-started.md) and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report any unperformed scenario explicitly.
+When the task requires interactive acceptance, or a changed interaction depends on a physical window or display environment not covered by automated tests, select the affected scenarios below. Run the relevant [examples](getting-started.md) and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report required scenarios that were not performed.
 
-Inspect rendered English/Chinese guides, search, direct nested API links and version selection at the project prefix. Publication and recovery additionally require the [release SOP](releasing.md), fault gates and an isolated service rehearsal. Local tests never authorize a production release.
+For documentation changes, use the change-specific gates in [documentation maintenance](documentation.md). Publication and recovery additionally require the [release SOP](releasing.md), fault gates and an isolated service rehearsal. Local tests never authorize a production release.
 
 ## Drawing benchmark scope
 

@@ -22,7 +22,7 @@ node scripts/Test-Browser.mjs
 
 `Test-Browser` 用固定 Chromium 和本地服务器检查双语入口、一个 API 页面、语言切换、搜索结果跳转、版本切换、缺页回退和页面错误。保存两种语言的桌面和窄屏审阅截图，结果报告及失败截图位于 `artifacts/docs/browser/`。模拟版本挂载不表示实际发布已上线。部署后运行 `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` 检查线上行为；版本缺页回退只使用本地夹具。
 
-公共 XML/声明、指南/翻译、README、导航、模板或工具变更必须完整构建文档并运行浏览器冒烟。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。
+仅修改文字措辞或翻译正文时，审阅内容与 diff；修改链接时，检查目标及锚点。修改公共声明、XML 文档、文档页面结构、导航、模板或生成工具时，运行 `scripts/Build-Docs.ps1`（已包含浏览器冒烟）。修改页面模板、样式、脚本、站点路由或版本切换行为时，运行 `node scripts/Test-Browser.mjs`；若本次文档构建已覆盖相同改动，无需重复运行。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。
 
 ## 翻译审阅
 
@@ -35,7 +35,7 @@ node scripts/Test-Browser.mjs
 ./scripts/Test-Documentation.ps1
 ```
 
-`docs/translations.json` 保存规范化源哈希，纯换行变化不使审阅失效。禁止未审译文就接受哈希；接受过程中仍检查链接。完成前检查双语渲染页面。
+`docs/translations.json` 保存规范化源哈希，纯换行变化不使审阅失效。禁止未审译文就接受哈希；接受过程中仍检查链接。改变页面结构或呈现时，检查双语渲染页面。
 
 ## 示例与门禁
 

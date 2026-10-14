@@ -22,7 +22,7 @@ node scripts/Test-Browser.mjs
 
 `Test-Browser` runs pinned Chromium against a local server, checking English/Chinese entrypoints, one API page, language switching, search result navigation, version selection, missing-page fallback and page errors. Desktop and narrow-screen review images are saved for both languages; the result report and failure image are in `artifacts/docs/browser/`. Simulated version mounts do not establish that any real release was deployed. After deployment, use `node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/` for live checks; version fallback remains a local fixture.
 
-Run the full documentation build and browser smoke when changing public XML/declarations, guides/translations, README, navigation, templates or tooling. CI applies the complete gate on every push and pull request. Internal-only changes preserving contracts need no unrelated guide edits. Builds sharing library output must be sequential.
+For wording or translation-only changes, review the content and diff; when links change, check their targets and anchors. Run `scripts/Build-Docs.ps1` for changes to public declarations, XML documentation, page structure, navigation, templates or generation tools; it already includes browser smoke. Run `node scripts/Test-Browser.mjs` for changes to page templates, styles, scripts, site routes or version switching; do not repeat it if the documentation build already covered the same changes. CI applies the complete gate on every push and pull request. Internal-only changes preserving contracts need no unrelated guide edits. Builds sharing library output must be sequential.
 
 ## Translation review
 
@@ -35,7 +35,7 @@ After reviewing the final source against its translation:
 ./scripts/Test-Documentation.ps1
 ```
 
-`docs/translations.json` records normalized source hashes; newline-only changes do not invalidate review. Never accept a source hash without reviewing the translation. Link checks remain active during acceptance. Review rendered pages in both languages before completion.
+`docs/translations.json` records normalized source hashes; newline-only changes do not invalidate review. Never accept a source hash without reviewing the translation. Link checks remain active during acceptance. Review rendered pages in both languages when changing page structure or presentation.
 
 ## Samples and gates
 
