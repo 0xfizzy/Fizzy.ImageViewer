@@ -304,6 +304,39 @@ Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Hide()
 Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Minimize()
 Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Show()
 Fizzy.ImageViewer.IViewerWindow: public abstract event System.EventHandler? Closed
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Drawing.DrawingLayer Markers { public get; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { public get; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Layers.ViewerLayers Layers { public get; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Measurements.MeasurementLayer Measurements { public get; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Measurements.MeasurementStyle MeasurementStyle { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: System.Boolean IsPixelInfoEnabled { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; }
+Fizzy.ImageViewer.ImageViewerControl: System.String? HudLabelText { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCircle(System.Windows.Point center, System.Double radius, System.Windows.Media.Brush brush, System.Double thickness = 1, System.Windows.Media.Brush? fill = null)
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawCrosshair(System.Windows.Point center, System.Windows.Media.Brush brush, System.Double armLength = 20, System.Double thickness = 2)
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawLine(System.Windows.Point p1, System.Windows.Point p2, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawRectangle(System.Windows.Rect rect, System.Windows.Media.Brush brush, System.Double thickness = 1)
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Drawing.DrawingHandle DrawText(System.Windows.Point anchor, System.String text, System.Windows.Media.Brush brush, System.Double fontSize = 14, System.Windows.Vector offset = default)
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
+Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Hud.HudTextHandle DrawHudText(System.String text, System.Windows.Media.Brush brush, System.Nullable<System.Windows.Point> anchor = default, Fizzy.ImageViewer.Hud.AnchorAlignment alignment = TopLeft, System.Double fontSize = 14)
+Fizzy.ImageViewer.ImageViewerControl: public System.Boolean UnregisterMeasurementTool(System.String toolId)
+Fizzy.ImageViewer.ImageViewerControl: public System.IDisposable RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool tool)
+Fizzy.ImageViewer.ImageViewerControl: public System.IDisposable RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem menuItem)
+Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task SetDisplayRangeAsync(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
+Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Frames.PixelRegion region, System.Threading.CancellationToken cancellationToken = default)
+Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken cancellationToken = default)
+Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.ValueTask DisposeAsync()
+Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.FrameSubmitResult> SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame frame, Fizzy.ImageViewer.Frames.FrameSubmissionOptions? options = null, System.Threading.CancellationToken cancellationToken = default)
+Fizzy.ImageViewer.ImageViewerControl: public System.Void ActivateMeasurementTool(System.String toolId)
+Fizzy.ImageViewer.ImageViewerControl: public System.Void EndInteraction()
+Fizzy.ImageViewer.ImageViewerControl: public System.Void FitToViewport()
+Fizzy.ImageViewer.ImageViewerControl: public ctor()
+Fizzy.ImageViewer.ImageViewerControl: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.ImageViewerControl>? logger)
+Fizzy.ImageViewer.ImageViewerControl: public event System.Action<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
+Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
+Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
+Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Maximum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Minimum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public System.Boolean Equals(Fizzy.ImageViewer.Imaging.GrayDisplayRange other)
@@ -648,7 +681,7 @@ interface Fizzy.ImageViewer.Frames.ICommittedFrameSource
 interface Fizzy.ImageViewer.Frames.IFramePixelSource
 interface Fizzy.ImageViewer.Frames.IFrameSink
 interface Fizzy.ImageViewer.Hud.IViewerHud
-interface Fizzy.ImageViewer.IViewer : Fizzy.ImageViewer.Drawing.IViewerDrawing, Fizzy.ImageViewer.Frames.ICommittedFrameSource, Fizzy.ImageViewer.Frames.IFrameSink, Fizzy.ImageViewer.Hud.IViewerHud, Fizzy.ImageViewer.IViewerWindow, Fizzy.ImageViewer.Imaging.IViewerQueries, Fizzy.ImageViewer.Measurements.IViewerMeasurements, Fizzy.ImageViewer.Menus.IViewerMenu, Fizzy.ImageViewer.Snapshots.ISnapshotSource, Fizzy.ImageViewer.Viewport.IViewerDisplay, System.IAsyncDisposable
+interface Fizzy.ImageViewer.IViewer : Fizzy.ImageViewer.Drawing.IViewerDrawing, Fizzy.ImageViewer.Frames.ICommittedFrameSource, Fizzy.ImageViewer.Frames.IFrameSink, Fizzy.ImageViewer.Hud.IViewerHud, Fizzy.ImageViewer.Imaging.IViewerQueries, Fizzy.ImageViewer.Measurements.IViewerMeasurements, Fizzy.ImageViewer.Menus.IViewerMenu, Fizzy.ImageViewer.Snapshots.ISnapshotSource, Fizzy.ImageViewer.Viewport.IViewerDisplay, System.IAsyncDisposable
 interface Fizzy.ImageViewer.IViewerWindow
 interface Fizzy.ImageViewer.Imaging.IViewerQueries
 interface Fizzy.ImageViewer.Measurements.IMeasurement : System.IDisposable
@@ -677,6 +710,7 @@ sealed class Fizzy.ImageViewer.Frames.RegionPixels : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.RegionStatistics
 sealed class Fizzy.ImageViewer.Frames.RegionStatisticsResult : System.IEquatable<Fizzy.ImageViewer.Frames.RegionStatisticsResult>
 sealed class Fizzy.ImageViewer.Hud.HudTextHandle : System.IDisposable
+sealed class Fizzy.ImageViewer.ImageViewerControl : Fizzy.ImageViewer.Drawing.IViewerDrawing, Fizzy.ImageViewer.Frames.ICommittedFrameSource, Fizzy.ImageViewer.Frames.IFrameSink, Fizzy.ImageViewer.Hud.IViewerHud, Fizzy.ImageViewer.IViewer, Fizzy.ImageViewer.Imaging.IViewerQueries, Fizzy.ImageViewer.Measurements.IViewerMeasurements, Fizzy.ImageViewer.Menus.IViewerMenu, Fizzy.ImageViewer.Snapshots.ISnapshotSource, Fizzy.ImageViewer.Viewport.IViewerDisplay, System.ComponentModel.ISupportInitialize, System.IAsyncDisposable, System.Windows.Controls.UserControl, System.Windows.IFrameworkInputElement, System.Windows.IInputElement, System.Windows.Markup.IAddChild, System.Windows.Markup.IQueryAmbient, System.Windows.Media.Animation.IAnimatable
 sealed class Fizzy.ImageViewer.Imaging.PixelQueryOptions : System.IEquatable<Fizzy.ImageViewer.Imaging.PixelQueryOptions>
 sealed class Fizzy.ImageViewer.Layers.ViewerLayers
 sealed class Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry : Fizzy.ImageViewer.Measurements.MeasurementGeometry, System.IEquatable<Fizzy.ImageViewer.Measurements.CircleMeasurementGeometry>, System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementGeometry>

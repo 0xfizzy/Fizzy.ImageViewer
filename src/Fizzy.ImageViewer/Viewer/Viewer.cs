@@ -11,7 +11,7 @@ namespace Fizzy.ImageViewer;
 /// Borrowed tool contexts retain their own callback-thread restrictions.
 /// </para>
 /// </summary>
-public sealed partial class Viewer : IViewer
+public sealed partial class Viewer : IViewer, IViewerWindow
 {
     private readonly ViewerHost _host;
     private readonly ILogger _logger;
@@ -48,5 +48,5 @@ public sealed partial class Viewer : IViewer
     /// <summary>Registers a menu item until its handle is disposed or the viewer closes.
     /// Handle disposal marshals to the viewer STA and is idempotent after closure.</summary>
     public IDisposable RegisterMenuItem(IMenuItem menuItem)
-        => InvokeAlive(() => _host.Menus.Register(menuItem));
+        => _host.Control.RegisterMenuItem(menuItem);
 }

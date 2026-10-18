@@ -57,7 +57,7 @@ foreach ($relative in @($pairs.Keys) + @($pairs.Values) + @('docs/index.md','doc
         $target = $match.Groups['target'].Value.Trim('<', '>')
         if ($target -match '^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|/)') { continue }
         $target = [Uri]::UnescapeDataString(($target -split '[#?]', 2)[0])
-        if (!$target -or $target -notmatch '\.(md|cs|csproj|json|ps1|yml)$') { continue }
+        if (!$target -or $target -notmatch '\.(md|cs|csproj|xaml|json|ps1|yml)$') { continue }
         if ($target -match '^(?:\.\./)+artifacts/docs/api/index\.md$') { continue } # Generated and checked by DocFX.
         if (!(Test-Path -LiteralPath (Join-Path (Split-Path $path -Parent) $target))) { $failures.Add("Broken link in ${relative}: $target") }
     }

@@ -4,6 +4,8 @@
       href: index.md
     - name: Getting started
       href: getting-started.md
+    - name: Embed in WPF
+      href: embedding.md
     - name: Live streaming
       href: live-streaming.md
     - name: Viewer and lifetime

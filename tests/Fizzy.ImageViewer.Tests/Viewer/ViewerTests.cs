@@ -83,15 +83,15 @@ public class ViewerTests
         try
         {
             await viewer.SubmitFrameAsync(Frame(63, () => Interlocked.Increment(ref released)));
-            await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.MenuSession.Open());
-            using var target = viewer.Host.MenuSession.AcquireTarget();
+            await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.MenuSession.Open());
+            using var target = viewer.Host.Control.Runtime.MenuSession.AcquireTarget();
             await viewer.DisposeAsync();
             await viewer.DisposeAsync();
             Assert.Equal(0, released);
             Assert.Equal(1, presenter.Disposals);
             Assert.Equal(ApartmentState.STA, presenter.PresentApartment);
             Assert.Equal(ApartmentState.STA, presenter.DisposeApartment);
-            using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
+            using var snapshot = await viewer.Host.Control.Runtime.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
             using var pixels = snapshot.AcquirePixels();
             Assert.Equal(63, pixels.CpuPixels.Span[0]);
             target.Dispose();
@@ -108,17 +108,17 @@ public class ViewerTests
         await viewer.SubmitFrameAsync(Frame(17));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.Host.MenuSession.Open();
-            viewer.Host.MenuSession.Close();
-            using var clickTarget = viewer.Host.MenuSession.AcquireTarget();
+            viewer.Host.Control.Runtime.MenuSession.Open();
+            viewer.Host.Control.Runtime.MenuSession.Close();
+            using var clickTarget = viewer.Host.Control.Runtime.MenuSession.AcquireTarget();
             Assert.Equal(17, clickTarget!.View.Frame.CpuPixels.Span[0]);
-            viewer.Host.MenuSession.Open(); // Old ContextIdle cleanup must not release this session.
+            viewer.Host.Control.Runtime.MenuSession.Open(); // Old ContextIdle cleanup must not release this session.
         });
         await viewer.Host.Window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-        using var reopened = viewer.Host.MenuSession.AcquireTarget();
+        using var reopened = viewer.Host.Control.Runtime.MenuSession.AcquireTarget();
         Assert.Equal(17, reopened!.View.Frame.CpuPixels.Span[0]);
         Assert.Equal(FrameSubmitStatus.Frozen, (await viewer.SubmitFrameAsync(Frame(25))).Status);
-        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.MenuSession.Close);
+        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Control.Runtime.MenuSession.Close);
         await viewer.SubmitFrameAsync(Frame(30));
         Assert.Equal(17, reopened.View.Frame.CpuPixels.Span[0]);
     }
@@ -185,14 +185,14 @@ public class ViewerTests
     {
         await using var viewer = Create();
         var first = await viewer.SubmitFrameAsync(Frame(17));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.MenuSession.Open());
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.MenuSession.Open());
         int released = 0;
         Assert.Equal(FrameSubmitStatus.Frozen, (await viewer.SubmitFrameAsync(Frame(20, () => released++))).Status);
         Assert.Equal(1, released);
-        using var target = viewer.Host.MenuSession.AcquireTarget();
-        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.MenuSession.Close);
+        using var target = viewer.Host.Control.Runtime.MenuSession.AcquireTarget();
+        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Control.Runtime.MenuSession.Close);
         await viewer.SubmitFrameAsync(Frame(25));
-        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
+        using var snapshot = await viewer.Host.Control.Runtime.Snapshots.CaptureAsync(target!.View.Acquire, SnapshotKind.Raw, target.Region);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(first.FrameId, snapshot.SourceFrame.FrameId); Assert.Equal(17, pixels.CpuPixels.Span[0]);
     }
@@ -248,7 +248,7 @@ public class ViewerTests
         try
         {
             var queued = viewer.SubmitFrameAsync(Frame(20, () => released++)).AsTask();
-            var freeze = viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.MenuSession.Open(), System.Windows.Threading.DispatcherPriority.Send);
+            var freeze = viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.MenuSession.Open(), System.Windows.Threading.DispatcherPriority.Send);
             release.Set();
             await freeze;
             Assert.Equal(FrameSubmitStatus.Frozen, (await queued).Status);
@@ -297,7 +297,7 @@ public class ViewerTests
     {
         await using var viewer = Create();
         var measurement = new TestMeasurement();
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Queries.Register(measurement));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Queries.Register(measurement));
         var result = await viewer.SubmitFrameAsync(Frame(71));
         var info = await measurement.Published.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(info);

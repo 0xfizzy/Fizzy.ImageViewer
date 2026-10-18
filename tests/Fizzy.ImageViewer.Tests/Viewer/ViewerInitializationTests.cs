@@ -243,7 +243,7 @@ public class ViewerInitializationTests
                 sta = Thread.CurrentThread;
                 viewer.Host.Window.Closed += (_, _) => closedWindows++;
                 viewer.Host.Window.Closing += (_, e) => e.Cancel = true;
-                var scope = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()));
+                var scope = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()));
 
                 scope.OnDispose(() => releasedScopes++);
                 scope.Complete();

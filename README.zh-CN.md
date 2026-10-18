@@ -9,7 +9,7 @@
 
 [English](README.md) | 简体中文
 
-用于 Windows/.NET 8 和 .NET 10 WPF 应用的图像显示、绘制、测量与像素查询库。每个 Viewer 拥有独立窗口和 STA 线程；相机采集、设备控制和业务适配由应用负责。
+用于 Windows/.NET 8 和 .NET 10 WPF 应用的图像显示、绘制、测量与像素查询库。可将 `ImageViewerControl` 嵌入 WPF 窗口，或使用独立窗口与 STA 的 `Viewer`；相机采集、设备控制和业务适配由应用负责。
 
 访问[文档网站](https://0xfizzy.github.io/Fizzy.ImageViewer/)，阅读双语指南和 API 参考。
 
@@ -58,6 +58,7 @@ await closed.Task;
 
 | 需求 | 文档 |
 | --- | --- |
+| 嵌入 WPF 窗口 | [嵌入指南](docs/zh-CN/embedding.md) |
 | 运行第一个程序 | [入门](docs/zh-CN/getting-started.md) |
 | 显示实时图像流 | [实时流集成](docs/zh-CN/live-streaming.md) |
 | 绘制或测量 | [绘制与 HUD](docs/zh-CN/drawing-layers.md) |

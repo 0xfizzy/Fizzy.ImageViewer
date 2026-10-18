@@ -189,7 +189,7 @@ public class DrawingTests
                 replacementBatch = replacement.Add([Circle()]);
             };
             viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
-            viewer.Host.Interaction.ImageDown(1, 1);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1);
             viewer.Layers.ClearContents();
             Assert.Equal(1, removed);
             Assert.NotNull(replacement);
@@ -495,7 +495,7 @@ public class DrawingTests
             var marker = viewer.Layers.Markers.Add([Circle()]);
             var measure = await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
             {
-                var item = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
+                var item = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(1, 1), 1));
                 item.Complete();
                 return item;
             });
@@ -522,23 +522,23 @@ public class DrawingTests
             var overlay = viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
             foreach (var geometry in new MeasurementGeometry[] { MeasurementGeometry.Point(new(30, 30)), MeasurementGeometry.Line(new(), new(10, 10)), MeasurementGeometry.Rectangle(new(), new(10, 10)) })
             {
-                var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(geometry);
+                var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(geometry);
                 var shape = item.Presentation.PrimaryVisual; item.Complete();
-                viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shape)); viewer.Host.Interaction.StartEditing(viewer.Host.Interaction.SelectedMeasurement!);
+                viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(shape)); viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Interaction.SelectedMeasurement!);
                 var data = MeasurementVisualData.Get(shape)!;
-                Assert.NotEmpty(viewer.Host.Interaction.Editor.Handles);
-                var editor = viewer.Host.Interaction.Editor;
+                Assert.NotEmpty(viewer.Host.Control.Runtime.Interaction.Editor.Handles);
+                var editor = viewer.Host.Control.Runtime.Interaction.Editor;
                 Assert.True(editor.BeginDrag(geometry.Anchor, 1));
                 editor.UpdateDrag(new(40, 40)); editor.EndDrag();
 
-                viewer.Host.Interaction.DeleteSelected();
-                Assert.Null(viewer.Host.Interaction.SelectedMeasurement);
-                Assert.Empty(viewer.Host.Interaction.Editor.Handles);
+                viewer.Host.Control.Runtime.Interaction.DeleteSelected();
+                Assert.Null(viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+                Assert.Empty(viewer.Host.Control.Runtime.Interaction.Editor.Handles);
                 Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
             }
-            var measurement = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
+            var measurement = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Line(new(0, 0), new(1, 1)));
             measurement.Complete(); var line = measurement.Presentation.PrimaryVisual;
-            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(line)); viewer.Host.Interaction.DeleteSelected();
+            viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(line)); viewer.Host.Control.Runtime.Interaction.DeleteSelected();
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
     }
@@ -552,7 +552,7 @@ public class DrawingTests
             foreach (Measurements.IMeasurementTool method in new Measurements.IMeasurementTool[] {
                 new Measurements.BuiltIn.PointTool(), new Measurements.BuiltIn.LengthTool(), new Measurements.BuiltIn.RectangleRoiTool() })
             {
-                var session = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
+                var session = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame);
                 var activation = method.CreateSession(session);
                 bool done = activation.OnClick(new(10, 10)) == MeasurementClickResult.Finish;
                 if (!done)
@@ -562,7 +562,7 @@ public class DrawingTests
                     session.End();
                     activation.Cancel();
                     session.ClearPreviews();
-                    session = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
+                    session = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame);
                     activation = method.CreateSession(session);
                     Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
                     Assert.Equal(MeasurementClickResult.Continue, activation.OnClick(new(10, 10)));

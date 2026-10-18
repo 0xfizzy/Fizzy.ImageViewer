@@ -62,10 +62,10 @@ public class MeasurementNotificationsTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             api.ActivateMeasurementTool(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
-            viewer.Host.Interaction.ImageDown(0, 0);
-            viewer.Host.Interaction.ImageMove(2, 2);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);
+            viewer.Host.Control.Runtime.Interaction.ImageMove(2, 2);
             Assert.Empty(events); // Previews never enter the public result stream.
-            viewer.Host.Interaction.ImageDown(2, 2);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
         });
         Assert.NotNull(completed);
         Assert.Null(completed.QueryResult);
@@ -79,11 +79,11 @@ public class MeasurementNotificationsTests
 
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var shape = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
-            var item = viewer.Host.Measurements.Find(shape)!;
-            viewer.Host.Interaction.StartEditing(item);
-            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(0, 0), 1));
-            viewer.Host.Interaction.Editor.UpdateDrag(new(3, 3));
+            var shape = viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
+            var item = viewer.Host.Control.Runtime.Measurements.Find(shape)!;
+            viewer.Host.Control.Runtime.Interaction.StartEditing(item);
+            Assert.True(viewer.Host.Control.Runtime.Interaction.Editor.BeginDrag(new(0, 0), 1));
+            viewer.Host.Control.Runtime.Interaction.Editor.UpdateDrag(new(3, 3));
             var edited = events.Last();
             Assert.Equal(completed.Snapshot.Id, edited.Snapshot.Id);
             Assert.Equal(completed.Snapshot.GeometryVersion + 1, edited.Snapshot.GeometryVersion);
@@ -100,7 +100,7 @@ public class MeasurementNotificationsTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             int count = events.Count;
-            viewer.Host.Queries.Tick();
+            viewer.Host.Control.Runtime.Queries.Tick();
             Assert.Equal(count, events.Count);
         });
     }
@@ -114,12 +114,12 @@ public class MeasurementNotificationsTests
         viewer.MeasurementRemoved += (_, _) => removed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(0, 0)));
             item.Complete();
             item.UpdateGeometry(MeasurementGeometry.Point(new(1, 1)));
             Assert.True(item.IsDisposed);
-            Assert.False(viewer.Host.Measurements.Contains(item));
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
+            Assert.False(viewer.Host.Control.Runtime.Measurements.Contains(item));
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
         });
         Assert.Equal(1, changed);
         Assert.Equal(1, removed);
@@ -135,7 +135,7 @@ public class MeasurementNotificationsTests
         var handleSecond = new List<double>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             viewer.MeasurementChanged += (_, e) =>
@@ -177,7 +177,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => observed.Add("closed");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
         });
@@ -193,7 +193,7 @@ public class MeasurementNotificationsTests
         var second = new List<string>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.QueryResultChanged += result =>
@@ -221,7 +221,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => order.Add("closed");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.GeometryChanged += _ => order.Add("geometry");
@@ -244,7 +244,7 @@ public class MeasurementNotificationsTests
         viewer.Closed += (_, _) => order.Add("closed:second");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            IMeasurement item = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            IMeasurement item = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             void CloseDuringCleanup()

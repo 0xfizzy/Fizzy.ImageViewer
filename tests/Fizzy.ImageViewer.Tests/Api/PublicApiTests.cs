@@ -21,7 +21,7 @@ public class PublicApiTests
     {
         await using var viewer = Create();
         IViewer api = viewer;
-        IViewerWindow window = api;
+        IViewerWindow window = viewer;
         IFrameSink sink = api;
         ICommittedFrameSource frames = api;
         Fizzy.ImageViewer.Hud.IViewerHud hud = api;
@@ -89,7 +89,7 @@ public class PublicApiTests
     [Fact]
     public void ViewerImplementationMatchesItsFacade()
     {
-        var contract = typeof(IViewer).GetInterfaces().Append(typeof(IViewer))
+        var contract = typeof(IViewer).GetInterfaces().Append(typeof(IViewer)).Append(typeof(IViewerWindow))
             .SelectMany(type => type.GetMethods()).Select(m => m.ToString()).ToHashSet();
         foreach (var method in typeof(Viewer).GetMethods(System.Reflection.BindingFlags.Public |
                      System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
@@ -142,7 +142,7 @@ public class PublicApiTests
         async Task CompletePoint() => await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             measurements.ActivateMeasurementTool(MeasurementToolIds.Point);
-            viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(2, 3);
         });
 
         await CompletePoint();
@@ -154,11 +154,11 @@ public class PublicApiTests
 
         using var secondDrawing = drawing.Markers.Add(new CircleElement(new(), 2, Brushes.Red));
         measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(1, 1));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1));
         await Task.Run(measurements.Measurements.Clear);
         Assert.Equal(completed, removed);
         secondDrawing.Replace(new CircleElement(new(), 3, Brushes.Red));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(5, 5));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Interaction.ImageDown(5, 5));
         Assert.Single(completed); // The cancelled preview must not complete on the next click.
 
         await CompletePoint();
@@ -180,16 +180,16 @@ public class PublicApiTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
-            viewer.Host.Interaction.ImageDown(1, 2);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2);
             Assert.Empty(completed);
             measurements.EndInteraction();
             Assert.Empty(removed);
             measurements.ActivateMeasurementTool(MeasurementToolIds.Length);
-            viewer.Host.Interaction.ImageDown(1, 2);
-            viewer.Host.Interaction.ImageDown(5, 6);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(5, 6);
             Assert.Single(completed);
-            var item = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Line>()
-                .Select(s => viewer.Host.Measurements.Find(s)).Single(i => i != null)!;
+            var item = viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Line>()
+                .Select(s => viewer.Host.Control.Runtime.Measurements.Find(s)).Single(i => i != null)!;
             item.UpdateGeometry(MeasurementGeometry.Line(new(3, 4), new(7, 8)));
         });
         Assert.Equal(new Point(5, 6), Assert.IsType<LineMeasurementGeometry>(completed[0].Snapshot.Geometry).End);
@@ -211,10 +211,10 @@ public class PublicApiTests
         viewer.MeasurementRemoved += (_, _) => removals++;
         EventHandler<MeasurementEventArgs> remove = (_, e) => e.Measurement.Dispose();
         viewer.MeasurementCompleted += remove;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 3); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 3); });
         Assert.Equal(1, removals);
         viewer.MeasurementCompleted -= remove;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(4, 5); });
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => { viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Control.Runtime.Interaction.ImageDown(4, 5); });
         await viewer.DisposeAsync();
         Assert.Equal(2, removals);
     }

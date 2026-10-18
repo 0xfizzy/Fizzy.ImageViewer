@@ -37,6 +37,7 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 
 ```powershell
 dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --embedded artifacts/frame-benchmark-embedded.json
 dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
 dotnet run --project tools/DrawingBenchmark -c Release
 dotnet run --project tools/ResizeBenchmark -c Release

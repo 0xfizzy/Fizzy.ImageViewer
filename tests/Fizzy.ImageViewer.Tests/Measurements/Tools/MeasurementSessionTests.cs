@@ -76,10 +76,10 @@ public class MeasurementSessionTests
         second.MeasurementCompleted += (_, e) => b = e;
         first.ActivateMeasurementTool(tool.Id);
         second.ActivateMeasurementTool(tool.Id);
-        await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Interaction.ImageDown(1, 2));
-        await second.Host.Window.Dispatcher.InvokeAsync(() => second.Host.Interaction.ImageDown(10, 20));
-        await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Interaction.ImageDown(3, 4));
-        await second.Host.Window.Dispatcher.InvokeAsync(() => second.Host.Interaction.ImageDown(30, 40));
+        await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Control.Runtime.Interaction.ImageDown(1, 2));
+        await second.Host.Window.Dispatcher.InvokeAsync(() => second.Host.Control.Runtime.Interaction.ImageDown(10, 20));
+        await first.Host.Window.Dispatcher.InvokeAsync(() => first.Host.Control.Runtime.Interaction.ImageDown(3, 4));
+        await second.Host.Window.Dispatcher.InvokeAsync(() => second.Host.Control.Runtime.Interaction.ImageDown(30, 40));
         Assert.Equal(MeasurementGeometry.Line(new(1, 2), new(3, 4)), a!.Snapshot.Geometry);
         Assert.Equal(MeasurementGeometry.Line(new(10, 20), new(30, 40)), b!.Snapshot.Geometry);
     }
@@ -111,7 +111,7 @@ public class MeasurementSessionTests
             viewer.RegisterMeasurementTool(tool);
             if (throws) Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(tool.Id)));
             else viewer.ActivateMeasurementTool(tool.Id);
-            Assert.Equal(tool.Id, viewer.Host.Interaction.ActiveId);
+            Assert.Equal(tool.Id, viewer.Host.Control.Runtime.Interaction.ActiveId);
             Assert.True(viewer.Layers.Collection.InputSuppressed);
             Assert.True(oldPreview!.IsDisposed);
             Assert.False(survivor!.IsDisposed);
@@ -143,9 +143,9 @@ public class MeasurementSessionTests
             viewer.RegisterMeasurementTool(tool);
             Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(tool.Id));
             Assert.True(preview!.IsDisposed);
-            Assert.Null(viewer.Host.Interaction.ActiveId);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.ActiveId);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
             Assert.Throws<ObjectDisposedException>(() => retained!.CreateMeasurement(MeasurementGeometry.Point(new())));
         });
     }
@@ -197,16 +197,16 @@ public class MeasurementSessionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var creation = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
+            var creation = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame);
             var item = creation.CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             int released = 0;
             item.OnDispose(() => released++);
-            viewer.Host.Interaction.Dispose();
+            viewer.Host.Control.Runtime.Interaction.Dispose();
             viewer.Layers.Measurements.Clear();
             Assert.True(item.IsDisposed);
             Assert.Equal(1, released);
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
         });
     }
 }

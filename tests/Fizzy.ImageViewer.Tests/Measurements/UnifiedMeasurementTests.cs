@@ -104,9 +104,9 @@ public class UnifiedMeasurementTests
             viewer.MeasurementCompleted += (_, e) => { completed++; Assert.Equal(MeasurementGeometryKind.Rectangle, e.Snapshot.Geometry.Kind); };
             viewer.MeasurementRemoved += (_, _) => removed++;
             viewer.ActivateMeasurementTool(custom ? tool.Id : MeasurementToolIds.RectangleRoi);
-            viewer.Host.Interaction.ImageDown(0, 0); viewer.Host.Interaction.ImageDown(2, 2);
-            var shape = viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
-            item = viewer.Host.Measurements.Find(shape)!;
+            viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
+            var shape = viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
+            item = viewer.Host.Control.Runtime.Measurements.Find(shape)!;
             item.QueryResultChanged += result => { if (result != null) ready.TrySetResult(result); };
         });
         await viewer.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
@@ -117,9 +117,9 @@ public class UnifiedMeasurementTests
             Assert.Equal(2.5, Assert.Single(result.Channels).Mean); Assert.Contains("mean=2.5", item.Presentation.Label.Text);
             var changes = 0;
             item.GeometryChanged += _ => changes++;
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
-            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(0, 0), 1));
-            viewer.Host.Interaction.Editor.UpdateDrag(new(3, 3));
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(item.Presentation.PrimaryVisual));
+            Assert.True(viewer.Host.Control.Runtime.Interaction.Editor.BeginDrag(new(0, 0), 1));
+            viewer.Host.Control.Runtime.Interaction.Editor.UpdateDrag(new(3, 3));
             Assert.Null(item.QueryResult); Assert.DoesNotContain("mean=", item.Presentation.Label.Text); Assert.Equal(1, changes);
             Assert.Equal(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft, MeasurementVisualData.Get(item.Presentation.Label)!.AnchorPoint);
             Assert.Equal(2.5, result.Channels[0].Mean);
@@ -217,9 +217,9 @@ public class UnifiedMeasurementTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(2, 3), 4));
-            item.Complete(); viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
-            var editor = viewer.Host.Interaction.Editor;
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(2, 3), 4));
+            item.Complete(); viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(item.Presentation.PrimaryVisual));
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(2, 3), 1)); editor.UpdateDrag(new(5, 6)); editor.EndDrag();
             Assert.Equal(new Point(5, 6), Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Center); Assert.Equal(4, Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Radius);
             Assert.True(editor.BeginDrag(new(9, 6), 1)); editor.UpdateDrag(new(5, 9)); editor.EndDrag();
@@ -238,15 +238,15 @@ public class UnifiedMeasurementTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var context = viewer.Host.Measurements;
-            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(), 1), new() { Query = MeasurementQueryKind.RegionStatistics }));
-            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryKind.LineProfile, ShowProfileWindow = true }));
-            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Line(new(), new(1, 1)), new() { ShowProfileWindow = true }));
+            var context = viewer.Host.Control.Runtime.Measurements;
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Circle(new(), 1), new() { Query = MeasurementQueryKind.RegionStatistics }));
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()), new() { Query = MeasurementQueryKind.LineProfile, ShowProfileWindow = true }));
+            Assert.Throws<ArgumentException>(() => new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Line(new(), new(1, 1)), new() { ShowProfileWindow = true }));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => MeasurementGeometry.Circle(new(), double.MaxValue));
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
-            var item = new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
-            item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()))));
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
+            var item = new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new())); item.Complete();
+            item.OnDispose(() => Assert.Throws<InvalidOperationException>(() => new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new()))));
             viewer.Layers.ClearContents();
         });
     }

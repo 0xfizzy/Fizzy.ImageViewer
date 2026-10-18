@@ -10,10 +10,10 @@ public partial class Viewer
 
     /// <inheritdoc cref="IFrameSink.SubmitFrameAsync"/>
     public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken cancellationToken = default)
-        => _host.Pipeline.SubmitAsync(frame, options, cancellationToken);
+        => _host.Control.SubmitFrameAsync(frame, options, cancellationToken);
 
     /// <inheritdoc/>
-    public FrameLease? AcquireCurrentFrame() => _host.Pipeline.AcquireCurrentFrame();
+    public FrameLease? AcquireCurrentFrame() => _host.Control.AcquireCurrentFrame();
 
     internal void NotifyFrameCommitted(FrameInfo info)
     {

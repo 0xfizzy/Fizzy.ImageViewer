@@ -31,8 +31,8 @@ public class MenuTests
         WpfMenuItem[] visuals = [];
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            Open(viewer.Host.Window.ContextMenu);
-            visuals = viewer.Host.Window.ContextMenu.Items.OfType<WpfMenuItem>()
+            Open(viewer.Host.Control.ContextMenu);
+            visuals = viewer.Host.Control.ContextMenu.Items.OfType<WpfMenuItem>()
                 .Where(i => Equals(i.Header, item.Header)).ToArray();
             Assert.Equal(2, visuals.Length);
         });
@@ -44,9 +44,9 @@ public class MenuTests
             visuals[0].RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
             visuals[1].RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
             Assert.Equal(1, item.Clicks);
-            Close(viewer.Host.Window.ContextMenu);
-            Open(viewer.Host.Window.ContextMenu);
-            Assert.Single(viewer.Host.Window.ContextMenu.Items.OfType<WpfMenuItem>()
+            Close(viewer.Host.Control.ContextMenu);
+            Open(viewer.Host.Control.ContextMenu);
+            Assert.Single(viewer.Host.Control.ContextMenu.Items.OfType<WpfMenuItem>()
                 .Where(i => Equals(i.Header, item.Header)));
         });
         await viewer.DisposeAsync();
@@ -63,7 +63,7 @@ public class MenuTests
         viewer.IsPixelInfoEnabled = false;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             var item = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Pixel Info"));
             Assert.False(item.IsChecked);
@@ -105,7 +105,7 @@ public class MenuTests
     {
         var item = new DisposableItem();
         var handle = viewer.RegisterMenuItem(item);
-        var menu = viewer.Host.Window.ContextMenu;
+        var menu = viewer.Host.Control.ContextMenu;
         Open(menu);
         var visual = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, item.Header));
         return (handle, visual, new WeakReference(item));
@@ -125,7 +125,7 @@ public class MenuTests
                 registration!.Dispose();
                 viewer.RegisterMenuItem(new ActionMenuItem("replacement", () => { }));
             }));
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             var once = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "once"));
             Close(menu);
@@ -172,7 +172,7 @@ public class MenuTests
         viewer.RegisterMenuItem(new ActionMenuItem("test", () => calls++));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            menu = viewer.Host.Window.ContextMenu;
+            menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             old = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "test"));
             Close(menu);
@@ -204,7 +204,7 @@ public class MenuTests
         using var registration = viewer.RegisterMenuItem(item);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             Assert.Empty(menu.Items);
             Assert.False(menu.IsOpen);
@@ -215,7 +215,7 @@ public class MenuTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             item.Fail = false;
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             var visual = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "stateful"));
             Assert.True(visual.IsChecked);
@@ -242,11 +242,11 @@ public class MenuTests
             // Create a test HWND without showing the viewer. Absolute placement and
             // StaysOpen avoid physical mouse input, capture and focus dependencies.
             new System.Windows.Interop.WindowInteropHelper(viewer.Host.Window).EnsureHandle();
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             menu.Placement = System.Windows.Controls.Primitives.PlacementMode.AbsolutePoint;
             menu.HorizontalOffset = menu.VerticalOffset = 0;
             menu.StaysOpen = true;
-            viewer.Host.Menus.Opening += () => observedOpen = menu.IsOpen;
+            viewer.Host.Control.Runtime.Menus.Opening += () => observedOpen = menu.IsOpen;
             menu.Closed += (_, _) => closed.TrySetResult();
             menu.IsOpen = true;
         });
@@ -254,8 +254,8 @@ public class MenuTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             Assert.True(observedOpen);
-            Assert.False(viewer.Host.Window.ContextMenu.IsOpen);
-            Assert.Empty(viewer.Host.Window.ContextMenu.Items);
+            Assert.False(viewer.Host.Control.ContextMenu.IsOpen);
+            Assert.Empty(viewer.Host.Control.ContextMenu.Items);
             Assert.Contains(item.Failure, log.Errors);
         }, DispatcherPriority.ApplicationIdle);
         var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
@@ -324,7 +324,7 @@ public class MenuTests
             new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false, initialize: viewer =>
             {
                 handle = viewer.RegisterMenuItem(new ActionMenuItem("test", () => { }));
-                viewer.Host.Window.Closed += (_, _) => detached = viewer.Host.Window.ContextMenu == null;
+                viewer.Host.Window.Closed += (_, _) => detached = viewer.Host.Control.ContextMenu == null;
                 throw failure;
             })));
         Assert.True(detached);
@@ -367,19 +367,19 @@ public class MenuTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(1, 1);
-            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(2, 2);
-            var overlay = viewer.Host.Window.MeasurementOverlay;
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
+            var overlay = viewer.Host.Control.MeasurementOverlay;
             var shapes = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().ToArray();
-            var menu = viewer.Host.Window.ContextMenu;
-            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shapes[0])); Open(menu);
+            var menu = viewer.Host.Control.ContextMenu;
+            viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(shapes[0])); Open(menu);
             var firstDelete = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Delete"));
             Close(menu);
-            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shapes[1]));
+            viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(shapes[1]));
             firstDelete.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
             Assert.DoesNotContain(shapes[0], overlay.Canvas.Children.Cast<UIElement>());
             Assert.Contains(shapes[1], overlay.Canvas.Children.Cast<UIElement>());
-            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(shapes[1])); Open(menu); Close(menu);
+            viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(shapes[1])); Open(menu); Close(menu);
             menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Delete"))
                 .RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
             Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
@@ -392,23 +392,23 @@ public class MenuTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var context = viewer.Host.Measurements;
-            var first = (MeasurementItem)new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
-            var second = (MeasurementItem)new MeasurementCreationContext(context, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(2, 2)));
+            var context = viewer.Host.Control.Runtime.Measurements;
+            var first = (MeasurementItem)new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
+            var second = (MeasurementItem)new MeasurementCreationContext(context, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(2, 2)));
             first.Complete(); second.Complete();
-            viewer.Host.Interaction.Select(first);
-            var menu = viewer.Host.Window.ContextMenu;
+            viewer.Host.Control.Runtime.Interaction.Select(first);
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             var actions = menu.Items.OfType<WpfMenuItem>()
                 .Where(i => Equals(i.Header, "Edit") || Equals(i.Header, "Delete")).ToArray();
             Assert.Equal(2, actions.Length);
             Close(menu);
             first.Dispose();
-            viewer.Host.Interaction.Select(second);
+            viewer.Host.Control.Runtime.Interaction.Select(second);
             foreach (var action in actions) action.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
             Assert.False(second.IsDisposed);
-            Assert.Same(second, viewer.Host.Interaction.SelectedMeasurement);
-            Assert.False(viewer.Host.Interaction.Editor.IsEditing);
+            Assert.Same(second, viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+            Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsEditing);
         });
     }
 
@@ -419,19 +419,19 @@ public class MenuTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             var cancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));
             Close(menu);
             viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
             cancel.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
-            Assert.Equal(Interaction.InteractionMode.Measuring, viewer.Host.Interaction.Mode);
-            Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
+            Assert.Equal(Interaction.InteractionMode.Measuring, viewer.Host.Control.Runtime.Interaction.Mode);
+            Assert.Equal(MeasurementToolIds.Length, viewer.Host.Control.Runtime.Interaction.ActiveId);
             Open(menu);
             var currentCancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));
             Close(menu);
             currentCancel.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
-            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
         });
     }
 
@@ -441,7 +441,7 @@ public class MenuTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             Open(menu);
             Assert.Contains(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             Close(menu);
@@ -450,7 +450,7 @@ public class MenuTests
             Assert.DoesNotContain(menu.Items.OfType<WpfMenuItem>(), i => Equals(i.Header, "Point"));
             var cancel = menu.Items.OfType<WpfMenuItem>().Single(i => Equals(i.Header, "Cancel Measurement"));
             Close(menu); cancel.RaiseEvent(new RoutedEventArgs(WpfMenuItem.ClickEvent));
-            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(Interaction.InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
         });
     }
 }

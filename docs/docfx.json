@@ -40,6 +40,7 @@
           "assets/**",
           "samples/**/*.cs",
           "samples/**/*.csproj",
+          "samples/**/*.xaml",
           "docs/site/**"
         ],
         "exclude": [

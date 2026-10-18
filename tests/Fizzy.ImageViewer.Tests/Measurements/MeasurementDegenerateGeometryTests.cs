@@ -29,10 +29,10 @@ public class MeasurementDegenerateGeometryTests
                 "rectangle-height" => MeasurementGeometry.Rectangle(new(), new(4, 0)),
                 _ => MeasurementGeometry.Rectangle(new(), new())
             };
-            using var handle = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(initial);
+            using var handle = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(initial);
             handle.Complete();
             var item = (MeasurementItem)handle;
-            var editor = viewer.Host.Interaction.Editor;
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             Assert.True(editor.StartEditing(item));
             Assert.True(editor.BeginDrag(new(), 1));
             editor.UpdateDrag(new(5, 7));
@@ -68,10 +68,10 @@ public class MeasurementDegenerateGeometryTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var handle = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            using var handle = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Circle(new(), 4));
             handle.Complete();
-            var editor = viewer.Host.Interaction.Editor;
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             Assert.True(editor.StartEditing((MeasurementItem)handle));
             Assert.True(editor.BeginDrag(new(4, 0), 1));
             editor.UpdateDrag(new()); editor.EndDrag();

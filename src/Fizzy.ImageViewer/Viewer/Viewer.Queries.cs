@@ -7,9 +7,9 @@ public partial class Viewer
     /// <inheritdoc/>
     public PixelQueryOptions QueryOptions
     {
-        get => InvokeAlive(() => _host.Queries.QueryOptions);
-        set => InvokeAlive(() => _host.Queries.QueryOptions = value);
+        get => _host.Control.QueryOptions;
+        set => _host.Control.QueryOptions = value;
     }
     /// <inheritdoc/>
-    public PixelQueryMetrics QueryMetrics => InvokeAlive(() => _host.Queries.QueryMetrics);
+    public PixelQueryMetrics QueryMetrics => _host.Control.QueryMetrics;
 }

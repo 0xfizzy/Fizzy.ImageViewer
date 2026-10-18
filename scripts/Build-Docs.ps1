@@ -61,7 +61,7 @@ try {
         Copy-Item $directory $siteSource -Recurse
     }
     Copy-Item README*.md,LICENSE $siteSource
-    foreach ($file in Get-ChildItem samples -Recurse -File | Where-Object { $_.Extension -in @('.cs','.csproj') -and $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }) {
+    foreach ($file in Get-ChildItem samples -Recurse -File | Where-Object { $_.Extension -in @('.cs','.csproj','.xaml') -and $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }) {
         $target = Join-Path $siteSource ([IO.Path]::GetRelativePath((Get-Repo), $file.FullName))
         [void][IO.Directory]::CreateDirectory((Split-Path $target -Parent))
         Copy-Item $file.FullName $target

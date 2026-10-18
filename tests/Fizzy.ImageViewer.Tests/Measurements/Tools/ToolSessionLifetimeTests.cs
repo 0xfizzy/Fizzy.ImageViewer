@@ -48,11 +48,11 @@ public class ToolSessionLifetimeTests
         if (ending == "close") await viewer.DisposeAsync();
         else await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            if (ending == "failure") Assert.Throws<InvalidOperationException>(() => viewer.Host.Interaction.ImageDown(1, 2));
+            if (ending == "failure") Assert.Throws<InvalidOperationException>(() => viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2));
             else if (ending == "cancel-failure") Assert.Throws<InvalidOperationException>(viewer.EndInteraction);
             else if (ending == "cancel") viewer.EndInteraction();
-            else viewer.Host.Interaction.ImageDown(1, 2);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            else viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
         Assert.Equal(1, disposed);
@@ -78,10 +78,10 @@ public class ToolSessionLifetimeTests
         viewer.ActivateMeasurementTool("lifetime");
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            if (fail) Assert.Throws<InvalidOperationException>(() => viewer.Host.Interaction.ImageDown(0, 0));
-            else viewer.Host.Interaction.ImageDown(0, 0);
-            Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
-            Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode);
+            if (fail) Assert.Throws<InvalidOperationException>(() => viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0));
+            else viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);
+            Assert.Equal(MeasurementToolIds.Length, viewer.Host.Control.Runtime.Interaction.ActiveId);
+            Assert.Equal(InteractionMode.Measuring, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.True(viewer.Layers.Collection.InputSuppressed);
         });
         Assert.Equal(1, disposed);
@@ -100,6 +100,6 @@ public class ToolSessionLifetimeTests
         viewer.ActivateMeasurementTool("lifetime");
         Assert.Equal(1, cancelled);
         Assert.Equal(1, disposed);
-        Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
+        Assert.Equal(MeasurementToolIds.Length, viewer.Host.Control.Runtime.Interaction.ActiveId);
     }
 }

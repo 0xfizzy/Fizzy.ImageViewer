@@ -19,15 +19,15 @@ public class MenuSnapshotSessionTests
         var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
         await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8),
             new byte[] { 42 }, () => { releases++; throw failure; }));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.MenuSession.Open());
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.MenuSession.Open());
         if (deferred)
         {
             // Retain the menu's old pin while the independently resumed pipeline commits
             // a replacement. The delayed menu cleanup then owns the final old reference.
-            await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Pipeline.Resume);
+            await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Control.Runtime.Pipeline.Resume);
             await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 7 }));
             Assert.Equal(0, releases);
-            await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.MenuSession.Close);
+            await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Control.Runtime.MenuSession.Close);
             await viewer.Host.Window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             Assert.Equal(1, releases);
             Assert.Equal(0, closed);

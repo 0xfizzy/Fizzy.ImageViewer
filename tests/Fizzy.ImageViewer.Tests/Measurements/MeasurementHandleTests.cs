@@ -36,7 +36,7 @@ public class MeasurementHandleTests
     private static (IMeasurement Handle, WeakReference Owner, WeakReference Overlay, WeakReference Runtime) CreateRetiredHandle(Viewer viewer, bool fail)
     {
         var layers = new Fizzy.ImageViewer.Layers.ViewerLayers(new System.Windows.Media.ScaleTransform());
-        var runtime = new MeasurementRuntime(viewer.Host.MeasurementRuntime.Lifetime, viewer.Host.Window.Dispatcher, viewer.Host.Queries, NullLogger.Instance);
+        var runtime = new MeasurementRuntime(viewer.Host.Control.Runtime.MeasurementRuntime.Lifetime, viewer.Host.Window.Dispatcher, viewer.Host.Control.Runtime.Queries, NullLogger.Instance);
         var owner = new MeasurementCollection(layers.Measurements, runtime);
         var context = new MeasurementCreationContext(owner, runtime, () => null);
         var handle = context.CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
@@ -55,7 +55,7 @@ public class MeasurementHandleTests
         MeasurementEventArgs? completed = null;
         viewer.MeasurementCompleted += (_, e) => completed = e;
         viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Interaction.ImageDown(1, 2));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2));
         var handle = completed!.Measurement;
         int changes = 0, disposed = 0;
         await Task.Run(() =>

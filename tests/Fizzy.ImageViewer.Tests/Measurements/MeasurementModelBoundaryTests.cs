@@ -18,15 +18,15 @@ public class MeasurementModelBoundaryTests
         {
             var original = new InvalidOperationException("original operation");
             var cleanup = new InvalidOperationException("cleanup");
-            var collection = viewer.Host.Measurements;
-            var overlay = viewer.Host.Window.MeasurementOverlay;
+            var collection = viewer.Host.Control.Runtime.Measurements;
+            var overlay = viewer.Host.Control.MeasurementOverlay;
             collection.ItemRemoving += _ => throw cleanup;
             if (completion) collection.ItemCompleted += _ => throw original;
             else overlay.VisualAdded += _ => throw original;
             MeasurementItem? item = null;
             var error = Assert.Throws<AggregateException>(() =>
             {
-                item = (MeasurementItem)new MeasurementCreationContext(collection, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+                item = (MeasurementItem)new MeasurementCreationContext(collection, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                     .CreateMeasurement(MeasurementGeometry.Point(new()));
                 item.Complete();
             });

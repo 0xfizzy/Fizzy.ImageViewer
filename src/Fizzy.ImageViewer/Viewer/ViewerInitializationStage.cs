@@ -1,3 +1,3 @@
 namespace Fizzy.ImageViewer;
 
-internal enum ViewerInitializationStage { WindowCreated, PipelineCreated, MeasurementsCreated, MenusCreated }
+internal enum ViewerInitializationStage { ViewCreated, PipelineCreated, MeasurementsCreated, MenusCreated }

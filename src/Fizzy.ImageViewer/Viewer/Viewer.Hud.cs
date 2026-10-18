@@ -10,19 +10,19 @@ public partial class Viewer
     /// an empty string hides the label.</summary>
     public string? HudLabelText
     {
-        get => InvokeAlive(() => _host.Window.HudLayer.Label);
-        set => InvokeAlive(() => _host.Window.HudLayer.Label = value);
+        get => _host.Control.HudLabelText;
+        set => _host.Control.HudLabelText = value;
     }
 
     /// <summary>Enables pixel inspection in the HUD. Defaults to true; shares state with the context menu.</summary>
     public bool IsPixelInfoEnabled
     {
-        get => InvokeAlive(() => _host.PixelInfo.IsEnabled);
-        set => InvokeAlive(() => _host.PixelInfo.IsEnabled = value);
+        get => _host.Control.IsPixelInfoEnabled;
+        set => _host.Control.IsPixelInfoEnabled = value;
     }
 
     /// <summary>Creates HUD text with fixed layout.</summary>
     public HudTextHandle DrawHudText(string text, Brush brush,
         Point? anchor = null, AnchorAlignment alignment = AnchorAlignment.TopLeft, double fontSize = 14)
-        => _host.Hud.Add(text, brush, anchor, alignment, fontSize);
+        => _host.Control.DrawHudText(text, brush, anchor, alignment, fontSize);
 }

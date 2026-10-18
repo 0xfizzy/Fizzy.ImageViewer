@@ -8,6 +8,7 @@
 
 | 需求 | 从这里开始 |
 | --- | --- |
+| 已有窗口内的图像控件 | [嵌入 WPF](embedding.md) |
 | 显示第一张图像 | [入门](getting-started.md) |
 | 集成相机或连续结果 | [实时流集成](live-streaming.md) |
 | 编写交互工具 | [自定义测量工具](measurement-tools.md) |

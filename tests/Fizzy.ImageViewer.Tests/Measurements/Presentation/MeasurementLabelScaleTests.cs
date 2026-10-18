@@ -21,7 +21,7 @@ public class MeasurementLabelScaleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var overlay = viewer.Host.Window.MeasurementOverlay;
+            var overlay = viewer.Host.Control.MeasurementOverlay;
             var anchor = new Point(30, 40);
             var label = MeasurementVisualFactory.CreateLabel(anchor, "Label", offsetX: 10, offsetY: -8);
             overlay.AddVisual(label);

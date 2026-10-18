@@ -40,15 +40,15 @@ public class MeasurementInteractionTests
                 completed++;
                 if (completed != 1) return;
                 viewer.ActivateMeasurementTool(startRectangle ? MeasurementToolIds.RectangleRoi : MeasurementToolIds.Point);
-                if (startRectangle) viewer.Host.Interaction.ImageDown(2, 2);
+                if (startRectangle) viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
             };
             viewer.ActivateMeasurementTool(MeasurementToolIds.Point);
-            viewer.Host.Interaction.ImageDown(1, 1);
-            Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1);
+            Assert.Equal(InteractionMode.Measuring, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.True(viewer.Layers.Collection.InputSuppressed);
-            viewer.Host.Interaction.ImageDown(5, 5);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(5, 5);
             Assert.Equal(2, completed);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
@@ -56,10 +56,10 @@ public class MeasurementInteractionTests
     private static MeasurementItem DrawRoi(Viewer viewer)
     {
         viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
-        viewer.Host.Interaction.ImageDown(2, 2);
-        viewer.Host.Interaction.ImageDown(6, 6);
+        viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
+        viewer.Host.Control.Runtime.Interaction.ImageDown(6, 6);
         var shape = Overlay(viewer).Canvas.Children.OfType<Rectangle>().Last();
-        return viewer.Host.Measurements.Find(shape)!;
+        return viewer.Host.Control.Runtime.Measurements.Find(shape)!;
     }
 
     [Theory]
@@ -76,8 +76,8 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer);
             var overlay = Overlay(viewer);
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
-            var editor = viewer.Host.Interaction.Editor;
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(item.Presentation.PrimaryVisual));
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             var initial = item.Geometry; var initialVersion = item.GeometryVersion;
             Assert.True(editor.BeginDrag(MeasurementGeometryEditing.GetControlPoints(initial)[index], 1));
             editor.UpdateDrag(new(x, y));
@@ -95,15 +95,15 @@ public class MeasurementInteractionTests
             var request = Assert.IsType<RegionStatisticsQueryRequest>(item.QueryClient.Capture(frame!.Descriptor));
             Assert.Equal(MeasurementQueryDefinition.GetRegion(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry), frame.Descriptor), request.Region);
             Assert.Equal(item.GeometryVersion, request.Identity.GeometryVersion);
-            viewer.Host.MenuController.CaptureTarget(); frozen = viewer.Host.MenuSession.AcquireTarget(region: true);
+            viewer.Host.Control.Runtime.MenuController.CaptureTarget(); frozen = viewer.Host.Control.Runtime.MenuSession.AcquireTarget(region: true);
             Assert.NotNull(frozen); Assert.Equal(request.Region, frozen!.Region);
             // The menu captures an immutable region, even if geometry changes afterwards.
             item.UpdateGeometry(MeasurementGeometry.Rectangle(new(0, 0), new(1, 1)));
             Assert.Equal(request.Region, frozen.Region);
-            viewer.Host.MenuSession.Close();
+            viewer.Host.Control.Runtime.MenuSession.Close();
         });
         using var target = frozen!;
-        using var snapshot = await viewer.Host.Snapshots.CaptureAsync(target.View.Acquire, SnapshotKind.Raw, target.Region);
+        using var snapshot = await viewer.Host.Control.Runtime.Snapshots.CaptureAsync(target.View.Acquire, SnapshotKind.Raw, target.Region);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(frozen!.Region!.Value.Width, pixels.Descriptor.Width);
         Assert.Equal(frozen.Region.Value.Height, pixels.Descriptor.Height);
@@ -119,7 +119,7 @@ public class MeasurementInteractionTests
         await using var viewer = Create();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 2), new(6, 6)));
             var rectangle = (Rectangle)item.Presentation.PrimaryVisual;
             using var editor = new MeasurementEditSession(item);
             var opposite = editor.Points[(index + 2) % 4];
@@ -136,23 +136,23 @@ public class MeasurementInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var overlay = Overlay(viewer); var invalid = new TextBlock();
-            viewer.Host.Window.MeasurementOverlay.AddVisual(invalid);
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(invalid));
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.Empty(viewer.Host.Interaction.Editor.Handles);
-            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Interaction.ImageDown(3, 4);
+            viewer.Host.Control.MeasurementOverlay.AddVisual(invalid);
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(invalid));
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
+            Assert.Empty(viewer.Host.Control.Runtime.Interaction.Editor.Handles);
+            viewer.ActivateMeasurementTool(MeasurementToolIds.Point); viewer.Host.Control.Runtime.Interaction.ImageDown(3, 4);
             var point = overlay.Canvas.Children.OfType<System.Windows.Shapes.Path>().Single();
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(point));
-            Assert.Equal(InteractionMode.Editing, viewer.Host.Interaction.Mode);
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(invalid));
-            Assert.Same(viewer.Host.Measurements.Find(point), viewer.Host.Interaction.Editor.EditingMeasurement);
-            var editor = viewer.Host.Interaction.Editor;
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(point));
+            Assert.Equal(InteractionMode.Editing, viewer.Host.Control.Runtime.Interaction.Mode);
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(invalid));
+            Assert.Same(viewer.Host.Control.Runtime.Measurements.Find(point), viewer.Host.Control.Runtime.Interaction.Editor.EditingMeasurement);
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             Assert.True(editor.BeginDrag(new(3, 4), 1)); editor.UpdateDrag(new(7, 8)); editor.EndDrag();
-            var item = viewer.Host.Measurements.Find(point)!;
+            var item = viewer.Host.Control.Runtime.Measurements.Find(point)!;
             Assert.Equal(new Point(7, 8), Assert.IsType<PointMeasurementGeometry>(item.Geometry).Position);
             Assert.Equal($"X:{7:F2}\nY:{8:F2}", item.Presentation.Label.Text);
-            viewer.Host.Interaction.DeleteSelected(); Assert.True(item.IsDisposed);
-            Assert.Empty(editor.Handles); Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            viewer.Host.Control.Runtime.Interaction.DeleteSelected(); Assert.True(item.IsDisposed);
+            Assert.Empty(editor.Handles); Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
         });
     }
 
@@ -170,24 +170,24 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             viewer.Layers.Markers.IsHitTestVisible = false;
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(item.Presentation.PrimaryVisual));
-            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft, 1));
-            viewer.Host.Interaction.Editor.UpdateDrag(new(1, 1));
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(item.Presentation.PrimaryVisual));
+            Assert.True(viewer.Host.Control.Runtime.Interaction.Editor.BeginDrag(Assert.IsType<RectangleMeasurementGeometry>(item.Geometry).TopLeft, 1));
+            viewer.Host.Control.Runtime.Interaction.Editor.UpdateDrag(new(1, 1));
             switch (action)
             {
-                case "measure": viewer.ActivateMeasurementTool("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Host.Interaction.Mode); break;
-                case "delete": viewer.Host.Interaction.DeleteSelected(); break;
+                case "measure": viewer.ActivateMeasurementTool("Length"); Assert.Equal(InteractionMode.Measuring, viewer.Host.Control.Runtime.Interaction.Mode); break;
+                case "delete": viewer.Host.Control.Runtime.Interaction.DeleteSelected(); break;
                 case "clear": viewer.Layers.ClearContents(); break;
                 case "hide": viewer.Layers.Measurements.IsVisible = false; break;
                 case "disable": viewer.Layers.Measurements.IsHitTestVisible = false; break;
                 default: viewer.EndInteraction(); break;
             }
-            Assert.False(viewer.Host.Interaction.Editor.IsEditing);
-            Assert.False(viewer.Host.Interaction.Editor.IsDragging);
-            Assert.Empty(viewer.Host.Interaction.Editor.Handles);
+            Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsEditing);
+            Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsDragging);
+            Assert.Empty(viewer.Host.Control.Runtime.Interaction.Editor.Handles);
             Assert.False(overlay.Canvas.IsMouseCaptured);
             viewer.EndInteraction();
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
             Assert.False(viewer.Layers.Markers.IsHitTestVisible);
             Assert.Equal(action != "disable", viewer.Layers.Measurements.IsHitTestVisible);
@@ -203,15 +203,15 @@ public class MeasurementInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
-            viewer.Host.Interaction.ImageDown(1, 1); viewer.Host.Interaction.ImageMove(4, 4);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1); viewer.Host.Control.Runtime.Interaction.ImageMove(4, 4);
             var overlay = Overlay(viewer);
             Assert.Equal(2, overlay.Canvas.Children.Count);
-            var item = viewer.Host.Measurements.Find(overlay.Canvas.Children.OfType<Rectangle>().Single())!;
+            var item = viewer.Host.Control.Runtime.Measurements.Find(overlay.Canvas.Children.OfType<Rectangle>().Single())!;
             Assert.False(item.IsComplete);
             if (hide) viewer.Layers.Measurements.IsVisible = false;
             else viewer.Layers.ClearContents();
             Assert.True(item.IsDisposed); Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
@@ -224,7 +224,7 @@ public class MeasurementInteractionTests
         {
             var item = DrawRoi(viewer); var overlay = Overlay(viewer);
             int removed = 0;
-            overlay.VisualRemoved += visual => { removed++; viewer.Host.Measurements.Find(visual)?.Dispose(); item.Dispose(); };
+            overlay.VisualRemoved += visual => { removed++; viewer.Host.Control.Runtime.Measurements.Find(visual)?.Dispose(); item.Dispose(); };
             item.Dispose(); item.Dispose(); viewer.Layers.ClearContents();
             Assert.Equal(2, removed); Assert.Empty(overlay.Canvas.Children.Cast<UIElement>());
         });
@@ -259,21 +259,21 @@ public class MeasurementInteractionTests
         int notifications = 0;
         void OnChanged(object? sender, MeasurementEventArgs args)
         {
-            AssertHandlesFollowGeometry(viewer.Host.Interaction.Editor, args.Snapshot.Geometry);
+            AssertHandlesFollowGeometry(viewer.Host.Control.Runtime.Interaction.Editor, args.Snapshot.Geometry);
             notifications++;
         }
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(Geometry(0));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(Geometry(0));
             handle = item;
             item.Complete();
-            viewer.Host.Interaction.StartEditing(item);
+            viewer.Host.Control.Runtime.Interaction.StartEditing(item);
             viewer.MeasurementChanged += OnChanged;
         });
         await Task.Run(() => handle.UpdateGeometry(Geometry(100)));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var editor = viewer.Host.Interaction.Editor;
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             AssertHandlesFollowGeometry(editor, Geometry(100));
             Assert.Equal(1, notifications);
             viewer.MeasurementChanged -= OnChanged;
@@ -301,8 +301,8 @@ public class MeasurementInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = DrawRoi(viewer);
-            viewer.Host.Interaction.StartEditing(item);
-            var editor = viewer.Host.Interaction.Editor;
+            viewer.Host.Control.Runtime.Interaction.StartEditing(item);
+            var editor = viewer.Host.Control.Runtime.Interaction.Editor;
             Assert.True(editor.BeginDrag(MeasurementGeometryEditing.GetControlPoints(item.Geometry)[index], 1));
             var replacement = MeasurementGeometry.Rectangle(new(100, 110), new(120, 130));
             bool replaced = false;

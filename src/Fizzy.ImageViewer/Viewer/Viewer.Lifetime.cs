@@ -29,6 +29,6 @@ public partial class Viewer
         GC.SuppressFinalize(this);
         return _host.BeginDisposal();
     }
-    private T InvokeAlive<T>(Func<T> action) => _host.Lifetime.Invoke(_host.Window.Dispatcher, action);
+    private T InvokeAlive<T>(Func<T> action) => _host.Control.Runtime.Lifetime.Invoke(_host.Window.Dispatcher, action);
     private void InvokeAlive(Action action) => InvokeAlive(() => { action(); return true; });
 }

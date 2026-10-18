@@ -53,6 +53,10 @@ Configure and subscribe before `Show()`. Submission transfers ownership immediat
 
 `Closed` is a notification, not proof that rendering and queries have drained. Stop and await your producer before awaiting `DisposeAsync`; never synchronously wait for either from a Viewer callback. A Viewer has one window lifetime; create a new instance after closure.
 
+## Embed in an existing window
+
+Use `ImageViewerControl` in XAML or code when the application owns the UI thread. See [embedding and asynchronous host closure](embedding.md) and the [EmbeddedViewer example](../../samples/EmbeddedViewer/MainWindow.xaml).
+
 ## Basic operations
 
 Use the wheel to zoom and the middle button to pan. The context menu offers measurements and image export. To add features programmatically, place these calls before `viewer.Show()` in the example:
@@ -71,6 +75,7 @@ Click two points to measure a length in image pixels. Escape ends creation or ed
 Run from the repository root. These manual checks open WPF windows:
 
 ```powershell
+dotnet run --project samples/EmbeddedViewer
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport

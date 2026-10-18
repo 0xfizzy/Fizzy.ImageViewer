@@ -20,7 +20,7 @@ public class MeasurementToolProtocolTests
         var tool = new ClosingMetadataTool(viewer, closeFromName);
         Assert.Throws<ObjectDisposedException>(() => viewer.RegisterMeasurementTool(tool));
         await viewer.DisposeAsync();
-        Assert.Empty(viewer.Host.Tools.RegisteredTools);
+        Assert.Empty(viewer.Host.Control.Runtime.Tools.RegisteredTools);
         Assert.Equal(1, tool.IdReads);
         Assert.Equal(1, tool.NameReads);
     }
@@ -102,7 +102,7 @@ public class MeasurementToolProtocolTests
             viewer.RegisterMeasurementTool(method);
             Assert.Throws<ArgumentException>(() => viewer.RegisterMeasurementTool(new Probe { Id = "point" }));
             method.Id = "changed"; method.DisplayName = "Changed";
-            viewer.ActivateMeasurementTool("point"); viewer.Host.Interaction.ImageDown(1, 2);
+            viewer.ActivateMeasurementTool("point"); viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2);
             Assert.NotNull(method.Context);
             Assert.Throws<KeyNotFoundException>(() => viewer.ActivateMeasurementTool("changed"));
             Assert.True(viewer.UnregisterMeasurementTool("point"));
@@ -130,19 +130,19 @@ public class MeasurementToolProtocolTests
             viewer.MeasurementRemoved += (_, _) => removed++;
             viewer.ActivateMeasurementTool(id);
             viewer.EndInteraction();
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
-            viewer.ActivateMeasurementTool(id); viewer.Host.Interaction.ImageDown(1, 1);
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            viewer.ActivateMeasurementTool(id); viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1);
             if (id != MeasurementToolIds.Point)
             {
-                viewer.Host.Interaction.ImageMove(4, 4); viewer.EndInteraction();
+                viewer.Host.Control.Runtime.Interaction.ImageMove(4, 4); viewer.EndInteraction();
                 Assert.Equal(0, completed); Assert.Equal(0, removed);
-                Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
-                viewer.ActivateMeasurementTool(id); viewer.Host.Interaction.ImageDown(1, 1); viewer.Host.Interaction.ImageDown(4, 4);
+                Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+                viewer.ActivateMeasurementTool(id); viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1); viewer.Host.Control.Runtime.Interaction.ImageDown(4, 4);
             }
             Assert.Equal(1, completed);
             viewer.Layers.ClearContents();
             Assert.Equal(1, removed);
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children.Cast<UIElement>());
         });
     }
 
@@ -181,7 +181,7 @@ public class MeasurementToolProtocolTests
         await viewer.SubmitFrameAsync(Frame());
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            viewer.RegisterMeasurementTool(tool); viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(0, 0);
+            viewer.RegisterMeasurementTool(tool); viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);
             Assert.Equal(42, tool.Pixel);
         });
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>

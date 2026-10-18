@@ -18,15 +18,15 @@ public class MeasurementStyleTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            using var rectangleItem = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
-            using var pointItem = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
+            using var rectangleItem = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Rectangle(new(2, 3), new(4, 5)));
+            using var pointItem = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(4, 5)),
                 new() { Style = new() { PointBrush = Brushes.Blue, SelectedBrush = Brushes.White } });
             var rectangle = (System.Windows.Shapes.Rectangle)((MeasurementItem)rectangleItem).Presentation.PrimaryVisual;
             var label = ((MeasurementItem)rectangleItem).Presentation.Label;
             var point = (System.Windows.Shapes.Path)((MeasurementItem)pointItem).Presentation.PrimaryVisual;
             var tag = new object(); rectangle.Tag = label.Tag = point.Tag = tag;
             rectangleItem.Complete(); pointItem.Complete();
-            var overlay = viewer.Host.Window.MeasurementOverlay;
+            var overlay = viewer.Host.Control.MeasurementOverlay;
             Assert.Equal(1, rectangle.StrokeThickness);
             overlay.UpdateScale(2);
             Assert.Equal(0.5, rectangle.StrokeThickness);
@@ -34,16 +34,16 @@ public class MeasurementStyleTests
             Assert.Equal(0.5, Assert.IsType<ScaleTransform>(label.RenderTransform).ScaleX);
             pointItem.UpdateGeometry(MeasurementGeometry.Point(new(8, 9)));
             Assert.Equal(8, System.Windows.Controls.Canvas.GetLeft(point));
-            viewer.Host.Interaction.Select(viewer.Host.Measurements.Find(point));
+            viewer.Host.Control.Runtime.Interaction.Select(viewer.Host.Control.Runtime.Measurements.Find(point));
             Assert.Same(Brushes.White, point.Fill);
             Assert.Null(point.Stroke);
-            viewer.Host.Interaction.ClearSelection();
+            viewer.Host.Control.Runtime.Interaction.ClearSelection();
             Assert.Same(Brushes.Blue, point.Fill);
             point.Tag = "consumer data changed";
-            viewer.Host.Interaction.StartEditing(viewer.Host.Measurements.Find(point));
-            Assert.True(viewer.Host.Interaction.Editor.BeginDrag(new(8, 9), 1));
-            viewer.Host.Interaction.Editor.UpdateDrag(new(10, 11));
-            viewer.Host.Interaction.StopEditing();
+            viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(point));
+            Assert.True(viewer.Host.Control.Runtime.Interaction.Editor.BeginDrag(new(8, 9), 1));
+            viewer.Host.Control.Runtime.Interaction.Editor.UpdateDrag(new(10, 11));
+            viewer.Host.Control.Runtime.Interaction.StopEditing();
             overlay.UpdateScale(1);
             Assert.Equal(1, rectangle.StrokeThickness);
             Assert.Equal(14, label.FontSize);
@@ -72,18 +72,18 @@ public class MeasurementStyleTests
         static Line CompleteLine(Viewer viewer)
         {
             viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
-            viewer.Host.Interaction.ImageDown(1, 1);
-            viewer.Host.Interaction.ImageDown(4, 4);
-            return viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<Line>().Last();
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 1);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(4, 4);
+            return viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<Line>().Last();
         }
         await first.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var line = CompleteLine(first);
             Assert.Equal(Colors.Blue, ((SolidColorBrush)line.Stroke).Color);
             first.MeasurementStyle = new() { NormalBrush = Brushes.Purple, SelectedBrush = Brushes.Orange };
-            first.Host.Interaction.Select(first.Host.Measurements.Find(line));
+            first.Host.Control.Runtime.Interaction.Select(first.Host.Control.Runtime.Measurements.Find(line));
             Assert.Same(Brushes.White, line.Stroke);
-            first.Host.Interaction.ClearSelection();
+            first.Host.Control.Runtime.Interaction.ClearSelection();
             Assert.Equal(Colors.Blue, ((SolidColorBrush)line.Stroke).Color);
             Assert.Same(Brushes.Purple, CompleteLine(first).Stroke);
         });
@@ -119,8 +119,8 @@ public class MeasurementStyleTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.ActivateMeasurementTool("styled");
-            viewer.Host.Interaction.ImageDown(3, 4);
-            var shape = Assert.Single(viewer.Host.Window.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
+            viewer.Host.Control.Runtime.Interaction.ImageDown(3, 4);
+            var shape = Assert.Single(viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Path>());
             Assert.Same(Brushes.Purple, shape.Stroke);
             viewer.Layers.ClearContents();
         });

@@ -65,7 +65,7 @@ public class DisplayRangeUpdateTests
         using var cancellation = new CancellationTokenSource();
         Task update;
         Task<FrameSubmitResult> submission;
-        lock (viewer.Host.Lifetime.Gate)
+        lock (viewer.Host.Control.Runtime.Lifetime.Gate)
         {
             presenter.Fail = fail;
             update = viewer.SetDisplayRangeAsync(new(0, 200));
@@ -76,7 +76,7 @@ public class DisplayRangeUpdateTests
         Assert.Equal(fail ? FrameSubmitStatus.Failed : cancel ? FrameSubmitStatus.Cancelled : FrameSubmitStatus.Committed, result.Status);
         if (fail) await Assert.ThrowsAsync<InvalidOperationException>(() => update);
         else await update.WaitAsync(TimeSpan.FromSeconds(5));
-        await viewer.Host.Pipeline.Completion;
+        await viewer.Host.Control.Runtime.Pipeline.Completion;
         Assert.Equal(2, presenter.Calls);
     }
 
@@ -106,15 +106,15 @@ public class DisplayRangeUpdateTests
         // Install only the pipeline's retained lease; never bind the sentinel native surface.
         var field = typeof(FramePipeline).GetField("_currentFrame",
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-        lock (viewer.Host.Lifetime.Gate)
+        lock (viewer.Host.Control.Runtime.Lifetime.Gate)
         {
-            field.SetValue(viewer.Host.Pipeline, current);
+            field.SetValue(viewer.Host.Control.Runtime.Pipeline, current);
             try
             {
                 Assert.Throws<NotSupportedException>(() => { _ = viewer.SetDisplayRangeAsync(new(0, 200)); });
                 Assert.Equal(new GrayDisplayRange(0, 100), viewer.DisplayRange);
             }
-            finally { field.SetValue(viewer.Host.Pipeline, null); }
+            finally { field.SetValue(viewer.Host.Control.Runtime.Pipeline, null); }
         }
     }
 

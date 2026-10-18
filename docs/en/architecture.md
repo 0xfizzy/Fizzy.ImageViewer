@@ -2,9 +2,9 @@
 
 [简体中文](../zh-CN/architecture.md)
 
-Use this guide when changing resource ownership or module dependencies. The library
-owns an independent WPF STA per Viewer; callers submit immutable frames and use the
-public facade, drawing handles and measurement handles.
+Use this guide when changing resource ownership or module dependencies. Standalone Viewer owns an independent WPF STA and hosts ImageViewerControl; embedded
+ImageViewerControl borrows its application dispatcher. Callers submit immutable frames
+and use the shared capabilities, drawing handles and measurement handles.
 
 ## Source organization
 
@@ -14,7 +14,7 @@ below are relative to the core project, except `native/Cuda`, which is repositor
 
 | Directory | Responsibility |
 | --- | --- |
-| Viewer | Public facade, host composition, window and lifetime |
+| Viewer | Public facade, embedded control, runtime composition, window host and lifetime |
 | Frames | Immutable storage, frame descriptors, leases, original-pixel access and submission contracts |
 | Frames/Pixels | Pixel-source contract, CPU reading/decoding, coordinates, regions and owned or immutable read results |
 | Rendering | Submission queue, committed display state, CPU preparation/presentation and D3D presentation |
@@ -70,8 +70,9 @@ one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Q
 Snapshots and Lifetime. These files are not independently owned services. `IViewer` aggregates
 borrowed capability interfaces placed with their owning features. `IViewerWindow` stays
 with Viewer; display control belongs to Viewport, shared query settings to Imaging.
-`Viewer` implements these interfaces directly, with one shared lifetime; only the aggregate
-contract includes asynchronous disposal and global `Layers` composition. Drawing exposes
+`Viewer` and `ImageViewerControl` implement `IViewer`, which excludes window operations.
+Only `Viewer` implements `IViewerWindow`. Each instance has one shared lifetime; only
+the aggregate contract includes asynchronous disposal and global `Layers` composition. Drawing exposes
 only its default `Markers` layer; measurements expose their `Measurements` layer.
 Layer handles manage the entire corresponding layer, while drawing/HUD/registration
 handles manage individual resources. Review returned objects, collection elements and
@@ -132,14 +133,16 @@ the caller, and dispose an undeliverable result if cleanup fails.
 
 ## Ownership and direction
 
-Viewer exposes the complete public facade and raises public notifications. Host composes
-frame notifications in submission-callback, public-event order;
-subscriber failures are isolated at each boundary.
-ViewerHost owns the STA, window, frame pipeline, presentation resources, shared pixel
-query scheduler, measurement collection, tool registry, interaction coordinator and HUD.
-The facade assigns the host before starting its STA. Startup failure uses the same
-idempotent cleanup entry as normal closure; each owner is cleaned even if another fails.
-Disposal waits for outstanding frame and query work and the actual STA exit.
+ImageViewerControl owns the visual surface and ViewerRuntime. The runtime owns the frame
+pipeline, presentation resources, query scheduler, measurements, tools, interaction and HUD.
+ViewerHost owns only the standalone window, control and STA. Viewer forwards capabilities
+to its control and preserves Viewer as the measurement event sender without requeueing.
+Runtime composes frame notifications in submission-callback, public-event order;
+subscriber failures are isolated at each boundary. Startup failure uses the same
+idempotent cleanup entry as normal closure; each owner attempts its safe cleanup.
+Control disposal drains its work without closing the borrowed dispatcher. Standalone
+host disposal then stops and joins its STA. Unloaded cancels interaction but retains
+content; embedded owners await disposal before dispatcher shutdown. See [embedding](embedding.md).
 FramePipeline accounts for admitted submissions until their release and public result
 are complete, including replacement cleanup on submitting threads outside the render
 loop. Display-range changes have a separate awaitable result for the requested version;
@@ -156,7 +159,7 @@ the small IInteractionView boundary for selection appearance, cursor, focus, cap
 image scale and temporary layer input suppression without owning tool-session state.
 The adapter borrows LayerCollection; the coordinator borrows MeasurementLayer directly
 for admission policy and lifecycle events, without depending on ViewerLayers or its container.
-ViewerHost connects the input adapter to the coordinator; the coordinator depends on these effects rather than concrete WPF visuals
+ViewerRuntime connects the input adapter to the coordinator; the coordinator depends on these effects rather than concrete WPF visuals
 or the input adapter. ImageViewport receives navigation and pointer movement from the common
 viewport surface, so sibling overlays do not block navigation or pixel inspection. Left-button
 selection and creation retain their separate input bindings. ViewportPan owns middle-button
@@ -250,7 +253,7 @@ resources and may outlive registration or viewer closure.
 ViewerMenuController supplies built-in menu policy and captures interaction/ROI targets,
 borrowing interaction, tools, layers, pixel HUD and snapshot services. MenuSnapshotSession in Menus
 alone owns frozen frame/ROI leases. Snapshots supplies capture and encoding without menu policy.
-ViewerHost detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.
+ViewerRuntime detaches menu policy and disposes menu bindings before stopping the pipeline and disposing snapshot and interaction resources.
 
 Rendering owns CommittedViewLease, which retains a frame lease together with atomically
 captured display range and commit version. Menu targets and snapshots consume this committed
@@ -360,8 +363,9 @@ update consumers and this contract, then copy that output to the baseline before
 
 ## Frame composition
 
-`ViewerHost` assembles components and owns STA startup and shutdown. `Viewer` forwards
-public API calls and raises notifications. It does not own rendering queue or menu-target state.
+`ViewerRuntime` assembles control components; `ViewerHost` owns standalone STA startup
+and shutdown. `Viewer` forwards public API calls through its control and raises notifications.
+It does not own rendering queue or menu-target state.
 `FramePipeline` and presentation implementations belong to Rendering; Frames contains
 storage, leases and submission contracts.
 
@@ -386,5 +390,5 @@ subscribe to the shared query scheduler, which samples acquired committed frames
 
 Shutdown stops the pipeline, releases the menu session, closes interaction/measurement/layer
 resources and disposes presentation on STA. Asynchronous disposal then waits for rendering,
-query completion and the window thread. Already acquired export work retains its own
+query completion; the standalone host additionally waits for its window thread. Already acquired export work retains its own
 lease and export gate and may finish after the Viewer closes.

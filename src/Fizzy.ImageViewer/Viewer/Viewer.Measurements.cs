@@ -1,74 +1,22 @@
-using Fizzy.ImageViewer.Interaction;
 using Fizzy.ImageViewer.Measurements;
+using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <inheritdoc/>
-    public MeasurementLayer Measurements => Layers.Measurements;
-
-    /// <inheritdoc/>
-    public MeasurementStyle MeasurementStyle
-    {
-        get => InvokeAlive(() => _host.Measurements.Style);
-        set
-        {
-            _host.Lifetime.ThrowIfStopping();
-            ArgumentNullException.ThrowIfNull(value);
-            var snapshot = value.Snapshot();
-            InvokeAlive(() => _host.Measurements.Style = snapshot);
-        }
-    }
-
-    /// <inheritdoc/>
-    public IDisposable RegisterMeasurementTool(IMeasurementTool tool) => InvokeAlive(() =>
-    {
-        ArgumentNullException.ThrowIfNull(tool);
-        var id = tool.Id;
-        var displayName = tool.DisplayName;
-        // Metadata getters are external callbacks and may pump shutdown on this STA.
-        _host.Lifetime.ThrowIfStopping();
-        var registration = _host.Tools.RegisterTool(tool, id, displayName);
-        return registration.Handle = new MeasurementToolRegistration(() => _host.Lifetime.InvokeRemoval(_host.Window.Dispatcher,
-            () => _host.Interaction.RevokeMeasurementTool(registration)));
-    });
-
-    /// <inheritdoc/>
-    public bool UnregisterMeasurementTool(string toolId) => InvokeAlive(() =>
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-        return _host.Interaction.UnregisterMeasurementTool(toolId);
-    });
-
-    /// <inheritdoc/>
-    public void ActivateMeasurementTool(string toolId)
-    {
-        InvokeAlive(() =>
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
-            var result = _host.Interaction.ActivateMeasurementTool(toolId);
-            switch (result)
-            {
-                case MeasurementActivationResult.Unregistered:
-                    throw new KeyNotFoundException($"Unknown measurement tool '{toolId}'.");
-                case MeasurementActivationResult.Hidden:
-                    throw new InvalidOperationException("Measurement layer is hidden.");
-                case MeasurementActivationResult.InputDisabled:
-                    throw new InvalidOperationException("Measurement layer hit testing is disabled.");
-                case MeasurementActivationResult.Clearing:
-                    throw new InvalidOperationException("Cannot activate a tool during layer cleanup.");
-                case MeasurementActivationResult.Closed:
-                    throw new ObjectDisposedException(nameof(Viewer));
-            }
-        });
-    }
-
-    /// <inheritdoc/>
-    public void EndInteraction()
-    {
-        InvokeAlive(() => _host.Interaction.Cancel());
-    }
+    /// <inheritdoc />
+    public Measurements.MeasurementLayer Measurements => _host.Control.Measurements;
+    /// <inheritdoc />
+    public MeasurementStyle MeasurementStyle { get => _host.Control.MeasurementStyle; set => _host.Control.MeasurementStyle = value; }
+    /// <inheritdoc />
+    public IDisposable RegisterMeasurementTool(IMeasurementTool tool) => _host.Control.RegisterMeasurementTool(tool);
+    /// <inheritdoc />
+    public bool UnregisterMeasurementTool(string toolId) => _host.Control.UnregisterMeasurementTool(toolId);
+    /// <inheritdoc />
+    public void ActivateMeasurementTool(string toolId) => _host.Control.ActivateMeasurementTool(toolId);
+    /// <inheritdoc />
+    public void EndInteraction() => _host.Control.EndInteraction();
 
     /// <summary>Raised once after a measurement completes, on the viewer STA. Previews are excluded.</summary>
     /// <remarks>Subscribers may start a new measurement, including the same tool, before returning.</remarks>
@@ -86,7 +34,8 @@ public partial class Viewer
     private void NotifyMeasurement(EventHandler<MeasurementEventArgs>? handlers, MeasurementEventArgs args)
     {
         foreach (EventHandler<MeasurementEventArgs> handler in handlers?.GetInvocationList() ?? [])
-            _host.Measurements.Notifications.Post(() => handler(this, args));
+            try { handler(this, args); }
+            catch (Exception error) { _logger.LogWarning(error, "Measurement subscriber failed"); }
     }
 
 }

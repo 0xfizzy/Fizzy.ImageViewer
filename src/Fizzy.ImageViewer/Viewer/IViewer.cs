@@ -10,9 +10,9 @@ using Fizzy.ImageViewer.Viewport;
 
 namespace Fizzy.ImageViewer;
 
-/// <summary>Complete viewer capabilities and ownership of asynchronous shutdown.</summary>
-/// <remarks>Borrow individual capability interfaces when the caller does not own the viewer.</remarks>
-public interface IViewer : IFrameSink, ICommittedFrameSource, IViewerWindow, IViewerDisplay,
+/// <summary>Host-independent viewing capabilities and ownership of asynchronous shutdown.</summary>
+/// <remarks>Implemented by Viewer and ImageViewerControl. Borrow individual capability interfaces when the caller does not own the viewer. Window operations require IViewerWindow.</remarks>
+public interface IViewer : IFrameSink, ICommittedFrameSource, IViewerDisplay,
     ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IAsyncDisposable
 {
     /// <summary>Global layer composition, enumeration and content clearing across drawing and measurements.</summary>

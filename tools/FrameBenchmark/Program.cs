@@ -17,6 +17,7 @@ if (args.FirstOrDefault() == "--snapshots")
     return;
 }
 
+bool embedded = args.Contains("--embedded");
 var results = new List<object>();
 foreach (var (width, height) in new[] { (1920, 1080), (3840, 2160) })
 foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
@@ -35,13 +36,18 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
     foreach (int count in new[] { 1, 2 })
     foreach (bool measure in new[] { false, true })
     {
-        var viewers = Enumerable.Range(0, count).Select(_ => new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false)).ToArray();
+        var hosts = await BenchmarkViewers.CreateAsync(count, embedded);
+        var viewers = hosts.Viewers;
         try
         {
             foreach (var viewer in viewers)
             {
                 await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(new(width, height, stride, format), data, () => { }));
-                if (measure) await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Queries.Register(new ProfileMeasurement(width, height)));
+                if (measure)
+                {
+                    var control = viewer is Viewer windowed ? windowed.Host.Control : (ImageViewerControl)viewer;
+                    await control.Dispatcher.InvokeAsync(() => control.Runtime.Queries.Register(new ProfileMeasurement(width, height)));
+                }
             }
             using var process = Process.GetCurrentProcess();
             long allocated = GC.GetTotalAllocatedBytes(true), memory = process.PrivateMemorySize64;
@@ -64,7 +70,7 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
             process.Refresh();
             var committed = completed.Where(x => x.Result.Status == FrameSubmitStatus.Committed).ToArray();
             double[] latency = committed.Select(x => x.Latency).Order().ToArray();
-            results.Add(new { width, height, format = format.ToString(), fps, viewers = count, measure,
+            results.Add(new { host = embedded ? "embedded" : "standalone", width, height, format = format.ToString(), fps, viewers = count, measure,
                 committed = committed.Length, superseded = completed.Count(x => x.Result.Status == FrameSubmitStatus.Superseded),
                 failures = completed.Count(x => x.Result.Status == FrameSubmitStatus.Failed),
                 commitsPerSecond = committed.Length / elapsed.TotalSeconds,
@@ -74,15 +80,15 @@ foreach (var format in new[] { FramePixelFormat.Gray8, FramePixelFormat.Bgr24 })
                 directWritePixelsBaselineMs = baselineMs });
             Console.WriteLine($"{width}x{height} {format} {fps}fps x{count} measurement={measure}: {committed.Length}/{completed.Length}, mean {latency.DefaultIfEmpty().Average():F2}ms");
         }
-        finally { foreach (var viewer in viewers) await viewer.DisposeAsync(); }
+        finally { await hosts.DisposeAsync(); }
     }
 }
-var output = Path.GetFullPath(args.FirstOrDefault() ?? "artifacts/frame-benchmark.json");
+var output = Path.GetFullPath(args.FirstOrDefault(arg => !arg.StartsWith("--")) ?? "artifacts/frame-benchmark.json");
 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 await File.WriteAllTextAsync(output, JsonSerializer.Serialize(new
 {
     timestamp = DateTimeOffset.Now, runtime = Environment.Version.ToString(), processors = Environment.ProcessorCount,
-    note = "Hidden STA windows; commit timing, not physical presentation. Baseline is direct WritePixels only, not the old full application. Allocations include harness tasks; memory deltas include caches/GC.", results
+    note = "Standalone hidden windows or embedded controls sharing one dispatcher; commit timing, not physical presentation. Baseline is direct WritePixels only, not the old full application. Allocations include harness tasks; memory deltas include caches/GC.", results
 }, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine(output);
 

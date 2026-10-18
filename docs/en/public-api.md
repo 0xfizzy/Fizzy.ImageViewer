@@ -4,6 +4,8 @@
 
 Configure a Viewer window and own its shutdown. `Viewer` is sealed; application adapters compose an instance rather than access its raw WPF window. [Getting started](getting-started.md) has a complete program that waits for user closure.
 
+`IViewer` contains host-independent capabilities and asynchronous disposal. `Viewer` and `ImageViewerControl` implement it; window operations require `IViewerWindow`, implemented only by `Viewer`. For embedded lifetime and host shutdown, see [embedding](embedding.md).
+
 ## Configure and show
 
 ```csharp

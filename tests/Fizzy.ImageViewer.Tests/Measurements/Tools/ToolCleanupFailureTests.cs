@@ -43,9 +43,9 @@ public class ToolCleanupFailureTests
             failure = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Assert.Throws<AggregateException>(() =>
             {
                 if (ending == "cancel") viewer.EndInteraction();
-                else viewer.Host.Interaction.ImageDown(1, 2);
+                else viewer.Host.Control.Runtime.Interaction.ImageDown(1, 2);
             }));
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             await viewer.DisposeAsync();
         }
         Assert.Contains(cancelError, failure.Flatten().InnerExceptions);
@@ -71,7 +71,7 @@ public class ToolCleanupFailureTests
         var failure = Assert.Throws<AggregateException>(() => viewer.ActivateMeasurementTool("cleanup"));
         Assert.Contains(factoryError, failure.Flatten().InnerExceptions);
         Assert.Contains(previewError, failure.Flatten().InnerExceptions);
-        Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+        Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
     }
 
     private sealed class Tool(Func<IMeasurementToolContext, IMeasurementToolSession> factory) : IMeasurementTool

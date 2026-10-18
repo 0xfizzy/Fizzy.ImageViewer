@@ -100,6 +100,9 @@ foreach ($entry in @('docs/index.md','docs/nuget-readme.md')) {
     Assert-TranslationCheck -ExpectedError "Broken link in ${entry}: missing.md"
     Set-Content (Join-Path $translationRoot $entry) '# Entry'
 }
+Set-Content (Join-Path $translationRoot 'docs/index.md') '[XAML example](missing.xaml)'
+Assert-TranslationCheck -ExpectedError 'Broken link in docs/index.md: missing.xaml'
+Set-Content (Join-Path $translationRoot 'docs/index.md') '# Entry'
 Set-Content (Join-Path $translationRoot 'docs/zh-CN/orphan.md') '# Orphan'
 try { Assert-TranslationCheck -ExpectedError 'Translation has no source: orphan.md' }
 finally { Remove-Item -LiteralPath (Join-Path $translationRoot 'docs/zh-CN/orphan.md') }

@@ -22,8 +22,8 @@ public class QuerySchedulingTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
             viewer.ActivateMeasurementTool(MeasurementToolIds.LineProfile);
-            viewer.Host.Interaction.ImageDown(0, 0);
-            viewer.Host.Interaction.ImageDown(1, 0);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(1, 0);
             window=System.Windows.PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>()
                 .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfileWindow.LineProfilePlotControl);
             plot=(Measurements.Presentation.LineProfileWindow.LineProfilePlotControl)window.Content;
@@ -35,7 +35,7 @@ public class QuerySchedulingTests
             await viewer.Host.Window.Dispatcher.InvokeAsync(()=>window!.Close());
         }
         finally { source.Release.TrySetResult(); }
-        await viewer.Host.Queries.Completion.WaitAsync(TimeSpan.FromSeconds(3));
+        await viewer.Host.Control.Runtime.Queries.Completion.WaitAsync(TimeSpan.FromSeconds(3));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>
         {
             Assert.False(window!.IsVisible);
@@ -52,7 +52,7 @@ public class QuerySchedulingTests
         var source=new ControlledSource();int released=0;
         var a=new Client();var b=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>{viewer.Host.Queries.Register(a);viewer.Host.Queries.Register(b);});
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>{viewer.Host.Control.Runtime.Queries.Register(a);viewer.Host.Control.Runtime.Queries.Register(b);});
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(2,source.PointCount);Assert.NotEqual(ApartmentState.STA,source.Apartment);
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>a.Revision++).Task.WaitAsync(TimeSpan.FromSeconds(1));
@@ -69,7 +69,7 @@ public class QuerySchedulingTests
         var viewer=Viewer();viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromMilliseconds(5)};
         var source=new ControlledSource();int released=0;var item=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Queries.Register(item));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Control.Runtime.Queries.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));await Task.Delay(25);
         // Raising the rate threshold does not retroactively accept this result.
         source.Release.SetResult();
@@ -80,7 +80,7 @@ public class QuerySchedulingTests
 
         viewer=Viewer();source=new ControlledSource();released=0;item=new Client();
         await viewer.SubmitFrameAsync(Frame(source,()=>released++));
-        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Queries.Register(item));
+        await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Control.Runtime.Queries.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         var close=viewer.DisposeAsync().AsTask();await Task.Delay(20);Assert.False(close.IsCompleted);Assert.Equal(0,released);
         source.Release.SetResult();await close.WaitAsync(TimeSpan.FromSeconds(3));Assert.Equal(1,released);Assert.Empty(item.Values);
@@ -94,8 +94,8 @@ public class QuerySchedulingTests
         var pixel=new Client();var region=new UnsupportedRegion();
         await viewer.SubmitFrameAsync(Frame(source,()=>{}));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=> {
-            viewer.Host.Queries.Register(pixel);
-            viewer.Host.Queries.Register(region);
+            viewer.Host.Control.Runtime.Queries.Register(pixel);
+            viewer.Host.Control.Runtime.Queries.Register(region);
         });
         await pixel.Published.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(42,pixel.Values[0]);

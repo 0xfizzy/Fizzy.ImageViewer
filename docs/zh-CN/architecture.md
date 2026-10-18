@@ -2,13 +2,13 @@
 
 [English](../en/architecture.md)
 
-修改资源所有权或模块依赖前阅读本页。库每个 Viewer 拥有一个独立 WPF STA；消费者提交不可变帧，通过门面、绘图和测量句柄操作。
+修改资源所有权或模块依赖前阅读本页。独立窗口 Viewer 拥有 WPF STA，并承载 ImageViewerControl；嵌入控件借用应用 Dispatcher。消费者提交不可变帧，通过共享能力、绘图和测量句柄操作。
 
 ## 源码组织
 
 | 目录 | 职责 |
 | --- | --- |
-| Viewer | 公共门面、Host 组合、窗口和生命周期 |
+| Viewer | 公共门面、嵌入控件、Runtime 组合、窗口宿主和生命周期 |
 | Frames / Pixels | 不可变存储、描述符、租约、提交、像素源协议、CPU 解码与独立结果 |
 | Rendering | 提交队列、已提交状态、CPU 与 D3D 呈现 |
 | native/Cuda | 可选 CUDA/D3D9Ex kernel，借用标准 CUDA context 和 stream 句柄 |
@@ -33,7 +33,7 @@
 
 Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。托管库项目统一放在 src/：核心项目位于 src/Fizzy.ImageViewer/，可选 CUDA 后端位于 src/Fizzy.ImageViewer.Cuda/。上表功能路径相对于核心项目，native/Cuda 相对于仓库根目录；测试、示例、工具和原生构建保留在托管库项目之外。
 
-Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
+Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合宿主无关的功能接口，由 Viewer 与 ImageViewerControl 实现，只有聚合负责异步释放和全局 Layers；窗口能力通过仅由 Viewer 实现的 IViewerWindow 提供。接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
 
 可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。
 
@@ -47,7 +47,7 @@ FrameLease 是后端无关读取边界，每次异步读取自持租约并验证
 
 ## 所有权与依赖方向
 
-Viewer 发布门面和通知；Host 按单次提交回调、公共事件顺序连接，每个订阅边界隔离异常。Host 拥有 STA、窗口、管线、呈现、调度、测量集合、注册表、交互及 HUD。门面先赋 Host 再启动线程，初始化失败走同一幂等关闭流程，各所有者独立尝试安全清理。释放等待实际 STA 退出。
+ViewerRuntime 在停止管线前撤销菜单策略与绑定。ImageViewerControl 拥有视觉容器与 ViewerRuntime，runtime 拥有管线、呈现、调度、测量集合、注册表、交互及 HUD。ViewerHost 只拥有独立窗口、控件与 STA。Viewer 转发控件能力，保持测量事件 sender 为 Viewer，不再次排队。Runtime 按单次提交回调、公共事件顺序连接，每个订阅边界隔离异常。初始化失败走同一幂等关闭流程，各所有者独立尝试安全清理。控件释放排空自身工作而不关闭借用的 Dispatcher；独立窗口宿主再停止并等待实际 STA 退出。Unloaded 取消交互但保留内容，嵌入方须在 Dispatcher 关闭前等待释放，见[嵌入指南](embedding.md)。
 
 FramePipeline 计入所有已接纳提交直到释放和公开结果完成，包括提交线程上的替换清理。显示范围更新有独立版本结果，新请求/关闭取消等待。共享关闭结果保留资源/排空失败，通知失败隔离。D3D 附加无法证明安全分离时保留呈现器和表面租约至进程结束。
 
@@ -90,7 +90,7 @@ FramePixelFormats.GetInfo 是分量顺序、位深、数字表示、alpha 的唯
 
 FramePipeline 管等待帧、当前帧、冻结代次、请求/已提交显示设置及结果；FramePresentation 管后台准备、STA 呈现和后端资源；MenuSnapshotSession 管菜单目标与保存互斥；SnapshotCapture 管串行区域读取和独立快照。
 
-CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染、查询及 STA。
+CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染和查询；独立窗口宿主额外等待 STA。
 
 ## 交互实现与查询测试
 

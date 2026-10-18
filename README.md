@@ -9,7 +9,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-View, draw, measure, and inspect images in Windows/.NET 8 and .NET 10 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.
+View, draw, measure, and inspect images in Windows/.NET 8 and .NET 10 WPF applications. Embed `ImageViewerControl` in your WPF window, or use `Viewer` with an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.
 
 Read the [documentation website](https://0xfizzy.github.io/Fizzy.ImageViewer/) for bilingual guides and the API reference.
 
@@ -58,6 +58,7 @@ Submission immediately transfers frame ownership, even on rejection or cancellat
 
 | I want to… | Read |
 | --- | --- |
+| Embed in a WPF window | [Embedding](docs/en/embedding.md) |
 | Run my first application | [Getting started](docs/en/getting-started.md) |
 | Display a live stream | [Live streaming](docs/en/live-streaming.md) |
 | Draw or measure | [Drawing and HUD](docs/en/drawing-layers.md) |

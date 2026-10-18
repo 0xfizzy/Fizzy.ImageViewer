@@ -39,7 +39,7 @@ public class LayerInteractionTests
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var tool = new Tool(); viewer.RegisterMeasurementTool(tool);
-            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 3);
             switch (operation)
             {
                 case "all": viewer.Layers.ClearContents(); break;
@@ -48,9 +48,9 @@ public class LayerInteractionTests
                 default: viewer.Layers.Measurements.IsHitTestVisible = false; break;
             }
             Assert.Equal(1, tool.Cancellations);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
         });
     }
 
@@ -69,14 +69,14 @@ public class LayerInteractionTests
                 viewer.Layers.ClearContents(); // Reentrant bulk cleanup is idempotent.
                 throw failure;
             };
-            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Interaction.ImageDown(2, 3);
+            viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 3);
             var layer = viewer.Layers.CreateDrawingLayer("after measurements");
             using var batch = layer.Add([new CircleElement(new(), 2, Brushes.Red)]);
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(viewer.Layers.ClearContents));
             Assert.Throws<ObjectDisposedException>(() => batch.Replace([]));
             Assert.Equal(1, tool.Cancellations);
-            Assert.Empty(viewer.Host.Window.MeasurementOverlay.Canvas.Children);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Empty(viewer.Host.Control.MeasurementOverlay.Canvas.Children);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
         });
     }
 
@@ -86,14 +86,14 @@ public class LayerInteractionTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame).CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             var shape = item.Presentation.PrimaryVisual;
             void Click() => shape.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
                 { RoutedEvent = Mouse.MouseDownEvent });
-            Click(); Assert.Same(item, viewer.Host.Interaction.SelectedMeasurement);
-            viewer.Host.Interaction.ImageDown(10, 10); Assert.Null(viewer.Host.Interaction.SelectedMeasurement);
-            viewer.Host.Interaction.Dispose();
-            Click(); Assert.Null(viewer.Host.Interaction.SelectedMeasurement);
+            Click(); Assert.Same(item, viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+            viewer.Host.Control.Runtime.Interaction.ImageDown(10, 10); Assert.Null(viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+            viewer.Host.Control.Runtime.Interaction.Dispose();
+            Click(); Assert.Null(viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
         });
     }
 }

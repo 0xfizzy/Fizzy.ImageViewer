@@ -1,48 +1,21 @@
-using Fizzy.ImageViewer.Hud;
-using Fizzy.ImageViewer.Measurements.Presentation;
-using Fizzy.ImageViewer.Layers;
-using Fizzy.ImageViewer.Viewport;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.Extensions.Logging;
 
 namespace Fizzy.ImageViewer
 {
     internal class ViewerWindow : Window
     {
-        // 公开图层供 Manager 使用
-        public ImageViewport ImageViewport { get; }
-        internal MeasurementOverlay MeasurementOverlay => Layers.Measurements.Overlay;
-        public HudLayer HudLayer { get; }
-        public Layers.ViewerLayers Layers { get; }
+        internal ImageViewerControl Control { get; }
 
-        public ViewerWindow(string title) : this(title, new ViewerLifetime()) { }
-
-        internal ViewerWindow(string title, ViewerLifetime lifetime, ILogger? logger = null)
+        internal ViewerWindow(string title, ImageViewerControl control)
         {
-            // === Window 属性 ===
             Title = title;
             Width = 800;
             Height = 600;
             Background = Brushes.Black;
             WindowStartupLocation = WindowStartupLocation.Manual;
-
-            // === 实例化图层 ===
-            var grid = new Grid();
-            ImageViewport = new ImageViewport(grid);
-            Layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, lifetime, logger);
-            HudLayer = new HudLayer();
-
-
-            ImageViewport.ScaleChanged += Layers.Collection.UpdateScale;
-
-            // 叠加顺序很重要：0在底，2在顶
-            grid.Children.Add(ImageViewport);
-            grid.Children.Add(Layers.Collection.Root);
-            grid.Children.Add(HudLayer);
-
-            Content = grid;
+            Control = control;
+            Content = control;
         }
 
         // 允许外部强制关闭

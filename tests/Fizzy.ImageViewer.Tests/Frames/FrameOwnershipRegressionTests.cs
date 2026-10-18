@@ -46,7 +46,7 @@ public class FrameOwnershipRegressionTests
         try
         {
             if (frozen)
-                await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Pipeline.FreezeAndAcquire()?.Dispose());
+                await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Pipeline.FreezeAndAcquire()?.Dispose());
             submission = Task.Run(async () => await viewer.SubmitFrameAsync(Frame(() =>
             {
                 entered.SetResult();

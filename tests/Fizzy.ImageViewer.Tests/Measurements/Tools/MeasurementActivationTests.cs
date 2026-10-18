@@ -23,7 +23,7 @@ public class MeasurementActivationTests
         var viewer = new Viewer(showWindow: false);
         var handle = viewer.RegisterMeasurementTool(new Tool("retained", _ =>
             new TestMeasurementSession(_ => false, _ => { }, () => { })));
-        var registration = await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Tools.FindRegistration("retained")!);
+        var registration = await viewer.Host.Window.Dispatcher.InvokeAsync(() => viewer.Host.Control.Runtime.Tools.FindRegistration("retained")!);
         Assert.Same(handle, registration.Handle);
         await viewer.DisposeAsync();
         Assert.Null(registration.Handle);
@@ -79,7 +79,7 @@ public class MeasurementActivationTests
         registration.Dispose();
         Assert.Equal(1, replacementCalls);
         Assert.Equal(1, disposalCalls);
-        Assert.Equal("owned", viewer.Host.Interaction.ActiveId);
+        Assert.Equal("owned", viewer.Host.Control.Runtime.Interaction.ActiveId);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class MeasurementActivationTests
             new TestMeasurementSession(_ => false, _ => { }, () => { })));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var menu = viewer.Host.Window.ContextMenu;
+            var menu = viewer.Host.Control.ContextMenu;
             menu.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.ContextMenu.OpenedEvent));
             var item = menu.Items.OfType<System.Windows.Controls.MenuItem>().Single(i => Equals(i.Header, "captured"));
             registration.Dispose();
@@ -113,17 +113,17 @@ public class MeasurementActivationTests
         await using var viewer = new Viewer(showWindow: false);
         viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
         Assert.Throws<KeyNotFoundException>(() => viewer.ActivateMeasurementTool("missing"));
-        Assert.Equal(MeasurementToolIds.Length, viewer.Host.Interaction.ActiveId);
+        Assert.Equal(MeasurementToolIds.Length, viewer.Host.Control.Runtime.Interaction.ActiveId);
         viewer.EndInteraction();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var registration = viewer.Host.Tools.FindRegistration(MeasurementToolIds.Length)!;
+            var registration = viewer.Host.Control.Runtime.Tools.FindRegistration(MeasurementToolIds.Length)!;
             viewer.Measurements.IsVisible = false;
-            Assert.Equal(MeasurementActivationResult.Hidden, viewer.Host.Interaction.ActivateMeasurementTool(registration));
+            Assert.Equal(MeasurementActivationResult.Hidden, viewer.Host.Control.Runtime.Interaction.ActivateMeasurementTool(registration));
             Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(registration.Id));
             viewer.Measurements.IsVisible = true;
             viewer.Measurements.IsHitTestVisible = false;
-            Assert.Equal(MeasurementActivationResult.InputDisabled, viewer.Host.Interaction.ActivateMeasurementTool(registration));
+            Assert.Equal(MeasurementActivationResult.InputDisabled, viewer.Host.Control.Runtime.Interaction.ActivateMeasurementTool(registration));
             Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool(registration.Id));
         });
     }
@@ -152,8 +152,8 @@ public class MeasurementActivationTests
         Assert.Equal(0, newCalls);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            Assert.Null(viewer.Host.Interaction.ActiveId);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.ActiveId);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
         if (replace) { viewer.ActivateMeasurementTool("target"); Assert.Equal(1, newCalls); }
@@ -173,10 +173,10 @@ public class MeasurementActivationTests
         {
             var error = Assert.Throws<AggregateException>(() =>
             {
-                if (move) viewer.Host.Interaction.ImageMove(0, 0); else viewer.Host.Interaction.ImageDown(0, 0);
+                if (move) viewer.Host.Control.Runtime.Interaction.ImageMove(0, 0); else viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);
             });
             Assert.Equal(new[] { move ? "move" : "click", "cancel", "dispose" }, error.Flatten().InnerExceptions.Select(e => e.Message));
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
         });
     }
 
@@ -224,7 +224,7 @@ public class MeasurementActivationTests
         viewer.ActivateMeasurementTool("factory-finish");
         Assert.Equal(0, cancellations);
         Assert.Equal(1, disposals);
-        Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+        Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
     }
 
     [Fact]
@@ -235,12 +235,12 @@ public class MeasurementActivationTests
         viewer.Closed += (_, _) => closed++;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
             item.OnDispose(() => throw new InvalidOperationException("cleanup"));
-            viewer.Host.Interaction.Select(item);
-            var container = viewer.Host.Window.ImageViewport.Container;
+            viewer.Host.Control.Runtime.Interaction.Select(item);
+            var container = viewer.Host.Control.ImageViewport.Container;
             var key = new KeyEventArgs(Keyboard.PrimaryDevice, new TestSource(container), 0, Key.Delete)
             { RoutedEvent = Keyboard.PreviewKeyDownEvent };
             container.RaiseEvent(key);

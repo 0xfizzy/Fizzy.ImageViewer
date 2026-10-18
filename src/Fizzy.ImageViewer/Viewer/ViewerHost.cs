@@ -1,265 +1,130 @@
-using Fizzy.ImageViewer.Drawing;
-using Fizzy.ImageViewer.Measurements.Editing;
-using Fizzy.ImageViewer.Measurements;
-using Fizzy.ImageViewer.Interaction;
-using Fizzy.ImageViewer.Measurements.BuiltIn;
-using Fizzy.ImageViewer.Menus;
-using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
-using Fizzy.ImageViewer.Hud;
+using System.Windows.Threading;
 
 namespace Fizzy.ImageViewer;
 
-/// <summary>Owns the viewer STA, component composition and shutdown.</summary>
+/// <summary>Owns the standalone window and STA; the control owns viewing resources.</summary>
 internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
 {
-    private readonly Viewer _owner = owner;
-    private readonly ILogger _logger = logger;
-    private readonly bool _showWindow = showWindow;
     private Thread _windowThread = null!;
-    private ViewerWindow _window = null!;
-    private Rendering.FramePipeline _pipeline = null!;
-    private Rendering.FramePresentation _presentation = null!;
-    private MeasurementToolRegistry _tools = null!;
-    private MeasurementCollection _measurements = null!;
-    private MeasurementRuntime _measurementRuntime = null!;
-    private MeasurementInteractionCoordinator _interaction = null!;
-    private MenuManager _menuManager = null!;
-    private ViewerMenuController? _menuController;
-    private Imaging.Queries.PixelQueryScheduler _queryScheduler = null!;
-    private Menus.MenuSnapshotSession _menuSession = null!;
-    private readonly Snapshots.SnapshotCapture _snapshotCapture = new();
-    private HudTextCollection _hud = null!;
-    private PixelInfoController? _pixelInfo;
-    private readonly ViewerLifetime _lifetime = new();
+    private ViewerWindow? _window;
+    private ImageViewerControl? _control;
     private readonly TaskCompletionSource _windowStopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _cleanupErrors = new();
-    private bool _closed;
-    private bool _closedNotified;
-
     private readonly TaskCompletionSource _disposeCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly System.Collections.Concurrent.ConcurrentQueue<Exception> _errors = new();
     private int _disposeRequested;
+    private bool _closedNotified;
+    internal ViewerWindow Window => _window!;
+    internal ImageViewerControl Control => _control!;
 
-    internal PixelInfoController PixelInfo => _pixelInfo!;
-    internal ViewerLifetime Lifetime => _lifetime;
-    internal ViewerWindow Window => _window;
-    internal Rendering.FramePipeline Pipeline => _pipeline;
-    internal MeasurementToolRegistry Tools => _tools;
-    internal MeasurementCollection Measurements => _measurements;
-    internal MeasurementRuntime MeasurementRuntime => _measurementRuntime;
-    internal MeasurementInteractionCoordinator Interaction => _interaction;
-    internal MenuManager Menus => _menuManager;
-    internal Imaging.Queries.PixelQueryScheduler Queries => _queryScheduler;
-    internal Menus.MenuSnapshotSession MenuSession => _menuSession;
-    internal Snapshots.SnapshotCapture Snapshots => _snapshotCapture;
-    internal HudTextCollection Hud => _hud;
-    private Frames.FrameLease? TryAcquireCurrentFrame() => _pipeline.TryAcquireCurrentFrame();
-    internal ViewerMenuController MenuController => _menuController!;
-    internal void Start(Rendering.ICpuImagePresenter? presenter,
-        double left, double top, double width, double height, Action<Viewer>? initialize, Action<ViewerInitializationStage>? checkpoint)
+    internal void Start(Rendering.ICpuImagePresenter? presenter, double left, double top,
+        double width, double height, Action<Viewer>? initialize, Action<ViewerInitializationStage>? checkpoint)
     {
-        var tcs = new TaskCompletionSource<ViewerWindow>();
-
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _windowThread = new Thread(() =>
         {
-            ViewerWindow? win = null;
             Exception? failure = null;
             try
             {
-                win = new ViewerWindow("Fizzy ImageViewer", _lifetime, _logger);
-                _window = win;
-                checkpoint?.Invoke(ViewerInitializationStage.WindowCreated);
-                _presentation = new Rendering.FramePresentation(win.Dispatcher, win.ImageViewport,
-                    presenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
-                _pipeline = new Rendering.FramePipeline(_lifetime, win.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
-                checkpoint?.Invoke(ViewerInitializationStage.PipelineCreated);
-                _hud = new HudTextCollection(win.HudLayer, _lifetime);
-                _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, win.Dispatcher, _cleanupErrors.Enqueue);
-                win.Closed += OnWindowClosed;
-
-                _queryScheduler = new(TryAcquireCurrentFrame, _logger, new Imaging.Queries.DispatcherQueryRuntime(win.Dispatcher));
-                _measurementRuntime = new MeasurementRuntime(_lifetime, win.Dispatcher, _queryScheduler, _logger);
-                _measurements = new MeasurementCollection(win.Layers.Measurements, _measurementRuntime);
-                _tools = new MeasurementToolRegistry();
-                _measurements.ItemCompleted += _owner.NotifyMeasurementCompleted;
-                _measurements.ItemRemoved += _owner.NotifyMeasurementRemoved;
-                _measurements.ItemChanged += _owner.NotifyMeasurementChanged;
-
-                checkpoint?.Invoke(ViewerInitializationStage.MeasurementsCreated);
-                var editor = new MeasurementEditController(win.MeasurementOverlay);
-                var input = new ViewerInputBinding(win.ImageViewport, win.MeasurementOverlay, _measurements, win.Layers.Collection, logger: _logger);
-                _interaction = new MeasurementInteractionCoordinator(input, editor, _tools, _measurements, win.Layers.Measurements,
-                    _measurementRuntime, TryAcquireCurrentFrame);
-                input.Connect(_interaction);
-                _tools.RegisterTool(new LengthTool());
-                _tools.RegisterTool(new PointTool());
-                _tools.RegisterTool(new RectangleRoiTool());
-                _tools.RegisterTool(new LineProfileTool());
-                _pixelInfo = new PixelInfoController(win.ImageViewport, win.HudLayer, _queryScheduler);
-                _pixelInfo.Enable();
-                _menuManager = new MenuManager(win, _lifetime, _logger);
-                _menuController = new ViewerMenuController(_menuManager, _interaction, _tools, win.Layers,
-                    _menuSession, _snapshotCapture, _pixelInfo);
-                checkpoint?.Invoke(ViewerInitializationStage.MenusCreated);
-
-                // Set window position before showing (if provided)
-                if (!double.IsNaN(left)) win.Left = left;
-                if (!double.IsNaN(top)) win.Top = top;
-                if (!double.IsNaN(width)) win.Width = width;
-                if (!double.IsNaN(height)) win.Height = height;
-
-                initialize?.Invoke(_owner);
-                if (_showWindow) win.Show();
-                tcs.SetResult(win);
+                _control = new ImageViewerControl(logger, presenter, checkpoint);
+                _window = new ViewerWindow("Fizzy ImageViewer", _control);
+                _window.Closed += OnWindowClosed;
+                _control.FrameCommitted += owner.NotifyFrameCommitted;
+                _control.MeasurementCompleted += (_, args) => owner.NotifyMeasurementCompleted(args);
+                _control.MeasurementRemoved += (_, args) => owner.NotifyMeasurementRemoved(args);
+                _control.MeasurementChanged += (_, args) => owner.NotifyMeasurementChanged(args);
+                if (!double.IsNaN(left)) _window.Left = left;
+                if (!double.IsNaN(top)) _window.Top = top;
+                if (!double.IsNaN(width)) _window.Width = width;
+                if (!double.IsNaN(height)) _window.Height = height;
+                initialize?.Invoke(owner);
+                if (showWindow) _window.Show();
+                started.SetResult();
                 Dispatcher.Run();
             }
-            catch (Exception ex)
+            catch (Exception error)
             {
-                failure = ex;
-                if (tcs.Task.IsCompletedSuccessfully)
-                {
-                    _cleanupErrors.Enqueue(ex);
-                    _logger.LogError(ex, "Viewer dispatcher failed");
-                }
+                failure = error;
+                if (started.Task.IsCompletedSuccessfully) _errors.Enqueue(error);
             }
             finally
             {
-                // Partial startup and normal closure share the same resource owners.
-                if (win != null) win.Closed -= OnWindowClosed;
-                CleanupOnWindowClosed();
-                if (_presentation == null) Cleanup(() => presenter?.Dispose());
-                if (win != null) Cleanup(win.CloseProgrammatically);
-                if (tcs.Task.IsCompletedSuccessfully) NotifyClosedOnce(EventArgs.Empty);
-                else _owner.ClearNotifications();
-                Cleanup(Dispatcher.CurrentDispatcher.InvokeShutdown);
+                if (_window != null) _window.Closed -= OnWindowClosed;
+                _control?.Runtime.StopOnUiThread();
+                try { _window?.CloseProgrammatically(); }
+                catch (Exception error) { _errors.Enqueue(error); }
+                if (started.Task.IsCompletedSuccessfully) NotifyClosedOnce();
+                else owner.ClearNotifications();
+                Dispatcher.CurrentDispatcher.InvokeShutdown();
                 _windowStopped.TrySetResult();
                 _ = BeginDisposal();
-                if (failure != null) tcs.TrySetException(failure);
+                if (failure != null) started.TrySetException(failure);
             }
-        });
-
+        }) { IsBackground = true };
         _windowThread.SetApartmentState(ApartmentState.STA);
-        _windowThread.IsBackground = true;
         _windowThread.Start();
-
-        try { tcs.Task.GetAwaiter().GetResult(); }
+        try { started.Task.GetAwaiter().GetResult(); }
         catch (Exception startupError)
         {
             _windowThread.Join();
-            // Cancellation can still be releasing frame/query leases off the STA.
             try { _disposeCompletion.Task.GetAwaiter().GetResult(); }
             catch (Exception cleanupError) { throw new AggregateException("Viewer startup and cleanup failed.", startupError, cleanupError); }
             throw;
         }
     }
 
-    private void NotifyFrameCommitted(Frames.FrameLease frame, Frames.FrameSubmissionOptions? options)
+    private void OnWindowClosed(object? sender, EventArgs args)
     {
-        try
-        {
-            using var borrowed = frame.Acquire();
-            options?.OnCommitted?.Invoke(borrowed);
-        }
-        catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }
-        _owner.NotifyFrameCommitted(frame.Info);
+        _control!.Runtime.StopOnUiThread();
+        _ = BeginDisposal();
+        NotifyClosedOnce();
     }
 
-    private void OnWindowClosed(object? sender, EventArgs e)
-    {
-        try
-        {
-            CleanupOnWindowClosed();
-            _ = BeginDisposal();
-            NotifyClosedOnce(e);
-        }
-        finally { Dispatcher.CurrentDispatcher.InvokeShutdown(); }
-    }
-
-    private void NotifyClosedOnce(EventArgs e)
+    private void NotifyClosedOnce()
     {
         if (_closedNotified) return;
         _closedNotified = true;
-        void FinishNotifications()
+        void Notify()
         {
-            _owner.ClearNotifications();
-            _owner.NotifyClosed(e);
+            owner.ClearNotifications();
+            owner.NotifyClosed(EventArgs.Empty);
         }
-        if (_measurements != null) _measurements.Notifications.AfterNotifications(FinishNotifications);
-        else FinishNotifications();
-    }
-
-    private void CleanupOnWindowClosed()
-    {
-        if (_closed) return;
-        _lifetime.BeginDisposal();
-        _closed = true;
-        Cleanup(() => _menuController?.Dispose());
-        Cleanup(() => _menuManager?.Dispose());
-        Cleanup(() => _pipeline?.StopOnUiThread());
-        Cleanup(() => _menuSession?.Dispose());
-
-        Cleanup(() => _interaction?.Dispose());
-        Cleanup(() => _pixelInfo?.Disable());
-        Cleanup(() => _queryScheduler?.Dispose());
-        Cleanup(() => _measurements?.Shutdown());
-        Cleanup(() => _tools?.Clear());
-        Cleanup(() => _window?.Layers.Collection.Close());
-        Cleanup(() => _hud?.Dispose());
-        Cleanup(() => _presentation?.Dispose());
-    }
-
-    private void Cleanup(Action action)
-    {
-        try { action(); } catch (Exception ex) { _cleanupErrors.Enqueue(ex); }
+        if (_control != null) _control.Runtime.AfterNotifications(Notify);
+        else Notify();
     }
 
     private async Task CompleteDisposalAsync()
     {
-        List<Exception> errors = [];
         try
         {
-            if (!_closed && _window != null && !_window.Dispatcher.HasShutdownStarted)
+            if (!_windowStopped.Task.IsCompleted && _window != null && !_window.Dispatcher.HasShutdownStarted)
             {
-                try
-                {
-                    await _window.Dispatcher.InvokeAsync(() => _window.CloseProgrammatically()).Task.ConfigureAwait(false);
-                }
-                catch (TaskCanceledException) { }
-                catch (Exception ex)
-                {
-                    errors.Add(ex);
-                    _window.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
-                }
+                try { await _window.Dispatcher.InvokeAsync(_window.CloseProgrammatically).Task.ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+                catch (Exception error) { _errors.Enqueue(error); }
             }
-            // Stop establishes the terminal pipeline/query completion tasks. Wait for
-            // that boundary before reading them, including when shutdown started elsewhere.
+            if (_control != null)
+            {
+                try { await _control.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception error) { _errors.Enqueue(error); }
+            }
+            if (_window != null && !_window.Dispatcher.HasShutdownStarted)
+                _window.Dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
             await _windowStopped.Task.ConfigureAwait(false);
-            var drained = Task.WhenAll(_pipeline?.Completion ?? Task.CompletedTask, _queryScheduler?.Completion ?? Task.CompletedTask);
-            try { await drained.ConfigureAwait(false); }
-            catch (Exception ex)
-            {
-                if (drained.Exception is { } aggregate) errors.AddRange(aggregate.InnerExceptions);
-                else errors.Add(ex);
-            }
-            // The stop signal is set in the STA's finally block, just before it returns.
-            // Join off-thread so DisposeAsync also guarantees actual thread termination.
             await Task.Run(_windowThread.Join).ConfigureAwait(false);
-            _lifetime.Complete();
-            if (_window?.ClosingError is { } error) errors.Add(error);
-            errors.AddRange(_cleanupErrors);
-            if (errors.Count == 1) _disposeCompletion.TrySetException(errors[0]);
-            else if (errors.Count > 1) _disposeCompletion.TrySetException(new AggregateException("Viewer shutdown failed.", errors));
+            if (_window?.ClosingError is { } closingError) _errors.Enqueue(closingError);
+            var errors = _errors.ToArray();
+            if (errors.Length == 1) _disposeCompletion.TrySetException(errors[0]);
+            else if (errors.Length > 1) _disposeCompletion.TrySetException(new AggregateException("Viewer shutdown failed.", errors));
             else _disposeCompletion.TrySetResult();
         }
-        catch (Exception ex) { _disposeCompletion.TrySetException(ex); }
+        catch (Exception error) { _disposeCompletion.TrySetException(error); }
     }
 
-    // Window closure and explicit disposal share one completion task.
     internal ValueTask BeginDisposal()
     {
-        _lifetime.BeginDisposal();
+        _control?.Runtime.Lifetime.BeginDisposal();
         if (Interlocked.Exchange(ref _disposeRequested, 1) == 0) _ = CompleteDisposalAsync();
-        return new ValueTask(_disposeCompletion.Task);
+        return new(_disposeCompletion.Task);
     }
-
 }

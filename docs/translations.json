@@ -1,18 +1,19 @@
 {
-  "docs/en/architecture.md": "b4ede1e9b39f3aaba5b80800038998815e8efe3543264cea3c240a51feead91f",
+  "docs/en/architecture.md": "50df1838ac677a8f1b2524296190d21f7c80a1ba576f4faedd1d5731344c3242",
   "docs/en/cuda.md": "5390f555d9912c5e8c0d211a7483f6108292763c6d55c124e0b0c159f1b1d8de",
   "docs/en/documentation.md": "fb4a47b471bba34568d38db1d50f57745f1ba8c936d9b5c99735526f1c032c62",
   "docs/en/drawing-layers.md": "43e29df9b6308b5ae60fa86ab50a1b1a6f696c0dd9b69b90dc8ac08beb8dbd1a",
+  "docs/en/embedding.md": "f7dbd9f9e7380f1b5a3a88cb54a04105d9a7d30b5b3318931c1773cec896adad",
   "docs/en/frame-pipeline.md": "15956db76bc593909c57caab785f5a1c27f0da2cb910067641d2860e3d443df3",
-  "docs/en/getting-started.md": "bfc606a557a44b9555e262f3b5a96c36e5fe7b759de2b57a7fb355e6514745c8",
-  "docs/en/index.md": "5d96c2012288565f90e4d4c9df21bdee564b5ca5ac9f2956bf0d8485ea2d770e",
+  "docs/en/getting-started.md": "f53f5254884557a60c518f5733f542d51b93e5a2aa874648c893ff914cae669b",
+  "docs/en/index.md": "d2f03ce7c440162ba890867f046db3ef404630fa67f27d11e8d1fd0ab76552d6",
   "docs/en/live-streaming.md": "1c2c3fdb9a3d6dcc0cbb8c1359fb8c55a99a12a73e946bf39e063c6335deee4b",
   "docs/en/measurement-tools.md": "344c4cf694fafc80e7ccdd6ed5ca7002601c95b8c9f6f2a72f9c5c5d1a64ff69",
   "docs/en/measurements.md": "6cbfd82bf562c884e185915244337f74cd1bc85e7618abf975fb3618441f9a9d",
   "docs/en/menus.md": "e9a63e10951bbd9f6136b44f675af097f568d2d1bbe03d8c0cad4a6edb72f533",
-  "docs/en/public-api.md": "f358b01d859b8689315f983c368d58e65acbf162a959fd24fd5d4c134ab8124c",
+  "docs/en/public-api.md": "8332d128cd83fc38ea8a1a9e3b80277c3ff9a360f904c15152abda886cb69518",
   "docs/en/releasing.md": "690802a7bc3f866270ab728fb1b439b6677c9901d202f7471dc1ada0eee61f3e",
   "docs/en/snapshots.md": "27e0c7f86156422e090ba2cd91804ef02df15877d42e6ecdfcaee0ebbe414d74",
-  "docs/en/validation.md": "5983246fd0070d9df0f55fa30ee055f5f36190c5ada5939691616648307f245e",
-  "README.md": "4e0a89423902b6dc9ec598b9edf299e33a3c47848184bba769a7ebf3069f3c83"
+  "docs/en/validation.md": "9a4ef8bf6d0bcc6cf6cc2c48d299053a8b54523d0d8c98ab44940f69d4cc12be",
+  "README.md": "c301a3ee260914169a9fcd188c962fbb1d364fc91ea8f0964ca16b4793bd3ef5"
 }

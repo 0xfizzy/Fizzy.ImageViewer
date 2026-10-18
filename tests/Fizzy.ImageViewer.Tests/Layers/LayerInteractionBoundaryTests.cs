@@ -31,12 +31,12 @@ public class LayerInteractionBoundaryTests
         Assert.Throws<InvalidOperationException>(() => viewer.ActivateMeasurementTool("admission"));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
-            viewer.Host.Interaction.StartEditing(item);
-            viewer.Host.Interaction.ActivateMeasurementTool("admission");
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
-            Assert.False(viewer.Host.Interaction.Editor.IsEditing);
+            viewer.Host.Control.Runtime.Interaction.StartEditing(item);
+            viewer.Host.Control.Runtime.Interaction.ActivateMeasurementTool("admission");
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
+            Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsEditing);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
         Assert.Equal(0, factories);
@@ -68,8 +68,8 @@ public class LayerInteractionBoundaryTests
         Assert.True(preview!.IsDisposed);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            Assert.Null(viewer.Host.Interaction.ActiveId);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.ActiveId);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
@@ -91,8 +91,8 @@ public class LayerInteractionBoundaryTests
         Assert.Equal(0, factories);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            Assert.Null(viewer.Host.Interaction.ActiveId);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.ActiveId);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
@@ -116,8 +116,8 @@ public class LayerInteractionBoundaryTests
         Assert.Equal(1, disposals);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            Assert.Null(viewer.Host.Interaction.ActiveId);
-            Assert.Equal(InteractionMode.Idle, viewer.Host.Interaction.Mode);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.ActiveId);
+            Assert.Equal(InteractionMode.Idle, viewer.Host.Control.Runtime.Interaction.Mode);
             Assert.False(viewer.Layers.Collection.InputSuppressed);
         });
     }
@@ -128,21 +128,21 @@ public class LayerInteractionBoundaryTests
         await using var viewer = new Viewer(showWindow: false);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame)
+            var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new(1, 2)));
             foreach (var visual in item.Presentation.Visuals)
             {
-                viewer.Host.Interaction.ClearSelection();
+                viewer.Host.Control.Runtime.Interaction.ClearSelection();
                 var click = Click(visual);
                 Assert.True(click.Handled);
-                Assert.Same(item, viewer.Host.Interaction.SelectedMeasurement);
+                Assert.Same(item, viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
             }
             var orphan = MeasurementVisualFactory.CreatePoint(new(5, 6));
-            viewer.Host.Window.MeasurementOverlay.AddVisual(orphan);
-            viewer.Host.Interaction.ClearSelection();
+            viewer.Host.Control.MeasurementOverlay.AddVisual(orphan);
+            viewer.Host.Control.Runtime.Interaction.ClearSelection();
             Assert.False(Click(orphan).Handled);
-            Assert.Null(viewer.Host.Interaction.SelectedMeasurement);
-            Assert.False(viewer.Host.Interaction.Editor.IsEditing);
+            Assert.Null(viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+            Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsEditing);
         });
     }
 
@@ -152,22 +152,22 @@ public class LayerInteractionBoundaryTests
         await using var viewer = new Viewer(showWindow: false);
         await using var other = new Viewer(showWindow: false);
         var foreign = await other.Host.Window.Dispatcher.InvokeAsync(() =>
-            (MeasurementItem)new MeasurementCreationContext(other.Host.Measurements, other.Host.MeasurementRuntime, other.AcquireCurrentFrame)
+            (MeasurementItem)new MeasurementCreationContext(other.Host.Control.Runtime.Measurements, other.Host.Control.Runtime.MeasurementRuntime, other.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new())));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
-            var context = new MeasurementCreationContext(viewer.Host.Measurements, viewer.Host.MeasurementRuntime, viewer.AcquireCurrentFrame);
+            var context = new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame);
             var selected = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new()));
             var removed = (MeasurementItem)context.CreateMeasurement(MeasurementGeometry.Point(new(1, 1)));
             removed.Dispose();
-            viewer.Host.Interaction.Select(selected);
+            viewer.Host.Control.Runtime.Interaction.Select(selected);
             foreach (var invalid in new[] { foreign, removed })
             {
-                Assert.False(viewer.Host.Interaction.PointerDown(invalid, new()));
-                viewer.Host.Interaction.StartEditing(invalid);
-                viewer.Host.Interaction.Delete(invalid);
-                Assert.Same(selected, viewer.Host.Interaction.SelectedMeasurement);
-                Assert.False(viewer.Host.Interaction.Editor.IsEditing);
+                Assert.False(viewer.Host.Control.Runtime.Interaction.PointerDown(invalid, new()));
+                viewer.Host.Control.Runtime.Interaction.StartEditing(invalid);
+                viewer.Host.Control.Runtime.Interaction.Delete(invalid);
+                Assert.Same(selected, viewer.Host.Control.Runtime.Interaction.SelectedMeasurement);
+                Assert.False(viewer.Host.Control.Runtime.Interaction.Editor.IsEditing);
             }
             Assert.False(selected.IsDisposed);
             Assert.False(foreign.IsDisposed);

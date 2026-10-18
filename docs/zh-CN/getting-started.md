@@ -53,6 +53,10 @@ await closed.Task;
 
 `Closed` 是通知，不证明渲染和查询已排空。先停止并等待生产者结束，再等待 `DisposeAsync`；不要在 Viewer 回调中同步等待这些操作。Viewer 对应一次窗口生命周期，关闭后应新建实例。
 
+## 嵌入已有窗口
+
+应用拥有 UI 线程时，在 XAML 或代码中使用 `ImageViewerControl`。参见[嵌入与宿主异步关闭](embedding.md)及 [EmbeddedViewer 示例](../../samples/EmbeddedViewer/MainWindow.xaml)。
+
 ## 基本操作
 
 滚轮缩放，中键平移；右键菜单提供测量和图像导出。也可在示例的 `viewer.Show()` 前加入以下调用：
@@ -71,6 +75,7 @@ viewer.ActivateMeasurementTool(
 在仓库根目录执行；这些人工检查会打开 WPF 窗口：
 
 ```powershell
+dotnet run --project samples/EmbeddedViewer
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport

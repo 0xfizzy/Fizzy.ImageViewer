@@ -4,6 +4,8 @@
 
 本指南说明窗口配置和关闭责任。`Viewer` 为 sealed，应用适配器通过组合拥有它，不访问底层 WPF 窗口。[入门](getting-started.md)提供等待用户关闭的完整程序。
 
+`IViewer` 包含宿主无关的查看能力及异步释放，由 `Viewer` 与 `ImageViewerControl` 实现；窗口操作通过仅由 `Viewer` 实现的 `IViewerWindow` 提供。控件生命周期与宿主关闭见[嵌入指南](embedding.md)。
+
 ## 配置与显示
 
 ```csharp
