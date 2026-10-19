@@ -39,12 +39,19 @@ Run corresponding benchmarks when changing hot-path allocation, copying, queuing
 dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
 dotnet run --project tools/FrameBenchmark -c Release -- --embedded artifacts/frame-benchmark-embedded.json
 dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --notifications artifacts/notification-benchmark.json
 dotnet run --project tools/DrawingBenchmark -c Release
 dotnet run --project tools/ResizeBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
 ```
 
+Notification mode measures the actual control notification entry on its STA, including
+standalone forwarding, with 0/1/4 external subscribers. It excludes subscription setup,
+frame rendering and dispatcher scheduling, and reports warmed samples of per-notification
+time and thread allocation. It also measures the shared measurement notification queue
+with 0/1/4 subscribers and a prebuilt geometry payload, excluding measurement mutation
+and presentation. Compare repeated runs on the same machine and configuration.
 Frame/snapshot modes report time and managed allocation, not total process peak memory. Drawing measurements exclude consumer result construction, cross-thread dispatch and physical presentation. Line-profile modes separate data changes, WPF commands, offscreen rendering and query-result copying; immutable result ownership must remain intact.
 
 ## Tool sessions and layer ownership

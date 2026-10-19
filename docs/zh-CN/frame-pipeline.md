@@ -74,7 +74,7 @@ Viewer 保留原帧供查询，冻结可能无限期保留；相机池必须允�
 
 每个 Viewer 一个 STA 和渲染循环，最多一帧处理中、一帧等待，新帧替换等待帧。状态为 `Committed`、`Superseded`、`Frozen`、`Cancelled`、`Closed`、`Failed`；同时检查 Status 和 Error，丢帧也可能有清理错误，清理失败不改变提交或丢弃原因。
 
-取消在 UI 提交前尽力生效，提交后不撤销。等待帧在出队、替换、冻结或关闭时结束，不为每帧注册取消回调。Committed 表示 UI 已更换源和当前帧，不证明显示器已呈现。FrameId 在 Viewer 内单调递增。写像素后先执行单次 OnCommitted，再发 FrameCommitted；回调中的租约仅借用至回调结束。查询通知独立调度，禁止回调阻塞等待另一提交；异步工作自行获取租约。订阅异常隔离。
+取消在 UI 提交前尽力生效，提交后不撤销。等待帧在出队、替换、冻结或关闭时结束，不为每帧注册取消回调。Committed 表示 UI 已更换源和当前帧，不证明显示器已呈现。FrameId 在 Viewer 内单调递增。写像素后先执行单次 OnCommitted，再发 FrameCommitted；回调中的租约仅借用至回调结束。`FrameCommitted` 使用 `EventHandler<FrameInfo>`，sender 为公开的 Viewer 或 ImageViewerControl；订阅规则见[事件订阅契约](public-api.md#事件订阅)。查询通知独立调度，禁止回调阻塞等待另一提交；异步工作自行获取租约。订阅异常隔离。
 
 CPU 呈现器复用两个 WriteableBitmap，后台转换，先写未显示位图再切换。WPF 原生八位布局保留，映射灰度和显示快照使用 Pbgra32。GPU 使用 D3DImage。图像坐标始终是原图像素，不随 DPI 改变。
 

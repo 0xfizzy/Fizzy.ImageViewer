@@ -42,7 +42,7 @@ public class MeasurementNotificationsTests
     public async Task BuiltInAndCustomResultsAreObservableThroughThePublicFacade(bool custom)
     {
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
-        IViewer api = viewer;
+        IViewerCapabilities api = viewer;
         var events = new List<MeasurementEventArgs>();
         var ready = new TaskCompletionSource<MeasurementEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         MeasurementEventArgs? completed = null;
@@ -133,6 +133,7 @@ public class MeasurementNotificationsTests
         var second = new List<long>();
         var handleFirst = new List<double>();
         var handleSecond = new List<double>();
+        var sendersMatch = new List<bool>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
@@ -145,18 +146,20 @@ public class MeasurementNotificationsTests
                     e.Measurement.UpdateGeometry(MeasurementGeometry.Point(new(2, 0)));
             };
             viewer.MeasurementChanged += (_, e) => second.Add(e.Snapshot.GeometryVersion);
-            item.GeometryChanged += geometry =>
+            item.GeometryChanged += (sender, geometry) =>
             {
+                sendersMatch.Add(ReferenceEquals(item, sender));
                 handleFirst.Add(geometry.Anchor.X);
                 if (geometry.Anchor.X == 2) item.UpdateGeometry(MeasurementGeometry.Point(new(3, 0)));
             };
-            item.GeometryChanged += geometry => handleSecond.Add(geometry.Anchor.X);
+            item.GeometryChanged += (_, geometry) => handleSecond.Add(geometry.Anchor.X);
             item.UpdateGeometry(MeasurementGeometry.Point(new(1, 0)));
         });
         Assert.Equal(new long[] { 1, 2, 3 }, first);
         Assert.Equal(first, second);
         Assert.Equal(new double[] { 1, 2, 3 }, handleFirst);
         Assert.Equal(handleFirst, handleSecond);
+        Assert.All(sendersMatch, match => Assert.True(match));
     }
 
     [Theory]
@@ -191,23 +194,26 @@ public class MeasurementNotificationsTests
         await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
         var first = new List<string>();
         var second = new List<string>();
+        var sendersMatch = new List<bool>();
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
-            item.QueryResultChanged += result =>
+            item.QueryResultChanged += (sender, result) =>
             {
+                sendersMatch.Add(ReferenceEquals(item, sender));
                 first.Add(result == null ? "invalid" : "published");
                 if (result != null) item.UpdateGeometry(MeasurementGeometry.Point(new(1, 0)));
             };
-            item.QueryResultChanged += result => second.Add(result == null ? "invalid" : "published");
+            item.QueryResultChanged += (_, result) => second.Add(result == null ? "invalid" : "published");
             item.PublishQueryResult(new MeasurementSampleResult(item.Id, 0,
                 new(1, new(2, 1, 2, FramePixelFormat.Gray8), null), MeasurementQueryKind.Pixel,
                 [new(0, 0)], [new(FramePixelFormat.Gray8, 7, 0, 0, 0, 255)]));
         });
         Assert.Equal(new[] { "published", "invalid" }, first);
         Assert.Equal(first, second);
+        Assert.All(sendersMatch, match => Assert.True(match));
     }
 
     [Fact]
@@ -224,7 +230,7 @@ public class MeasurementNotificationsTests
             var item = (MeasurementItem)new MeasurementCreationContext(viewer.Host.Control.Runtime.Measurements, viewer.Host.Control.Runtime.MeasurementRuntime, viewer.AcquireCurrentFrame)
                 .CreateMeasurement(MeasurementGeometry.Point(new()));
             item.Complete();
-            item.GeometryChanged += _ => order.Add("geometry");
+            item.GeometryChanged += (_, _) => order.Add("geometry");
             item.UpdateGeometry(MeasurementGeometry.Point(new(1, 0)));
         });
         await viewer.DisposeAsync();

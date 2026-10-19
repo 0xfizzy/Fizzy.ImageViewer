@@ -20,7 +20,7 @@ public class PublicApiTests
     public async Task InterfaceControlsWindowFromWorkerAndRetainsHiddenContent()
     {
         await using var viewer = Create();
-        IViewer api = viewer;
+        IViewerCapabilities api = viewer;
         IViewerWindow window = viewer;
         IFrameSink sink = api;
         ICommittedFrameSource frames = api;
@@ -65,7 +65,7 @@ public class PublicApiTests
             Assert.Equal(lease.Info.FrameId, snapshot.SourceFrame.FrameId);
             Assert.Equal(42, pixels.CpuPixels.Span[0]);
         });
-        await api.DisposeAsync();
+        await viewer.DisposeAsync();
         registration!.Dispose();
         registration.Dispose();
         Assert.Throws<ObjectDisposedException>(window.Hide);
@@ -117,8 +117,13 @@ public class PublicApiTests
     [Fact]
     public void OnlyCompleteFacadeExposesGlobalLayerManagement()
     {
-        Assert.Equal(typeof(ViewerLayers), typeof(IViewer).GetProperty("Layers")!.PropertyType);
-        foreach (var capability in typeof(IViewer).GetInterfaces())
+        Assert.Equal(typeof(ViewerLayers), typeof(IViewerCapabilities).GetProperty("Layers")!.PropertyType);
+        Assert.Empty(typeof(IViewer).GetMethods());
+        Assert.Contains(typeof(IViewerCapabilities), typeof(IViewer).GetInterfaces());
+        Assert.Contains(typeof(IAsyncDisposable), typeof(IViewer).GetInterfaces());
+        Assert.False(typeof(IAsyncDisposable).IsAssignableFrom(typeof(IViewerCapabilities)));
+        Assert.False(typeof(IViewerWindow).IsAssignableFrom(typeof(IViewerCapabilities)));
+        foreach (var capability in typeof(IViewerCapabilities).GetInterfaces())
         {
             Assert.Null(capability.GetProperty("Layers"));
             Assert.DoesNotContain(capability.GetMethods(), method => method.ReturnType == typeof(ViewerLayers));
@@ -162,7 +167,7 @@ public class PublicApiTests
         Assert.Single(completed); // The cancelled preview must not complete on the next click.
 
         await CompletePoint();
-        await Task.Run(((IViewer)viewer).Layers.ClearContents);
+        await Task.Run(((IViewerCapabilities)viewer).Layers.ClearContents);
         Assert.Equal(completed, removed);
         Assert.Throws<ObjectDisposedException>(() => secondDrawing.Replace(new CircleElement(new(), 4, Brushes.Red)));
     }

@@ -9,6 +9,11 @@ public interface ICommittedFrameSource
 
     /// <summary>Raised on the viewer STA after a frame commits. Does not report physical presentation.</summary>
     /// <remarks>A later acquisition may observe a different frame. Use FrameSubmissionOptions.OnCommitted
-    /// when an operation needs the lease corresponding to a specific submission.</remarks>
-    event Action<FrameInfo>? FrameCommitted;
+    /// when an operation needs the lease corresponding to a specific submission. Sender is the public
+    /// Viewer or ImageViewerControl. Adding a subscriber rejects a stopping viewer with ObjectDisposedException;
+    /// removing one is always safe. Duplicate subscriptions follow delegate semantics. Unsubscription does
+    /// not retract captured notifications; subscriptions added during delivery apply only to later notifications.
+    /// Synchronous subscriber failures are logged and isolated. Async-void work is not awaited;
+    /// subscribers own its failures.</remarks>
+    event EventHandler<FrameInfo>? FrameCommitted;
 }

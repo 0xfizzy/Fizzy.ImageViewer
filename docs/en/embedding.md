@@ -2,7 +2,7 @@
 
 [简体中文](../zh-CN/embedding.md)
 
-Use `ImageViewerControl` when the image belongs inside an existing window, Grid or TabControl. Use `Viewer` for an independent window with its own STA. Both expose `IViewer`; only the standalone `Viewer` implements `IViewerWindow`.
+Use `ImageViewerControl` when the image belongs inside an existing window, Grid or TabControl. Use `Viewer` for an independent window with its own STA. Borrow `IViewerCapabilities` for the complete view or individual capability interfaces for narrower use. The owner retains `IViewer` for disposal; only the standalone `Viewer` implements `IViewerWindow`.
 
 ## Place and configure
 

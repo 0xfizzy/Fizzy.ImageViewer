@@ -26,7 +26,13 @@ public interface IViewerWindow
     bool CanUserClose { get; set; }
 
     /// <summary>Window closure notification on the viewer STA. Owners must still await IViewer.DisposeAsync
-    /// to drain background work and wait for actual STA termination.</summary>
+    /// to drain background work and wait for actual STA termination. Runs after queued measurement notifications.</summary>
+    /// <remarks>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
+    /// <seealso cref="IViewerLifetime.WhenStopping"/>
     event EventHandler? Closed;
 
     /// <summary>

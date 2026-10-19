@@ -107,7 +107,9 @@ frame terminates when dequeued/replaced/frozen/closed rather than using a per-fr
 `Committed` means the source and current frame have changed on the UI thread; it does not mean
 the monitor displayed it. FrameId is viewer-local and monotonic. Notifications occur after
 writing pixels. The per-submission `OnCommitted` runs first, then `FrameCommitted`.
-The `OnCommitted` frame lease is borrowed for that callback only.
+The `OnCommitted` frame lease is borrowed for that callback only. `FrameCommitted`
+uses `EventHandler<FrameInfo>`; sender is the public Viewer or ImageViewerControl.
+See the shared [event subscription contract](public-api.md#event-subscriptions).
 Measurement query notifications are scheduled independently. Callbacks must not block on another viewer
 submission; use asynchronous work with an acquired lease. Subscriber failures are isolated.
 

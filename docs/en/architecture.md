@@ -67,12 +67,13 @@ to work. Test-only helpers live beside their callers; benchmarks remain under to
 
 Keep tests, samples, tools and native builds outside the managed library projects. Viewer partial files organize
 one facade by capability: Window, Frames, Display, Drawing, Measurements, HUD, Queries,
-Snapshots and Lifetime. These files are not independently owned services. `IViewer` aggregates
+Snapshots and Lifetime. These files are not independently owned services. `IViewerCapabilities` aggregates
 borrowed capability interfaces placed with their owning features. `IViewerWindow` stays
 with Viewer; display control belongs to Viewport, shared query settings to Imaging.
 `Viewer` and `ImageViewerControl` implement `IViewer`, which excludes window operations.
-Only `Viewer` implements `IViewerWindow`. Each instance has one shared lifetime; only
-the aggregate contract includes asynchronous disposal and global `Layers` composition. Drawing exposes
+Only `Viewer` implements `IViewerWindow`. Each instance has one shared lifetime.
+`IViewerCapabilities` includes global `Layers` composition and stopping observation;
+`IViewer` extends it with asynchronous disposal for the owner. Drawing exposes
 only its default `Markers` layer; measurements expose their `Measurements` layer.
 Layer handles manage the entire corresponding layer, while drawing/HUD/registration
 handles manage individual resources. Review returned objects, collection elements and
@@ -81,6 +82,17 @@ These interfaces constrain typed dependencies; a shared implementation and event
 do not provide security isolation. Documentation in
 docs describes current component contracts.
 Update this map when introducing or removing a feature boundary, not for ordinary files.
+
+`IViewerLifetime`, included in `IViewerCapabilities`, exposes only the shared `WhenStopping` task.
+ViewerLifetime completes it when closing admission; both hosts forward the same signal.
+It neither initiates shutdown nor represents drainage or the owner's disposal result.
+Facade event add/remove/clear operations share ViewerLifetime.Gate; add rejects stopping.
+Delivery reads a delegate snapshot without adding a lock or invoking subscribers under
+an event-accessor lock. Layer and measurement subscriptions retain their STA boundary.
+Public events use EventHandler delegates with their existing payloads; Viewer forwarding
+preserves public sender identity without another notification queue. Handle notifications
+queue one immutable multicast-delegate snapshot per notification and isolate each
+subscriber during delivery; reentrant work follows all subscribers of that notification.
 
 Visibility is enforced by C# access modifiers and the reviewed public API baseline.
 Integration tests access composed internals through Viewer.Host; component tests construct

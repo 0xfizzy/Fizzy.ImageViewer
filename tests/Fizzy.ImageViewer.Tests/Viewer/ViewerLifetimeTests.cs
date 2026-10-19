@@ -1,3 +1,4 @@
+using Fizzy.ImageViewer.Frames;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -42,5 +43,53 @@ public class ViewerLifetimeTests
         // WPF translates a callback's cancellation into TaskCanceledException.
         if (cancelled) Assert.IsAssignableFrom<OperationCanceledException>(actual);
         else Assert.Same(failure, actual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task StoppingIsObservableBeforeAcceptedWorkDrains(bool standalone) => ControlTestDispatcher.Run(async () =>
+    {
+        await using IViewer viewer = standalone ? new Viewer(showWindow: false) : new ImageViewerControl();
+        IViewerLifetime observer = viewer;
+        var stopping = observer.WhenStopping;
+        Assert.Same(stopping, observer.WhenStopping);
+        Assert.False(stopping.IsCompleted);
+        using var release = new ManualResetEventSlim();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = Task.Run(async () => await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(
+            new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }, () =>
+            {
+                entered.TrySetResult();
+                release.Wait(TimeSpan.FromSeconds(10));
+            }), cancellationToken: new CancellationToken(true)));
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var closing = viewer.DisposeAsync().AsTask();
+            await stopping.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(closing.IsCompleted);
+            int rejectedReleases = 0;
+            var rejected = await viewer.SubmitFrameAsync(ImageFrame.TakeOwnership(
+                new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 1 }, () => rejectedReleases++));
+            Assert.Equal(FrameSubmitStatus.Closed, rejected.Status);
+            Assert.Equal(1, rejectedReleases);
+            release.Set();
+            await pending;
+            await closing.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Same(stopping, observer.WhenStopping);
+            Assert.True(observer.WhenStopping.IsCompletedSuccessfully);
+        }
+        finally { release.Set(); await pending; }
+    });
+
+    [Fact]
+    public async Task WindowClosureSignalsBorrowersWithoutDisposalRequest()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        IViewerLifetime observer = viewer;
+        await viewer.Host.Window.Dispatcher.InvokeAsync(viewer.Host.Window.CloseProgrammatically);
+        await observer.WhenStopping.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(observer.WhenStopping.IsCompletedSuccessfully);
     }
 }

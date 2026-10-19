@@ -160,7 +160,7 @@ removal and closure release subscriptions and drawing resources.
 Adding a `DrawingClicked` subscription dispatches to the viewer STA and rejects a removed
 layer or stopping viewer. Unsubscription remains safe after removal or closure.
 
-Global layer composition is available through `IViewer.Layers`. Borrowing
+Global layer composition is available through `IViewerCapabilities.Layers`. Borrowing
 `IViewerDrawing` exposes only the default `Markers` layer and its `Draw*` helpers;
 `IViewerMeasurements.Measurements` exposes the measurement layer. A `DrawingLayer`
 grants management of that entire layer, including clearing other drawings and receiving

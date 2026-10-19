@@ -2,7 +2,7 @@
 
 [English](../en/embedding.md)
 
-图像需要放入已有窗口、Grid 或 TabControl 时，使用 `ImageViewerControl`；需要独立窗口及独立 STA 时，使用 `Viewer`。两者均提供 `IViewer`，只有独立窗口 `Viewer` 实现 `IViewerWindow`。
+图像需要放入已有窗口、Grid 或 TabControl 时，使用 `ImageViewerControl`；需要独立窗口及独立 STA 时，使用 `Viewer`。需要完整查看能力时借用 `IViewerCapabilities`，仅需部分功能时使用窄接口；拥有者保留 `IViewer` 负责释放。只有独立窗口 `Viewer` 实现 `IViewerWindow`。
 
 ## 放置与配置
 

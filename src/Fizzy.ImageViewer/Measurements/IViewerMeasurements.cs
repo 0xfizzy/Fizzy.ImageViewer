@@ -23,12 +23,33 @@ public interface IViewerMeasurements
     void EndInteraction();
 
     /// <summary>Completed measurements only; raised on the viewer STA, excluding previews.</summary>
+    /// <remarks>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+    /// current mutation, including terminal removal notifications.
+    /// Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
     event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
 
     /// <summary>Removal of completed measurements; raised on the viewer STA, including closure.</summary>
+    /// <remarks>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+    /// current mutation, including terminal removal notifications.
+    /// Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
     event EventHandler<MeasurementEventArgs>? MeasurementRemoved;
 
-    /// <summary>Geometry and query snapshots plus a live editable handle after editing, publication or invalidation.</summary>
+    /// <summary>Geometry and query snapshots plus a live editable handle after editing, publication or invalidation, on the viewer STA.</summary>
+    /// <remarks>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+    /// current mutation, including terminal removal notifications.
+    /// Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
     event EventHandler<MeasurementEventArgs>? MeasurementChanged;
 
     /// <summary>

@@ -11,6 +11,12 @@ using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Microsoft.Extensions.Logging.Abstractions;
 
+if (args.FirstOrDefault() == "--notifications")
+{
+    await NotificationBenchmark.RunAsync(args.Skip(1).FirstOrDefault() ?? "artifacts/notification-benchmark.json");
+    return;
+}
+
 if (args.FirstOrDefault() == "--snapshots")
 {
     await SnapshotCopyBenchmark.RunAsync(args.Skip(1).FirstOrDefault() ?? "artifacts/snapshot-copy-benchmark.json");

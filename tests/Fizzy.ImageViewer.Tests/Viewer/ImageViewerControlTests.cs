@@ -26,9 +26,13 @@ public class ImageViewerControlTests
         await using IViewer api = standalone ? new Viewer(showWindow: false) : (ImageViewerControl)XamlReader.Parse(
             "<v:ImageViewerControl xmlns:v='clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer' />");
         var control = api is Viewer viewer ? viewer.Host.Control : (ImageViewerControl)api;
+        IViewerCapabilities borrowed = api;
+        Assert.Same(api, borrowed);
+        Assert.Same(api.Layers, borrowed.Layers);
+        Assert.Same(api.WhenStopping, ((IViewerLifetime)borrowed).WhenStopping);
         Assert.Equal(!standalone, control.Dispatcher.CheckAccess());
         var order = new List<string>();
-        api.FrameCommitted += _ => order.Add("event");
+        api.FrameCommitted += (_, _) => order.Add("event");
         Assert.Equal(FrameSubmitStatus.Committed, (await api.SubmitFrameAsync(Frame(), new()
         {
             OnCommitted = _ => order.Add("callback")
@@ -80,6 +84,7 @@ public class ImageViewerControlTests
             first.Runtime.Interaction.ImageDown(1, 1);
             panel.Children.Remove(first);
             await first.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            Assert.False(first.WhenStopping.IsCompleted);
             Assert.Null(first.Runtime.Interaction.ActiveId);
             Assert.Equal(count, first.MeasurementOverlay.Canvas.Children.Count);
             panel.Children.Add(first);
@@ -130,6 +135,7 @@ public class ImageViewerControlTests
         var presenter = new FailingPresenter();
         var control = new ImageViewerControl(NullLogger.Instance, presenter, null);
         var first = control.DisposeAsync().AsTask();
+        Assert.True(control.WhenStopping.IsCompletedSuccessfully);
         Assert.Same(first, control.DisposeAsync().AsTask());
         Assert.Same(presenter.Error, await Assert.ThrowsAsync<InvalidOperationException>(() => first));
         Assert.Equal(1, presenter.Disposals);
@@ -171,6 +177,7 @@ public class ImageViewerControlTests
         });
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => control!.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Contains("dispatcher", failure.Message);
+        Assert.True(control!.WhenStopping.IsCompletedSuccessfully);
     }
 
     [Fact]

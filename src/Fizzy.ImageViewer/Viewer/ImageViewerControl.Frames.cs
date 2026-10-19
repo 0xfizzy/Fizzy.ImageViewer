@@ -6,7 +6,12 @@ namespace Fizzy.ImageViewer;
 public partial class ImageViewerControl
 {
     /// <inheritdoc/>
-    public event Action<FrameInfo>? FrameCommitted;
+    public event EventHandler<FrameInfo>? FrameCommitted
+    {
+        add { lock (_runtime.Lifetime.Gate) { _runtime.Lifetime.ThrowIfStopping(); _frameCommitted += value; } }
+        remove { lock (_runtime.Lifetime.Gate) _frameCommitted -= value; }
+    }
+    private EventHandler<FrameInfo>? _frameCommitted;
 
     /// <inheritdoc cref="IFrameSink.SubmitFrameAsync"/>
     public ValueTask<FrameSubmitResult> SubmitFrameAsync(ImageFrame frame, FrameSubmissionOptions? options = null, CancellationToken cancellationToken = default)
@@ -17,13 +22,8 @@ public partial class ImageViewerControl
 
     internal void NotifyFrameCommitted(FrameInfo info)
     {
-        foreach (Action<FrameInfo> handler in FrameCommitted?.GetInvocationList() ?? [])
-            Notify(() => handler(info));
-    }
-
-    private void Notify(Action action)
-    {
-        try { action(); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }
+        foreach (EventHandler<FrameInfo> handler in Volatile.Read(ref _frameCommitted)?.GetInvocationList() ?? [])
+            try { handler(this, info); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }
     }
 }

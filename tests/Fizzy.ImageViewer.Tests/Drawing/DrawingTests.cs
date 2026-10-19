@@ -142,7 +142,7 @@ public class DrawingTests
     public async Task FacadeDrawingHelpersReturnReplaceableDrawings()
     {
         await using var viewer = Create();
-        IViewer api = viewer;
+        IViewerCapabilities api = viewer;
         DrawingHandle[] drawings = [
             api.DrawLine(new(), new(10, 10), Brushes.Red),
             api.DrawCircle(new(), 5, Brushes.Red),

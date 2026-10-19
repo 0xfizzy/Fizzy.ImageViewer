@@ -31,12 +31,20 @@ internal sealed class MeasurementNotificationQueue(ILogger logger)
         Drain();
     }
 
-    internal void Notify<T>(Action<T>? handlers, T value)
+    internal void Notify<T>(EventHandler<T>? handlers, object sender, T value)
     {
-        foreach (Action<T> handler in handlers?.GetInvocationList() ?? [])
-            _pending.Enqueue(() => handler(value));
-        Drain();
+        if (handlers != null) PostNotification(handlers, sender, value);
     }
+
+    // A multicast delegate is an immutable subscription snapshot. Queue one delivery
+    // instead of a closure per subscriber; reentrant posts still follow every subscriber
+    // of this notification because Drain remains active throughout this callback.
+    private void PostNotification<T>(EventHandler<T> handlers, object sender, T value) => Post(() =>
+    {
+        foreach (EventHandler<T> handler in handlers.GetInvocationList())
+            try { handler(sender, value); }
+            catch (Exception ex) { logger.LogWarning(ex, "Measurement subscriber failed"); }
+    });
 
     private void Drain()
     {

@@ -25,7 +25,7 @@ viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
 
 ## 读取结果与通知
 
-订阅 `Viewer.MeasurementChanged` 即可观察所有工具产生的已完成测量，无需访问 WPF 视觉树。几何编辑、查询发布及结果失效都会携带不可变几何、版本和当前 `QueryResult`。几何变化、查询失败或过期后，结果为 `null`。预览不触发该事件；相等的几何更新和已经为空的结果也不重复通知。
+订阅 `Viewer.MeasurementChanged`（也由 `IViewerCapabilities` 提供）即可观察所有工具产生的已完成测量，无需访问 WPF 视觉树。几何编辑、查询发布及结果失效都会携带不可变几何、版本和当前 `QueryResult`。几何变化、查询失败或过期后，结果为 `null`。预览不触发该事件；相等的几何更新和已经为空的结果也不重复通知。
 
 ```csharp
 viewer.MeasurementChanged += (_, e) =>
@@ -47,6 +47,10 @@ Viewer 和句柄的通知共用 STA 上的 FIFO 队列。每次变化先捕获�
 ## 编辑与删除
 
 点击已完成测量进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 `Measurement` 句柄调用 `UpdateGeometry` 或 `Dispose`；`viewer.Measurements.Clear()` 清空全部测量。
+
+句柄事件使用 `EventHandler<MeasurementGeometry>` 和 `EventHandler<MeasurementQueryResult?>`，
+sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，退订仍安全，不撤回已捕获的通知。
+同步异常隔离及 async-void 工作责任等规则见[事件订阅契约](public-api.md#事件订阅)。
 
 ## 几何与更新
 

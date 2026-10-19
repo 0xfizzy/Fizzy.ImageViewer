@@ -16,6 +16,9 @@ public sealed class DrawingLayer : ViewerLayer
     /// independently; a hit consumes the mouse event even if a subscriber fails.
     /// Adding handlers dispatches to the viewer STA and rejects removed layers or a stopping viewer.
     /// Removing handlers remains safe after layer removal or viewer closure.</summary>
+    /// <remarks>Sender is this layer. Duplicate subscriptions follow delegate semantics. Unsubscription
+    /// does not retract captured notifications; subscriptions added during delivery apply only to later
+    /// notifications. Async-void work is not awaited; subscribers own its failures.</remarks>
     public event EventHandler<DrawingClickedEventArgs>? DrawingClicked
     {
         add => Owner.Invoke(() => { EnsureAlive(); _drawingClicked += value; });

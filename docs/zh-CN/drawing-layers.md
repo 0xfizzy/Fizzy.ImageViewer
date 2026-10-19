@@ -98,7 +98,7 @@ OverlayScaleMode 与定位独立，不支持模式在内容变更前拒绝。屏
 
 内置层不可移除；图层名称非空且按大小写区分唯一，图层句柄不能交给另一 Viewer 的管理器。`Items` 是成员快照，其中句柄仍可变。`Clear` 保留设置和订阅，移除及关闭则释放资源和订阅。新增点击订阅会调度到 STA，并拒绝已移除的层或正在关闭的 Viewer；退订在关闭后仍安全。
 
-IViewer.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。
+IViewerCapabilities.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。
 
 可编辑测量通过工具上下文创建、更新几何并 Complete，拥有框架视觉、标签、查询及注册资源。不支持附加任意 WPF 元素，内部 shape factory/MeasurementOverlay 不是公共接口。
 

@@ -33,7 +33,12 @@
 
 Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。托管库项目统一放在 src/：核心项目位于 src/Fizzy.ImageViewer/，可选 CUDA 后端位于 src/Fizzy.ImageViewer.Cuda/。上表功能路径相对于核心项目，native/Cuda 相对于仓库根目录；测试、示例、工具和原生构建保留在托管库项目之外。
 
-Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合宿主无关的功能接口，由 Viewer 与 ImageViewerControl 实现，只有聚合负责异步释放和全局 Layers；窗口能力通过仅由 Viewer 实现的 IViewerWindow 提供。接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
+Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewerCapabilities 聚合宿主无关功能接口、全局 Layers 和停止观察，IViewer 继承它并增加拥有者的异步释放责任。两种接口均由 Viewer 与 ImageViewerControl 在同一实例上实现；窗口能力通过仅由 Viewer 实现的 IViewerWindow 提供。接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。
+
+IViewerCapabilities 继承的 IViewerLifetime 只暴露共享的 WhenStopping 任务。ViewerLifetime 在关闭接纳门时完成它，两种宿主转发同一信号；它不发起关闭，也不代表排空或拥有者的释放结果。
+门面事件添加、移除和清空共享 ViewerLifetime.Gate，添加时拒绝停止状态；交付读取委托快照，
+不增加锁，也不在事件访问器的锁内执行订阅者。图层和测量订阅保留所属 STA 边界。
+公开事件使用 EventHandler 委托并复用原有载荷；Viewer 转发保留公开 sender 身份，不另加通知队列。句柄通知按每次通知入队一个不可变多播委托快照，交付时逐个隔离订阅者；重入工作排在本次全部订阅者之后。
 
 可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。
 

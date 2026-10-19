@@ -30,7 +30,7 @@ public class MeasurementHandleTests
         GC.KeepAlive(retained.Handle);
     }
 
-    private static void IgnoreGeometry(MeasurementGeometry geometry) { }
+    private static void IgnoreGeometry(object? sender, MeasurementGeometry geometry) { }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static (IMeasurement Handle, WeakReference Owner, WeakReference Overlay, WeakReference Runtime) CreateRetiredHandle(Viewer viewer, bool fail)
@@ -60,7 +60,7 @@ public class MeasurementHandleTests
         int changes = 0, disposed = 0;
         await Task.Run(() =>
         {
-            handle.GeometryChanged += geometry =>
+            handle.GeometryChanged += (_, geometry) =>
             {
                 viewer.Host.Window.Dispatcher.VerifyAccess();
                 Assert.Equal(new Point(3, 4), Assert.IsType<PointMeasurementGeometry>(geometry).Position);
@@ -76,10 +76,20 @@ public class MeasurementHandleTests
         Assert.Equal(new Point(1, 2), Assert.IsType<PointMeasurementGeometry>(completed.Snapshot.Geometry).Position);
         await Task.Run(handle.Dispose);
         Assert.True(handle.IsDisposed);
+        EventHandler<MeasurementGeometry> geometryHandler = (_, _) => { };
+        EventHandler<MeasurementQueryResult?> queryHandler = (_, _) => { };
+        Assert.Throws<ObjectDisposedException>(() => handle.GeometryChanged += geometryHandler);
+        Assert.Throws<ObjectDisposedException>(() => handle.QueryResultChanged += queryHandler);
+        handle.GeometryChanged -= geometryHandler;
+        handle.QueryResultChanged -= queryHandler;
         Assert.Equal(1, disposed);
         Assert.Throws<ObjectDisposedException>(() => handle.UpdateGeometry(MeasurementGeometry.Point(new())));
         await viewer.DisposeAsync();
         handle.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => handle.GeometryChanged += geometryHandler);
+        Assert.Throws<ObjectDisposedException>(() => handle.QueryResultChanged += queryHandler);
+        handle.GeometryChanged -= geometryHandler;
+        handle.QueryResultChanged -= queryHandler;
         Assert.Equal(completed.Snapshot.Id, handle.Id);
         Assert.True(handle.IsDisposed);
         Assert.Throws<ObjectDisposedException>(() => handle.Geometry);

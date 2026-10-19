@@ -39,11 +39,14 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
 dotnet run --project tools/FrameBenchmark -c Release -- --embedded artifacts/frame-benchmark-embedded.json
 dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --notifications artifacts/notification-benchmark.json
 dotnet run --project tools/DrawingBenchmark -c Release
 dotnet run --project tools/ResizeBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
 ```
+
+通知模式在所属 STA 测量实际控件通知入口，包含独立窗口转发，覆盖 0/1/4 个外部订阅者；排除订阅设置、帧渲染和 Dispatcher 调度，报告预热后的单次通知耗时与线程分配。它还使用预建几何载荷测量共享测量通知队列的 0/1/4 订阅者场景，排除测量变化和呈现。使用同一机器和配置对比多轮结果。
 
 帧/快照报告耗时和托管分配，不是进程峰值内存。绘制排除消费者结果构造、跨线程和物理呈现；线剖面区分数据、WPF 命令、离屏呈现和查询复制，不可变结果所有权必须保留。
 

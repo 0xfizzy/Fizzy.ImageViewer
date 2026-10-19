@@ -70,18 +70,32 @@ public partial class ImageViewerControl
         InvokeAlive(() => _runtime.Interaction.Cancel());
     }
 
-    /// <summary>Raised once after a measurement completes, on the control UI thread. Previews are excluded.</summary>
-    /// <remarks>Subscribers may start a new measurement, including the same tool, before returning.</remarks>
-    public event EventHandler<MeasurementEventArgs>? MeasurementCompleted;
-    /// <summary>Raised when a previously completed measurement is removed, including clear and closure.</summary>
-    public event EventHandler<MeasurementEventArgs>? MeasurementRemoved;
+    /// <inheritdoc />
+    public event EventHandler<MeasurementEventArgs>? MeasurementCompleted
+    {
+        add { lock (_runtime.Lifetime.Gate) { _runtime.Lifetime.ThrowIfStopping(); _measurementCompleted += value; } }
+        remove { lock (_runtime.Lifetime.Gate) _measurementCompleted -= value; }
+    }
+    private EventHandler<MeasurementEventArgs>? _measurementCompleted;
+    /// <inheritdoc />
+    public event EventHandler<MeasurementEventArgs>? MeasurementRemoved
+    {
+        add { lock (_runtime.Lifetime.Gate) { _runtime.Lifetime.ThrowIfStopping(); _measurementRemoved += value; } }
+        remove { lock (_runtime.Lifetime.Gate) _measurementRemoved -= value; }
+    }
+    private EventHandler<MeasurementEventArgs>? _measurementRemoved;
 
-    /// <summary>Geometry or query state changed on a completed measurement. Runs on the control UI thread.</summary>
-    public event EventHandler<MeasurementEventArgs>? MeasurementChanged;
+    /// <inheritdoc />
+    public event EventHandler<MeasurementEventArgs>? MeasurementChanged
+    {
+        add { lock (_runtime.Lifetime.Gate) { _runtime.Lifetime.ThrowIfStopping(); _measurementChanged += value; } }
+        remove { lock (_runtime.Lifetime.Gate) _measurementChanged -= value; }
+    }
+    private EventHandler<MeasurementEventArgs>? _measurementChanged;
 
-    internal void NotifyMeasurementChanged(MeasurementEventArgs args) => NotifyMeasurement(MeasurementChanged, args);
-    internal void NotifyMeasurementCompleted(MeasurementEventArgs args) => NotifyMeasurement(MeasurementCompleted, args);
-    internal void NotifyMeasurementRemoved(MeasurementEventArgs args) => NotifyMeasurement(MeasurementRemoved, args);
+    internal void NotifyMeasurementChanged(MeasurementEventArgs args) => NotifyMeasurement(Volatile.Read(ref _measurementChanged), args);
+    internal void NotifyMeasurementCompleted(MeasurementEventArgs args) => NotifyMeasurement(Volatile.Read(ref _measurementCompleted), args);
+    internal void NotifyMeasurementRemoved(MeasurementEventArgs args) => NotifyMeasurement(Volatile.Read(ref _measurementRemoved), args);
 
     private void NotifyMeasurement(EventHandler<MeasurementEventArgs>? handlers, MeasurementEventArgs args)
     {

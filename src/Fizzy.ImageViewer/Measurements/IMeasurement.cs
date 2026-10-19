@@ -22,9 +22,23 @@ public interface IMeasurement : IDisposable
     /// <summary>Latest immutable query result, or null before publication or after invalidation.</summary>
     MeasurementQueryResult? QueryResult { get; }
     /// <summary>Reports changed geometry on the viewer STA after model and visual updates; subscriber failures are isolated.</summary>
-    event Action<MeasurementGeometry>? GeometryChanged;
+    /// <remarks>Sender is the measurement handle. Adding a subscriber rejects a removed measurement or stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+    /// current mutation. Payloads are immutable snapshots; the handle may already have changed or been removed.
+    /// Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
+    event EventHandler<MeasurementGeometry>? GeometryChanged;
     /// <summary>Reports query publication or null on invalidation on the viewer STA; subscriber failures are isolated.</summary>
-    event Action<MeasurementQueryResult?>? QueryResultChanged;
+    /// <remarks>Sender is the measurement handle. Adding a subscriber rejects a removed measurement or stopping
+    /// viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+    /// delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+    /// current mutation. Payloads are immutable snapshots; the handle may already have changed or been removed.
+    /// Unsubscription does not retract captured notifications; subscriptions added
+    /// during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+    /// isolated. Async-void work is not awaited; subscribers own its failures.</remarks>
+    event EventHandler<MeasurementQueryResult?>? QueryResultChanged;
     /// <summary>Updates the model, visuals and editing controls before notification.
     /// During dragging, programmatic changes replace the drag baseline.</summary>
     void UpdateGeometry(MeasurementGeometry geometry);

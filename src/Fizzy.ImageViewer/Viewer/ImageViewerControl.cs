@@ -90,14 +90,20 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
     /// remain valid. Await this method before closing the host dispatcher; never block its UI thread.</remarks>
     public ValueTask DisposeAsync() => _runtime.BeginDisposal();
 
+    /// <inheritdoc />
+    public Task WhenStopping => _runtime.Lifetime.WhenStopping;
+
     internal void ClearNotifications()
     {
         Unloaded -= OnUnloaded;
         if (ImageViewport != null && _layers != null) ImageViewport.ScaleChanged -= _layers.Collection.UpdateScale;
-        FrameCommitted = null;
-        MeasurementCompleted = null;
-        MeasurementRemoved = null;
-        MeasurementChanged = null;
+        lock (_runtime.Lifetime.Gate)
+        {
+            _frameCommitted = null;
+            _measurementCompleted = null;
+            _measurementRemoved = null;
+            _measurementChanged = null;
+        }
     }
 
     private T InvokeAlive<T>(Func<T> action) => _runtime.Lifetime.Invoke(Dispatcher, action);

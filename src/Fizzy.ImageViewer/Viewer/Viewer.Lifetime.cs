@@ -4,21 +4,38 @@ namespace Fizzy.ImageViewer;
 
 public partial class Viewer
 {
-    /// <summary>Raised after window closure; await DisposeAsync for background work and STA termination.</summary>
-    public event EventHandler? Closed;
+    /// <inheritdoc />
+    public Task WhenStopping => _host.Control.Runtime.Lifetime.WhenStopping;
+
+    /// <inheritdoc />
+    public event EventHandler? Closed
+    {
+        add { lock (_host.Control.Runtime.Lifetime.Gate) { _host.Control.Runtime.Lifetime.ThrowIfStopping(); _closed += value; } }
+        remove { lock (_host.Control.Runtime.Lifetime.Gate) _closed -= value; }
+    }
+    private EventHandler? _closed;
     internal void NotifyClosed(EventArgs e)
     {
-        var handlers = Closed;
-        Closed = null;
+        EventHandler? handlers;
+        lock (_host.Control.Runtime.Lifetime.Gate)
+        {
+            handlers = _closed;
+            _closed = null;
+        }
         foreach (EventHandler handler in handlers?.GetInvocationList() ?? [])
             try { handler(this, e); } catch (Exception ex) { _logger.LogWarning(ex, "Closed handler failed"); }
     }
     internal void ClearNotifications()
     {
-        FrameCommitted = null;
-        MeasurementCompleted = null;
-        MeasurementRemoved = null;
-        MeasurementChanged = null;
+        // A failed control constructor cannot have exposed the Viewer to subscribers.
+        if (_host.Control is not { } control) return;
+        lock (control.Runtime.Lifetime.Gate)
+        {
+            _frameCommitted = null;
+            _measurementCompleted = null;
+            _measurementRemoved = null;
+            _measurementChanged = null;
+        }
     }
     /// <summary>Stops admission, drains accepted frame/query work and waits for the STA to exit.</summary>
     /// <remarks>All callers observe the same completion, including owned-resource cleanup failures.

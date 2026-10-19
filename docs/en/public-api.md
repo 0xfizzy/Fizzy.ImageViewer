@@ -4,7 +4,7 @@
 
 Configure a Viewer window and own its shutdown. `Viewer` is sealed; application adapters compose an instance rather than access its raw WPF window. [Getting started](getting-started.md) has a complete program that waits for user closure.
 
-`IViewer` contains host-independent capabilities and asynchronous disposal. `Viewer` and `ImageViewerControl` implement it; window operations require `IViewerWindow`, implemented only by `Viewer`. For embedded lifetime and host shutdown, see [embedding](embedding.md).
+`IViewerCapabilities` contains borrowed host-independent capabilities, global layers and stopping observation. `IViewer` extends it with asynchronous disposal for the owner. `Viewer` and `ImageViewerControl` implement it; window operations require `IViewerWindow`, implemented only by `Viewer`. For embedded lifetime and host shutdown, see [embedding](embedding.md).
 
 ## Configure and show
 
@@ -80,10 +80,31 @@ Disposal drains admitted submissions through release and public completion, incl
 
 Once disposal begins, frame acquisition, snapshot capture, registration and layer operations reject new work with `ObjectDisposedException`; submission consumes ownership and returns `Closed`. Previously acquired leases and snapshots remain independently owned. Viewer does not wait for external leases or reclaim their storage early. Accepted capture/export work with independent dependencies may finish after closure.
 
+## Observe stopping without owning shutdown
+
+`IViewerLifetime.WhenStopping` is a shared, read-only task implemented by both hosts
+and included in `IViewerCapabilities`. Borrow it alongside the specific capabilities an endpoint
+needs. Reading or awaiting it does not initiate shutdown. It completes successfully
+once the shared admission gate closes, including on window closure, explicit disposal
+or premature host-dispatcher shutdown. It remains completed for late observers and
+does not fault or cancel when cleanup fails. Temporary `Unloaded` does not signal it.
+
+Use this signal to stop forwarding new operations. Concurrent submissions still transfer
+frame ownership and may return `Closed`; other operations may throw
+`ObjectDisposedException`. The endpoint must drain its own accepted work before
+releasing its dependencies. Signal completion does not establish resource drainage,
+resource release or standalone STA exit, and independent leases may outlive the viewer.
+The owner still awaits `DisposeAsync` to observe its shared shutdown result; failure
+does not prove drainage. Continuations are not invoked inline by the signal and have
+no UI-thread delivery guarantee. Awaiting an already completed task may continue
+synchronously; do not synchronously wait on the UI thread.
+
 ## Borrowing viewer capabilities
 
-`IViewer` aggregates the following interfaces and `IAsyncDisposable`. `Viewer` implements
-all capabilities on the same instance; callers can accept the narrow interface they need.
+`IViewerCapabilities` aggregates the following interfaces and global `Layers`.
+`IViewer` adds `IAsyncDisposable`. Borrow the aggregate when an adapter needs the complete
+view; otherwise accept the narrow interfaces it needs. Both hosts implement these on
+the same instance, without a wrapper or independent lifetime.
 Only the owning host disposes the viewer. Borrowed capabilities share its STA, state and
 shutdown gate and have no independent disposal contract.
 
@@ -91,7 +112,7 @@ shutdown gate and have no independent disposal contract.
 | --- | --- | --- |
 | `IFrameSink` | `.Frames` | Submit owned frames and await commit/drop results |
 | `ICommittedFrameSource` | `.Frames` | Acquire current original-frame leases and observe commits |
-| `IViewerWindow` | Root | Window visibility, placement, title, close policy and `Closed` |
+| `IViewerLifetime` | Root | Observe terminal admission closure without initiating shutdown |
 | `IViewerDisplay` | `.Viewport` | Fit the image to the viewport and configure display range |
 | `ISnapshotSource` | `.Snapshots` | Capture independently owned full-frame or region snapshots |
 | `IViewerDrawing` | `.Drawing` | Default `Markers` layer and drawing helpers |
@@ -112,7 +133,7 @@ implementations and test doubles must release it on every terminal path. Frame r
 own their acquired leases. A commit event and a subsequent acquisition are not atomic;
 use `FrameSubmissionOptions.OnCommitted` for a specific submission's borrowed lease.
 
-Global layer composition belongs only to `IViewer.Layers`: it can enumerate, create,
+Global layer composition belongs only to `IViewerCapabilities.Layers`: it can enumerate, create,
 remove and clear layers across both drawing and measurements. `Layers.Items` snapshots
 membership, but its elements remain live mutable handles. `IViewerDrawing.Markers` and
 `IViewerMeasurements.Measurements` expose their respective entire layers; clearing one
@@ -130,6 +151,30 @@ These interfaces describe normal typed dependencies, not security isolation. The
 `Viewer` implements all capabilities and is the sender of viewer events; casts can recover
 the complete facade. They do not make drawing independent of WPF. `Closed` is a window
 notification; the owner still awaits `IViewer.DisposeAsync()` for complete shutdown.
+
+## Event subscriptions
+
+Library-defined events use `EventHandler` or `EventHandler<T>` with the existing payload
+objects or values; `T` need not derive from `EventArgs`. Sender is the public object
+that owns the event: Viewer, ImageViewerControl, DrawingLayer or IMeasurement.
+Callbacks run on that object's UI/STA thread. `IViewerWindow.Closed` remains exclusive
+to the standalone window. `WhenStopping` is a task and has no UI-thread delivery guarantee.
+
+Adding a subscriber throws `ObjectDisposedException` once the viewer stops accepting
+work or the owning layer/measurement is removed. Removing subscribers is safe and
+idempotent after termination. Duplicate subscriptions invoke multiple times; each
+removal removes the last matching occurrence. Each notification captures its subscribers:
+adding during delivery affects later notifications, while removing does not retract
+already captured or queued callbacks. Final cleanup clears subscriptions. Subscribe
+before showing the window when closure must be observed; `Closed` is not replayed.
+Use `WhenStopping` for late observation of terminal admission closure.
+
+Subscriber synchronous exceptions are logged individually and do not stop later subscribers
+or fail the originating operation. Async-void handlers are not awaited; subscribers must
+manage their asynchronous work and errors. Cleanup callbacks such as `IMeasurement.OnDispose`
+retain their separate failure-reporting contract. Event values describe the notification;
+live handles may already have changed or been disposed. Measurement notifications retain
+their FIFO and reentrant ordering; frame and drawing-click events do not use that queue.
 
 ## Related capabilities
 

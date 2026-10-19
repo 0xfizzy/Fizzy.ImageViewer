@@ -5,6 +5,8 @@ namespace Fizzy.ImageViewer;
 internal sealed class ViewerLifetime
 {
     private int _state; // 0: active, 1: disposing, 2: disposed
+    private readonly TaskCompletionSource _stopping = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    internal Task WhenStopping => _stopping.Task;
     internal object Gate { get; } = new();
     internal bool IsStopping => Volatile.Read(ref _state) != 0;
     internal bool BeginDisposal()
@@ -13,6 +15,7 @@ internal sealed class ViewerLifetime
         {
             if (_state != 0) return false;
             Volatile.Write(ref _state, 1);
+            _stopping.TrySetResult();
             return true;
         }
     }

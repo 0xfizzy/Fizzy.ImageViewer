@@ -107,7 +107,7 @@ public class UnifiedMeasurementTests
             viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0); viewer.Host.Control.Runtime.Interaction.ImageDown(2, 2);
             var shape = viewer.Host.Control.MeasurementOverlay.Canvas.Children.OfType<System.Windows.Shapes.Rectangle>().Single();
             item = viewer.Host.Control.Runtime.Measurements.Find(shape)!;
-            item.QueryResultChanged += result => { if (result != null) ready.TrySetResult(result); };
+            item.QueryResultChanged += (_, result) => { if (result != null) ready.TrySetResult(result); };
         });
         await viewer.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
         var result = Assert.IsType<MeasurementRegionStatisticsResult>(await ready.Task.WaitAsync(TimeSpan.FromSeconds(5)));
@@ -116,7 +116,7 @@ public class UnifiedMeasurementTests
             Assert.Equal(1, completed); Assert.Equal(item!.Id, result.MeasurementId);
             Assert.Equal(2.5, Assert.Single(result.Channels).Mean); Assert.Contains("mean=2.5", item.Presentation.Label.Text);
             var changes = 0;
-            item.GeometryChanged += _ => changes++;
+            item.GeometryChanged += (_, _) => changes++;
             viewer.Host.Control.Runtime.Interaction.StartEditing(viewer.Host.Control.Runtime.Measurements.Find(item.Presentation.PrimaryVisual));
             Assert.True(viewer.Host.Control.Runtime.Interaction.Editor.BeginDrag(new(0, 0), 1));
             viewer.Host.Control.Runtime.Interaction.Editor.UpdateDrag(new(3, 3));
@@ -139,7 +139,7 @@ public class UnifiedMeasurementTests
         {
             h = new(source);
             item = new MeasurementCreationContext(h.Context, h.MeasurementsRuntime, h.Frame.Acquire).CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQueryKind.RegionStatistics });
-            item.QueryResultChanged += result => { if (result != null) published++; };
+            item.QueryResultChanged += (_, result) => { if (result != null) published++; };
             item.Complete(); h.Queries.Tick();
         });
         try
@@ -195,7 +195,7 @@ public class UnifiedMeasurementTests
         {
             h = new(source);
             item = new MeasurementCreationContext(h.Context, h.MeasurementsRuntime, h.Frame.Acquire).CreateMeasurement(MeasurementGeometry.Rectangle(new(), new(2, 2)), new() { Query = MeasurementQueryKind.RegionStatistics });
-            item.QueryResultChanged += result => { if (result == null) invalidations++; };
+            item.QueryResultChanged += (_, result) => { if (result == null) invalidations++; };
             item.Complete(); h.Queries.Tick();
         });
         await h!.Queries.Completion.WaitAsync(TimeSpan.FromSeconds(3));
@@ -226,8 +226,8 @@ public class UnifiedMeasurementTests
             Assert.Equal(3, Assert.IsType<CircleMeasurementGeometry>(item.Geometry).Radius);
             var ellipse = (System.Windows.Media.EllipseGeometry)((System.Windows.Shapes.Path)item.Presentation.PrimaryVisual).Data;
             Assert.Equal(3, ellipse.RadiusX);
-            item.GeometryChanged += _ => throw new Exception("isolated");
-            item.GeometryChanged += _ => item.Dispose();
+            item.GeometryChanged += (_, _) => throw new Exception("isolated");
+            item.GeometryChanged += (_, _) => item.Dispose();
             Assert.True(editor.BeginDrag(new(5, 6), 1)); editor.UpdateDrag(new(7, 8));
             Assert.True(item.IsDisposed); Assert.False(editor.IsEditing);
         });

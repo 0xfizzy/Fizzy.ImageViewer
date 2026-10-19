@@ -27,8 +27,8 @@ internal sealed class MeasurementItem : IMeasurement
     public bool IsComplete { get; private set; }
     internal bool CompletionNotified { get; set; }
     internal event Action<MeasurementGeometry>? GeometryApplied;
-    public event Action<MeasurementGeometry>? GeometryChanged;
-    public event Action<MeasurementQueryResult?>? QueryResultChanged;
+    public event EventHandler<MeasurementGeometry>? GeometryChanged;
+    public event EventHandler<MeasurementQueryResult?>? QueryResultChanged;
 
     // Public handles dispatch; model, query and cleanup paths already own the STA.
     MeasurementGeometry IMeasurement.Geometry => Read(() => Geometry);
@@ -40,12 +40,12 @@ internal sealed class MeasurementItem : IMeasurement
     void IMeasurement.AddResource(IDisposable resource) => _runtime.Invoke(() => AddResource(resource));
     void IMeasurement.OnDispose(Action callback) => _runtime.Invoke(() => OnDispose(callback));
     void IDisposable.Dispose() => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(Dispose);
-    event Action<MeasurementGeometry>? IMeasurement.GeometryChanged
+    event EventHandler<MeasurementGeometry>? IMeasurement.GeometryChanged
     {
         add => _runtime.Invoke(() => { EnsureAlive(); GeometryChanged += value; });
         remove => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(() => GeometryChanged -= value);
     }
-    event Action<MeasurementQueryResult?>? IMeasurement.QueryResultChanged
+    event EventHandler<MeasurementQueryResult?>? IMeasurement.QueryResultChanged
     {
         add => _runtime.Invoke(() => { EnsureAlive(); QueryResultChanged += value; });
         remove => Volatile.Read(ref _activeRuntime)?.InvokeRemoval(() => QueryResultChanged -= value);
@@ -117,7 +117,7 @@ internal sealed class MeasurementItem : IMeasurement
         ClearQueryResult(notifyChanged: false);
         if (IsDisposed || GeometryVersion != version) return;
         _owner!.NotifyChanged(this);
-        if (!IsDisposed && GeometryVersion == version) runtime.Notifications.Notify(GeometryChanged, geometry);
+        if (!IsDisposed && GeometryVersion == version) runtime.Notifications.Notify(GeometryChanged, this, geometry);
     }
     public void Complete()
     {
@@ -148,7 +148,7 @@ internal sealed class MeasurementItem : IMeasurement
         if (hadResult && !IsDisposed)
         {
             if (notifyChanged) _owner!.NotifyChanged(this);
-            if (!IsDisposed && QueryResult == null) runtime.Notifications.Notify(QueryResultChanged, (MeasurementQueryResult?)null);
+            if (!IsDisposed && QueryResult == null) runtime.Notifications.Notify(QueryResultChanged, this, (MeasurementQueryResult?)null);
         }
     }
     internal void PublishQueryResult(MeasurementQueryResult result)
@@ -160,7 +160,7 @@ internal sealed class MeasurementItem : IMeasurement
         QueryResult = result;
         Presentation.ShowResult(Geometry, result);
         _owner!.NotifyChanged(this);
-        if (!IsDisposed && ReferenceEquals(QueryResult, result)) runtime.Notifications.Notify(QueryResultChanged, result);
+        if (!IsDisposed && ReferenceEquals(QueryResult, result)) runtime.Notifications.Notify(QueryResultChanged, this, result);
     }
 
     public void Dispose()

@@ -25,12 +25,12 @@ public class ViewerTests
     {
         await using var viewer = Create();
         var order = new List<string>();
-        viewer.FrameCommitted += _ =>
+        viewer.FrameCommitted += (_, _) =>
         {
             order.Add("viewer-failure");
             throw new InvalidOperationException("viewer subscriber");
         };
-        viewer.FrameCommitted += _ => order.Add("viewer");
+        viewer.FrameCommitted += (_, _) => order.Add("viewer");
         var result = await viewer.SubmitFrameAsync(Frame(42), new()
         {
             OnCommitted = frame =>
@@ -51,7 +51,7 @@ public class ViewerTests
         await using var viewer = Create(presenter);
         await viewer.SubmitFrameAsync(Frame(100));
         int notifications = 0;
-        viewer.FrameCommitted += _ => notifications++;
+        viewer.FrameCommitted += (_, _) => notifications++;
         Task<ImageSnapshot>? capture = null;
         Task? redraw = null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -145,8 +145,8 @@ public class ViewerTests
     {
         await using var viewer = Create();
         double observed = -1;
-        viewer.FrameCommitted += _ => throw new InvalidOperationException("subscriber");
-        viewer.FrameCommitted += info =>
+        viewer.FrameCommitted += (_, _) => throw new InvalidOperationException("subscriber");
+        viewer.FrameCommitted += (_, info) =>
         {
             using var current = viewer.AcquireCurrentFrame();
             Assert.Equal(info, current!.Info);

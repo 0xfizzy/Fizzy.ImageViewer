@@ -307,7 +307,7 @@ public class MeasurementInteractionTests
             var replacement = MeasurementGeometry.Rectangle(new(100, 110), new(120, 130));
             bool replaced = false;
             if (reentrant)
-                item.GeometryChanged += _ =>
+                item.GeometryChanged += (_, _) =>
                 {
                     if (replaced) return;
                     replaced = true;

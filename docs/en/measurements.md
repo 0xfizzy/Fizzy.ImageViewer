@@ -25,7 +25,7 @@ Use the context menu to choose a tool, or activate its ID. Unknown IDs throw `Ke
 
 ## Observing built-in and custom measurements
 
-Use `Viewer.MeasurementChanged` (also on `IViewer`) to observe completed items without
+Use `Viewer.MeasurementChanged` (also on `IViewerCapabilities`) to observe completed items without
 implementing a tool or accessing WPF visuals. Geometry edits, query publication and result
 invalidation all carry the measurement ID, immutable geometry/version and current immutable
 `QueryResult`. `QueryResult` is null after geometry changes, query failure or expiration. Previews do
@@ -56,6 +56,13 @@ but completion does not promise query readiness. Custom tools may additionally s
 ## Edit and remove
 
 Click a completed measurement to edit it, and drag its control points. Delete removes the selected item; Escape ends creation or editing and retains already-applied edits. Use the event's `Measurement` handle for programmatic `UpdateGeometry` or `Dispose`, and `viewer.Measurements.Clear()` to remove all measurements.
+
+Handle events use `EventHandler<MeasurementGeometry>` and
+`EventHandler<MeasurementQueryResult?>`, with the measurement itself as sender.
+Adding subscribers rejects removed measurements and stopping viewers; removing them
+remains safe. Captured notifications survive unsubscription. See the shared
+[event subscription contract](public-api.md#event-subscriptions), including synchronous
+exception isolation and subscriber responsibility for async-void work.
 
 ## Geometry, editing and notifications
 
