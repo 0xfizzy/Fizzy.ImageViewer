@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>帧与像素 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="帧与像素 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="帧与像素">帧与像素</h1>
+
+<p><a href="../en/frame-pipeline.html">English</a></p>
+<p>本指南说明如何从 CPU 内存创建图像、提交帧，以及通过租约读取原始像素。请先运行<a href="getting-started.html">完整 Viewer 示例</a>；以下代码假定该 Viewer 仍然存活。</p>
+<h2 id="选择-cpu-帧格式">选择 CPU 帧格式</h2>
+<p><a href="getting-started.html">入门示例</a>使用 Gray8：每像素一个字节，默认显示范围为 0–255。其他 CPU 图像沿用相同的创建和提交 API，只需使用与源数据布局一致的描述符。下面仅演示高位深灰度和彩色透明度带来的额外要点，假定已有存活 <code>viewer</code>，并导入 <code>Fizzy.ImageViewer</code> 与 <code>Fizzy.ImageViewer.Frames</code>；应用中也应按首个示例检查提交结果。</p>
+<p><code>FrameDescriptor(width, height, stride, format)</code> 描述自上而下的单平面像素。<strong>Stride 是相邻行起点之间的字节数</strong>，包含行尾填充，必须为正且不小于一行有效像素的字节数。缓冲区至少提供 <code>descriptor.RequiredBytes</code> 字节。负步长、多平面和 Bayer 数据需要在消费者中转换。<code>ImageFrame.Copy</code> 返回前已完成复制，随后可以复用源数组或相机缓冲区。</p>
+<h3 id="高位深灰度设置显示范围">高位深灰度：设置显示范围</h3>
+<p>Gray16 每像素使用两个小端字节。如果传感器将 12 位数值存入 16 位容器，可在首次提交前将显示范围设置为 0–4095。这只调整显示对比度，不改变原始像素查询或原始导出的数值；默认范围为 0–65535。</p>
+<pre><code class="lang-csharp">ushort[] values = { 0, 1024, 2048, 4095 };
+var pixels = new byte[values.Length * 2];
+for (int i = 0; i &lt; values.Length; i++)
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
+        pixels.AsSpan(i * 2, 2), values[i]);
+viewer.SetDisplayRange(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
+</code></pre>
+<p>相机已提供小端字节且步长有效时，直接传入这些字节，无需逐值重新打包。紧凑打包的 10/12 位相机格式需要先解包。Gray32Float 每像素使用四个小端 IEEE 754 字节，默认显示范围为 0–1；温度、深度等数据应按原始单位设置范围。</p>
+<p>通过 <code>SetDisplayRange</code> 接受映射配置，通过 <code>DisplayFailed</code> 观察显示失败；传入 <code>null</code> 恢复格式默认范围。</p>
+<h3 id="彩色匹配通道顺序与透明度">彩色：匹配通道顺序与透明度</h3>
+<p>选择与源字节一致的格式。例如，下面的 Bgra32 帧依次包含一个半透明红色像素和一个不透明绿色像素：</p>
+<pre><code class="lang-csharp">byte[] pixels = { 0, 0, 255, 128,  0, 255, 0, 255 };
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(2, 1, 8, FramePixelFormat.Bgra32), pixels));
+</code></pre>
+<p>Rgb24/Bgr24 每像素三字节，通道顺序与名称一致；Bgr32 每像素四字节，第四字节是填充而非透明度。Bgra32/Rgba32 使用非预乘透明度。Pbgra32 的颜色已乘以透明度，上面的半透明红色应写为 <code>{ 0, 0, 128, 128 }</code>。不要把非预乘字节标记为预乘，也不要重复预乘。</p>
+<p>以下章节说明存储生命周期、显示和原始像素查询契约。</p>
+<h2 id="转移自有-cpu-内存">转移自有 CPU 内存</h2>
+<p>相机 SDK 会覆写的借用缓冲区应使用 <code>Copy</code>。只有能在最后一个帧引用释放前控制存储时，才使用 <code>TakeOwnership</code>。它省去输入复制，<strong>不代表</strong>省去 CPU 显示准备或 WPF 位图写入。</p>
+<pre><code class="lang-csharp">var descriptor = new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8);
+var pixels = new byte[descriptor.RequiredBytes];
+Array.Fill(pixels, (byte)128); // Finish all writes before transfer.
+var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () =&gt; { });
+var result = await viewer.SubmitFrameAsync(frame);
+// Never write pixels again. This managed array needs no external release action.
+</code></pre>
+<p>已有内存池或相机缓冲区所有者时，传入准确的内存切片，并提供归还该缓冲区的释放回调。不要在提交后或收到 <code>Accepted</code> 后立即释放所有者：当前图像、查询和独立租约仍可能保留该帧，冻结的 Viewer 还可能无限期保留它。<code>TakeOwnership</code> 在最终释放时调用一次释放回调，构造验证失败也会调用；不要再在 catch/finally 中重复归还缓冲区。回调应短小、不抛异常，并能安全地在最终释放引用的线程上执行，该线程可能是 Viewer STA。生产者无法满足这些保留时间与线程要求时，应使用 <code>Copy</code>。</p>
+<h2 id="输入与生命周期">输入与生命周期</h2>
+<p><code>ImageFrame.Copy</code> 同步复制，原存储仍属调用方。<code>TakeOwnership</code> 接管不可变存储，最后一个帧或租约释放时恰好执行一次 release，包括构造验证失败；构造和清理均失败时聚合，原错误在前，不重试 release。宽高为正，正 stride 至少覆盖有效行；支持行填充，输入单平面、从上到下，Gray16/Gray32Float 为小端。不支持的格式明确失败。</p>
+<p>存储字节数不等于语义通道数：Gray16 两字节一个通道，Bgr32 四字节三个通道，末字节为填充；Bgra32/Pbgra32 四通道，分别为直接/预乘 alpha。</p>
+<p><code>SubmitFrameAsync</code> 在取消、冻结和关闭时也消耗帧。禁止重复提交、修改或释放已转移存储。每个 <code>FrameLease</code> 独立持有引用，幂等释放；启动异步工作前获取独立租约，不得一边读取内存一边释放同一租约。</p>
+<p>提交自身释放错误进入 <code>FrameSubmitResult.Error</code>；Viewer 当前帧或重绘租约的释放错误进入 <code>DisposeAsync</code>；独立租约释放错误直接传播。release 在最后释放引用的线程同步执行，可能是提交线程、工作线程或 STA，生产者负责线程亲和并保持短小，不存在专用释放线程。</p>
+<p>Viewer 保留原帧供查询，冻结可能无限期保留；相机池必须允许这种保留，或适配器主动复制。只读接口不能阻止其他持有者修改内存，不可变性是生产者契约。</p>
+<h2 id="提交与显示">提交与显示</h2>
+<p><code>SubmitFrameAsync</code> 立即接管所有权，接收完成即返回，不等待显示。结果为 <code>Accepted</code>、<code>Frozen</code>、<code>Cancelled</code> 或 <code>Closed</code>；包括拒绝在内，均须检查 <code>Error</code> 中属于本次接收的清理失败。取消只在接收前检查，接收成功后不撤销。已接收帧可能从未显示就被替换，不为每张输入保留显示完成任务或发送替换事件。FrameId 在 Viewer 内单调递增。</p>
+<p>管线保留一个在途帧、一个最新等待帧和最后已提交帧。隐藏、卸载或宿主最小化时仍接收输入，但不启动转换或上传；恢复后主动显示最新等待帧，即使没有后续输入。在途转换允许完成；提交前发现已隐藏时延后提交并丢弃转换结果，恢复时可能重新转换。不检测遮挡、屏幕位置、激活状态或 Tab 选择。</p>
+<p>成功的 UI 提交更新当前帧和映射，先调用 <code>OnCommitted</code>，再发送 <code>FrameCommitted</code>；二者均不证明显示器已呈现。回调租约只借用至返回。发送帧前订阅通知；延后工作应自行保留独立租约及不可变元数据。<code>DisplayFailed</code> 在所属 STA 报告转换或呈现失败，携带帧标识、请求范围、显示版本和异常，不改变已经完成的接收结果。失败不自动重试，可通过新输入或显式设置范围请求新工作；已失败 native 呈现器仍遵循原有终态安全契约。订阅异常隔离，见<a href="public-api.html#%E4%BA%8B%E4%BB%B6%E8%AE%A2%E9%98%85">事件订阅</a>。</p>
+<p>查询、测量和快照始终使用最后成功提交的帧及映射，隐藏时也如此；首帧显示提交前没有当前帧，不读取等待中的输入。图层更新和显式查询不受图像管线暂停控制。已接收帧在替换或处理后的清理失败归管线共享释放结果，不归较新帧的接收结果；关闭阻止显示失败通知交付时，该错误保留至释放结果。</p>
+<p>CPU 呈现器复用两个 WriteableBitmap，后台转换，先写未显示位图再切换。WPF 原生八位布局保留，映射灰度和显示快照使用 Pbgra32。GPU 使用 D3DImage。图像坐标始终是原图像素，不随 DPI 改变。</p>
+<p>图像原点是左上边界；整数像素索引与连续位置不同。像素 <code>(x,y)</code> 的中心是 <code>(x+0.5,y+0.5)</code>，
+可用 <code>PixelCoordinate.ToImageCenter()</code> 获取。算法结果的适配见<a href="drawing-layers.html#%E5%9D%90%E6%A0%87%E5%B0%BA%E5%AF%B8%E4%B8%8E%E8%BE%93%E5%85%A5">绘图坐标</a>。
+视口使用 WPF 高质量位图缩放，减少缩小时细小特征的丢失。显示重采样不改变原始像素或查询结果，
+也不保证亚像素显示精度。</p>
+<p><code>DisplayRange</code> 读取最新请求；<code>viewer.SetDisplayRange(range)</code> 在所属 STA 接受配置并安排显示，不等待 UI 提交。隐藏期间多次修改合并为最新范围。默认 Gray8 0–255、Gray16 0–65535、Gray32Float 0–1；边界有限且严格递增，范围外裁剪，NaN/负无穷黑、正无穷白。当前 GPU 帧拒绝非空范围，拒绝前不改变请求；等待中的 GPU 帧与范围冲突时在显示阶段失败。每次请求推进显示版本。在途帧可能先提交旧映射，随后重绘应用最新请求。快照只使用最后成功提交的范围和版本；失败后请求值仍可读，错误通过 <code>DisplayFailed</code> 报告。</p>
+<h2 id="像素访问与测量">像素访问与测量</h2>
+<p>像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。<code>AcquireCurrentFrame()</code> 返回调用方拥有的租约。<code>TryGetCpuPixels</code> 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。静态 <code>CpuFramePixelReader.TryReadPixel</code> 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。查询与测量结果通过 <code>SourceFrame</code> 标识原始帧，区域像素使用区域局部坐标。</p>
+<p>跨后端使用租约的 <code>ReadPixelsAsync</code>、<code>ComputeRegionStatisticsAsync</code>、<code>ReadRegionAsync</code>。输入坐标用 ReadOnlyMemory，结果保留顺序、原单位和格式；每次异步调用自行获取租约直至结束。CPU 可在调用线程同步完成，直接调用不承诺工作线程；Viewer 调度器及快照自行安排离开 STA。</p>
+<p>操作和清理错误一起保留，原错误优先；区域结果仅在源租约清理成功后交给调用方，否则释放不可交付区域。PixelSamplesResult 和 RegionStatistics 复制输入并暴露只读集合，提供者返回数组后不得修改或复用。结果携带查询租约自己的 FrameInfo；未提交或派生图像 FrameId 为 0，无源时间戳，提交前获取的租约仍未提交。</p>
+<p>RegionPixels/ImageSnapshot 的 SourceFrame、Region 描述原输入。AcquirePixels 返回描述裁剪或转换后像素的独立租约，使用局部坐标，不冒充源帧身份。RegionPixels 自有 CPU 图像需释放，仅由经过验证的区域读取创建。不支持能力明确失败，无下载回退。</p>
+<p>CPU 支持 Gray8/Gray16/Gray32Float/Rgb24/Bgr24/Bgr32/Bgra32/Pbgra32/Rgba32。统计按语义 Gray、R/G/B[/A] 顺序返回 count/min/max/mean，忽略非有限浮点，无有限值时 count 为 0、统计为 null；预乘值仍预乘，Bgr32 填充不参与。格式和通道数必须匹配，显示范围不限制原始查询值。</p>
+<p>一个调度器同一时刻一批：STA 捕获几何，后台查询，STA 发布。最早到期请求决定下一批是单个 ROI 或合并点/线采样；未选中者不持租约，下次捕获新状态。几何变化保留节流截止时间。</p>
+<p>点和线使用半开覆盖 <code>[0, Width) × [0, Height)</code>；线裁剪后端点 floor，Bresenham 保留输入方向及端点像素。右/下独占边缘上的线无样本；交叉端点可夹到最后像素。极大有限坐标使用精确裁剪，但不能恢复调用前丢失的精度。ROI floor 左上、ceil 右下再与图像相交，空区域不查询。</p>
+<p>QueryOptions 默认 Pixel/Line 30 Hz、Region 10 Hz、MaxResultAge 100 ms，均为正，频率需可表示至少一个 TimeSpan tick 且小于最大间隔。年龄从帧/几何捕获计时，不是相机采集时间。订阅、会话、描述符及测量几何版本检查始终存在；新帧可接受年龄范围内旧帧结果，暂停且未变帧结果不因时间自动过期。</p>
+<p>QueryMetrics.Batches 计完成批次含失败，不等于发布数；ExpiredResults 计发布时超龄结果，不计后来清空的显示值；LastDurationMilliseconds 从捕获到后端完成，含工作调度、不含 STA 发布等待。</p>
+<p>像素 HUD 限频为 min(10, PixelQueryRateHz)，每次完成（含失败）后完整等待间隔。移动合并最新目标但不重置间隔，同会话可发布之前采样位置，坐标和值一起更新。目标或帧变化时旧显示最多保留采样开始后 300 ms，之后显示 <code>—</code>；静止结果不过期，失败立即 <code>—</code>。离开图像、禁用或无帧时隐藏并拒绝旧结果。</p>
+<p>HUD 无背景，固定文化数字格式，每值至少七字符，长值不截断，窄视口裁剪不换行。每次捕获用当前容器指针和变换重算坐标，即使无鼠标移动；隐藏/卸载或容器外无目标。FrameId 不作为 HUD 标签。</p>
+<h2 id="冻结快照与保存">冻结、快照与保存</h2>
+<p>打开右键菜单会冻结当前帧，清除等待输入并使冻结前的在途提交失效。关闭菜单恢复新输入。菜单租约固定图像、显示映射和 ROI，处理 Click/Closed 顺序；保存动作在打开文件对话框前获得独立租约。</p>
+<p>捕获、编码和所有权详见<a href="snapshots.html">快照</a>。导出使用已提交映射，不使用尚未提交的显示范围请求。</p>
+<h2 id="关闭与集成">关闭与集成</h2>
+<p>先停止并等待生产者，再等待 Viewer 释放；不能阻塞 Viewer STA。已接纳提交排空至释放和公开结果完成，包括提交线程上的替换清理。独立租约可越过 Viewer 生命周期；共享完成及失败结果见 <a href="public-api.html#%E7%BA%BF%E7%A8%8B%E4%B8%8E%E7%AA%97%E5%8F%A3%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F">Viewer 关闭协议</a>。</p>
+<p>应用适配器负责将自身图像转换为 <code>ImageFrame</code>：借用 CPU 存储用 <code>Copy</code>，不可变自有存储用 <code>TakeOwnership</code>，已就绪 GPU 表面用 <code>D3D9ImageFrame.TakeOwnership</code>。转换、设备兼容性及适配器测试归消费者负责。</p>
+<h2 id="提交-gpu-帧">提交 GPU 帧</h2>
+<p>GPU 帧沿用同一套 <code>ImageFrame</code> 提交 API，但需要生产者适配；CPU 数组或任意 native 指针都不能直接当作 GPU 帧。</p>
+<h3 id="已就绪的-d3d9-表面">已就绪的 D3D9 表面</h3>
+<p>以下适配方法接收生产者已创建并完成同步的资源：</p>
+<pre><code class="lang-csharp">static ValueTask&lt;FrameSubmitResult&gt; SubmitSurfaceAsync(
+    Viewer viewer, FrameDescriptor originalDescriptor, nint readySurface,
+    IFramePixelSource originalPixels, Action releaseResources)
+{
+    var frame = D3D9ImageFrame.TakeOwnership(
+        originalDescriptor, readySurface, originalPixels, releaseResources);
+    return viewer.SubmitFrameAsync(frame);
+}
+</code></pre>
+<p>需提供兼容 WPF、非多重采样、位于 <code>D3DPOOL_DEFAULT</code> 的 <code>IDirect3DSurface9</code> 渲染目标，像素为预乘透明度的 <code>D3DFMT_A8R8G8B8</code>。转移前完成 GPU 写入并解除计算映射。描述符和 <code>IFramePixelSource</code> 描述原始像素，表面必须与这些像素的标准显示转换一致。在 <code>releaseResources</code> 执行前，设备、表面和查询资源必须保持有效且不可变；工厂失败也会转移所有权。实现适配器前先阅读 <a href="#gpu-%E8%A1%A8%E9%9D%A2%E4%B8%8E%E6%98%BE%E5%BC%8F%E5%83%8F%E7%B4%A0%E6%9F%A5%E8%AF%A2">GPU 契约</a>。</p>
+<h2 id="gpu-表面与显式像素查询">GPU 表面与显式像素查询</h2>
+<p><code>D3D9ImageFrame.TakeOwnership</code> 接管已就绪且不可变的 GPU 表面，包括验证失败时的清理责任。只要还有租约，就不能覆写表面。描述符和像素源描述原始像素，显示表面必须匹配其尺寸及标准显示转换。</p>
+<p>这是受信任的 native 边界，非零指针不证明兼容。生产者提供非多重采样、<code>D3DPOOL_DEFAULT</code> 中的 <code>D3DFMT_A8R8G8B8</code> 渲染目标，使用预乘 alpha。设备必须兼容 WPF；CUDA 扩展使用带 <code>D3DCREATE_MULTITHREADED</code> 和 <code>D3DCREATE_FPU_PRESERVE</code> 的 D3D9Ex 设备。生产者负责设备兼容性、native 元数据验证和同步；转移前完成全部写入并解除计算映射，仅提交 GPU 工作不足以交付。</p>
+<p>设备、表面和原始查询资源持续有效至最终释放回调。本入口不表达自定义颜色映射、方向或显示范围；Display 快照从原始像素重建标准映射，不读取显示表面。GPU 帧共享最新帧调度、FrameId、冻结/取消和提交回调。D3DImage 在 STA 创建和绑定；正常显示路径不调用 CPU 转换或像素提供者。前缓冲恢复会重新绑定保留的当前表面；CPU 帧切回 WriteableBitmap。</p>
+<p><code>IFramePixelSource</code> 独立提供异步点采样、统计和区域读取。查询失败影响交互，不影响显示，也不能触发隐式整图下载。区域读取交付具有请求尺寸和源格式的独立 CPU <code>ImageFrame</code>；坐标从区域原点开始，<code>FrameLease</code> 在 <code>RegionPixels</code> 中补充来源。帧释放回调负责提供者的资源，库不另行释放提供者。</p>
+<p>每个提供者方法在返回或抛出前都必须结束对源资源的访问，包括取消路径。GPU 工作已经入队时，取消发布也不能提前释放缓冲区和租约。独立租约、直接读取、查询调度器和快照可以并发调用同一提供者的不同方法；提供者必须支持并发或串行化后端。调度器的单批和导出的容量限制并不串行化所有提供者调用。</p>
+<p>GPU 帧不支持非 null <code>DisplayRange</code>。生产者自行转换为支持的帧契约。驱动重置与 WPF 前缓冲可用性不同；库不重建设备，也不提供软件显示回退。</p>
+<p>前缓冲恢复回调失败后，呈现器停止接纳 GPU 表面，不从 WPF 事件回调抛出或重试。该错误保留至 <code>Viewer.DisposeAsync</code>，切回 CPU 也不丢失；不追溯修改已返回的提交结果。表面附加失败后停止使用该呈现器；只有确认分离成功才能释放租约。无法确认时，呈现器和可能仍附加的租约隔离保留至进程结束，以防 native 释放后访问，并作为失败报告。</p>
+<p>可选 <a href="cuda.html">CUDA 组件</a>提供 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32 的显示转换和原始像素查询；应用仍负责帧与执行环境适配，核心 WPF 程序集没有 CUDA 依赖。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

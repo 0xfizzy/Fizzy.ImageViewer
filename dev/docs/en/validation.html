@@ -88,7 +88,8 @@
 <h1 id="validation">Validation</h1>
 
 <p><a href="../zh-CN/validation.html">简体中文</a></p>
-<p>Use Windows, PowerShell 7 and the pinned .NET SDK. This repository builds independently; no camera or robot is required. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.</p>
+<p>Use Windows, PowerShell 7 and the .NET 10 SDK selected by <code>global.json</code>. This repository builds independently; no camera or robot is required. The library and tests target both <code>net10.0-windows</code> and <code>net8.0-windows</code>; install both Desktop Runtimes to run the tests. Serialize commands sharing library output. Automated WPF tests use hidden windows and injected boundaries; they do not prove physical display, mixed-DPI, remote-desktop or native GPU behavior.</p>
+<p>Select checks below for task requirements, applicable gates and changed behavior. Additional checks require a specific defect or a call, data or resource dependency from the change to the behavior being checked. The scenarios below are coverage choices, not a checklist for every change. Report performed checks and results, plus any required checks left incomplete; do not list unrelated untested scenarios.</p>
 <h2 id="build-and-test">Build and test</h2>
 <pre><code class="lang-powershell">dotnet restore src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj --locked-mode
 dotnet build src/Fizzy.ImageViewer/Fizzy.ImageViewer.csproj -c Release --no-restore
@@ -99,25 +100,33 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 <h2 id="pixel-queries">Pixel queries</h2>
 <p>Run pixel-source, frame metadata, scheduler, HUD and snapshot tests for format, provenance or query changes. Verify independent leases, local region coordinates, immutable results, unsupported capabilities, subscription/geometry invalidation, bounded admission, fairness, cancellation and original-operation plus cleanup failures. TIFF readback tests use a test-only LibTIFF dependency, not the writer itself as the oracle.</p>
 <h2 id="measurement-ownership-and-interaction">Measurement ownership and interaction</h2>
-<p>Run measurement/interaction/layer suites for session or lifetime changes. Exercise independent activations, factory reentry and failure, ended contexts, preview cleanup, exactly-once session disposal, notification ordering, programmatic edits, control-point crossing, registration revocation and external leases surviving Viewer closure. Preserve resource/thread safety coverage when removing unsupported recovery behavior.</p>
+<p>For session or lifetime changes, select measurement/interaction/layer tests covering the changed behavior and its direct dependencies. Coverage includes independent activations, factory reentry and failure, ended contexts, preview cleanup, exactly-once session disposal, notification ordering, programmatic edits, control-point crossing, registration revocation and external leases surviving Viewer closure. Preserve resource/thread safety coverage when removing unsupported recovery behavior.</p>
 <h2 id="architectural-boundaries">Architectural boundaries</h2>
 <p>Public API tests review exported signatures, nullability and defaults against <code>PublicApi.txt</code>. Review diffs rather than blindly updating the baseline. Public API or behavior changes in the joint workspace also require the consumers' Source builds and relevant tests according to parent rules. XML-only edits do not change signatures or authorize unrelated runtime changes.</p>
 <p>Startup/shutdown tests must check original errors, safe cleanup after partial composition, shared terminal failure, no repeated destructive disposal, native-resource quarantine and actual STA exit. Menu tests cover Closed-before-Click, reopening, revocation, independent action resources and asynchronous failure.</p>
 <h2 id="line-profile-allocations">Line-profile allocations</h2>
-<p>Run affected benchmarks for hot-path changes; these synthetic measurements do not establish physical presentation timing or sustained device-stream performance.</p>
+<p>Run corresponding benchmarks when changing hot-path allocation, copying, queuing, synchronization or scheduling; renames, file moves and comment-only edits do not trigger benchmarks. These synthetic measurements do not establish physical presentation timing or sustained device-stream performance.</p>
 <pre><code class="lang-powershell">dotnet run --project tools/FrameBenchmark -c Release -- artifacts/frame-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --embedded artifacts/frame-benchmark-embedded.json
 dotnet run --project tools/FrameBenchmark -c Release -- --snapshots artifacts/snapshot-copy-benchmark.json
+dotnet run --project tools/FrameBenchmark -c Release -- --notifications artifacts/notification-benchmark.json
 dotnet run --project tools/DrawingBenchmark -c Release
 dotnet run --project tools/ResizeBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release
 dotnet run --project tools/LineProfileBenchmark -c Release -- --query-publication
 </code></pre>
-<p>Frame/snapshot modes report time and managed allocation, not total process peak memory. Drawing measurements exclude consumer result construction, cross-thread dispatch and physical presentation. Line-profile modes separate data changes, WPF commands, offscreen rendering and query-result copying; immutable result ownership must remain intact.</p>
+<p>Notification mode measures the actual control notification entry on its STA, including
+standalone forwarding, with 0/1/4 external subscribers. It excludes subscription setup,
+frame rendering and dispatcher scheduling, and reports warmed samples of per-notification
+time and thread allocation. It also measures the shared measurement notification queue
+with 0/1/4 subscribers and a prebuilt geometry payload, excluding measurement mutation
+and presentation. Compare repeated runs on the same machine and configuration.
+Frame/snapshot modes report time and managed allocation, not total process peak memory. Drawing measurements exclude consumer result construction, cross-thread dispatch and physical presentation. Line-profile modes separate data changes, WPF commands, offscreen rendering and query-result copying; immutable result ownership must remain intact.</p>
 <h2 id="tool-sessions-and-layer-ownership">Tool sessions and layer ownership</h2>
 <p>Validate drawing replacement across single/collection/empty content, visual and click identity, invalid replacement retaining content, whole-layer clear, reentrant callbacks and handle invalidation. Verify HUD survives business-layer clear. Tool tests cover cancellation/disposal failures without terminating a replacement session. Geometry and query tests retain half-open pixel coverage, extreme finite coordinates and non-finite sample gaps.</p>
 <h2 id="manual-checks">Manual checks</h2>
-<p>Run the three <a href="getting-started.html">examples</a> and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report any unperformed scenario explicitly.</p>
-<p>Inspect rendered English/Chinese guides, search, direct nested API links and version selection at the project prefix. Publication and recovery additionally require the <a href="releasing.html">release SOP</a>, fault gates and an isolated service rehearsal. Local tests never authorize a production release.</p>
+<p>When the task requires interactive acceptance, or a changed interaction depends on a physical window or display environment not covered by automated tests, select the affected scenarios below. Run the relevant <a href="getting-started.html">examples</a> and record OS, display scale, monitor arrangement and commit. Check first display, wheel zoom, middle-button pan across overlays, tool activation/cancellation, selection/edit/delete, layer visibility, line-profile closure, HUD, menu export and window close while streaming. Repeat across DPI changes and remote desktop where supported. Real GPU attachment, CPU/GPU switching and devices require a separately authorized environment. Report required scenarios that were not performed.</p>
+<p>For documentation changes, use the change-specific gates in <a href="documentation.html">documentation maintenance</a>. Publication and recovery additionally require the <a href="releasing.html">release SOP</a>, fault gates and an isolated service rehearsal. Local tests never authorize a production release.</p>
 <h2 id="drawing-benchmark-scope">Drawing benchmark scope</h2>
 <p>Validate sustained workloads using allocated bytes per update, GC collection
 counts, and update latency percentiles, including the expected marker/text count
@@ -126,6 +135,9 @@ bytes and time across 50 warmed-up replacements on the viewer thread, alternatin
 between two prebuilt circle collections with different positions. It excludes
 consumer result creation, cross-thread dispatch, and
 physical presentation; it does not establish sustained camera-stream GC performance.</p>
+<h2 id="build-output-layout">Build output layout</h2>
+<p>Outputs are rooted at this repository's <code>build/Debug/</code> or <code>build/Release/</code>. Independent libraries and tools use project subdirectories (with framework/RID subdirectories where needed). Test binaries and fixtures use <code>build/&lt;Configuration&gt;/tests/&lt;Project&gt;/</code>; test results use that project's <code>TestResults/</code> directory. Intermediate and restore files use <code>build/obj/</code>, isolated by project and configuration. Source dependencies keep their own repository output roots.</p>
+<p>Builds sharing outputs must run serially. <code>artifacts/</code> is reserved for temporary logs, reports, package staging and release validation. Old project-local <code>bin/</code> and <code>obj/</code> trees are excluded from compilation; remove them only after checking that they are no longer in use.</p>
 
 </article>
 

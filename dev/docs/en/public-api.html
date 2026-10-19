@@ -89,6 +89,7 @@
 
 <p><a href="../zh-CN/public-api.html">简体中文</a></p>
 <p>Configure a Viewer window and own its shutdown. <code>Viewer</code> is sealed; application adapters compose an instance rather than access its raw WPF window. <a href="getting-started.html">Getting started</a> has a complete program that waits for user closure.</p>
+<p><code>IViewerCapabilities</code> contains borrowed host-independent capabilities, global layers and stopping observation. <code>IViewer</code> extends it with asynchronous disposal for the owner. <code>Viewer</code> and <code>ImageViewerControl</code> implement it; window operations require <code>IViewerWindow</code>, implemented only by <code>Viewer</code>. For embedded lifetime and host shutdown, see <a href="embedding.html">embedding</a>.</p>
 <h2 id="configure-and-show">Configure and show</h2>
 <pre><code class="lang-csharp">await using var viewer = new Fizzy.ImageViewer.Viewer(showWindow: false);
 viewer.Title = &quot;Inspection&quot;;
@@ -110,7 +111,11 @@ showing, and dispose the viewer if their own initialization fails.</p>
 shows it and requests activation. <code>Hide</code> hides without clearing frames, drawings or
 measurements. <code>Minimize</code> changes window state without hiding it. <code>IsVisible</code> follows
 WPF visibility (a shown minimized window is still visible); <code>IsMinimized</code> is independent.
-Minimizing an already hidden window does not implicitly show it.</p>
+Minimizing an already hidden window does not implicitly show it.
+<code>Visible</code> reads/writes the window visibility setting. Setting true shows without activation or restoring
+minimized state; <code>Show()</code> explicitly restores and activates. Hidden/minimized viewers keep accepting
+latest input but suspend new display work, then display the latest frame on return. <code>IsVisible</code> is not
+an occlusion test. Moving offscreen, covering the window or changing focus does not suspend updates.</p>
 <p><code>DisposeAsync</code> closes the window and waits for owned background work and the STA to stop.
 Repeated calls observe one completion task and its fixed success or failure result.
 Resource cleanup failures are reported after all remaining safe cleanup and STA exit;
@@ -140,17 +145,33 @@ measurements and edits already applied.</p>
 <p><code>FitToViewport</code> centers the full image and may choose a scale outside the ordinary
 wheel range of 0.01–100. At such a scale, the wheel permits steps toward that range
 and rejects steps farther away, so very large or small images remain navigable.</p>
-<p>Use <code>await SetDisplayRangeAsync(range)</code> to change the requested grayscale mapping
-and observe rendering failures. <code>DisplayRange</code> reads that request; snapshots retain
-the last successfully committed mapping. A newer request or closure cancels an
-outstanding update. Without a current frame the call configures future submissions
-and completes immediately. See <a href="frame-pipeline.html#submission-and-display">display contracts</a>.</p>
+<p>Use <code>SetDisplayRange(range)</code> to accept the requested grayscale mapping without waiting for display.
+<code>DisplayRange</code> reads that request; snapshots retain the last successfully committed mapping.
+Observe later rendering failures through <code>DisplayFailed</code>. See <a href="frame-pipeline.html#submission-and-display">display contracts</a>.</p>
 <h3 id="draining-work-and-independent-leases">Draining work and independent leases</h3>
 <p>Disposal drains admitted submissions through release and public completion, including replacement cleanup on submitting threads and frozen/cancelled drops. A pixel source that ignores cancellation can delay shutdown until its work releases its leases. Programmatic disposal is not blocked by <code>CanUserClose</code> or a cancelling window-closing handler. Cleanup failures from owned query leases and menu pins are retained in the disposal result; ordinary query/provider failures remain query failures.</p>
 <p>Once disposal begins, frame acquisition, snapshot capture, registration and layer operations reject new work with <code>ObjectDisposedException</code>; submission consumes ownership and returns <code>Closed</code>. Previously acquired leases and snapshots remain independently owned. Viewer does not wait for external leases or reclaim their storage early. Accepted capture/export work with independent dependencies may finish after closure.</p>
+<h2 id="observe-stopping-without-owning-shutdown">Observe stopping without owning shutdown</h2>
+<p><code>IViewerLifetime.WhenStopping</code> is a shared, read-only task implemented by both hosts
+and included in <code>IViewerCapabilities</code>. Borrow it alongside the specific capabilities an endpoint
+needs. Reading or awaiting it does not initiate shutdown. It completes successfully
+once the shared admission gate closes, including on window closure, explicit disposal
+or premature host-dispatcher shutdown. It remains completed for late observers and
+does not fault or cancel when cleanup fails. Temporary <code>Unloaded</code> does not signal it.</p>
+<p>Use this signal to stop forwarding new operations. Concurrent submissions still transfer
+frame ownership and may return <code>Closed</code>; other operations may throw
+<code>ObjectDisposedException</code>. The endpoint must drain its own accepted work before
+releasing its dependencies. Signal completion does not establish resource drainage,
+resource release or standalone STA exit, and independent leases may outlive the viewer.
+The owner still awaits <code>DisposeAsync</code> to observe its shared shutdown result; failure
+does not prove drainage. Continuations are not invoked inline by the signal and have
+no UI-thread delivery guarantee. Awaiting an already completed task may continue
+synchronously; do not synchronously wait on the UI thread.</p>
 <h2 id="borrowing-viewer-capabilities">Borrowing viewer capabilities</h2>
-<p><code>IViewer</code> aggregates the following interfaces and <code>IAsyncDisposable</code>. <code>Viewer</code> implements
-all capabilities on the same instance; callers can accept the narrow interface they need.
+<p><code>IViewerCapabilities</code> aggregates the following interfaces and global <code>Layers</code>.
+<code>IViewer</code> adds <code>IAsyncDisposable</code>. Borrow the aggregate when an adapter needs the complete
+view; otherwise accept the narrow interfaces it needs. Both hosts implement these on
+the same instance, without a wrapper or independent lifetime.
 Only the owning host disposes the viewer. Borrowed capabilities share its STA, state and
 shutdown gate and have no independent disposal contract.</p>
 <table>
@@ -165,7 +186,7 @@ shutdown gate and have no independent disposal contract.</p>
 <tr>
 <td><code>IFrameSink</code></td>
 <td><code>.Frames</code></td>
-<td>Submit owned frames and await commit/drop results</td>
+<td>Transfer frames and await reception results</td>
 </tr>
 <tr>
 <td><code>ICommittedFrameSource</code></td>
@@ -173,9 +194,9 @@ shutdown gate and have no independent disposal contract.</p>
 <td>Acquire current original-frame leases and observe commits</td>
 </tr>
 <tr>
-<td><code>IViewerWindow</code></td>
+<td><code>IViewerLifetime</code></td>
 <td>Root</td>
-<td>Window visibility, placement, title, close policy and <code>Closed</code></td>
+<td>Observe terminal admission closure without initiating shutdown</td>
 </tr>
 <tr>
 <td><code>IViewerDisplay</code></td>
@@ -223,7 +244,7 @@ static ValueTask&lt;FrameSubmitResult&gt; PublishAsync(IFrameSink sink, ImageFra
 implementations and test doubles must release it on every terminal path. Frame readers
 own their acquired leases. A commit event and a subsequent acquisition are not atomic;
 use <code>FrameSubmissionOptions.OnCommitted</code> for a specific submission's borrowed lease.</p>
-<p>Global layer composition belongs only to <code>IViewer.Layers</code>: it can enumerate, create,
+<p>Global layer composition belongs only to <code>IViewerCapabilities.Layers</code>: it can enumerate, create,
 remove and clear layers across both drawing and measurements. <code>Layers.Items</code> snapshots
 membership, but its elements remain live mutable handles. <code>IViewerDrawing.Markers</code> and
 <code>IViewerMeasurements.Measurements</code> expose their respective entire layers; clearing one
@@ -239,6 +260,26 @@ Menu and HUD handles instead operate on their individual registration or text.</
 <code>Viewer</code> implements all capabilities and is the sender of viewer events; casts can recover
 the complete facade. They do not make drawing independent of WPF. <code>Closed</code> is a window
 notification; the owner still awaits <code>IViewer.DisposeAsync()</code> for complete shutdown.</p>
+<h2 id="event-subscriptions">Event subscriptions</h2>
+<p>Library-defined events use <code>EventHandler</code> or <code>EventHandler&lt;T&gt;</code> with the existing payload
+objects or values; <code>T</code> need not derive from <code>EventArgs</code>. Sender is the public object
+that owns the event: Viewer, ImageViewerControl, DrawingLayer or IMeasurement.
+Callbacks run on that object's UI/STA thread. <code>IViewerWindow.Closed</code> remains exclusive
+to the standalone window. <code>WhenStopping</code> is a task and has no UI-thread delivery guarantee.</p>
+<p>Adding a subscriber throws <code>ObjectDisposedException</code> once the viewer stops accepting
+work or the owning layer/measurement is removed. Removing subscribers is safe and
+idempotent after termination. Duplicate subscriptions invoke multiple times; each
+removal removes the last matching occurrence. Each notification captures its subscribers:
+adding during delivery affects later notifications, while removing does not retract
+already captured or queued callbacks. Final cleanup clears subscriptions. Subscribe
+before showing the window when closure must be observed; <code>Closed</code> is not replayed.
+Use <code>WhenStopping</code> for late observation of terminal admission closure.</p>
+<p>Subscriber synchronous exceptions are logged individually and do not stop later subscribers
+or fail the originating operation. Async-void handlers are not awaited; subscribers must
+manage their asynchronous work and errors. Cleanup callbacks such as <code>IMeasurement.OnDispose</code>
+retain their separate failure-reporting contract. Event values describe the notification;
+live handles may already have changed or been disposed. Measurement notifications retain
+their FIFO and reentrant ordering; frame and drawing-click events do not use that queue.</p>
 <h2 id="related-capabilities">Related capabilities</h2>
 <ul>
 <li><a href="measurements.html">Measurements</a>: interaction, immutable results and notification order.</li>

@@ -344,7 +344,7 @@ If a metadata getter initiates viewer shutdown, registration is rejected with Ob
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Geometry and query snapshots plus a live editable handle after editing, publication or invalidation.</p>
+  <div class="markdown level1 summary"><p>Geometry and query snapshots plus a live editable handle after editing, publication or invalidation, on the viewer STA.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -365,6 +365,15 @@ If a metadata getter initiates viewer shutdown, registration is rejected with Ob
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementChanged_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 
@@ -396,6 +405,15 @@ If a metadata getter initiates viewer shutdown, registration is rejected with Ob
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementCompleted_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 
@@ -427,6 +445,15 @@ If a metadata getter initiates viewer shutdown, registration is rejected with Ob
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementRemoved_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 

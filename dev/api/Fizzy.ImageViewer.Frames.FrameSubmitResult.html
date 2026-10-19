@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="title" content="Struct FrameSubmitResult | Fizzy.ImageViewer ">
       
-      <meta name="description" content="The actual commit/drop outcome and any processing or submission-owned cleanup failure.">
+      <meta name="description" content="The reception outcome and any cleanup failure owned by this reception.">
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
@@ -97,7 +97,7 @@ Struct FrameSubmitResult
   <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
   </div>
 
-  <div class="markdown summary"><p>The actual commit/drop outcome and any processing or submission-owned cleanup failure.</p>
+  <div class="markdown summary"><p>The reception outcome and any cleanup failure owned by this reception.</p>
 </div>
   <div class="markdown conceptual"></div>
 
@@ -147,7 +147,7 @@ Struct FrameSubmitResult
   
   </h3>
 
-  <div class="markdown level1 summary"><p>The actual commit/drop outcome and any processing or submission-owned cleanup failure.</p>
+  <div class="markdown level1 summary"><p>The reception outcome and any cleanup failure owned by this reception.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -161,10 +161,10 @@ Struct FrameSubmitResult
     <dd><p>Identity assigned to this submission.</p>
 </dd>
     <dt><code>Status</code> <a class="xref" href="Fizzy.ImageViewer.Frames.FrameSubmitStatus.html">FrameSubmitStatus</a></dt>
-    <dd><p>Actual commit/drop outcome; a cleanup failure does not undo a commit.</p>
+    <dd><p>Reception outcome; acceptance does not guarantee display.</p>
 </dd>
     <dt><code>Error</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.exception">Exception</a></dt>
-    <dd><p>Processing or cleanup failure, if any. Inspect this even when Status is not Failed.</p>
+    <dd><p>Reception-owned cleanup failure, if any; subsequent display failures are reported separately.</p>
 </dd>
   </dl>
 
@@ -190,7 +190,7 @@ Struct FrameSubmitResult
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Processing or cleanup failure, if any. Inspect this even when Status is not Failed.</p>
+  <div class="markdown level1 summary"><p>Reception-owned cleanup failure, if any; subsequent display failures are reported separately.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -254,7 +254,7 @@ Struct FrameSubmitResult
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Actual commit/drop outcome; a cleanup failure does not undo a commit.</p>
+  <div class="markdown level1 summary"><p>Reception outcome; acceptance does not guarantee display.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 

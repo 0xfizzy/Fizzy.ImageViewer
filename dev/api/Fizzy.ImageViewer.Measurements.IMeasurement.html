@@ -519,7 +519,7 @@ During dragging, programmatic changes replace the drag baseline.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">event Action&lt;MeasurementGeometry&gt;? GeometryChanged</code></pre>
+    <pre><code class="lang-csharp hljs">event EventHandler&lt;MeasurementGeometry&gt;? GeometryChanged</code></pre>
   </div>
 
 
@@ -529,12 +529,21 @@ During dragging, programmatic changes replace the drag baseline.</p>
 
   <h4 class="section">Event Type</h4>
   <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Measurements.MeasurementGeometry.html">MeasurementGeometry</a>&gt;</dt>
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Measurements.MeasurementGeometry.html">MeasurementGeometry</a>&gt;</dt>
     <dd></dd>
   </dl>
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Measurements_IMeasurement_GeometryChanged_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the measurement handle. Adding a subscriber rejects a removed measurement or stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation. Payloads are immutable snapshots; the handle may already have changed or been removed.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 
@@ -550,7 +559,7 @@ During dragging, programmatic changes replace the drag baseline.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">event Action&lt;MeasurementQueryResult?&gt;? QueryResultChanged</code></pre>
+    <pre><code class="lang-csharp hljs">event EventHandler&lt;MeasurementQueryResult?&gt;? QueryResultChanged</code></pre>
   </div>
 
 
@@ -560,12 +569,21 @@ During dragging, programmatic changes replace the drag baseline.</p>
 
   <h4 class="section">Event Type</h4>
   <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Measurements.MeasurementQueryResult.html">MeasurementQueryResult</a>&gt;</dt>
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Measurements.MeasurementQueryResult.html">MeasurementQueryResult</a>&gt;</dt>
     <dd></dd>
   </dl>
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Measurements_IMeasurement_QueryResultChanged_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the measurement handle. Adding a subscriber rejects a removed measurement or stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation. Payloads are immutable snapshots; the handle may already have changed or been removed.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 

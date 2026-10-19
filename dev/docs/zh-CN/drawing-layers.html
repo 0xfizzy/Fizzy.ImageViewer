@@ -162,7 +162,7 @@ markers.DrawingClicked += (_, e) =&gt; {
 <p>提交会复制集合，后续修改原集合不会更新绘图。带冻结画刷的不可变元素可以共享；可变 WPF 画刷必须在其所属调用线程复制并冻结。不可冻结的资源、null 元素、非有限坐标、非正半径/线宽/字号，以及不支持的缩放模式都会在内容改变前被拒绝。</p>
 <p><code>Replace</code> 完成验证和绘制命令录制后才发布内容；录制失败保留原有绘图。所有视觉操作调度到 Viewer STA。<code>Dispose</code> 同步移除且幂等；清空、移除图层及 Viewer 关闭会使句柄失效，之后调用 <code>Replace</code> 抛出 <code>ObjectDisposedException</code>。</p>
 <p>内置层不可移除；图层名称非空且按大小写区分唯一，图层句柄不能交给另一 Viewer 的管理器。<code>Items</code> 是成员快照，其中句柄仍可变。<code>Clear</code> 保留设置和订阅，移除及关闭则释放资源和订阅。新增点击订阅会调度到 STA，并拒绝已移除的层或正在关闭的 Viewer；退订在关闭后仍安全。</p>
-<p>IViewer.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。</p>
+<p>IViewerCapabilities.Layers 允许全局管理；IViewerDrawing 只暴露默认 Markers，测量能力暴露整层。整层句柄能清除他人内容，组件只需更新一项时传 DrawingHandle；需要创建或全局清理后重建时才保留层。</p>
 <p>可编辑测量通过工具上下文创建、更新几何并 Complete，拥有框架视觉、标签、查询及注册资源。不支持附加任意 WPF 元素，内部 shape factory/MeasurementOverlay 不是公共接口。</p>
 <p>ClearContents/Clear All Shapes 取消测量并清全部业务层，保留 HUD。先取得层快照，回调新建层存续，已被移除层跳过，其余按顺序清理。清测量层也取消创建/编辑。显式清理尝试所有安全步骤并传播聚合错误，菜单/输入记录错误，关闭错误进入 DisposeAsync。快照只导出图像，不导出叠加。</p>
 <h2 id="hud-文字">HUD 文字</h2>

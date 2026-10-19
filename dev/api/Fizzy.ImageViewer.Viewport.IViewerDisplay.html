@@ -184,24 +184,19 @@ Interface IViewerDisplay
 
 
 
-  <a id="Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRangeAsync_" data-uid="Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync*"></a>
+  <a id="Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_" data-uid="Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange*"></a>
 
-  <h3 id="Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRangeAsync_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__" data-uid="Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})">
-  SetDisplayRangeAsync(GrayDisplayRange?)
+  <h3 id="Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__" data-uid="Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})">
+  SetDisplayRange(GrayDisplayRange?)
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Sets the requested mapping and waits for a corresponding display commit.
-With no current frame, configures future submissions and completes immediately.
-A non-null range on a current GPU frame throws synchronously without changing the request.
-A later setting or Viewer shutdown cancels a pending update. Preparation or presentation
-failure faults the task; the requested value remains set and the previous committed mapping
-remains available to snapshots. Success is a UI commit, not physical presentation.</p>
+  <div class="markdown level1 summary"><p>Accepts a mapping on the viewer STA and schedules display when visible; does not wait for display.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">Task SetDisplayRangeAsync(GrayDisplayRange? range)</code></pre>
+    <pre><code class="lang-csharp hljs">void SetDisplayRange(GrayDisplayRange? range)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
@@ -210,18 +205,57 @@ remains available to snapshots. Success is a UI commit, not physical presentatio
     <dd></dd>
   </dl>
 
-  <h4 class="section">Returns</h4>
+
+
+
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange___remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>A non-null range on a current GPU frame is rejected before changing the request.
+Snapshots retain the last successfully committed mapping. Failures are reported by DisplayFailed.</p>
+</div>
+
+
+
+
+  <h2 class="section" id="events">Events
+</h2>
+
+
+
+  <h3 id="Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayFailed" data-uid="Fizzy.ImageViewer.Viewport.IViewerDisplay.DisplayFailed">
+  DisplayFailed
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Reports failed frame presentation or redraw on the viewer STA, with this public owner as sender.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">event EventHandler&lt;DisplayFailure&gt;? DisplayFailed</code></pre>
+  </div>
+
+
+
+
+
+
+  <h4 class="section">Event Type</h4>
   <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></dt>
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Viewport.DisplayFailure.html">DisplayFailure</a>&gt;</dt>
     <dd></dd>
   </dl>
 
 
 
-
-
-
-
+  <h4 class="section" id="Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayFailed_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Does not report normal replacement or hiding. Subscribe before submitting frames.
+Adding rejects shutdown; removal is idempotent. Subscriber exceptions are isolated.
+Failures are not replayed and do not alter completed reception results.</p>
+</div>
 
 
 

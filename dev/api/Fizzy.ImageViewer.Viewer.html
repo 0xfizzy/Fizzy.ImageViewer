@@ -106,7 +106,7 @@ Borrowed tool contexts retain their own callback-thread restrictions.
   <div class="markdown conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class Viewer : IViewer, IFrameSink, ICommittedFrameSource, IViewerWindow, IViewerDisplay, ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IAsyncDisposable</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class Viewer : IViewer, IViewerCapabilities, IFrameSink, ICommittedFrameSource, IViewerDisplay, ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IViewerLifetime, IAsyncDisposable, IViewerWindow</code></pre>
   </div>
 
 
@@ -124,9 +124,9 @@ Borrowed tool contexts retain their own callback-thread restrictions.
     <dt>Implements</dt>
     <dd>
       <div><a class="xref" href="Fizzy.ImageViewer.IViewer.html">IViewer</a></div>
+      <div><a class="xref" href="Fizzy.ImageViewer.IViewerCapabilities.html">IViewerCapabilities</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Frames.IFrameSink.html">IFrameSink</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Frames.ICommittedFrameSource.html">ICommittedFrameSource</a></div>
-      <div><a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html">IViewerWindow</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html">IViewerDisplay</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Snapshots.ISnapshotSource.html">ISnapshotSource</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html">IViewerDrawing</a></div>
@@ -134,7 +134,9 @@ Borrowed tool contexts retain their own callback-thread restrictions.
       <div><a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html">IViewerMeasurements</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Menus.IViewerMenu.html">IViewerMenu</a></div>
       <div><a class="xref" href="Fizzy.ImageViewer.Imaging.IViewerQueries.html">IViewerQueries</a></div>
+      <div><a class="xref" href="Fizzy.ImageViewer.IViewerLifetime.html">IViewerLifetime</a></div>
       <div><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.iasyncdisposable">IAsyncDisposable</a></div>
+      <div><a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html">IViewerWindow</a></div>
     </dd>
   </dl>
 
@@ -761,6 +763,81 @@ Cleanup attempts every item and propagates failures to the caller.</p>
 
 
 
+
+
+
+
+  <a id="Fizzy_ImageViewer_Viewer_Visible_" data-uid="Fizzy.ImageViewer.Viewer.Visible*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Viewer_Visible" data-uid="Fizzy.ImageViewer.Viewer.Visible">
+  Visible
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Shows or hides without activating or restoring a minimized window. Access dispatches to the viewer STA.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Visible { get; set; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_Visible_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Reads the window visibility setting, independent of minimized state. Throws after shutdown begins.</p>
+</div>
+
+
+
+
+  <a id="Fizzy_ImageViewer_Viewer_WhenStopping_" data-uid="Fizzy.ImageViewer.Viewer.WhenStopping*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Viewer_WhenStopping" data-uid="Fizzy.ImageViewer.Viewer.WhenStopping">
+  WhenStopping
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Gets the shared task that completes successfully when the viewer stops accepting new work.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task WhenStopping { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_WhenStopping_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Reading or awaiting this task does not initiate shutdown. It remains completed for late
+observers and never faults or cancels, including when subsequent cleanup fails. Completion does
+not mean accepted work has drained, resources have been released, or the standalone STA has exited.
+The owner must still await IAsyncDisposable.DisposeAsync. Temporary unloading does not complete
+this task. Continuations are not invoked inline by the signal; no UI-thread delivery is promised.
+Concurrent operations must still handle shutdown rejection and honor frame ownership transfer.</p>
+</div>
 
 
 
@@ -1454,24 +1531,19 @@ Handle disposal marshals to the viewer STA and is idempotent after closure.</p>
 
 
 
-  <a id="Fizzy_ImageViewer_Viewer_SetDisplayRangeAsync_" data-uid="Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync*"></a>
+  <a id="Fizzy_ImageViewer_Viewer_SetDisplayRange_" data-uid="Fizzy.ImageViewer.Viewer.SetDisplayRange*"></a>
 
-  <h3 id="Fizzy_ImageViewer_Viewer_SetDisplayRangeAsync_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__" data-uid="Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})">
-  SetDisplayRangeAsync(GrayDisplayRange?)
+  <h3 id="Fizzy_ImageViewer_Viewer_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__" data-uid="Fizzy.ImageViewer.Viewer.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})">
+  SetDisplayRange(GrayDisplayRange?)
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Sets the requested mapping and waits for a corresponding display commit.
-With no current frame, configures future submissions and completes immediately.
-A non-null range on a current GPU frame throws synchronously without changing the request.
-A later setting or Viewer shutdown cancels a pending update. Preparation or presentation
-failure faults the task; the requested value remains set and the previous committed mapping
-remains available to snapshots. Success is a UI commit, not physical presentation.</p>
+  <div class="markdown level1 summary"><p>Accepts a mapping on the viewer STA and schedules display when visible; does not wait for display.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public Task SetDisplayRangeAsync(GrayDisplayRange? range)</code></pre>
+    <pre><code class="lang-csharp hljs">public void SetDisplayRange(GrayDisplayRange? range)</code></pre>
   </div>
 
   <h4 class="section">Parameters</h4>
@@ -1480,11 +1552,6 @@ remains available to snapshots. Success is a UI commit, not physical presentatio
     <dd></dd>
   </dl>
 
-  <h4 class="section">Returns</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.task">Task</a></dt>
-    <dd></dd>
-  </dl>
 
 
 
@@ -1492,6 +1559,10 @@ remains available to snapshots. Success is a UI commit, not physical presentatio
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange___remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>A non-null range on a current GPU frame is rejected before changing the request.
+Snapshots retain the last successfully committed mapping. Failures are reported by DisplayFailed.</p>
+</div>
 
 
 
@@ -1530,8 +1601,7 @@ remains available to snapshots. Success is a UI commit, not physical presentatio
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Consumes the frame immediately, including when cancelled, frozen or closed.
-Awaiting reports commit/drop completion, not physical presentation. A frame cannot be submitted twice.</p>
+  <div class="markdown level1 summary"><p>Consumes the frame immediately, including rejection. Completion reports reception, not display.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -1562,10 +1632,10 @@ Awaiting reports commit/drop completion, not physical presentation. A frame cann
 
 
   <h4 class="section" id="Fizzy_ImageViewer_Viewer_SubmitFrameAsync_Fizzy_ImageViewer_Frames_ImageFrame_Fizzy_ImageViewer_Frames_FrameSubmissionOptions_System_Threading_CancellationToken__remarks">Remarks</h4>
-  <div class="markdown level1 remarks"><p>The sink owns release on every terminal path. Callers must not mutate or release transferred storage.
-Inspect <a class="xref" href="Fizzy.ImageViewer.Frames.FrameSubmitResult.html#Fizzy_ImageViewer_Frames_FrameSubmitResult_Error">Error</a> for every status: submission-owned cleanup may fail even when
-the status is not <a class="xref" href="Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Failed">Failed</a>. The status preserves the actual commit/drop outcome;
-a cleanup failure does not undo a commit.</p>
+  <div class="markdown level1 remarks"><p>Accepted frames may be replaced without display. Cancellation applies only before acceptance.
+Callers must not mutate or release transferred storage; receipt does not make its buffer reusable.
+Inspect FrameSubmitResult.Error for rejection cleanup failures. Later owned cleanup failures enter disposal.
+Observe display through OnCommitted, FrameCommitted and DisplayFailed.</p>
 </div>
 
 
@@ -1618,7 +1688,8 @@ a cleanup failure does not undo a commit.</p>
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Raised after window closure; await DisposeAsync for background work and STA termination.</p>
+  <div class="markdown level1 summary"><p>Window closure notification on the viewer STA. Owners must still await IViewer.DisposeAsync
+to drain background work and wait for actual STA termination. Runs after queued measurement notifications.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -1639,6 +1710,55 @@ a cleanup failure does not undo a commit.</p>
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_Closed_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
+
+
+  <dl class="typelist seealso">
+    <dt>See Also</dt>
+    <dd>
+    <div><a class="xref" href="Fizzy.ImageViewer.IViewerLifetime.html#Fizzy_ImageViewer_IViewerLifetime_WhenStopping">WhenStopping</a></div>
+    </dd>
+  </dl>
+
+
+
+  <h3 id="Fizzy_ImageViewer_Viewer_DisplayFailed" data-uid="Fizzy.ImageViewer.Viewer.DisplayFailed">
+  DisplayFailed
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Reports failed frame presentation or redraw on the viewer STA, with this public owner as sender.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public event EventHandler&lt;DisplayFailure&gt;? DisplayFailed</code></pre>
+  </div>
+
+
+
+
+
+
+  <h4 class="section">Event Type</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Viewport.DisplayFailure.html">DisplayFailure</a>&gt;</dt>
+    <dd></dd>
+  </dl>
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_DisplayFailed_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Does not report normal replacement or hiding. Subscribe before submitting frames.
+Adding rejects shutdown; removal is idempotent. Subscriber exceptions are isolated.
+Failures are not replayed and do not alter completed reception results.</p>
+</div>
 
 
 
@@ -1654,7 +1774,7 @@ a cleanup failure does not undo a commit.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public event Action&lt;FrameInfo&gt;? FrameCommitted</code></pre>
+    <pre><code class="lang-csharp hljs">public event EventHandler&lt;FrameInfo&gt;? FrameCommitted</code></pre>
   </div>
 
 
@@ -1664,7 +1784,7 @@ a cleanup failure does not undo a commit.</p>
 
   <h4 class="section">Event Type</h4>
   <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a>&gt;</dt>
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a>&gt;</dt>
     <dd></dd>
   </dl>
 
@@ -1672,7 +1792,12 @@ a cleanup failure does not undo a commit.</p>
 
   <h4 class="section" id="Fizzy_ImageViewer_Viewer_FrameCommitted_remarks">Remarks</h4>
   <div class="markdown level1 remarks"><p>A later acquisition may observe a different frame. Use FrameSubmissionOptions.OnCommitted
-when an operation needs the lease corresponding to a specific submission.</p>
+when an operation needs the lease corresponding to a specific submission. Sender is the public
+Viewer or ImageViewerControl. Adding a subscriber rejects a stopping viewer with ObjectDisposedException;
+removing one is always safe. Duplicate subscriptions follow delegate semantics. Unsubscription does
+not retract captured notifications; subscriptions added during delivery apply only to later notifications.
+Synchronous subscriber failures are logged and isolated. Async-void work is not awaited;
+subscribers own its failures.</p>
 </div>
 
 
@@ -1684,7 +1809,7 @@ when an operation needs the lease corresponding to a specific submission.</p>
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Geometry or query state changed on a completed measurement. Runs on the viewer STA.</p>
+  <div class="markdown level1 summary"><p>Geometry and query snapshots plus a live editable handle after editing, publication or invalidation, on the viewer STA.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -1705,6 +1830,15 @@ when an operation needs the lease corresponding to a specific submission.</p>
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_MeasurementChanged_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 
@@ -1715,7 +1849,7 @@ when an operation needs the lease corresponding to a specific submission.</p>
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Raised once after a measurement completes, on the viewer STA. Previews are excluded.</p>
+  <div class="markdown level1 summary"><p>Completed measurements only; raised on the viewer STA, excluding previews.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -1737,7 +1871,13 @@ when an operation needs the lease corresponding to a specific submission.</p>
 
 
   <h4 class="section" id="Fizzy_ImageViewer_Viewer_MeasurementCompleted_remarks">Remarks</h4>
-  <div class="markdown level1 remarks"><p>Subscribers may start a new measurement, including the same tool, before returning.</p>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
 </div>
 
 
@@ -1749,7 +1889,7 @@ when an operation needs the lease corresponding to a specific submission.</p>
   
   </h3>
 
-  <div class="markdown level1 summary"><p>Raised when a previously completed measurement is removed, including clear and closure.</p>
+  <div class="markdown level1 summary"><p>Removal of completed measurements; raised on the viewer STA, including closure.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
 
@@ -1770,6 +1910,15 @@ when an operation needs the lease corresponding to a specific submission.</p>
 
 
 
+  <h4 class="section" id="Fizzy_ImageViewer_Viewer_MeasurementRemoved_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Sender is the public object that owns this event. Adding a subscriber rejects a stopping
+viewer with ObjectDisposedException; removing one is always safe. Duplicate subscriptions follow
+delegate semantics. Notifications share the measurement FIFO queue; reentrant changes follow the
+current mutation, including terminal removal notifications.
+Unsubscription does not retract captured notifications; subscriptions added
+during delivery apply only to later notifications. Synchronous subscriber failures are logged and
+isolated. Async-void work is not awaited; subscribers own its failures.</p>
+</div>
 
 
 

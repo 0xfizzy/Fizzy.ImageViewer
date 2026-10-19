@@ -91,7 +91,7 @@
 <p>英文 XML 定义符号契约，英文指南定义跨 API 协议，中文指南同步维护。不要为使注释检查通过而改变运行时行为。审查所有权、返回含义、取消、线程与清理时，对照实现和测试；编译通过不等于语义覆盖完整。</p>
 <h2 id="构建与预览">构建与预览</h2>
 <p>DocFX 配置位于 <code>docs/docfx.json</code>，站点首页与顶层导航位于 <code>docs/index.md</code> / <code>docs/toc.yml</code>。<code>Build-Docs</code> 将输入暂存到 <code>artifacts/docs/source/</code>，在其中运行此配置，使用下文定义的输出路径。</p>
-<p>安装 PowerShell 7、<code>global.json</code> 指定的 SDK、.NET 8 Desktop Runtime、Node.js 22.14.0 和 Git。库仍目标 .NET 8，固定 SDK 的编译器支持现有测试源码。仓库固定 DocFX 和 Playwright。在根目录运行：</p>
+<p>安装 PowerShell 7、<code>global.json</code> 选择的 .NET 10 SDK、.NET 8 Desktop Runtime、Node.js 22.14.0 和 Git。SDK 基线为 10.0.401，允许后续稳定的 10.0 功能带。包同时面向 .NET 10 和 .NET 8；API 参考使用 .NET 8 程序集生成两者共有的契约。仓库固定 DocFX 和 Playwright。在根目录运行：</p>
 <pre><code class="lang-powershell">npm ci
 npx playwright install chromium
 ./scripts/Build-Docs.ps1
@@ -100,14 +100,14 @@ node scripts/Test-Browser.mjs
 </code></pre>
 <p><code>Build-Docs</code> 验证翻译、锁定还原依赖、严格重编译 XML、从实际 DLL/XML 提取 API、构建站点、检查 HTML 链接并运行浏览器冒烟。不运行 WPF 示例、设备或发布部署。API 输入、清单和站点位于 <code>artifacts/docs/</code>。预览使用项目路径及 <code>/dev/</code> 或 <code>/v{version}/</code>，打开打印的 HTTP 地址，不使用文件 URL；Ctrl+C 停止。</p>
 <p><code>Test-Browser</code> 用固定 Chromium 和本地服务器检查双语入口、一个 API 页面、语言切换、搜索结果跳转、版本切换、缺页回退和页面错误。保存两种语言的桌面和窄屏审阅截图，结果报告及失败截图位于 <code>artifacts/docs/browser/</code>。模拟版本挂载不表示实际发布已上线。部署后运行 <code>node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/</code> 检查线上行为；版本缺页回退只使用本地夹具。</p>
-<p>公共 XML/声明、指南/翻译、README、导航、模板或工具变更必须完整构建文档并运行浏览器冒烟。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。</p>
+<p>仅修改文字措辞或翻译正文时，审阅内容与 diff；修改链接时，检查目标及锚点。修改公共声明、XML 文档、文档页面结构、导航、模板或生成工具时，运行 <code>scripts/Build-Docs.ps1</code>（已包含浏览器冒烟）。修改页面模板、样式、脚本、站点路由或版本切换行为时，运行 <code>node scripts/Test-Browser.mjs</code>；若本次文档构建已覆盖相同改动，无需重复运行。CI 对每次推送和 PR 执行完整门禁。保持契约的内部修改无需无关指南编辑。共享库输出的构建必须串行。</p>
 <h2 id="翻译审阅">翻译审阅</h2>
 <p>英文指南位于 <code>docs/en/</code>，中文同名文件位于 <code>docs/zh-CN/</code>。保持对应链接、API 标识和示例源码一致。检查器要求双向语言链接及两份导航入口，并拒绝孤立译文。NuGet README 是英文打包模板，不属于指南翻译对。</p>
 <p>人工核对最终英文和中文后执行：</p>
 <pre><code class="lang-powershell">./scripts/Test-Documentation.ps1 -AcceptTranslation docs/en/snapshots.md
 ./scripts/Test-Documentation.ps1
 </code></pre>
-<p><code>docs/translations.json</code> 保存规范化源哈希，纯换行变化不使审阅失效。禁止未审译文就接受哈希；接受过程中仍检查链接。完成前检查双语渲染页面。</p>
+<p><code>docs/translations.json</code> 保存规范化源哈希，纯换行变化不使审阅失效。禁止未审译文就接受哈希；接受过程中仍检查链接。改变页面结构或呈现时，检查双语渲染页面。</p>
 <h2 id="示例与门禁">示例与门禁</h2>
 <pre><code class="lang-powershell">./scripts/Test-Samples.ps1
 ./scripts/Test-DocumentationGate.ps1

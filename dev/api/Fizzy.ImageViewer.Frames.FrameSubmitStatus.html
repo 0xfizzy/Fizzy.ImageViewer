@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="title" content="Enum FrameSubmitStatus | Fizzy.ImageViewer ">
       
-      <meta name="description" content="Terminal submission outcome. Inspect FrameSubmitResult.Error separately for processing or cleanup failures.">
+      <meta name="description" content="Reception outcome, independent of subsequent display. Inspect the result error for cleanup failures.">
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
@@ -98,7 +98,7 @@ Enum FrameSubmitStatus
   <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
   </div>
 
-  <div class="markdown summary"><p>Terminal submission outcome. Inspect FrameSubmitResult.Error separately for processing or cleanup failures.</p>
+  <div class="markdown summary"><p>Reception outcome, independent of subsequent display. Inspect the result error for cleanup failures.</p>
 </div>
   <div class="markdown conceptual"></div>
 
@@ -117,29 +117,21 @@ Enum FrameSubmitStatus
   <h2 id="fields">Fields
 </h2>
   <dl class="parameters">
-    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Cancelled"><code>Cancelled = 3</code></dt>
+    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Accepted"><code>Accepted = 0</code></dt>
   
-  <dd><p>Cancellation was observed before commit.</p>
+  <dd><p>The viewer accepted ownership into its latest-frame pipeline; display is not guaranteed.</p>
 </dd>
-    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Closed"><code>Closed = 4</code></dt>
+    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Cancelled"><code>Cancelled = 1</code></dt>
   
-  <dd><p>The viewer stopped accepting or processing this submission.</p>
+  <dd><p>Cancellation was observed before acceptance.</p>
 </dd>
-    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Committed"><code>Committed = 0</code></dt>
+    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Closed"><code>Closed = 3</code></dt>
   
-  <dd><p>The frame became current on the viewer STA; this does not confirm physical display.</p>
-</dd>
-    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Failed"><code>Failed = 5</code></dt>
-  
-  <dd><p>Frame processing failed; the result carries the error.</p>
+  <dd><p>The viewer had stopped accepting frames.</p>
 </dd>
     <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Frozen"><code>Frozen = 2</code></dt>
   
-  <dd><p>The frame was dropped because the viewer was frozen or its freeze epoch changed.</p>
-</dd>
-    <dt id="Fizzy_ImageViewer_Frames_FrameSubmitStatus_Superseded"><code>Superseded = 1</code></dt>
-  
-  <dd><p>A newer submission replaced this waiting frame.</p>
+  <dd><p>The viewer was frozen and rejected the frame.</p>
 </dd>
   </dl>
 

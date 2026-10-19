@@ -169,7 +169,7 @@ The caller owns disposal of the returned lease.</p>
   <div class="markdown level1 conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">event Action&lt;FrameInfo&gt;? FrameCommitted</code></pre>
+    <pre><code class="lang-csharp hljs">event EventHandler&lt;FrameInfo&gt;? FrameCommitted</code></pre>
   </div>
 
 
@@ -179,7 +179,7 @@ The caller owns disposal of the returned lease.</p>
 
   <h4 class="section">Event Type</h4>
   <dl class="parameters">
-    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a>&gt;</dt>
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.eventhandler-1">EventHandler</a>&lt;<a class="xref" href="Fizzy.ImageViewer.Frames.FrameInfo.html">FrameInfo</a>&gt;</dt>
     <dd></dd>
   </dl>
 
@@ -187,7 +187,12 @@ The caller owns disposal of the returned lease.</p>
 
   <h4 class="section" id="Fizzy_ImageViewer_Frames_ICommittedFrameSource_FrameCommitted_remarks">Remarks</h4>
   <div class="markdown level1 remarks"><p>A later acquisition may observe a different frame. Use FrameSubmissionOptions.OnCommitted
-when an operation needs the lease corresponding to a specific submission.</p>
+when an operation needs the lease corresponding to a specific submission. Sender is the public
+Viewer or ImageViewerControl. Adding a subscriber rejects a stopping viewer with ObjectDisposedException;
+removing one is always safe. Duplicate subscriptions follow delegate semantics. Unsubscription does
+not retract captured notifications; subscriptions added during delivery apply only to later notifications.
+Synchronous subscriber failures are logged and isolated. Async-void work is not awaited;
+subscribers own its failures.</p>
 </div>
 
 

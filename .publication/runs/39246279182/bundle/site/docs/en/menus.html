@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Menus | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Menus | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="menus">Menus</h1>
+
+<p><a href="../zh-CN/menus.html">简体中文</a></p>
+<p>Add application actions to the context menu. Retain a registration for the feature lifetime; the Viewer borrows your menu object.</p>
+<h2 id="register-an-action">Register an action</h2>
+<p>The example assumes a live <code>viewer</code>:</p>
+<pre><code class="lang-csharp">using var registration = viewer.RegisterMenuItem(
+    new Fizzy.ImageViewer.Menus.MenuItem(&quot;Mark ready&quot;, () =&gt; viewer.HudLabelText = &quot;Ready&quot;));
+</code></pre>
+<p>Implement <code>IMenuItem</code> for custom behavior, or use the action helpers. Helpers accept <code>Action</code> or <code>Func&lt;ValueTask&gt;</code>; return asynchronous work so its completion and failure are observed.</p>
+<h2 id="visibility-and-captured-targets">Visibility and captured targets</h2>
+<p>Menu visibility is determined by <code>IMenuItem.IsVisible</code>, evaluated on each opening.
+Action-based helpers accept an optional visibility predicate. Use <code>SeparatorMenuItem</code>
+for separators; the renderer removes leading, repeated and trailing separators.
+<code>MenuItem</code> and <code>CheckableMenuItem</code> require a nonempty, non-whitespace header and
+non-null action (and checked-state getter where applicable); constructors reject
+invalid arguments before registration. Valid headers are preserved as supplied.
+Built-in interaction actions capture their target when the menu opens. Cancel Measurement
+only cancels that activation; a replacement activation, including the same tool, is unaffected.</p>
+<h2 id="menu-registration-lifetime">Menu registration lifetime</h2>
+<p><code>RegisterMenuItem(IMenuItem)</code> returns an <code>IDisposable</code> registration handle. Dispose it from
+any thread to revoke only that registration; disposal is idempotent and safe after viewer
+closure. Registering the same object twice creates independent registrations. Ignoring the
+handle keeps the registration alive until the viewer closes. The viewer never disposes the
+caller-owned menu object itself.</p>
+<p>Revocation prevents new callbacks from an already open menu and disables its current item;
+the next opening omits it. An executing action is allowed to finish, including when it
+revokes itself or the viewer closes. <code>IMenuItem.ExecuteAsync()</code> returns a <code>ValueTask</code>
+and starts on the viewer STA; no WPF event objects cross this interface. Bindings await
+completion and log failures. The same menu object cannot execute again while its action
+is in flight, including after reopening; other actions remain available. Action helpers
+accept either <code>Action</code> or <code>Func&lt;ValueTask&gt;</code>. Async work that outlives the viewer must own
+its resources and avoid depending on the viewer dispatcher after it closes.</p>
+<p>Visibility/check callbacks run on the viewer STA and may change registrations;
+registrations added while building the menu appear on the next opening. Do not block these
+callbacks on another thread that is waiting for a viewer operation.</p>
+<p>Normal menu closure preserves the pending click until input drains. Explicit revocation or
+viewer shutdown invalidates it immediately. If menu construction fails after freezing a
+frame, the viewer resumes submissions, removes partial bindings and closes that opening.
+Header, visibility and check-state failures are logged at the WPF event boundary; they do
+not escape into the dispatcher. A later opening evaluates registrations again.
+Viewer shutdown releases registrations, callbacks and WPF menu bindings.</p>
+<h2 id="captured-image-targets">Captured image targets</h2>
+<p>Built-in freeze/export actions retain the committed frame, mapping and applicable ROI captured for that opening. Independent leases let accepted work finish after closure; export never switches to a new frame. Custom asynchronous actions must explicitly choose and own targets. Borrowing Viewer does not promise availability after closure. See <a href="snapshots.html">snapshots</a>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

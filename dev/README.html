@@ -74,13 +74,17 @@
 
 <p align="center"><img src="assets/icon-readme.png" alt="Fizzy.ImageViewer" width="108" height="108"></p>
 <h1 id="fizzyimageviewer">Fizzy.ImageViewer</h1>
-<p><a href="README.zh-CN.html">简体中文</a></p>
-<p>View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.</p>
+<p><a href="https://www.nuget.org/packages/Fizzy.ImageViewer/"><img src="https://img.shields.io/nuget/v/Fizzy.ImageViewer.svg?style=flat" alt="NuGet"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="License: MIT"></a>
+<a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-8%20%7C%2010-512BD4.svg?style=flat" alt=".NET 8 / 10"></a>
+<a href="docs/en/getting-started.html"><img src="https://img.shields.io/badge/platform-Windows-blue.svg?style=flat" alt="Platform: Windows"></a></p>
+<p>English | <a href="README.zh-CN.html">简体中文</a></p>
+<p>View, draw, measure, and inspect images in Windows/.NET 8 and .NET 10 WPF applications. Embed <code>ImageViewerControl</code> in your WPF window, or use <code>Viewer</code> with an independent window and STA thread. Applications provide camera acquisition, device control, and business adapters.</p>
 <p>Read the <a href="https://0xfizzy.github.io/Fizzy.ImageViewer/">documentation website</a> for bilingual guides and the API reference.</p>
 <h2 id="install">Install</h2>
 <pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
 </code></pre>
-<p>Target <code>net8.0-windows</code> or a compatible newer target, and set <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>.</p>
+<p>The NuGet package includes <code>net10.0-windows</code> and <code>net8.0-windows</code> assemblies. Target either framework (or a compatible newer target), and set <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>.</p>
 <h2 id="quick-start">Quick start</h2>
 <p>With implicit usings enabled, this console entry point displays a gray image until you close the window:</p>
 <pre><code class="lang-csharp">using Fizzy.ImageViewer;
@@ -95,12 +99,12 @@ Array.Fill(pixels, (byte)128);
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
 viewer.Show();
 await closed.Task;
 </code></pre>
-<p>Submission immediately transfers frame ownership, even on rejection or cancellation. <code>Committed</code> means the UI accepted the frame, not that the monitor has displayed it.</p>
+<p>Submission immediately transfers frame ownership, even on rejection or cancellation. <code>Accepted</code> means the latest-frame pipeline accepted ownership, not that display has completed. Hidden viewers retain only the newest input.</p>
 <h2 id="features">Features</h2>
 <ul>
 <li>Zoom, pan, fit-to-window, and borderless display</li>
@@ -118,6 +122,10 @@ await closed.Task;
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>Embed in a WPF window</td>
+<td><a href="docs/en/embedding.html">Embedding</a></td>
+</tr>
 <tr>
 <td>Run my first application</td>
 <td><a href="docs/en/getting-started.html">Getting started</a></td>

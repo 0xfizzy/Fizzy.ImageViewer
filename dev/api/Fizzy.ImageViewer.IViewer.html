@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="title" content="Interface IViewer | Fizzy.ImageViewer ">
       
-      <meta name="description" content="Complete viewer capabilities and ownership of asynchronous shutdown.">
+      <meta name="description" content="Viewing capabilities and ownership of asynchronous shutdown.">
       <link rel="icon" href="../assets/icon.png">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
@@ -97,12 +97,12 @@ Interface IViewer
   <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
   </div>
 
-  <div class="markdown summary"><p>Complete viewer capabilities and ownership of asynchronous shutdown.</p>
+  <div class="markdown summary"><p>Viewing capabilities and ownership of asynchronous shutdown.</p>
 </div>
   <div class="markdown conceptual"></div>
 
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public interface IViewer : IFrameSink, ICommittedFrameSource, IViewerWindow, IViewerDisplay, ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IAsyncDisposable</code></pre>
+    <pre><code class="lang-csharp hljs">public interface IViewer : IViewerCapabilities, IFrameSink, ICommittedFrameSource, IViewerDisplay, ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IViewerLifetime, IAsyncDisposable</code></pre>
   </div>
 
 
@@ -115,6 +115,9 @@ Interface IViewer
     <dt>Inherited Members</dt>
     <dd>
     <div>
+      <a class="xref" href="Fizzy.ImageViewer.IViewerCapabilities.html#Fizzy_ImageViewer_IViewerCapabilities_Layers">IViewerCapabilities.Layers</a>
+    </div>
+    <div>
       <a class="xref" href="Fizzy.ImageViewer.Frames.IFrameSink.html#Fizzy_ImageViewer_Frames_IFrameSink_SubmitFrameAsync_Fizzy_ImageViewer_Frames_ImageFrame_Fizzy_ImageViewer_Frames_FrameSubmissionOptions_System_Threading_CancellationToken_">IFrameSink.SubmitFrameAsync(ImageFrame, FrameSubmissionOptions, CancellationToken)</a>
     </div>
     <div>
@@ -124,52 +127,16 @@ Interface IViewer
       <a class="xref" href="Fizzy.ImageViewer.Frames.ICommittedFrameSource.html#Fizzy_ImageViewer_Frames_ICommittedFrameSource_FrameCommitted">ICommittedFrameSource.FrameCommitted</a>
     </div>
     <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Show">IViewerWindow.Show()</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Hide">IViewerWindow.Hide()</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Minimize">IViewerWindow.Minimize()</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_IsVisible">IViewerWindow.IsVisible</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_IsMinimized">IViewerWindow.IsMinimized</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_CanUserClose">IViewerWindow.CanUserClose</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Title">IViewerWindow.Title</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Width">IViewerWindow.Width</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Height">IViewerWindow.Height</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Left">IViewerWindow.Left</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Top">IViewerWindow.Top</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Borderless">IViewerWindow.Borderless</a>
-    </div>
-    <div>
-      <a class="xref" href="Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Closed">IViewerWindow.Closed</a>
-    </div>
-    <div>
       <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_FitToViewport">IViewerDisplay.FitToViewport()</a>
     </div>
     <div>
-      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRangeAsync_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__">IViewerDisplay.SetDisplayRangeAsync(GrayDisplayRange?)</a>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__">IViewerDisplay.SetDisplayRange(GrayDisplayRange?)</a>
     </div>
     <div>
       <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayRange">IViewerDisplay.DisplayRange</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayFailed">IViewerDisplay.DisplayFailed</a>
     </div>
     <div>
       <a class="xref" href="Fizzy.ImageViewer.Snapshots.ISnapshotSource.html#Fizzy_ImageViewer_Snapshots_ISnapshotSource_CaptureSnapshotAsync_Fizzy_ImageViewer_Snapshots_SnapshotKind_System_Threading_CancellationToken_">ISnapshotSource.CaptureSnapshotAsync(SnapshotKind, CancellationToken)</a>
@@ -241,6 +208,9 @@ Interface IViewer
       <a class="xref" href="Fizzy.ImageViewer.Imaging.IViewerQueries.html#Fizzy_ImageViewer_Imaging_IViewerQueries_QueryMetrics">IViewerQueries.QueryMetrics</a>
     </div>
     <div>
+      <a class="xref" href="Fizzy.ImageViewer.IViewerLifetime.html#Fizzy_ImageViewer_IViewerLifetime_WhenStopping">IViewerLifetime.WhenStopping</a>
+    </div>
+    <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.iasyncdisposable.disposeasync">IAsyncDisposable.DisposeAsync()</a>
     </div>
   </dd></dl>
@@ -249,44 +219,9 @@ Interface IViewer
 
 
   <h2 id="Fizzy_ImageViewer_IViewer_remarks">Remarks</h2>
-  <div class="markdown level0 remarks"><p>Borrow individual capability interfaces when the caller does not own the viewer.</p>
+  <div class="markdown level0 remarks"><p>Only the owner disposes the viewer. Borrow IViewerCapabilities or individual capability
+interfaces otherwise. Window operations require IViewerWindow.</p>
 </div>
-
-
-  <h2 class="section" id="properties">Properties
-</h2>
-
-
-  <a id="Fizzy_ImageViewer_IViewer_Layers_" data-uid="Fizzy.ImageViewer.IViewer.Layers*"></a>
-
-  <h3 id="Fizzy_ImageViewer_IViewer_Layers" data-uid="Fizzy.ImageViewer.IViewer.Layers">
-  Layers
-  
-  </h3>
-
-  <div class="markdown level1 summary"><p>Global layer composition, enumeration and content clearing across drawing and measurements.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">ViewerLayers Layers { get; }</code></pre>
-  </div>
-
-
-
-
-
-  <h4 class="section">Property Value</h4>
-  <dl class="parameters">
-    <dt><a class="xref" href="Fizzy.ImageViewer.Layers.ViewerLayers.html">ViewerLayers</a></dt>
-    <dd></dd>
-  </dl>
-
-
-
-
-
-
 
 
 

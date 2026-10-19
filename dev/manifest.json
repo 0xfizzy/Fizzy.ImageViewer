@@ -486,7 +486,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.Frames.FrameSubmitResult",
-      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitResult.yml\" sourcestartlinenumber=\"1\">The actual commit/drop outcome and any processing or submission-owned cleanup failure.</p>\n"
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitResult.yml\" sourcestartlinenumber=\"1\">The reception outcome and any cleanup failure owned by this reception.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -500,7 +500,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.Frames.FrameSubmitStatus",
-      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.yml\" sourcestartlinenumber=\"1\">Terminal submission outcome. Inspect FrameSubmitResult.Error separately for processing or cleanup failures.</p>\n"
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.yml\" sourcestartlinenumber=\"1\">Reception outcome, independent of subsequent display. Inspect the result error for cleanup failures.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -738,7 +738,35 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.IViewer",
-      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewer.yml\" sourcestartlinenumber=\"1\">Complete viewer capabilities and ownership of asynchronous shutdown.</p>\n"
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewer.yml\" sourcestartlinenumber=\"1\">Viewing capabilities and ownership of asynchronous shutdown.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.IViewerCapabilities.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.IViewerCapabilities.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.IViewerCapabilities",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewerCapabilities.yml\" sourcestartlinenumber=\"1\">Borrowed host-independent viewing capabilities without ownership of shutdown.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.IViewerLifetime.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.IViewerLifetime.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.IViewerLifetime",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewerLifetime.yml\" sourcestartlinenumber=\"1\">Read-only observation of a viewer's terminal admission boundary.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -753,6 +781,20 @@
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.IViewerWindow",
       "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewerWindow.yml\" sourcestartlinenumber=\"1\">Borrowed window control. Operations dispatch to the viewer STA and reject calls once shutdown starts.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.ImageViewerControl.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.ImageViewerControl.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.ImageViewerControl",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.ImageViewerControl.yml\" sourcestartlinenumber=\"1\">An embeddable image viewer on its host's WPF dispatcher.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1400,6 +1442,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Viewport.DisplayFailure.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Viewport.DisplayFailure.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Viewport.DisplayFailure",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Viewport.DisplayFailure.yml\" sourcestartlinenumber=\"1\">A failed display attempt, independent of frame acceptance.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Viewport.IViewerDisplay.yml",
       "output": {
         ".html": {
@@ -1543,6 +1599,16 @@
       "output": {
         ".html": {
           "relative_path": "docs/en/drawing-layers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/en/embedding.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/embedding.html"
         }
       },
       "version": ""
@@ -1745,6 +1811,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/embedding.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/embedding.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docs/zh-CN/frame-pipeline.md",
       "output": {
         ".html": {
@@ -1882,6 +1958,56 @@
       "output": {
         "resource": {
           "relative_path": "samples/BasicViewer/Program.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/App.xaml",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/App.xaml"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/App.xaml.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/App.xaml.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/EmbeddedViewer.csproj",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/EmbeddedViewer.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/MainWindow.xaml",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/MainWindow.xaml"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/MainWindow.xaml.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/MainWindow.xaml.cs"
         }
       },
       "version": ""

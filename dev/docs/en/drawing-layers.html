@@ -224,7 +224,7 @@ Layer handles belong to one viewer and cannot be passed to another viewer's mana
 removal and closure release subscriptions and drawing resources.
 Adding a <code>DrawingClicked</code> subscription dispatches to the viewer STA and rejects a removed
 layer or stopping viewer. Unsubscription remains safe after removal or closure.</p>
-<p>Global layer composition is available through <code>IViewer.Layers</code>. Borrowing
+<p>Global layer composition is available through <code>IViewerCapabilities.Layers</code>. Borrowing
 <code>IViewerDrawing</code> exposes only the default <code>Markers</code> layer and its <code>Draw*</code> helpers;
 <code>IViewerMeasurements.Measurements</code> exposes the measurement layer. A <code>DrawingLayer</code>
 grants management of that entire layer, including clearing other drawings and receiving

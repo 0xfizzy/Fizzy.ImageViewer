@@ -90,7 +90,7 @@
 <p><a href="../zh-CN/getting-started.html">简体中文</a></p>
 <p>Build a small application that displays an image, then choose a component guide for your next task.</p>
 <h2 id="create-a-viewer">Create a viewer</h2>
-<p>Use Windows and .NET 8 with a <code>net8.0-windows</code> project and <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>. Create a console project with this project file, then install the package:</p>
+<p>Use Windows with a <code>net10.0-windows</code> or <code>net8.0-windows</code> project and <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>. Both targets are included in one NuGet package. Create a console project with the following .NET 8 project file (or change its target to <code>net10.0-windows</code>), then install the package:</p>
 <pre><code class="lang-xml">&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;
   &lt;PropertyGroup&gt;
     &lt;OutputType&gt;Exe&lt;/OutputType&gt;
@@ -118,15 +118,17 @@ Array.Fill(pixels, (byte)128);
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
 
 viewer.Show();
 await closed.Task;
 // await using waits for shutdown and reports cleanup failures.
 </code></pre>
-<p>Configure and subscribe before <code>Show()</code>. Submission transfers ownership immediately, even when cancelled or closed: do not submit the same frame twice or dispose its transferred storage. <code>Committed</code> means the UI accepted the frame, not that the monitor has displayed it. Inspect both <code>Status</code> and <code>Error</code>, including for dropped frames.</p>
+<p>Configure and subscribe before <code>Show()</code>. Submission transfers ownership immediately, even when cancelled or closed: do not submit the same frame twice or dispose its transferred storage. <code>Accepted</code> means the latest-frame pipeline accepted ownership, not that display has completed. Hidden viewers retain only the newest input. Inspect both <code>Status</code> and <code>Error</code>, including for dropped frames.</p>
 <p><code>Closed</code> is a notification, not proof that rendering and queries have drained. Stop and await your producer before awaiting <code>DisposeAsync</code>; never synchronously wait for either from a Viewer callback. A Viewer has one window lifetime; create a new instance after closure.</p>
+<h2 id="embed-in-an-existing-window">Embed in an existing window</h2>
+<p>Use <code>ImageViewerControl</code> in XAML or code when the application owns the UI thread. See <a href="embedding.html">embedding and asynchronous host closure</a> and the <a href="../../samples/EmbeddedViewer/MainWindow.xaml">EmbeddedViewer example</a>.</p>
 <h2 id="basic-operations">Basic operations</h2>
 <p>Use the wheel to zoom and the middle button to pan. The context menu offers measurements and image export. To add features programmatically, place these calls before <code>viewer.Show()</code> in the example:</p>
 <pre><code class="lang-csharp">viewer.HudLabelText = &quot;My image&quot;;
@@ -137,7 +139,8 @@ viewer.ActivateMeasurementTool(
 <p>Click two points to measure a length in image pixels. Escape ends creation or editing. See <a href="measurements.html">measurements</a> to observe results, <a href="drawing-layers.html">drawing</a> to add annotations, and <a href="snapshots.html">snapshots</a> to save image pixels.</p>
 <h2 id="complete-examples">Complete examples</h2>
 <p>Run from the repository root. These manual checks open WPF windows:</p>
-<pre><code class="lang-powershell">dotnet run --project samples/BasicViewer
+<pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 </code></pre>

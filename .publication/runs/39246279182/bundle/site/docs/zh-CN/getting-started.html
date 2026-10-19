@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>入门 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="入门 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="入门">入门</h1>
+
+<p><a href="../en/getting-started.html">English</a></p>
+<p>本指南帮助你运行第一个图像窗口，再按需要选择组件指南。</p>
+<h2 id="创建-viewer">创建 Viewer</h2>
+<p>使用 Windows，项目面向 <code>net10.0-windows</code> 或 <code>net8.0-windows</code> 并启用 <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>。同一个 NuGet 包包含两个目标。创建控制台项目并使用下面的 .NET 8 项目文件（也可将目标改为 <code>net10.0-windows</code>），再安装包：</p>
+<pre><code class="lang-xml">&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;
+  &lt;PropertyGroup&gt;
+    &lt;OutputType&gt;Exe&lt;/OutputType&gt;
+    &lt;TargetFramework&gt;net8.0-windows&lt;/TargetFramework&gt;
+    &lt;UseWPF&gt;true&lt;/UseWPF&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;
+</code></pre>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer
+</code></pre>
+<p>Viewer 创建独立 STA；控制台程序无需自行创建应用 Dispatcher。启用隐式 using 后，以下代码可作为完整的控制台入口：</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer;
+using Fizzy.ImageViewer.Frames;
+
+await using var viewer = new Viewer(showWindow: false);
+var closed = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.Closed += (_, _) =&gt; closed.TrySetResult();
+viewer.Title = &quot;My first image&quot;;
+
+var pixels = new byte[640 * 480];
+Array.Fill(pixels, (byte)128);
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
+    new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Accepted)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+
+viewer.Show();
+await closed.Task;
+// await using waits for shutdown and reports cleanup failures.
+</code></pre>
+<p>在 <code>Show()</code> 前配置并订阅事件。提交会立即转移所有权，即使操作被取消或 Viewer 已关闭也一样：不要重复提交同一帧，也不要释放已转移的存储。<code>Accepted</code> 表示最新帧管线已接管所有权，不代表显示完成；隐藏时仅保留最新输入。应用应同时检查 <code>Status</code> 和 <code>Error</code>，丢弃的帧也不例外。</p>
+<p><code>Closed</code> 是通知，不证明渲染和查询已排空。先停止并等待生产者结束，再等待 <code>DisposeAsync</code>；不要在 Viewer 回调中同步等待这些操作。Viewer 对应一次窗口生命周期，关闭后应新建实例。</p>
+<h2 id="嵌入已有窗口">嵌入已有窗口</h2>
+<p>应用拥有 UI 线程时，在 XAML 或代码中使用 <code>ImageViewerControl</code>。参见<a href="embedding.html">嵌入与宿主异步关闭</a>及 <a href="../../samples/EmbeddedViewer/MainWindow.xaml">EmbeddedViewer 示例</a>。</p>
+<h2 id="基本操作">基本操作</h2>
+<p>滚轮缩放，中键平移；右键菜单提供测量和图像导出。也可在示例的 <code>viewer.Show()</code> 前加入以下调用：</p>
+<pre><code class="lang-csharp">viewer.HudLabelText = &quot;My image&quot;;
+viewer.IsPixelInfoEnabled = true;
+viewer.ActivateMeasurementTool(
+    Fizzy.ImageViewer.Measurements.MeasurementToolIds.Length);
+</code></pre>
+<p>点击两个点测量图像像素单位的长度；Escape 结束创建或编辑。读取结果见<a href="measurements.html">测量</a>，添加标记见<a href="drawing-layers.html">绘制</a>，保存图像见<a href="snapshots.html">快照</a>。</p>
+<h2 id="完整示例">完整示例</h2>
+<p>在仓库根目录执行；这些人工检查会打开 WPF 窗口：</p>
+<pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/BasicViewer
+dotnet run --project samples/LiveOverlays
+dotnet run --project samples/MeasurementsAndExport
+</code></pre>
+<ul>
+<li><a href="../../samples/BasicViewer/Program.cs">BasicViewer</a>：显示复制的灰度像素并等待关闭。</li>
+<li><a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a>：模拟帧流、复用批量句柄、先结束生产再释放。</li>
+<li><a href="../../samples/MeasurementsAndExport/Program.cs">MeasurementsAndExport</a>：独立点测量会话、通知和 <code>artifacts/samples/</code> 下的 PNG 输出。</li>
+</ul>
+<p><code>./scripts/Test-Samples.ps1</code> 只构建、不打开窗口。导出可接受输出目录参数，选择不含需保留的 <code>snapshot.png</code> 的目录。</p>
+<h2 id="进阶集成">进阶集成</h2>
+<p>继续阅读 <a href="frame-pipeline.html">CPU/GPU 帧</a>、<a href="cuda.html">CUDA 集成</a>或<a href="live-streaming.html">实时流所有权与性能</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

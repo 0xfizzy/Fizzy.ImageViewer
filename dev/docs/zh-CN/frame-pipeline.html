@@ -99,12 +99,12 @@ var pixels = new byte[values.Length * 2];
 for (int i = 0; i &lt; values.Length; i++)
     System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
         pixels.AsSpan(i * 2, 2), values[i]);
-await viewer.SetDisplayRangeAsync(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+viewer.SetDisplayRange(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
 </code></pre>
 <p>相机已提供小端字节且步长有效时，直接传入这些字节，无需逐值重新打包。紧凑打包的 10/12 位相机格式需要先解包。Gray32Float 每像素使用四个小端 IEEE 754 字节，默认显示范围为 0–1；温度、深度等数据应按原始单位设置范围。</p>
-<p>调整已有图像时，先等待其提交，再等待 <code>SetDisplayRangeAsync</code> 以观察重绘完成或失败。传入 <code>null</code> 可恢复格式默认范围。</p>
+<p>通过 <code>SetDisplayRange</code> 接受映射配置，通过 <code>DisplayFailed</code> 观察显示失败；传入 <code>null</code> 恢复格式默认范围。</p>
 <h3 id="彩色匹配通道顺序与透明度">彩色：匹配通道顺序与透明度</h3>
 <p>选择与源字节一致的格式。例如，下面的 Bgra32 帧依次包含一个半透明红色像素和一个不透明绿色像素：</p>
 <pre><code class="lang-csharp">byte[] pixels = { 0, 0, 255, 128,  0, 255, 0, 255 };
@@ -122,7 +122,7 @@ var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () =&gt; { });
 var result = await viewer.SubmitFrameAsync(frame);
 // Never write pixels again. This managed array needs no external release action.
 </code></pre>
-<p>已有内存池或相机缓冲区所有者时，传入准确的内存切片，并提供归还该缓冲区的释放回调。不要在提交后或等到 <code>Committed</code> 后立即释放所有者：当前图像、查询和独立租约仍可能保留该帧，冻结的 Viewer 还可能无限期保留它。<code>TakeOwnership</code> 在最终释放时调用一次释放回调，构造验证失败也会调用；不要再在 catch/finally 中重复归还缓冲区。回调应短小、不抛异常，并能安全地在最终释放引用的线程上执行，该线程可能是 Viewer STA。生产者无法满足这些保留时间与线程要求时，应使用 <code>Copy</code>。</p>
+<p>已有内存池或相机缓冲区所有者时，传入准确的内存切片，并提供归还该缓冲区的释放回调。不要在提交后或收到 <code>Accepted</code> 后立即释放所有者：当前图像、查询和独立租约仍可能保留该帧，冻结的 Viewer 还可能无限期保留它。<code>TakeOwnership</code> 在最终释放时调用一次释放回调，构造验证失败也会调用；不要再在 catch/finally 中重复归还缓冲区。回调应短小、不抛异常，并能安全地在最终释放引用的线程上执行，该线程可能是 Viewer STA。生产者无法满足这些保留时间与线程要求时，应使用 <code>Copy</code>。</p>
 <h2 id="输入与生命周期">输入与生命周期</h2>
 <p><code>ImageFrame.Copy</code> 同步复制，原存储仍属调用方。<code>TakeOwnership</code> 接管不可变存储，最后一个帧或租约释放时恰好执行一次 release，包括构造验证失败；构造和清理均失败时聚合，原错误在前，不重试 release。宽高为正，正 stride 至少覆盖有效行；支持行填充，输入单平面、从上到下，Gray16/Gray32Float 为小端。不支持的格式明确失败。</p>
 <p>存储字节数不等于语义通道数：Gray16 两字节一个通道，Bgr32 四字节三个通道，末字节为填充；Bgra32/Pbgra32 四通道，分别为直接/预乘 alpha。</p>
@@ -130,15 +130,16 @@ var result = await viewer.SubmitFrameAsync(frame);
 <p>提交自身释放错误进入 <code>FrameSubmitResult.Error</code>；Viewer 当前帧或重绘租约的释放错误进入 <code>DisposeAsync</code>；独立租约释放错误直接传播。release 在最后释放引用的线程同步执行，可能是提交线程、工作线程或 STA，生产者负责线程亲和并保持短小，不存在专用释放线程。</p>
 <p>Viewer 保留原帧供查询，冻结可能无限期保留；相机池必须允许这种保留，或适配器主动复制。只读接口不能阻止其他持有者修改内存，不可变性是生产者契约。</p>
 <h2 id="提交与显示">提交与显示</h2>
-<p>每个 Viewer 一个 STA 和渲染循环，最多一帧处理中、一帧等待，新帧替换等待帧。状态为 <code>Committed</code>、<code>Superseded</code>、<code>Frozen</code>、<code>Cancelled</code>、<code>Closed</code>、<code>Failed</code>；同时检查 Status 和 Error，丢帧也可能有清理错误，清理失败不改变提交或丢弃原因。</p>
-<p>取消在 UI 提交前尽力生效，提交后不撤销。等待帧在出队、替换、冻结或关闭时结束，不为每帧注册取消回调。Committed 表示 UI 已更换源和当前帧，不证明显示器已呈现。FrameId 在 Viewer 内单调递增。写像素后先执行单次 OnCommitted，再发 FrameCommitted；回调中的租约仅借用至回调结束。查询通知独立调度，禁止回调阻塞等待另一提交；异步工作自行获取租约。订阅异常隔离。</p>
+<p><code>SubmitFrameAsync</code> 立即接管所有权，接收完成即返回，不等待显示。结果为 <code>Accepted</code>、<code>Frozen</code>、<code>Cancelled</code> 或 <code>Closed</code>；包括拒绝在内，均须检查 <code>Error</code> 中属于本次接收的清理失败。取消只在接收前检查，接收成功后不撤销。已接收帧可能从未显示就被替换，不为每张输入保留显示完成任务或发送替换事件。FrameId 在 Viewer 内单调递增。</p>
+<p>管线保留一个在途帧、一个最新等待帧和最后已提交帧。隐藏、卸载或宿主最小化时仍接收输入，但不启动转换或上传；恢复后主动显示最新等待帧，即使没有后续输入。在途转换允许完成；提交前发现已隐藏时延后提交并丢弃转换结果，恢复时可能重新转换。不检测遮挡、屏幕位置、激活状态或 Tab 选择。</p>
+<p>成功的 UI 提交更新当前帧和映射，先调用 <code>OnCommitted</code>，再发送 <code>FrameCommitted</code>；二者均不证明显示器已呈现。回调租约只借用至返回。发送帧前订阅通知；延后工作应自行保留独立租约及不可变元数据。<code>DisplayFailed</code> 在所属 STA 报告转换或呈现失败，携带帧标识、请求范围、显示版本和异常，不改变已经完成的接收结果。失败不自动重试，可通过新输入或显式设置范围请求新工作；已失败 native 呈现器仍遵循原有终态安全契约。订阅异常隔离，见<a href="public-api.html#%E4%BA%8B%E4%BB%B6%E8%AE%A2%E9%98%85">事件订阅</a>。</p>
+<p>查询、测量和快照始终使用最后成功提交的帧及映射，隐藏时也如此；首帧显示提交前没有当前帧，不读取等待中的输入。图层更新和显式查询不受图像管线暂停控制。已接收帧在替换或处理后的清理失败归管线共享释放结果，不归较新帧的接收结果；关闭阻止显示失败通知交付时，该错误保留至释放结果。</p>
 <p>CPU 呈现器复用两个 WriteableBitmap，后台转换，先写未显示位图再切换。WPF 原生八位布局保留，映射灰度和显示快照使用 Pbgra32。GPU 使用 D3DImage。图像坐标始终是原图像素，不随 DPI 改变。</p>
 <p>图像原点是左上边界；整数像素索引与连续位置不同。像素 <code>(x,y)</code> 的中心是 <code>(x+0.5,y+0.5)</code>，
 可用 <code>PixelCoordinate.ToImageCenter()</code> 获取。算法结果的适配见<a href="drawing-layers.html#%E5%9D%90%E6%A0%87%E5%B0%BA%E5%AF%B8%E4%B8%8E%E8%BE%93%E5%85%A5">绘图坐标</a>。
 视口使用 WPF 高质量位图缩放，减少缩小时细小特征的丢失。显示重采样不改变原始像素或查询结果，
 也不保证亚像素显示精度。</p>
-<p>DisplayRange 读取最新请求；等待 <code>SetDisplayRangeAsync</code> 观察重绘失败。默认 Gray8 0–255、Gray16 0–65535、Gray32Float 0–1。边界有限且严格递增，范围外裁剪，NaN/负无穷黑、正无穷白。存在帧时等该显示版本成功提交；新请求或关闭取消旧等待，无帧时只配置后续提交。当前 GPU 帧拒绝非空范围，拒绝前不改请求。禁止 STA 同步等待。</p>
-<p>第一帧正在准备时仍可能提交其之前捕获的映射，需要重绘时先等待第一帧。失败更新的请求值仍可读，重试需显式再次设置。快照使用最后成功提交的映射与版本。</p>
+<p><code>DisplayRange</code> 读取最新请求；<code>viewer.SetDisplayRange(range)</code> 在所属 STA 接受配置并安排显示，不等待 UI 提交。隐藏期间多次修改合并为最新范围。默认 Gray8 0–255、Gray16 0–65535、Gray32Float 0–1；边界有限且严格递增，范围外裁剪，NaN/负无穷黑、正无穷白。当前 GPU 帧拒绝非空范围，拒绝前不改变请求；等待中的 GPU 帧与范围冲突时在显示阶段失败。每次请求推进显示版本。在途帧可能先提交旧映射，随后重绘应用最新请求。快照只使用最后成功提交的范围和版本；失败后请求值仍可读，错误通过 <code>DisplayFailed</code> 报告。</p>
 <h2 id="像素访问与测量">像素访问与测量</h2>
 <p>像素协议、CPU 解码、坐标区域、结果及租约属于 Frames；Imaging 负责显示转换、采样和调度，Frames 不依赖 Imaging。<code>AcquireCurrentFrame()</code> 返回调用方拥有的租约。<code>TryGetCpuPixels</code> 只访问已有 CPU 内存，GPU 返回 false，没有通用 Data 属性。静态 <code>CpuFramePixelReader.TryReadPixel</code> 越界返回 false，范围内 GPU 读取抛出 NotSupportedException，不隐式下载。查询与测量结果通过 <code>SourceFrame</code> 标识原始帧，区域像素使用区域局部坐标。</p>
 <p>跨后端使用租约的 <code>ReadPixelsAsync</code>、<code>ComputeRegionStatisticsAsync</code>、<code>ReadRegionAsync</code>。输入坐标用 ReadOnlyMemory，结果保留顺序、原单位和格式；每次异步调用自行获取租约直至结束。CPU 可在调用线程同步完成，直接调用不承诺工作线程；Viewer 调度器及快照自行安排离开 STA。</p>

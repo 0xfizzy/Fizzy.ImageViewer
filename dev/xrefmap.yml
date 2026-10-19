@@ -2984,6 +2984,12 @@ references:
   commentId: T:Fizzy.ImageViewer.Frames.FrameSubmitStatus
   fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus
   nameWithType: FrameSubmitStatus
+- uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted
+  name: Accepted
+  href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Accepted
+  commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted
+  fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted
+  nameWithType: FrameSubmitStatus.Accepted
 - uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Cancelled
   name: Cancelled
   href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Cancelled
@@ -2996,30 +3002,12 @@ references:
   commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Closed
   fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Closed
   nameWithType: FrameSubmitStatus.Closed
-- uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Committed
-  name: Committed
-  href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Committed
-  commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Committed
-  fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Committed
-  nameWithType: FrameSubmitStatus.Committed
-- uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Failed
-  name: Failed
-  href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Failed
-  commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Failed
-  fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Failed
-  nameWithType: FrameSubmitStatus.Failed
 - uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Frozen
   name: Frozen
   href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Frozen
   commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Frozen
   fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Frozen
   nameWithType: FrameSubmitStatus.Frozen
-- uid: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Superseded
-  name: Superseded
-  href: api/Fizzy.ImageViewer.Frames.FrameSubmitStatus.html#Fizzy_ImageViewer_Frames_FrameSubmitStatus_Superseded
-  commentId: F:Fizzy.ImageViewer.Frames.FrameSubmitStatus.Superseded
-  fullName: Fizzy.ImageViewer.Frames.FrameSubmitStatus.Superseded
-  nameWithType: FrameSubmitStatus.Superseded
 - uid: Fizzy.ImageViewer.Frames.ICommittedFrameSource
   name: ICommittedFrameSource
   href: api/Fizzy.ImageViewer.Frames.ICommittedFrameSource.html
@@ -4244,18 +4232,42 @@ references:
   commentId: T:Fizzy.ImageViewer.IViewer
   fullName: Fizzy.ImageViewer.IViewer
   nameWithType: IViewer
-- uid: Fizzy.ImageViewer.IViewer.Layers
+- uid: Fizzy.ImageViewer.IViewerCapabilities
+  name: IViewerCapabilities
+  href: api/Fizzy.ImageViewer.IViewerCapabilities.html
+  commentId: T:Fizzy.ImageViewer.IViewerCapabilities
+  fullName: Fizzy.ImageViewer.IViewerCapabilities
+  nameWithType: IViewerCapabilities
+- uid: Fizzy.ImageViewer.IViewerCapabilities.Layers
   name: Layers
-  href: api/Fizzy.ImageViewer.IViewer.html#Fizzy_ImageViewer_IViewer_Layers
-  commentId: P:Fizzy.ImageViewer.IViewer.Layers
-  fullName: Fizzy.ImageViewer.IViewer.Layers
-  nameWithType: IViewer.Layers
-- uid: Fizzy.ImageViewer.IViewer.Layers*
+  href: api/Fizzy.ImageViewer.IViewerCapabilities.html#Fizzy_ImageViewer_IViewerCapabilities_Layers
+  commentId: P:Fizzy.ImageViewer.IViewerCapabilities.Layers
+  fullName: Fizzy.ImageViewer.IViewerCapabilities.Layers
+  nameWithType: IViewerCapabilities.Layers
+- uid: Fizzy.ImageViewer.IViewerCapabilities.Layers*
   name: Layers
-  href: api/Fizzy.ImageViewer.IViewer.html#Fizzy_ImageViewer_IViewer_Layers_
-  commentId: Overload:Fizzy.ImageViewer.IViewer.Layers
-  fullName: Fizzy.ImageViewer.IViewer.Layers
-  nameWithType: IViewer.Layers
+  href: api/Fizzy.ImageViewer.IViewerCapabilities.html#Fizzy_ImageViewer_IViewerCapabilities_Layers_
+  commentId: Overload:Fizzy.ImageViewer.IViewerCapabilities.Layers
+  fullName: Fizzy.ImageViewer.IViewerCapabilities.Layers
+  nameWithType: IViewerCapabilities.Layers
+- uid: Fizzy.ImageViewer.IViewerLifetime
+  name: IViewerLifetime
+  href: api/Fizzy.ImageViewer.IViewerLifetime.html
+  commentId: T:Fizzy.ImageViewer.IViewerLifetime
+  fullName: Fizzy.ImageViewer.IViewerLifetime
+  nameWithType: IViewerLifetime
+- uid: Fizzy.ImageViewer.IViewerLifetime.WhenStopping
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.IViewerLifetime.html#Fizzy_ImageViewer_IViewerLifetime_WhenStopping
+  commentId: P:Fizzy.ImageViewer.IViewerLifetime.WhenStopping
+  fullName: Fizzy.ImageViewer.IViewerLifetime.WhenStopping
+  nameWithType: IViewerLifetime.WhenStopping
+- uid: Fizzy.ImageViewer.IViewerLifetime.WhenStopping*
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.IViewerLifetime.html#Fizzy_ImageViewer_IViewerLifetime_WhenStopping_
+  commentId: Overload:Fizzy.ImageViewer.IViewerLifetime.WhenStopping
+  fullName: Fizzy.ImageViewer.IViewerLifetime.WhenStopping
+  nameWithType: IViewerLifetime.WhenStopping
 - uid: Fizzy.ImageViewer.IViewerWindow
   name: IViewerWindow
   href: api/Fizzy.ImageViewer.IViewerWindow.html
@@ -4400,6 +4412,18 @@ references:
   commentId: Overload:Fizzy.ImageViewer.IViewerWindow.Top
   fullName: Fizzy.ImageViewer.IViewerWindow.Top
   nameWithType: IViewerWindow.Top
+- uid: Fizzy.ImageViewer.IViewerWindow.Visible
+  name: Visible
+  href: api/Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Visible
+  commentId: P:Fizzy.ImageViewer.IViewerWindow.Visible
+  fullName: Fizzy.ImageViewer.IViewerWindow.Visible
+  nameWithType: IViewerWindow.Visible
+- uid: Fizzy.ImageViewer.IViewerWindow.Visible*
+  name: Visible
+  href: api/Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Visible_
+  commentId: Overload:Fizzy.ImageViewer.IViewerWindow.Visible
+  fullName: Fizzy.ImageViewer.IViewerWindow.Visible
+  nameWithType: IViewerWindow.Visible
 - uid: Fizzy.ImageViewer.IViewerWindow.Width
   name: Width
   href: api/Fizzy.ImageViewer.IViewerWindow.html#Fizzy_ImageViewer_IViewerWindow_Width
@@ -4412,6 +4436,450 @@ references:
   commentId: Overload:Fizzy.ImageViewer.IViewerWindow.Width
   fullName: Fizzy.ImageViewer.IViewerWindow.Width
   nameWithType: IViewerWindow.Width
+- uid: Fizzy.ImageViewer.ImageViewerControl
+  name: ImageViewerControl
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html
+  commentId: T:Fizzy.ImageViewer.ImageViewerControl
+  fullName: Fizzy.ImageViewer.ImageViewerControl
+  nameWithType: ImageViewerControl
+- uid: Fizzy.ImageViewer.ImageViewerControl.#ctor
+  name: ImageViewerControl()
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl__ctor
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.#ctor
+  name.vb: New()
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageViewerControl()
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.New()
+  nameWithType: ImageViewerControl.ImageViewerControl()
+  nameWithType.vb: ImageViewerControl.New()
+- uid: Fizzy.ImageViewer.ImageViewerControl.#ctor(Microsoft.Extensions.Logging.ILogger{Fizzy.ImageViewer.ImageViewerControl})
+  name: ImageViewerControl(ILogger<ImageViewerControl>?)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl__ctor_Microsoft_Extensions_Logging_ILogger_Fizzy_ImageViewer_ImageViewerControl__
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.#ctor(Microsoft.Extensions.Logging.ILogger{Fizzy.ImageViewer.ImageViewerControl})
+  name.vb: New(ILogger(Of ImageViewerControl))
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageViewerControl(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.ImageViewerControl>?)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.New(Microsoft.Extensions.Logging.ILogger(Of Fizzy.ImageViewer.ImageViewerControl))
+  nameWithType: ImageViewerControl.ImageViewerControl(ILogger<ImageViewerControl>?)
+  nameWithType.vb: ImageViewerControl.New(ILogger(Of ImageViewerControl))
+- uid: Fizzy.ImageViewer.ImageViewerControl.#ctor*
+  name: ImageViewerControl
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl__ctor_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.#ctor
+  name.vb: New
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageViewerControl
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.New
+  nameWithType: ImageViewerControl.ImageViewerControl
+  nameWithType.vb: ImageViewerControl.New
+- uid: Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame
+  name: AcquireCurrentFrame()
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_AcquireCurrentFrame
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame
+  fullName: Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame()
+  nameWithType: ImageViewerControl.AcquireCurrentFrame()
+- uid: Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame*
+  name: AcquireCurrentFrame
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_AcquireCurrentFrame_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame
+  fullName: Fizzy.ImageViewer.ImageViewerControl.AcquireCurrentFrame
+  nameWithType: ImageViewerControl.AcquireCurrentFrame
+- uid: Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool(System.String)
+  name: ActivateMeasurementTool(string)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ActivateMeasurementTool_System_String_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool(System.String)
+  name.vb: ActivateMeasurementTool(String)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool(string)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool(String)
+  nameWithType: ImageViewerControl.ActivateMeasurementTool(string)
+  nameWithType.vb: ImageViewerControl.ActivateMeasurementTool(String)
+- uid: Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool*
+  name: ActivateMeasurementTool
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ActivateMeasurementTool_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ActivateMeasurementTool
+  nameWithType: ImageViewerControl.ActivateMeasurementTool
+- uid: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind,Fizzy.ImageViewer.Frames.PixelRegion,System.Threading.CancellationToken)
+  name: CaptureSnapshotAsync(SnapshotKind, PixelRegion, CancellationToken)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_CaptureSnapshotAsync_Fizzy_ImageViewer_Snapshots_SnapshotKind_Fizzy_ImageViewer_Frames_PixelRegion_System_Threading_CancellationToken_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind,Fizzy.ImageViewer.Frames.PixelRegion,System.Threading.CancellationToken)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind, Fizzy.ImageViewer.Frames.PixelRegion, System.Threading.CancellationToken)
+  nameWithType: ImageViewerControl.CaptureSnapshotAsync(SnapshotKind, PixelRegion, CancellationToken)
+- uid: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind,System.Threading.CancellationToken)
+  name: CaptureSnapshotAsync(SnapshotKind, CancellationToken)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_CaptureSnapshotAsync_Fizzy_ImageViewer_Snapshots_SnapshotKind_System_Threading_CancellationToken_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind,System.Threading.CancellationToken)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind, System.Threading.CancellationToken)
+  nameWithType: ImageViewerControl.CaptureSnapshotAsync(SnapshotKind, CancellationToken)
+- uid: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync*
+  name: CaptureSnapshotAsync
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_CaptureSnapshotAsync_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync
+  fullName: Fizzy.ImageViewer.ImageViewerControl.CaptureSnapshotAsync
+  nameWithType: ImageViewerControl.CaptureSnapshotAsync
+- uid: Fizzy.ImageViewer.ImageViewerControl.DisplayFailed
+  name: DisplayFailed
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DisplayFailed
+  commentId: E:Fizzy.ImageViewer.ImageViewerControl.DisplayFailed
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DisplayFailed
+  nameWithType: ImageViewerControl.DisplayFailed
+- uid: Fizzy.ImageViewer.ImageViewerControl.DisplayRange
+  name: DisplayRange
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DisplayRange
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.DisplayRange
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DisplayRange
+  nameWithType: ImageViewerControl.DisplayRange
+- uid: Fizzy.ImageViewer.ImageViewerControl.DisplayRange*
+  name: DisplayRange
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DisplayRange_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DisplayRange
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DisplayRange
+  nameWithType: ImageViewerControl.DisplayRange
+- uid: Fizzy.ImageViewer.ImageViewerControl.DisposeAsync
+  name: DisposeAsync()
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DisposeAsync
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DisposeAsync
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DisposeAsync()
+  nameWithType: ImageViewerControl.DisposeAsync()
+- uid: Fizzy.ImageViewer.ImageViewerControl.DisposeAsync*
+  name: DisposeAsync
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DisposeAsync_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DisposeAsync
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DisposeAsync
+  nameWithType: ImageViewerControl.DisposeAsync
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawCircle(System.Windows.Point,System.Double,System.Windows.Media.Brush,System.Double,System.Windows.Media.Brush)
+  name: DrawCircle(Point, double, Brush, double, Brush?)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawCircle_System_Windows_Point_System_Double_System_Windows_Media_Brush_System_Double_System_Windows_Media_Brush_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawCircle(System.Windows.Point,System.Double,System.Windows.Media.Brush,System.Double,System.Windows.Media.Brush)
+  name.vb: DrawCircle(Point, Double, Brush, Double, Brush)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawCircle(System.Windows.Point, double, System.Windows.Media.Brush, double, System.Windows.Media.Brush?)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawCircle(System.Windows.Point, Double, System.Windows.Media.Brush, Double, System.Windows.Media.Brush)
+  nameWithType: ImageViewerControl.DrawCircle(Point, double, Brush, double, Brush?)
+  nameWithType.vb: ImageViewerControl.DrawCircle(Point, Double, Brush, Double, Brush)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawCircle*
+  name: DrawCircle
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawCircle_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawCircle
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawCircle
+  nameWithType: ImageViewerControl.DrawCircle
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair(System.Windows.Point,System.Windows.Media.Brush,System.Double,System.Double)
+  name: DrawCrosshair(Point, Brush, double, double)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawCrosshair_System_Windows_Point_System_Windows_Media_Brush_System_Double_System_Double_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair(System.Windows.Point,System.Windows.Media.Brush,System.Double,System.Double)
+  name.vb: DrawCrosshair(Point, Brush, Double, Double)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair(System.Windows.Point, System.Windows.Media.Brush, double, double)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair(System.Windows.Point, System.Windows.Media.Brush, Double, Double)
+  nameWithType: ImageViewerControl.DrawCrosshair(Point, Brush, double, double)
+  nameWithType.vb: ImageViewerControl.DrawCrosshair(Point, Brush, Double, Double)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair*
+  name: DrawCrosshair
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawCrosshair_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawCrosshair
+  nameWithType: ImageViewerControl.DrawCrosshair
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawHudText(System.String,System.Windows.Media.Brush,System.Nullable{System.Windows.Point},Fizzy.ImageViewer.Hud.AnchorAlignment,System.Double)
+  name: DrawHudText(string, Brush, Point?, AnchorAlignment, double)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawHudText_System_String_System_Windows_Media_Brush_System_Nullable_System_Windows_Point__Fizzy_ImageViewer_Hud_AnchorAlignment_System_Double_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawHudText(System.String,System.Windows.Media.Brush,System.Nullable{System.Windows.Point},Fizzy.ImageViewer.Hud.AnchorAlignment,System.Double)
+  name.vb: DrawHudText(String, Brush, Point?, AnchorAlignment, Double)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawHudText(string, System.Windows.Media.Brush, System.Windows.Point?, Fizzy.ImageViewer.Hud.AnchorAlignment, double)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawHudText(String, System.Windows.Media.Brush, System.Windows.Point?, Fizzy.ImageViewer.Hud.AnchorAlignment, Double)
+  nameWithType: ImageViewerControl.DrawHudText(string, Brush, Point?, AnchorAlignment, double)
+  nameWithType.vb: ImageViewerControl.DrawHudText(String, Brush, Point?, AnchorAlignment, Double)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawHudText*
+  name: DrawHudText
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawHudText_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawHudText
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawHudText
+  nameWithType: ImageViewerControl.DrawHudText
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawLine(System.Windows.Point,System.Windows.Point,System.Windows.Media.Brush,System.Double)
+  name: DrawLine(Point, Point, Brush, double)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawLine_System_Windows_Point_System_Windows_Point_System_Windows_Media_Brush_System_Double_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawLine(System.Windows.Point,System.Windows.Point,System.Windows.Media.Brush,System.Double)
+  name.vb: DrawLine(Point, Point, Brush, Double)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawLine(System.Windows.Point, System.Windows.Point, System.Windows.Media.Brush, double)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawLine(System.Windows.Point, System.Windows.Point, System.Windows.Media.Brush, Double)
+  nameWithType: ImageViewerControl.DrawLine(Point, Point, Brush, double)
+  nameWithType.vb: ImageViewerControl.DrawLine(Point, Point, Brush, Double)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawLine*
+  name: DrawLine
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawLine_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawLine
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawLine
+  nameWithType: ImageViewerControl.DrawLine
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawRectangle(System.Windows.Rect,System.Windows.Media.Brush,System.Double)
+  name: DrawRectangle(Rect, Brush, double)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawRectangle_System_Windows_Rect_System_Windows_Media_Brush_System_Double_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawRectangle(System.Windows.Rect,System.Windows.Media.Brush,System.Double)
+  name.vb: DrawRectangle(Rect, Brush, Double)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawRectangle(System.Windows.Rect, System.Windows.Media.Brush, double)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawRectangle(System.Windows.Rect, System.Windows.Media.Brush, Double)
+  nameWithType: ImageViewerControl.DrawRectangle(Rect, Brush, double)
+  nameWithType.vb: ImageViewerControl.DrawRectangle(Rect, Brush, Double)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawRectangle*
+  name: DrawRectangle
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawRectangle_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawRectangle
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawRectangle
+  nameWithType: ImageViewerControl.DrawRectangle
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawText(System.Windows.Point,System.String,System.Windows.Media.Brush,System.Double,System.Windows.Vector)
+  name: DrawText(Point, string, Brush, double, Vector)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawText_System_Windows_Point_System_String_System_Windows_Media_Brush_System_Double_System_Windows_Vector_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.DrawText(System.Windows.Point,System.String,System.Windows.Media.Brush,System.Double,System.Windows.Vector)
+  name.vb: DrawText(Point, String, Brush, Double, Vector)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawText(System.Windows.Point, string, System.Windows.Media.Brush, double, System.Windows.Vector)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.DrawText(System.Windows.Point, String, System.Windows.Media.Brush, Double, System.Windows.Vector)
+  nameWithType: ImageViewerControl.DrawText(Point, string, Brush, double, Vector)
+  nameWithType.vb: ImageViewerControl.DrawText(Point, String, Brush, Double, Vector)
+- uid: Fizzy.ImageViewer.ImageViewerControl.DrawText*
+  name: DrawText
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_DrawText_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.DrawText
+  fullName: Fizzy.ImageViewer.ImageViewerControl.DrawText
+  nameWithType: ImageViewerControl.DrawText
+- uid: Fizzy.ImageViewer.ImageViewerControl.EndInteraction
+  name: EndInteraction()
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_EndInteraction
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.EndInteraction
+  fullName: Fizzy.ImageViewer.ImageViewerControl.EndInteraction()
+  nameWithType: ImageViewerControl.EndInteraction()
+- uid: Fizzy.ImageViewer.ImageViewerControl.EndInteraction*
+  name: EndInteraction
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_EndInteraction_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.EndInteraction
+  fullName: Fizzy.ImageViewer.ImageViewerControl.EndInteraction
+  nameWithType: ImageViewerControl.EndInteraction
+- uid: Fizzy.ImageViewer.ImageViewerControl.FitToViewport
+  name: FitToViewport()
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_FitToViewport
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.FitToViewport
+  fullName: Fizzy.ImageViewer.ImageViewerControl.FitToViewport()
+  nameWithType: ImageViewerControl.FitToViewport()
+- uid: Fizzy.ImageViewer.ImageViewerControl.FitToViewport*
+  name: FitToViewport
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_FitToViewport_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.FitToViewport
+  fullName: Fizzy.ImageViewer.ImageViewerControl.FitToViewport
+  nameWithType: ImageViewerControl.FitToViewport
+- uid: Fizzy.ImageViewer.ImageViewerControl.FrameCommitted
+  name: FrameCommitted
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_FrameCommitted
+  commentId: E:Fizzy.ImageViewer.ImageViewerControl.FrameCommitted
+  fullName: Fizzy.ImageViewer.ImageViewerControl.FrameCommitted
+  nameWithType: ImageViewerControl.FrameCommitted
+- uid: Fizzy.ImageViewer.ImageViewerControl.HudLabelText
+  name: HudLabelText
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_HudLabelText
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.HudLabelText
+  fullName: Fizzy.ImageViewer.ImageViewerControl.HudLabelText
+  nameWithType: ImageViewerControl.HudLabelText
+- uid: Fizzy.ImageViewer.ImageViewerControl.HudLabelText*
+  name: HudLabelText
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_HudLabelText_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.HudLabelText
+  fullName: Fizzy.ImageViewer.ImageViewerControl.HudLabelText
+  nameWithType: ImageViewerControl.HudLabelText
+- uid: Fizzy.ImageViewer.ImageViewerControl.IsMinimized
+  name: IsMinimized
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_IsMinimized
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.IsMinimized
+  fullName: Fizzy.ImageViewer.ImageViewerControl.IsMinimized
+  nameWithType: ImageViewerControl.IsMinimized
+- uid: Fizzy.ImageViewer.ImageViewerControl.IsMinimized*
+  name: IsMinimized
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_IsMinimized_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.IsMinimized
+  fullName: Fizzy.ImageViewer.ImageViewerControl.IsMinimized
+  nameWithType: ImageViewerControl.IsMinimized
+- uid: Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled
+  name: IsPixelInfoEnabled
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_IsPixelInfoEnabled
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled
+  fullName: Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled
+  nameWithType: ImageViewerControl.IsPixelInfoEnabled
+- uid: Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled*
+  name: IsPixelInfoEnabled
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_IsPixelInfoEnabled_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled
+  fullName: Fizzy.ImageViewer.ImageViewerControl.IsPixelInfoEnabled
+  nameWithType: ImageViewerControl.IsPixelInfoEnabled
+- uid: Fizzy.ImageViewer.ImageViewerControl.Layers
+  name: Layers
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Layers
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.Layers
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Layers
+  nameWithType: ImageViewerControl.Layers
+- uid: Fizzy.ImageViewer.ImageViewerControl.Layers*
+  name: Layers
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Layers_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.Layers
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Layers
+  nameWithType: ImageViewerControl.Layers
+- uid: Fizzy.ImageViewer.ImageViewerControl.Markers
+  name: Markers
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Markers
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.Markers
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Markers
+  nameWithType: ImageViewerControl.Markers
+- uid: Fizzy.ImageViewer.ImageViewerControl.Markers*
+  name: Markers
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Markers_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.Markers
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Markers
+  nameWithType: ImageViewerControl.Markers
+- uid: Fizzy.ImageViewer.ImageViewerControl.MeasurementChanged
+  name: MeasurementChanged
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_MeasurementChanged
+  commentId: E:Fizzy.ImageViewer.ImageViewerControl.MeasurementChanged
+  fullName: Fizzy.ImageViewer.ImageViewerControl.MeasurementChanged
+  nameWithType: ImageViewerControl.MeasurementChanged
+- uid: Fizzy.ImageViewer.ImageViewerControl.MeasurementCompleted
+  name: MeasurementCompleted
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_MeasurementCompleted
+  commentId: E:Fizzy.ImageViewer.ImageViewerControl.MeasurementCompleted
+  fullName: Fizzy.ImageViewer.ImageViewerControl.MeasurementCompleted
+  nameWithType: ImageViewerControl.MeasurementCompleted
+- uid: Fizzy.ImageViewer.ImageViewerControl.MeasurementRemoved
+  name: MeasurementRemoved
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_MeasurementRemoved
+  commentId: E:Fizzy.ImageViewer.ImageViewerControl.MeasurementRemoved
+  fullName: Fizzy.ImageViewer.ImageViewerControl.MeasurementRemoved
+  nameWithType: ImageViewerControl.MeasurementRemoved
+- uid: Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle
+  name: MeasurementStyle
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_MeasurementStyle
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle
+  fullName: Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle
+  nameWithType: ImageViewerControl.MeasurementStyle
+- uid: Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle*
+  name: MeasurementStyle
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_MeasurementStyle_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle
+  fullName: Fizzy.ImageViewer.ImageViewerControl.MeasurementStyle
+  nameWithType: ImageViewerControl.MeasurementStyle
+- uid: Fizzy.ImageViewer.ImageViewerControl.Measurements
+  name: Measurements
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Measurements
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.Measurements
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Measurements
+  nameWithType: ImageViewerControl.Measurements
+- uid: Fizzy.ImageViewer.ImageViewerControl.Measurements*
+  name: Measurements
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Measurements_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.Measurements
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Measurements
+  nameWithType: ImageViewerControl.Measurements
+- uid: Fizzy.ImageViewer.ImageViewerControl.QueryMetrics
+  name: QueryMetrics
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_QueryMetrics
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.QueryMetrics
+  fullName: Fizzy.ImageViewer.ImageViewerControl.QueryMetrics
+  nameWithType: ImageViewerControl.QueryMetrics
+- uid: Fizzy.ImageViewer.ImageViewerControl.QueryMetrics*
+  name: QueryMetrics
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_QueryMetrics_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.QueryMetrics
+  fullName: Fizzy.ImageViewer.ImageViewerControl.QueryMetrics
+  nameWithType: ImageViewerControl.QueryMetrics
+- uid: Fizzy.ImageViewer.ImageViewerControl.QueryOptions
+  name: QueryOptions
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_QueryOptions
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.QueryOptions
+  fullName: Fizzy.ImageViewer.ImageViewerControl.QueryOptions
+  nameWithType: ImageViewerControl.QueryOptions
+- uid: Fizzy.ImageViewer.ImageViewerControl.QueryOptions*
+  name: QueryOptions
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_QueryOptions_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.QueryOptions
+  fullName: Fizzy.ImageViewer.ImageViewerControl.QueryOptions
+  nameWithType: ImageViewerControl.QueryOptions
+- uid: Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool)
+  name: RegisterMeasurementTool(IMeasurementTool)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_RegisterMeasurementTool_Fizzy_ImageViewer_Measurements_IMeasurementTool_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool)
+  nameWithType: ImageViewerControl.RegisterMeasurementTool(IMeasurementTool)
+- uid: Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool*
+  name: RegisterMeasurementTool
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_RegisterMeasurementTool_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool
+  fullName: Fizzy.ImageViewer.ImageViewerControl.RegisterMeasurementTool
+  nameWithType: ImageViewerControl.RegisterMeasurementTool
+- uid: Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem)
+  name: RegisterMenuItem(IMenuItem)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_RegisterMenuItem_Fizzy_ImageViewer_Menus_IMenuItem_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem)
+  nameWithType: ImageViewerControl.RegisterMenuItem(IMenuItem)
+- uid: Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem*
+  name: RegisterMenuItem
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_RegisterMenuItem_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem
+  fullName: Fizzy.ImageViewer.ImageViewerControl.RegisterMenuItem
+  nameWithType: ImageViewerControl.RegisterMenuItem
+- uid: Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  name: SetDisplayRange(GrayDisplayRange?)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  fullName: Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange(Fizzy.ImageViewer.Imaging.GrayDisplayRange?)
+  nameWithType: ImageViewerControl.SetDisplayRange(GrayDisplayRange?)
+- uid: Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange*
+  name: SetDisplayRange
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_SetDisplayRange_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange
+  fullName: Fizzy.ImageViewer.ImageViewerControl.SetDisplayRange
+  nameWithType: ImageViewerControl.SetDisplayRange
+- uid: Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame,Fizzy.ImageViewer.Frames.FrameSubmissionOptions,System.Threading.CancellationToken)
+  name: SubmitFrameAsync(ImageFrame, FrameSubmissionOptions?, CancellationToken)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_SubmitFrameAsync_Fizzy_ImageViewer_Frames_ImageFrame_Fizzy_ImageViewer_Frames_FrameSubmissionOptions_System_Threading_CancellationToken_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame,Fizzy.ImageViewer.Frames.FrameSubmissionOptions,System.Threading.CancellationToken)
+  name.vb: SubmitFrameAsync(ImageFrame, FrameSubmissionOptions, CancellationToken)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame, Fizzy.ImageViewer.Frames.FrameSubmissionOptions?, System.Threading.CancellationToken)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame, Fizzy.ImageViewer.Frames.FrameSubmissionOptions, System.Threading.CancellationToken)
+  nameWithType: ImageViewerControl.SubmitFrameAsync(ImageFrame, FrameSubmissionOptions?, CancellationToken)
+  nameWithType.vb: ImageViewerControl.SubmitFrameAsync(ImageFrame, FrameSubmissionOptions, CancellationToken)
+- uid: Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync*
+  name: SubmitFrameAsync
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_SubmitFrameAsync_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync
+  fullName: Fizzy.ImageViewer.ImageViewerControl.SubmitFrameAsync
+  nameWithType: ImageViewerControl.SubmitFrameAsync
+- uid: Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool(System.String)
+  name: UnregisterMeasurementTool(string)
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_UnregisterMeasurementTool_System_String_
+  commentId: M:Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool(System.String)
+  name.vb: UnregisterMeasurementTool(String)
+  fullName: Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool(string)
+  fullName.vb: Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool(String)
+  nameWithType: ImageViewerControl.UnregisterMeasurementTool(string)
+  nameWithType.vb: ImageViewerControl.UnregisterMeasurementTool(String)
+- uid: Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool*
+  name: UnregisterMeasurementTool
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_UnregisterMeasurementTool_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool
+  fullName: Fizzy.ImageViewer.ImageViewerControl.UnregisterMeasurementTool
+  nameWithType: ImageViewerControl.UnregisterMeasurementTool
+- uid: Fizzy.ImageViewer.ImageViewerControl.Visible
+  name: Visible
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Visible
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.Visible
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Visible
+  nameWithType: ImageViewerControl.Visible
+- uid: Fizzy.ImageViewer.ImageViewerControl.Visible*
+  name: Visible
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_Visible_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.Visible
+  fullName: Fizzy.ImageViewer.ImageViewerControl.Visible
+  nameWithType: ImageViewerControl.Visible
+- uid: Fizzy.ImageViewer.ImageViewerControl.WhenStopping
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_WhenStopping
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.WhenStopping
+  fullName: Fizzy.ImageViewer.ImageViewerControl.WhenStopping
+  nameWithType: ImageViewerControl.WhenStopping
+- uid: Fizzy.ImageViewer.ImageViewerControl.WhenStopping*
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_WhenStopping_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.WhenStopping
+  fullName: Fizzy.ImageViewer.ImageViewerControl.WhenStopping
+  nameWithType: ImageViewerControl.WhenStopping
 - uid: Fizzy.ImageViewer.Imaging
   name: Fizzy.ImageViewer.Imaging
   href: api/Fizzy.ImageViewer.Imaging.html
@@ -7973,6 +8441,12 @@ references:
   commentId: E:Fizzy.ImageViewer.Viewer.Closed
   fullName: Fizzy.ImageViewer.Viewer.Closed
   nameWithType: Viewer.Closed
+- uid: Fizzy.ImageViewer.Viewer.DisplayFailed
+  name: DisplayFailed
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_DisplayFailed
+  commentId: E:Fizzy.ImageViewer.Viewer.DisplayFailed
+  fullName: Fizzy.ImageViewer.Viewer.DisplayFailed
+  nameWithType: Viewer.DisplayFailed
 - uid: Fizzy.ImageViewer.Viewer.DisplayRange
   name: DisplayRange
   href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_DisplayRange
@@ -8327,18 +8801,18 @@ references:
   commentId: Overload:Fizzy.ImageViewer.Viewer.RegisterMenuItem
   fullName: Fizzy.ImageViewer.Viewer.RegisterMenuItem
   nameWithType: Viewer.RegisterMenuItem
-- uid: Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
-  name: SetDisplayRangeAsync(GrayDisplayRange?)
-  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_SetDisplayRangeAsync_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__
-  commentId: M:Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
-  fullName: Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync(Fizzy.ImageViewer.Imaging.GrayDisplayRange?)
-  nameWithType: Viewer.SetDisplayRangeAsync(GrayDisplayRange?)
-- uid: Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync*
-  name: SetDisplayRangeAsync
-  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_SetDisplayRangeAsync_
-  commentId: Overload:Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync
-  fullName: Fizzy.ImageViewer.Viewer.SetDisplayRangeAsync
-  nameWithType: Viewer.SetDisplayRangeAsync
+- uid: Fizzy.ImageViewer.Viewer.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  name: SetDisplayRange(GrayDisplayRange?)
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__
+  commentId: M:Fizzy.ImageViewer.Viewer.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  fullName: Fizzy.ImageViewer.Viewer.SetDisplayRange(Fizzy.ImageViewer.Imaging.GrayDisplayRange?)
+  nameWithType: Viewer.SetDisplayRange(GrayDisplayRange?)
+- uid: Fizzy.ImageViewer.Viewer.SetDisplayRange*
+  name: SetDisplayRange
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_SetDisplayRange_
+  commentId: Overload:Fizzy.ImageViewer.Viewer.SetDisplayRange
+  fullName: Fizzy.ImageViewer.Viewer.SetDisplayRange
+  nameWithType: Viewer.SetDisplayRange
 - uid: Fizzy.ImageViewer.Viewer.Show
   name: Show()
   href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_Show
@@ -8405,6 +8879,30 @@ references:
   commentId: Overload:Fizzy.ImageViewer.Viewer.UnregisterMeasurementTool
   fullName: Fizzy.ImageViewer.Viewer.UnregisterMeasurementTool
   nameWithType: Viewer.UnregisterMeasurementTool
+- uid: Fizzy.ImageViewer.Viewer.Visible
+  name: Visible
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_Visible
+  commentId: P:Fizzy.ImageViewer.Viewer.Visible
+  fullName: Fizzy.ImageViewer.Viewer.Visible
+  nameWithType: Viewer.Visible
+- uid: Fizzy.ImageViewer.Viewer.Visible*
+  name: Visible
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_Visible_
+  commentId: Overload:Fizzy.ImageViewer.Viewer.Visible
+  fullName: Fizzy.ImageViewer.Viewer.Visible
+  nameWithType: Viewer.Visible
+- uid: Fizzy.ImageViewer.Viewer.WhenStopping
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_WhenStopping
+  commentId: P:Fizzy.ImageViewer.Viewer.WhenStopping
+  fullName: Fizzy.ImageViewer.Viewer.WhenStopping
+  nameWithType: Viewer.WhenStopping
+- uid: Fizzy.ImageViewer.Viewer.WhenStopping*
+  name: WhenStopping
+  href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_WhenStopping_
+  commentId: Overload:Fizzy.ImageViewer.Viewer.WhenStopping
+  fullName: Fizzy.ImageViewer.Viewer.WhenStopping
+  nameWithType: Viewer.WhenStopping
 - uid: Fizzy.ImageViewer.Viewer.Width
   name: Width
   href: api/Fizzy.ImageViewer.Viewer.html#Fizzy_ImageViewer_Viewer_Width
@@ -8423,12 +8921,189 @@ references:
   commentId: N:Fizzy.ImageViewer.Viewport
   fullName: Fizzy.ImageViewer.Viewport
   nameWithType: Fizzy.ImageViewer.Viewport
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure
+  name: DisplayFailure
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html
+  commentId: T:Fizzy.ImageViewer.Viewport.DisplayFailure
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure
+  nameWithType: DisplayFailure
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.#ctor(Fizzy.ImageViewer.Frames.FrameInfo,System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange},System.Int64,System.Exception)
+  name: DisplayFailure(FrameInfo, GrayDisplayRange?, long, Exception)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure__ctor_Fizzy_ImageViewer_Frames_FrameInfo_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__System_Int64_System_Exception_
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.#ctor(Fizzy.ImageViewer.Frames.FrameInfo,System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange},System.Int64,System.Exception)
+  name.vb: New(FrameInfo, GrayDisplayRange?, Long, Exception)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayFailure(Fizzy.ImageViewer.Frames.FrameInfo, Fizzy.ImageViewer.Imaging.GrayDisplayRange?, long, System.Exception)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.New(Fizzy.ImageViewer.Frames.FrameInfo, Fizzy.ImageViewer.Imaging.GrayDisplayRange?, Long, System.Exception)
+  nameWithType: DisplayFailure.DisplayFailure(FrameInfo, GrayDisplayRange?, long, Exception)
+  nameWithType.vb: DisplayFailure.New(FrameInfo, GrayDisplayRange?, Long, Exception)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.#ctor*
+  name: DisplayFailure
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure__ctor_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.#ctor
+  name.vb: New
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayFailure
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.New
+  nameWithType: DisplayFailure.DisplayFailure
+  nameWithType.vb: DisplayFailure.New
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct(Fizzy.ImageViewer.Frames.FrameInfo@,System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange}@,System.Int64@,System.Exception@)
+  name: Deconstruct(out FrameInfo, out GrayDisplayRange?, out long, out Exception)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Deconstruct_Fizzy_ImageViewer_Frames_FrameInfo__System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange___System_Int64__System_Exception__
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct(Fizzy.ImageViewer.Frames.FrameInfo@,System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange}@,System.Int64@,System.Exception@)
+  name.vb: Deconstruct(FrameInfo, GrayDisplayRange?, Long, Exception)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct(out Fizzy.ImageViewer.Frames.FrameInfo, out Fizzy.ImageViewer.Imaging.GrayDisplayRange?, out long, out System.Exception)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct(Fizzy.ImageViewer.Frames.FrameInfo, Fizzy.ImageViewer.Imaging.GrayDisplayRange?, Long, System.Exception)
+  nameWithType: DisplayFailure.Deconstruct(out FrameInfo, out GrayDisplayRange?, out long, out Exception)
+  nameWithType.vb: DisplayFailure.Deconstruct(FrameInfo, GrayDisplayRange?, Long, Exception)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct*
+  name: Deconstruct
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Deconstruct_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Deconstruct
+  nameWithType: DisplayFailure.Deconstruct
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange
+  name: DisplayRange
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_DisplayRange
+  commentId: P:Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange
+  nameWithType: DisplayFailure.DisplayRange
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange*
+  name: DisplayRange
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_DisplayRange_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayRange
+  nameWithType: DisplayFailure.DisplayRange
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion
+  name: DisplayVersion
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_DisplayVersion
+  commentId: P:Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion
+  nameWithType: DisplayFailure.DisplayVersion
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion*
+  name: DisplayVersion
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_DisplayVersion_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.DisplayVersion
+  nameWithType: DisplayFailure.DisplayVersion
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name: Equals(DisplayFailure?)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Equals_Fizzy_ImageViewer_Viewport_DisplayFailure_
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name.vb: Equals(DisplayFailure)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(Fizzy.ImageViewer.Viewport.DisplayFailure?)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(Fizzy.ImageViewer.Viewport.DisplayFailure)
+  nameWithType: DisplayFailure.Equals(DisplayFailure?)
+  nameWithType.vb: DisplayFailure.Equals(DisplayFailure)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(System.Object)
+  name: Equals(object?)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Equals_System_Object_
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(System.Object)
+  name.vb: Equals(Object)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(object?)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals(Object)
+  nameWithType: DisplayFailure.Equals(object?)
+  nameWithType.vb: DisplayFailure.Equals(Object)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals*
+  name: Equals
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Equals_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.Equals
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Equals
+  nameWithType: DisplayFailure.Equals
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Error
+  name: Error
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Error
+  commentId: P:Fizzy.ImageViewer.Viewport.DisplayFailure.Error
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Error
+  nameWithType: DisplayFailure.Error
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Error*
+  name: Error
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Error_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.Error
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Error
+  nameWithType: DisplayFailure.Error
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Frame
+  name: Frame
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Frame
+  commentId: P:Fizzy.ImageViewer.Viewport.DisplayFailure.Frame
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Frame
+  nameWithType: DisplayFailure.Frame
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.Frame*
+  name: Frame
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_Frame_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.Frame
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.Frame
+  nameWithType: DisplayFailure.Frame
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode
+  name: GetHashCode()
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_GetHashCode
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode()
+  nameWithType: DisplayFailure.GetHashCode()
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode*
+  name: GetHashCode
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_GetHashCode_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.GetHashCode
+  nameWithType: DisplayFailure.GetHashCode
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.ToString
+  name: ToString()
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_ToString
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.ToString
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.ToString()
+  nameWithType: DisplayFailure.ToString()
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.ToString*
+  name: ToString
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_ToString_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.ToString
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.ToString
+  nameWithType: DisplayFailure.ToString
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.op_Equality(Fizzy.ImageViewer.Viewport.DisplayFailure,Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name: operator ==(DisplayFailure?, DisplayFailure?)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_op_Equality_Fizzy_ImageViewer_Viewport_DisplayFailure_Fizzy_ImageViewer_Viewport_DisplayFailure_
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.op_Equality(Fizzy.ImageViewer.Viewport.DisplayFailure,Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name.vb: =(DisplayFailure, DisplayFailure)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.operator ==(Fizzy.ImageViewer.Viewport.DisplayFailure?, Fizzy.ImageViewer.Viewport.DisplayFailure?)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.=(Fizzy.ImageViewer.Viewport.DisplayFailure, Fizzy.ImageViewer.Viewport.DisplayFailure)
+  nameWithType: DisplayFailure.operator ==(DisplayFailure?, DisplayFailure?)
+  nameWithType.vb: DisplayFailure.=(DisplayFailure, DisplayFailure)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.op_Equality*
+  name: operator ==
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_op_Equality_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.op_Equality
+  name.vb: =
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.operator ==
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.=
+  nameWithType: DisplayFailure.operator ==
+  nameWithType.vb: DisplayFailure.=
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.op_Inequality(Fizzy.ImageViewer.Viewport.DisplayFailure,Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name: operator !=(DisplayFailure?, DisplayFailure?)
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_op_Inequality_Fizzy_ImageViewer_Viewport_DisplayFailure_Fizzy_ImageViewer_Viewport_DisplayFailure_
+  commentId: M:Fizzy.ImageViewer.Viewport.DisplayFailure.op_Inequality(Fizzy.ImageViewer.Viewport.DisplayFailure,Fizzy.ImageViewer.Viewport.DisplayFailure)
+  name.vb: <>(DisplayFailure, DisplayFailure)
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.operator !=(Fizzy.ImageViewer.Viewport.DisplayFailure?, Fizzy.ImageViewer.Viewport.DisplayFailure?)
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.<>(Fizzy.ImageViewer.Viewport.DisplayFailure, Fizzy.ImageViewer.Viewport.DisplayFailure)
+  nameWithType: DisplayFailure.operator !=(DisplayFailure?, DisplayFailure?)
+  nameWithType.vb: DisplayFailure.<>(DisplayFailure, DisplayFailure)
+- uid: Fizzy.ImageViewer.Viewport.DisplayFailure.op_Inequality*
+  name: operator !=
+  href: api/Fizzy.ImageViewer.Viewport.DisplayFailure.html#Fizzy_ImageViewer_Viewport_DisplayFailure_op_Inequality_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.DisplayFailure.op_Inequality
+  name.vb: <>
+  fullName: Fizzy.ImageViewer.Viewport.DisplayFailure.operator !=
+  fullName.vb: Fizzy.ImageViewer.Viewport.DisplayFailure.<>
+  nameWithType: DisplayFailure.operator !=
+  nameWithType.vb: DisplayFailure.<>
 - uid: Fizzy.ImageViewer.Viewport.IViewerDisplay
   name: IViewerDisplay
   href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html
   commentId: T:Fizzy.ImageViewer.Viewport.IViewerDisplay
   fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay
   nameWithType: IViewerDisplay
+- uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.DisplayFailed
+  name: DisplayFailed
+  href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayFailed
+  commentId: E:Fizzy.ImageViewer.Viewport.IViewerDisplay.DisplayFailed
+  fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.DisplayFailed
+  nameWithType: IViewerDisplay.DisplayFailed
 - uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.DisplayRange
   name: DisplayRange
   href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayRange
@@ -8453,15 +9128,15 @@ references:
   commentId: Overload:Fizzy.ImageViewer.Viewport.IViewerDisplay.FitToViewport
   fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.FitToViewport
   nameWithType: IViewerDisplay.FitToViewport
-- uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
-  name: SetDisplayRangeAsync(GrayDisplayRange?)
-  href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRangeAsync_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__
-  commentId: M:Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
-  fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync(Fizzy.ImageViewer.Imaging.GrayDisplayRange?)
-  nameWithType: IViewerDisplay.SetDisplayRangeAsync(GrayDisplayRange?)
-- uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync*
-  name: SetDisplayRangeAsync
-  href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRangeAsync_
-  commentId: Overload:Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync
-  fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRangeAsync
-  nameWithType: IViewerDisplay.SetDisplayRangeAsync
+- uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  name: SetDisplayRange(GrayDisplayRange?)
+  href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__
+  commentId: M:Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange(System.Nullable{Fizzy.ImageViewer.Imaging.GrayDisplayRange})
+  fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange(Fizzy.ImageViewer.Imaging.GrayDisplayRange?)
+  nameWithType: IViewerDisplay.SetDisplayRange(GrayDisplayRange?)
+- uid: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange*
+  name: SetDisplayRange
+  href: api/Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_
+  commentId: Overload:Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange
+  fullName: Fizzy.ImageViewer.Viewport.IViewerDisplay.SetDisplayRange
+  nameWithType: IViewerDisplay.SetDisplayRange

@@ -128,7 +128,7 @@ viewer.ActivateMeasurementTool(MeasurementToolIds.Length);
 </table>
 <p>也可从右键菜单选择工具。未知 ID 抛出 <code>KeyNotFoundException</code>；测量层隐藏或禁用命中测试时，激活抛出 <code>InvalidOperationException</code>；关闭开始后抛出 <code>ObjectDisposedException</code>。</p>
 <h2 id="读取结果与通知">读取结果与通知</h2>
-<p>订阅 <code>Viewer.MeasurementChanged</code> 即可观察所有工具产生的已完成测量，无需访问 WPF 视觉树。几何编辑、查询发布及结果失效都会携带不可变几何、版本和当前 <code>QueryResult</code>。几何变化、查询失败或过期后，结果为 <code>null</code>。预览不触发该事件；相等的几何更新和已经为空的结果也不重复通知。</p>
+<p>订阅 <code>Viewer.MeasurementChanged</code>（也由 <code>IViewerCapabilities</code> 提供）即可观察所有工具产生的已完成测量，无需访问 WPF 视觉树。几何编辑、查询发布及结果失效都会携带不可变几何、版本和当前 <code>QueryResult</code>。几何变化、查询失败或过期后，结果为 <code>null</code>。预览不触发该事件；相等的几何更新和已经为空的结果也不重复通知。</p>
 <pre><code class="lang-csharp">viewer.MeasurementChanged += (_, e) =&gt;
 {
     var id = e.Snapshot.Id;
@@ -143,6 +143,9 @@ viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
 <p>订阅者中关闭窗口仍会交付已排队的测量通知，<code>Closed</code> 晚于删除通知。订阅异常逐个记录并隔离。事件中的句柄可从任意线程更新或释放，也可在通知中重入释放。自定义工具还可订阅句柄的 <code>GeometryChanged</code> 和 <code>QueryResultChanged</code>。</p>
 <h2 id="编辑与删除">编辑与删除</h2>
 <p>点击已完成测量进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 <code>Measurement</code> 句柄调用 <code>UpdateGeometry</code> 或 <code>Dispose</code>；<code>viewer.Measurements.Clear()</code> 清空全部测量。</p>
+<p>句柄事件使用 <code>EventHandler&lt;MeasurementGeometry&gt;</code> 和 <code>EventHandler&lt;MeasurementQueryResult?&gt;</code>，
+sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，退订仍安全，不撤回已捕获的通知。
+同步异常隔离及 async-void 工作责任等规则见<a href="public-api.html#%E4%BA%8B%E4%BB%B6%E8%AE%A2%E9%98%85">事件订阅契约</a>。</p>
 <h2 id="几何与更新">几何与更新</h2>
 <p><code>MeasurementGeometry.Point</code>、<code>Crosshair</code>、<code>Line</code>、<code>Rectangle</code> 和 <code>Circle</code> 创建封闭的不可变几何记录。通过具体类型模式匹配读取属性：点和准星使用 <code>Position</code>，线使用保留方向的 <code>Start</code>/<code>End</code>，矩形标准化两个对角，圆使用 <code>Center</code>/<code>Radius</code>。<code>Bounds</code> 分别为零范围、端点包围框或圆的直径框。坐标和范围必须有限，圆半径允许为零。</p>
 <p>每次真实几何变化增加 <code>GeometryVersion</code> 并清除查询结果；相等更新不产生变化，已有测量不能改换几何种类。框架在通知前更新模型、标签、主图形和编辑控制点。标签的文字、内边距和偏移保持屏幕尺寸，锚点跟随图像；查询缓慢或失败不会延迟几何标签。</p>

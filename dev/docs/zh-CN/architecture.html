@@ -88,7 +88,7 @@
 <h1 id="架构">架构</h1>
 
 <p><a href="../en/architecture.html">English</a></p>
-<p>修改资源所有权或模块依赖前阅读本页。库每个 Viewer 拥有一个独立 WPF STA；消费者提交不可变帧，通过门面、绘图和测量句柄操作。</p>
+<p>修改资源所有权或模块依赖前阅读本页。独立窗口 Viewer 拥有 WPF STA，并承载 ImageViewerControl；嵌入控件借用应用 Dispatcher。消费者提交不可变帧，通过共享能力、绘图和测量句柄操作。</p>
 <h2 id="源码组织">源码组织</h2>
 <table>
 <thead>
@@ -100,7 +100,7 @@
 <tbody>
 <tr>
 <td>Viewer</td>
-<td>公共门面、Host 组合、窗口和生命周期</td>
+<td>公共门面、嵌入控件、Runtime 组合、窗口宿主和生命周期</td>
 </tr>
 <tr>
 <td>Frames / Pixels</td>
@@ -175,15 +175,19 @@
 <h3 id="放置规则">放置规则</h3>
 <p>按拥有行为和生命周期的功能归属放代码，包括接口、枚举和控件；第二个调用者不意味着建通用 Helpers。公共顶层和独立内部类型用同名文件，宿主专用类型嵌套，紧密内部查询请求/结果族可聚合。只为既有职责建子目录，不按可见性或类型种类分层。</p>
 <p>Frames/Pixels 保留 Frames 命名空间，Measurements 的 Geometry/Tools/Queries 保留公共 Measurements 命名空间；内置工具为 Measurements.BuiltIn。测试按能力同样组织，保留命名空间以兼容过滤器，辅助类靠近调用方，基准留 tools。托管库项目统一放在 src/：核心项目位于 src/Fizzy.ImageViewer/，可选 CUDA 后端位于 src/Fizzy.ImageViewer.Cuda/。上表功能路径相对于核心项目，native/Cuda 相对于仓库根目录；测试、示例、工具和原生构建保留在托管库项目之外。</p>
-<p>Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewer 聚合所属功能的借用接口，直接由同一实例实现，只有聚合负责异步释放和全局 Layers；接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。</p>
+<p>Viewer 按 Window、Frames、Display、Drawing、Measurements、HUD、Queries、Snapshots、Lifetime 分 partial，但不是独立所有者。IViewerCapabilities 聚合宿主无关功能接口、全局 Layers 和停止观察，IViewer 继承它并增加拥有者的异步释放责任。两种接口均由 Viewer 与 ImageViewerControl 在同一实例上实现；窗口能力通过仅由 Viewer 实现的 IViewerWindow 提供。接口不是安全隔离。审查返回对象、集合元素及事件参数，不只看直接成员。</p>
+<p>IViewerCapabilities 继承的 IViewerLifetime 只暴露共享的 WhenStopping 任务。ViewerLifetime 在关闭接纳门时完成它，两种宿主转发同一信号；它不发起关闭，也不代表排空或拥有者的释放结果。
+门面事件添加、移除和清空共享 ViewerLifetime.Gate，添加时拒绝停止状态；交付读取委托快照，
+不增加锁，也不在事件访问器的锁内执行订阅者。图层和测量订阅保留所属 STA 边界。
+公开事件使用 EventHandler 委托并复用原有载荷；Viewer 转发保留公开 sender 身份，不另加通知队列。句柄通知按每次通知入队一个不可变多播委托快照，交付时逐个隔离订阅者；重入工作排在本次全部订阅者之后。</p>
 <p>可见性由 C# 和审阅 API 基线约束；测试可通过 Viewer.Host 组合内部。适配器拥有 sealed Viewer，必要时隐藏创建，统一用户关闭与显式释放流程。组件指南描述当前契约。</p>
 <h2 id="帧与图像依赖">帧与图像依赖</h2>
 <p>可选 <code>Fizzy.ImageViewer.Cuda</code> 程序集仅引用核心库和自有 native DLL。消费者桥接源帧所有权与执行作用域；扩展负责显示转换与像素查询。native 使用标准 CUDA 句柄，不创建第二套运行时，见 <a href="cuda.html">CUDA 集成</a>。</p>
 <p>Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。</p>
 <p>FrameLease 是后端无关读取边界，每次异步读取自持租约并验证请求/结果、提供来源。区域返回独立 CPU ImageFrame，RegionPixels 另存来源，不把源身份赋给派生像素。生产者 release 在最后源租约后清外部查询资源。Raw 快照接管区域，独立像素租约可越过快照。交付结果前先完成必要清理，无法交付时清理候选结果。</p>
 <h2 id="所有权与依赖方向">所有权与依赖方向</h2>
-<p>Viewer 发布门面和通知；Host 按单次提交回调、公共事件顺序连接，每个订阅边界隔离异常。Host 拥有 STA、窗口、管线、呈现、调度、测量集合、注册表、交互及 HUD。门面先赋 Host 再启动线程，初始化失败走同一幂等关闭流程，各所有者独立尝试安全清理。释放等待实际 STA 退出。</p>
-<p>FramePipeline 计入所有已接纳提交直到释放和公开结果完成，包括提交线程上的替换清理。显示范围更新有独立版本结果，新请求/关闭取消等待。共享关闭结果保留资源/排空失败，通知失败隔离。D3D 附加无法证明安全分离时保留呈现器和表面租约至进程结束。</p>
+<p>ViewerRuntime 在停止管线前撤销菜单策略与绑定。ImageViewerControl 拥有视觉容器与 ViewerRuntime，runtime 拥有管线、呈现、调度、测量集合、注册表、交互及 HUD。ViewerHost 只拥有独立窗口、控件与 STA。Viewer 转发控件能力，保持测量事件 sender 为 Viewer，不再次排队。Runtime 按单次提交回调、公共事件顺序连接，每个订阅边界隔离异常。初始化失败走同一幂等关闭流程，各所有者独立尝试安全清理。控件释放排空自身工作而不关闭借用的 Dispatcher；独立窗口宿主再停止并等待实际 STA 退出。Unloaded 取消交互但保留内容，嵌入方须在 Dispatcher 关闭前等待释放，见<a href="embedding.html">嵌入指南</a>。</p>
+<p>FramePipeline 计入所有已接纳提交直到释放和公开结果完成，包括提交线程上的替换清理。显示范围在 STA 接受配置，并合并到后续显示。共享关闭结果保留资源/排空失败，通知失败隔离。D3D 附加无法证明安全分离时保留呈现器和表面租约至进程结束。</p>
 <p>ViewerLifetime 统一停止门和关闭安全的句柄移除调度，HUD 集合拥有视觉并使句柄失效。ViewerInputBinding 把 WPF 来源解析为测量身份和图像坐标，负责效果和临时输入抑制，不保存会话状态。公共视口接收兄弟叠加上的导航和像素查询；ViewportPan 使用屏幕坐标，共享 MouseCaptureSession 保证捕获失败不开始拖动，取消/卸载/关闭结束捕获。</p>
 <p>MeasurementInteractionCoordinator 唯一拥有工具、版本、模式、选中及转换策略，直接借用 MeasurementLayer。层可见和命中策略限制工具/编辑启动，重入取消后也检查；临时抑制不改配置。Registry 保存可复用注册，每次工厂生成一次性会话。激活聚合注册身份、创建上下文和会话；旧回调继续前验证身份，Finish 只作用所属上下文。所有预览通过所属上下文创建，结束后拒绝创建，每个会话终止恰好清理一次。</p>
 <p>MeasurementCollection 拥有成员、视觉索引、创建策略与 Viewer 样式，Host 显式创建并共享 MeasurementRuntime。Runtime 统一 STA/生命周期调度、查询注册和通知，不依赖视觉容器。集合关闭先停 Runtime 再清对象。通知共用 FIFO，重入追加；内部几何投射同步先完成，公共通知后发。</p>
@@ -208,7 +212,7 @@
 <p>查询策略独立选择接受旧几何及起始/完成间隔。完成指 STA 已处理结果，包含失败、过期和拒绝；订阅/会话/描述符检查始终保留。旧显示保留时间与新结果 MaxResultAge 独立。coordinator 统一激活接纳和重入检查，门面初始拒绝抛异常、菜单忽略不可用目标。操作固定注册实例，ID 撤销解析当前实例，注册关闭通过同一安全移除路径使引用失效。</p>
 <h2 id="帧组件协作">帧组件协作</h2>
 <p>FramePipeline 管等待帧、当前帧、冻结代次、请求/已提交显示设置及结果；FramePresentation 管后台准备、STA 呈现和后端资源；MenuSnapshotSession 管菜单目标与保存互斥；SnapshotCapture 管串行区域读取和独立快照。</p>
-<p>CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染、查询及 STA。</p>
+<p>CommittedViewLease 原子捕获帧租约、显示范围和版本，不拥有导出同步。管线共享 ViewerLifetime 接纳门，昂贵上传在门外，附加图像和发布当前帧在门内；提交、冻结/恢复和呈现释放由 STA 串行。仅图像提交发帧通知，纯重绘不发。关闭先停管线和交互、释放菜单、测量与层，再等待渲染和查询；独立窗口宿主额外等待 STA。</p>
 <h2 id="交互实现与查询测试">交互实现与查询测试</h2>
 <p><code>MeasurementInteractionCoordinator</code> 唯一拥有选中项、交互模式、工具及会话版本；注册表只保留注册。编辑控制器直接接收测量对象，持有编辑会话和控制点。命中测试通过集合解析已登记视觉，未登记的视觉不能参与编辑。</p>
 <p><code>ViewerInputBinding</code> 将 WPF 输入转换为图像坐标，并通过 <code>IInteractionView</code> 提供比例、指针效果和临时输入抑制，不复制交互状态。协调器借用测量层接收接纳策略与生命周期通知。测量集合独立订阅图层清理：先取消输入和选中状态，再尝试清理模型、查询和资源，即使没有协调器或取消失败，也不跳过清理。清理期间拒绝创建和新会话，重入清理幂等，一层失败后继续其他层。</p>

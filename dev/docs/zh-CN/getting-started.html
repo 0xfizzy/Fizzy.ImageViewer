@@ -90,7 +90,7 @@
 <p><a href="../en/getting-started.html">English</a></p>
 <p>本指南帮助你运行第一个图像窗口，再按需要选择组件指南。</p>
 <h2 id="创建-viewer">创建 Viewer</h2>
-<p>使用 Windows 和 .NET 8。创建控制台项目并使用下面的项目文件，再安装包：</p>
+<p>使用 Windows，项目面向 <code>net10.0-windows</code> 或 <code>net8.0-windows</code> 并启用 <code>&lt;UseWPF&gt;true&lt;/UseWPF&gt;</code>。同一个 NuGet 包包含两个目标。创建控制台项目并使用下面的 .NET 8 项目文件（也可将目标改为 <code>net10.0-windows</code>），再安装包：</p>
 <pre><code class="lang-xml">&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;
   &lt;PropertyGroup&gt;
     &lt;OutputType&gt;Exe&lt;/OutputType&gt;
@@ -118,15 +118,17 @@ Array.Fill(pixels, (byte)128);
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
 
 viewer.Show();
 await closed.Task;
 // await using waits for shutdown and reports cleanup failures.
 </code></pre>
-<p>在 <code>Show()</code> 前配置并订阅事件。提交会立即转移所有权，即使操作被取消或 Viewer 已关闭也一样：不要重复提交同一帧，也不要释放已转移的存储。<code>Committed</code> 表示 UI 已接受该帧，不代表显示器已显示。应用应同时检查 <code>Status</code> 和 <code>Error</code>，丢弃的帧也不例外。</p>
+<p>在 <code>Show()</code> 前配置并订阅事件。提交会立即转移所有权，即使操作被取消或 Viewer 已关闭也一样：不要重复提交同一帧，也不要释放已转移的存储。<code>Accepted</code> 表示最新帧管线已接管所有权，不代表显示完成；隐藏时仅保留最新输入。应用应同时检查 <code>Status</code> 和 <code>Error</code>，丢弃的帧也不例外。</p>
 <p><code>Closed</code> 是通知，不证明渲染和查询已排空。先停止并等待生产者结束，再等待 <code>DisposeAsync</code>；不要在 Viewer 回调中同步等待这些操作。Viewer 对应一次窗口生命周期，关闭后应新建实例。</p>
+<h2 id="嵌入已有窗口">嵌入已有窗口</h2>
+<p>应用拥有 UI 线程时，在 XAML 或代码中使用 <code>ImageViewerControl</code>。参见<a href="embedding.html">嵌入与宿主异步关闭</a>及 <a href="../../samples/EmbeddedViewer/MainWindow.xaml">EmbeddedViewer 示例</a>。</p>
 <h2 id="基本操作">基本操作</h2>
 <p>滚轮缩放，中键平移；右键菜单提供测量和图像导出。也可在示例的 <code>viewer.Show()</code> 前加入以下调用：</p>
 <pre><code class="lang-csharp">viewer.HudLabelText = &quot;My image&quot;;
@@ -137,7 +139,8 @@ viewer.ActivateMeasurementTool(
 <p>点击两个点测量图像像素单位的长度；Escape 结束创建或编辑。读取结果见<a href="measurements.html">测量</a>，添加标记见<a href="drawing-layers.html">绘制</a>，保存图像见<a href="snapshots.html">快照</a>。</p>
 <h2 id="完整示例">完整示例</h2>
 <p>在仓库根目录执行；这些人工检查会打开 WPF 窗口：</p>
-<pre><code class="lang-powershell">dotnet run --project samples/BasicViewer
+<pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 </code></pre>
