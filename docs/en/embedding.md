@@ -30,11 +30,18 @@ var result = await ImageViewer.SubmitFrameAsync(
     Fizzy.ImageViewer.Frames.ImageFrame.Copy(
         new(640, 480, 640, Fizzy.ImageViewer.Frames.FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Committed)
+if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($"Initial frame: {result.Status}");
 ```
 
 Submission transfers frame ownership immediately, including rejection and cancellation. Fit the image after layout with `FitToViewport()`. Drawing, measurements, HUD, pixel queries, snapshots and menus share the standalone viewer's contracts. Line-profile measurements may open their own plot window. There are no frame-binding dependency properties or viewer commands; call the methods from your application adapter.
+
+`Visible` controls this element's own WPF visibility (`false` uses `Hidden`). Use inherited `Visibility`
+for XAML bindings or `Collapsed`. `IsVisible` includes ancestor visibility; `IsMinimized` reads the current
+containing window, or false without a window. These properties retain WPF thread affinity.
+Display work runs only when loaded, effectively visible and not minimized. Input remains accepted while
+suspended, with only the newest waiting frame retained. The host controls inactive Tabs using visibility;
+there is no special Tab detection. Restoring visibility/loading actively displays the latest input.
 
 ## Threads and temporary unloading
 

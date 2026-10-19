@@ -1,19 +1,19 @@
 {
-  "docs/en/architecture.md": "78c46f353d18e8debcc2ffac3f703d2081e950d4f86a794b76ce6aaec39a5c5c",
+  "docs/en/architecture.md": "25a5a77e7762efbf8a1b20813c1be4afb82e291dd2e29b0b22e700b8f16cab2f",
   "docs/en/cuda.md": "5390f555d9912c5e8c0d211a7483f6108292763c6d55c124e0b0c159f1b1d8de",
   "docs/en/documentation.md": "fb4a47b471bba34568d38db1d50f57745f1ba8c936d9b5c99735526f1c032c62",
   "docs/en/drawing-layers.md": "886a51c4804f8da8ab581ee213e9eca86b15842983e1bbea67ae0125fad8df91",
-  "docs/en/embedding.md": "c532e39acf0eda74706c9c69e95ef64fadf86b1c20e1a043b4ba5fa3a2045ace",
-  "docs/en/frame-pipeline.md": "0d39925cfe163069aca0ad56ffcadd24b6be708196ca0049014775a22032fcb9",
-  "docs/en/getting-started.md": "f53f5254884557a60c518f5733f542d51b93e5a2aa874648c893ff914cae669b",
+  "docs/en/embedding.md": "43267747a6561e86d3cf8f4daca4cc03e65dcdf43d7088f72418cb3e2375ff16",
+  "docs/en/frame-pipeline.md": "2b1c6059ceede9cf716eb22450353bfed528e2b13d9a82238306a889bd53872a",
+  "docs/en/getting-started.md": "5422993faf8a43fb22062f9ae31c373148e2797bdcef1658cbe43c0a475d375e",
   "docs/en/index.md": "d2f03ce7c440162ba890867f046db3ef404630fa67f27d11e8d1fd0ab76552d6",
-  "docs/en/live-streaming.md": "1c2c3fdb9a3d6dcc0cbb8c1359fb8c55a99a12a73e946bf39e063c6335deee4b",
+  "docs/en/live-streaming.md": "9148825c3790ed82ae4afce2fd12aa5c3262463790c595f6b49d65dbc7621818",
   "docs/en/measurement-tools.md": "344c4cf694fafc80e7ccdd6ed5ca7002601c95b8c9f6f2a72f9c5c5d1a64ff69",
   "docs/en/measurements.md": "7ce058aea2d0a0ae67aeda00ee5029c3922cd05c7d596527bad9f86b4a3b252f",
   "docs/en/menus.md": "e9a63e10951bbd9f6136b44f675af097f568d2d1bbe03d8c0cad4a6edb72f533",
-  "docs/en/public-api.md": "c3c3ba3547e20f130b7ee71fe39dca80e12eb633c40ad7c5959d06061218b5d2",
+  "docs/en/public-api.md": "7aa0399a7382af0dfe2f39604dd22e9f06e5c0b604bfd752125299bcc4ec7416",
   "docs/en/releasing.md": "690802a7bc3f866270ab728fb1b439b6677c9901d202f7471dc1ada0eee61f3e",
   "docs/en/snapshots.md": "27e0c7f86156422e090ba2cd91804ef02df15877d42e6ecdfcaee0ebbe414d74",
   "docs/en/validation.md": "00d2d36e297695407d7af1eb5d78cfbbcc4085b5075b0d418c153d2cd9766f32",
-  "README.md": "c301a3ee260914169a9fcd188c962fbb1d364fc91ea8f0964ca16b4793bd3ef5"
+  "README.md": "ae329e99faf8ac7343793beed72551c61db7865233181f1fcee5ffab8fe60bc4"
 }

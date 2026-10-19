@@ -41,7 +41,7 @@ public class MeasurementNotificationsTests
     [InlineData(true)]
     public async Task BuiltInAndCustomResultsAreObservableThroughThePublicFacade(bool custom)
     {
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: true);
         IViewerCapabilities api = viewer;
         var events = new List<MeasurementEventArgs>();
         var ready = new TaskCompletionSource<MeasurementEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -69,7 +69,7 @@ public class MeasurementNotificationsTests
         });
         Assert.NotNull(completed);
         Assert.Null(completed.QueryResult);
-        var submission = await api.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8),
+        var submission = await api.SubmitAndDisplayAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8),
             Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
         var published = await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(completed.Snapshot.Id, published.Snapshot.Id);

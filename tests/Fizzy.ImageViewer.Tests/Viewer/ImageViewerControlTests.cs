@@ -23,9 +23,10 @@ public class ImageViewerControlTests
     [InlineData(true)]
     public Task CommonCapabilitiesAndNotificationsWorkInBothHosts(bool standalone) => ControlTestDispatcher.Run(async () =>
     {
-        await using IViewer api = standalone ? new Viewer(showWindow: false) : (ImageViewerControl)XamlReader.Parse(
+        await using IViewer api = standalone ? new Viewer(showWindow: true) : (ImageViewerControl)XamlReader.Parse(
             "<v:ImageViewerControl xmlns:v='clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer' />");
         var control = api is Viewer viewer ? viewer.Host.Control : (ImageViewerControl)api;
+        using var displayHost = standalone ? null : new ControlDisplayHost(control);
         IViewerCapabilities borrowed = api;
         Assert.Same(api, borrowed);
         Assert.Same(api.Layers, borrowed.Layers);
@@ -33,7 +34,7 @@ public class ImageViewerControlTests
         Assert.Equal(!standalone, control.Dispatcher.CheckAccess());
         var order = new List<string>();
         api.FrameCommitted += (_, _) => order.Add("event");
-        Assert.Equal(FrameSubmitStatus.Committed, (await api.SubmitFrameAsync(Frame(), new()
+        Assert.Equal(FrameSubmitStatus.Accepted, (await api.SubmitAndDisplayAsync(Frame(), new()
         {
             OnCommitted = _ => order.Add("callback")
         })).Status);
@@ -75,8 +76,8 @@ public class ImageViewerControlTests
         try
         {
             window.Show();
-            await first.SubmitFrameAsync(Frame(() => released++));
-            await second.SubmitFrameAsync(Frame());
+            await first.SubmitAndDisplayAsync(Frame(() => released++));
+            await second.SubmitAndDisplayAsync(Frame());
             first.ActivateMeasurementTool(MeasurementToolIds.Point);
             first.Runtime.Interaction.ImageDown(2, 3);
             var count = first.MeasurementOverlay.Canvas.Children.Count;
@@ -95,7 +96,7 @@ public class ImageViewerControlTests
             Assert.Equal(42, lease!.CpuPixels.Span[0]);
             lease.Dispose();
             Assert.Equal(1, released);
-            Assert.Equal(FrameSubmitStatus.Committed, (await second.SubmitFrameAsync(Frame())).Status);
+            Assert.Equal(FrameSubmitStatus.Accepted, (await second.SubmitAndDisplayAsync(Frame())).Status);
             Assert.False(window.Dispatcher.HasShutdownStarted);
         }
         finally { await first.DisposeAsync(); await second.DisposeAsync(); window.Close(); }
@@ -108,7 +109,7 @@ public class ImageViewerControlTests
         var original = control.Content;
         Assert.Throws<InvalidOperationException>(() => control.Content = new Grid());
         Assert.Same(original, control.Content);
-        Assert.Equal(FrameSubmitStatus.Committed, (await control.SubmitFrameAsync(Frame())).Status);
+        Assert.Equal(FrameSubmitStatus.Accepted, (await control.SubmitFrameAsync(Frame())).Status);
     });
 
     [Theory]
@@ -187,7 +188,8 @@ public class ImageViewerControlTests
         var source = new DelayedPixelSource();
         int released = 0;
         var frame = new ImageFrame(new FrameStorage(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }, source, () => released++));
-        await control.SubmitFrameAsync(frame);
+        using var displayHost = new ControlDisplayHost(control);
+        await control.SubmitAndDisplayAsync(frame);
         var query = new PixelClient();
         control.Runtime.Queries.Register(query);
         try
@@ -234,13 +236,24 @@ public class ImageViewerControlTests
         control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
         Assert.Null(control.Runtime.Interaction.ActiveId);
         Assert.Equal(1, tool.Disposals);
-        Assert.Equal(FrameSubmitStatus.Committed, (await control.SubmitFrameAsync(Frame())).Status);
+        Assert.Equal(FrameSubmitStatus.Accepted, (await control.SubmitFrameAsync(Frame())).Status);
         var failure = await Record.ExceptionAsync(() => control.DisposeAsync().AsTask());
         Assert.NotNull(failure);
         Assert.Contains<Exception>(tool.Error, failure is AggregateException aggregate ? aggregate.Flatten().InnerExceptions : new[] { failure });
         Assert.Equal(1, tool.Disposals);
         Assert.False(control.Dispatcher.HasShutdownStarted);
     });
+
+    private sealed class ControlDisplayHost : IDisposable
+    {
+        private readonly Window _window;
+        internal ControlDisplayHost(ImageViewerControl control)
+        {
+            _window = new Window { Content = control, Width = 200, Height = 200, ShowActivated = false };
+            _window.Show();
+        }
+        public void Dispose() { _window.Content = null; _window.Close(); }
+    }
 
     private sealed class FailingUnloadTool : IMeasurementTool
     {

@@ -8,11 +8,20 @@ Start with [LiveOverlays](../../samples/LiveOverlays/Program.cs), a simulated pr
 
 ## Bound work before submission
 
-The viewer processes one submission and retains only the newest waiting frame. Replaced waiting frames complete as `Superseded`; it is a live display, not a lossless recording queue.
+The viewer processes one display attempt and keeps only the newest waiting frame. `SubmitFrameAsync`
+completes on reception (`Accepted`), not display; replaced input receives no later replacement result.
+Hidden, unloaded and minimized viewers continue accepting frames and display only the latest on return.
 
-For a pull-based producer, await each submission before producing the next frame, as in [LiveOverlays](../../samples/LiveOverlays/Program.cs). This limits producer work naturally. For a push camera callback, keep an application-owned bounded latest-frame handoff and a worker that observes every submission result. Release any owned frame discarded before submission. Avoid a growing `Task.Run` queue, unbounded channel or list of submission tasks: the viewer's queue cannot bound work allocated upstream. Stop admission and drain the producer during shutdown.
+A pull producer may await reception before producing again, but this does not pace acquisition to display.
+Choose an explicit producer rate. For push callbacks, keep an application-owned bounded latest-frame
+handoff and a worker observing receipt errors. Release owned frames discarded before submission. Avoid
+unbounded channels, Task.Run queues and task lists; the viewer cannot bound upstream allocations.
+Stop admission and drain the producer during shutdown.
 
-Awaiting a submission observes commit/drop and any release error for that submission; it does not mean the camera buffer is reusable. Only the final release callback establishes that for transferred storage. Track status counts and errors without logging every successful frame in a hot callback.
+Receipt completion does not make a camera buffer reusable; only its final release callback does.
+Subscribe to `DisplayFailed` for later conversion/upload failures and use `FrameCommitted` or
+`OnCommitted` for actual UI submission. Snapshot or measurement setup requiring pixels must wait for
+that notification, not merely acceptance. Observe reception and display metrics separately.
 
 ## Live camera overlays: consumer requirements
 

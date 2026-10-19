@@ -157,8 +157,7 @@ host disposal then stops and joins its STA. Unloaded cancels interaction but ret
 content; embedded owners await disposal before dispatcher shutdown. See [embedding](embedding.md).
 FramePipeline accounts for admitted submissions until their release and public result
 are complete, including replacement cleanup on submitting threads outside the render
-loop. Display-range changes have a separate awaitable result for the requested version;
-newer settings and shutdown cancel pending updates.
+loop. Display-range changes accept configuration on the STA and coalesce until display.
 The shared disposal result retains resource-cleanup and drain failures after safe cleanup;
 notification failures are isolated at their event boundaries. A GPU attachment that cannot
 be safely detached retains its presenter and surface leases for process lifetime.

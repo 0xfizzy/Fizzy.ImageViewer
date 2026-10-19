@@ -56,7 +56,7 @@ internal sealed class ViewerRuntime(ImageViewerControl view, ILogger logger, Ren
         _presentation = new Rendering.FramePresentation(_view.Dispatcher, _view.ImageViewport,
             _unattachedPresenter ?? new Rendering.WriteableBitmapPresenter(), _logger);
         _unattachedPresenter = null;
-        _pipeline = new Rendering.FramePipeline(_lifetime, _view.Dispatcher, _presentation, _logger, NotifyFrameCommitted);
+        _pipeline = new Rendering.FramePipeline(_lifetime, _view.Dispatcher, _presentation, _logger, NotifyFrameCommitted, _view.NotifyDisplayFailed);
         checkpoint?.Invoke(ViewerInitializationStage.PipelineCreated);
         _hud = new HudTextCollection(_view.HudLayer, _lifetime);
         _menuSession = new Menus.MenuSnapshotSession(_pipeline, _lifetime, _view.Dispatcher, _cleanupErrors.Enqueue);

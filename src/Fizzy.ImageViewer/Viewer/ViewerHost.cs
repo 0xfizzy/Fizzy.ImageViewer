@@ -29,6 +29,7 @@ internal sealed class ViewerHost(Viewer owner, ILogger logger, bool showWindow)
                 _control = new ImageViewerControl(logger, presenter, checkpoint);
                 _window = new ViewerWindow("Fizzy ImageViewer", _control);
                 _window.Closed += OnWindowClosed;
+                _control.DisplayFailed += (_, failure) => owner.NotifyDisplayFailed(failure);
                 _control.FrameCommitted += (_, info) => owner.NotifyFrameCommitted(info);
                 _control.MeasurementCompleted += (_, args) => owner.NotifyMeasurementCompleted(args);
                 _control.MeasurementRemoved += (_, args) => owner.NotifyMeasurementRemoved(args);

@@ -52,7 +52,9 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
             _surface.Children.Add(HudLayer);
             Content = _surface;
             _runtime.Initialize(checkpoint);
+            Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            IsVisibleChanged += OnVisibilityChanged;
         }
         catch (Exception startupError)
         {
@@ -76,7 +78,9 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
 
     private void OnUnloaded(object sender, RoutedEventArgs args)
     {
+        DetachVisibilityHost();
         if (_runtime.Lifetime.IsStopping) return;
+        _runtime.Pipeline.SetDisplayEnabled(false);
         try { _runtime.Interaction.Cancel(); }
         catch (Exception error) { _runtime.RecordCleanupFailure(error); _logger.LogWarning(error, "Unloaded interaction cleanup failed"); }
         finally { ImageViewport.EndPan(); }
@@ -95,11 +99,15 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
 
     internal void ClearNotifications()
     {
+        Loaded -= OnLoaded;
         Unloaded -= OnUnloaded;
+        IsVisibleChanged -= OnVisibilityChanged;
+        DetachVisibilityHost();
         if (ImageViewport != null && _layers != null) ImageViewport.ScaleChanged -= _layers.Collection.UpdateScale;
         lock (_runtime.Lifetime.Gate)
         {
             _frameCommitted = null;
+            _displayFailed = null;
             _measurementCompleted = null;
             _measurementRemoved = null;
             _measurementChanged = null;

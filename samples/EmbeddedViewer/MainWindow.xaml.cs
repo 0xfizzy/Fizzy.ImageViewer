@@ -18,6 +18,7 @@ public partial class MainWindow : Window
         if (_producer != null) return;
         ImageViewer.HudLabelText = "Synthetic live image";
         ImageViewer.MeasurementCompleted += (_, e) => Status.Text = $"Measurement completed: {e.Snapshot.Geometry}";
+        ImageViewer.DisplayFailed += (_, failure) => Status.Text = $"Display failed: {failure.Error.Message}";
         _producer = StreamAsync();
     }
 
@@ -36,7 +37,7 @@ public partial class MainWindow : Window
                     new(width, height, width, FramePixelFormat.Gray8), pixels), cancellationToken: _stop.Token);
                 if (result.Error is { } error) throw error;
                 if (result.Status == FrameSubmitStatus.Closed) break;
-                if (phase++ == 0) ImageViewer.FitToViewport();
+                phase++;
                 await Task.Delay(33, _stop.Token);
             }
         }

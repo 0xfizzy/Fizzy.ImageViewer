@@ -30,11 +30,14 @@ var result = await ImageViewer.SubmitFrameAsync(
     Fizzy.ImageViewer.Frames.ImageFrame.Copy(
         new(640, 480, 640, Fizzy.ImageViewer.Frames.FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Committed)
+if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($"Initial frame: {result.Status}");
 ```
 
 提交立即转移帧所有权，包括拒绝和取消。布局完成后通过 `FitToViewport()` 适应图像。绘图、测量、HUD、像素查询、快照和菜单遵循与独立窗口相同的契约；线剖面测量仍可打开独立曲线窗口。不提供帧绑定依赖属性或查看器命令，由应用适配器调用方法。
+
+`Visible` 控制控件自身 WPF 显隐，false 映射到 `Hidden`；XAML 绑定或需要 `Collapsed` 时使用继承的 `Visibility`。`IsVisible` 包含祖先显隐影响；`IsMinimized` 读取当前所属窗口，无窗口时为 false。这些属性遵循 WPF 线程亲和性。
+只有已加载、有效可见且宿主未最小化时才进行显示工作；暂停期间继续接收，只保留最新等待帧。非当前 Tab 由宿主控制显隐，不进行专门检测；恢复显隐或加载后主动显示最新输入。
 
 ## 线程与临时卸载
 

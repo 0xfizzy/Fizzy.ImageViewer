@@ -199,7 +199,7 @@ public class MenuTests
     public async Task FailedOpeningUnfreezesFramesDiscardsPartialBindingsAndAllowsReopening(string property)
     {
         var log = new OpeningLog();
-        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), false);
+        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), true);
         var item = new FailingStateItem(property);
         using var registration = viewer.RegisterMenuItem(item);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
@@ -210,8 +210,8 @@ public class MenuTests
             Assert.False(menu.IsOpen);
             Assert.Contains(item.Failure, log.Errors);
         });
-        var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
-        Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+        var result = await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+        Assert.Equal(FrameSubmitStatus.Accepted, result.Status);
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             item.Fail = false;
@@ -232,7 +232,7 @@ public class MenuTests
     public async Task ActualPopupClosesAfterStateCallbackFailure(string property)
     {
         var log = new OpeningLog();
-        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), false);
+        await using var viewer = new Viewer(log, new WriteableBitmapPresenter(), true);
         var item = new FailingStateItem(property);
         using var registration = viewer.RegisterMenuItem(item);
         var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -258,8 +258,8 @@ public class MenuTests
             Assert.Empty(viewer.Host.Control.ContextMenu.Items);
             Assert.Contains(item.Failure, log.Errors);
         }, DispatcherPriority.ApplicationIdle);
-        var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
-        Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+        var result = await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+        Assert.Equal(FrameSubmitStatus.Accepted, result.Status);
     }
 
     private sealed class FailingStateItem(string property) : ICheckableMenuItem

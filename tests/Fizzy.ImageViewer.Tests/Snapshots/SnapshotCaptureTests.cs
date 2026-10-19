@@ -12,10 +12,10 @@ public class SnapshotCaptureTests
     [Fact]
     public async Task SnapshotRegionIsFixedAndIndependent()
     {
-        await using var viewer=new Viewer(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(3,2,3,FramePixelFormat.Gray8),new byte[]{1,2,3,4,5,6}));
+        await using var viewer=new Viewer(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),true);
+        await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(3,2,3,FramePixelFormat.Gray8),new byte[]{1,2,3,4,5,6}));
         var pending=viewer.CaptureSnapshotAsync(SnapshotKind.Raw,new PixelRegion(1,0,2,2));
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1,1,1,FramePixelFormat.Gray8),new byte[]{9}));
+        await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(1,1,1,FramePixelFormat.Gray8),new byte[]{9}));
         using var snapshot=await pending;using var pixels=snapshot.AcquirePixels();
         Assert.Equal(new byte[]{2,3,5,6},pixels.CpuPixels.ToArray());Assert.Equal(new PixelRegion(1,0,2,2),snapshot.Region);
     }

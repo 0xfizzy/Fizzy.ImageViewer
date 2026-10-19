@@ -20,14 +20,14 @@ var pixels = new byte[values.Length * 2];
 for (int i = 0; i < values.Length; i++)
     System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(
         pixels.AsSpan(i * 2, 2), values[i]);
-await viewer.SetDisplayRangeAsync(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
+viewer.SetDisplayRange(new Fizzy.ImageViewer.Imaging.GrayDisplayRange(0, 4095));
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(4, 1, 8, FramePixelFormat.Gray16), pixels));
 ```
 
 If the camera already supplies little-endian bytes with a valid stride, pass those bytes directly instead of repacking each value. Packed 10/12-bit camera formats must first be unpacked. Gray32Float uses four little-endian IEEE 754 bytes per pixel and defaults to a display range of 0–1; set the range in original-value units for temperature or depth data.
 
-To adjust an existing image, await its submission first, then await `SetDisplayRangeAsync` to observe redraw completion or failure. Pass `null` to restore format defaults.
+Use `SetDisplayRange` to accept a mapping and `DisplayFailed` to observe rendering failures. Pass `null` to restore format defaults.
 
 ### Color: match channel order and alpha
 
@@ -56,7 +56,7 @@ var result = await viewer.SubmitFrameAsync(frame);
 // Never write pixels again. This managed array needs no external release action.
 ```
 
-For an existing memory-pool or camera-buffer owner, pass its exact memory slice and a release action that returns that buffer. Do not dispose the owner immediately after submission or after awaiting `Committed`: the current image, queries and independent leases may still retain it. A frozen viewer can retain a frame indefinitely. `TakeOwnership` calls the supplied release action once at final release, including construction validation failure; do not return the buffer again in a catch/finally block. Keep release short, nonthrowing and safe on the final releasing thread, which may be the Viewer STA. If the producer cannot meet these retention and threading requirements, use `Copy`.
+For an existing memory-pool or camera-buffer owner, pass its exact memory slice and a release action that returns that buffer. Do not dispose the owner immediately after submission or after receiving `Accepted`: the current image, queries and independent leases may still retain it. A frozen viewer can retain a frame indefinitely. `TakeOwnership` calls the supplied release action once at final release, including construction validation failure; do not return the buffer again in a catch/finally block. Keep release short, nonthrowing and safe on the final releasing thread, which may be the Viewer STA. If the producer cannot meet these retention and threading requirements, use `Copy`.
 
 ## Input and lifetime
 
@@ -94,24 +94,32 @@ owners from mutating memory: immutability is part of the producer contract.
 
 ## Submission and display
 
-Each viewer has an independent STA and one background rendering loop. At most one submission
-is processing and one waits. New submissions replace the waiting frame (`Superseded`).
-Results are `Committed`, `Superseded`, `Frozen`, `Cancelled`, `Closed`, or `Failed`.
-`Status` describes the submission outcome; `Error` can also contain a cleanup failure for
-a dropped submission. Inspect both fields. A cleanup failure does not undo a commit or
-change a drop reason; when processing and cleanup both fail, both errors are retained.
-Cancellation is best effort until the UI commit boundary; cancellation after commit does not
-undo it. A request's token is observed while processing and before commit. A waiting cancelled
-frame terminates when dequeued/replaced/frozen/closed rather than using a per-frame callback.
+`SubmitFrameAsync` immediately consumes ownership and completes when reception finishes, independently
+of display. Results are `Accepted`, `Frozen`, `Cancelled`, or `Closed`; inspect `Error` for reception-owned
+cleanup failures even on rejection. Cancellation is checked only before acceptance. An accepted frame
+may be replaced without ever being displayed; no terminal display task or replacement event is retained
+for each input. FrameId is viewer-local and monotonic.
 
-`Committed` means the source and current frame have changed on the UI thread; it does not mean
-the monitor displayed it. FrameId is viewer-local and monotonic. Notifications occur after
-writing pixels. The per-submission `OnCommitted` runs first, then `FrameCommitted`.
-The `OnCommitted` frame lease is borrowed for that callback only. `FrameCommitted`
-uses `EventHandler<FrameInfo>`; sender is the public Viewer or ImageViewerControl.
-See the shared [event subscription contract](public-api.md#event-subscriptions).
-Measurement query notifications are scheduled independently. Callbacks must not block on another viewer
-submission; use asynchronous work with an acquired lease. Subscriber failures are isolated.
+The pipeline keeps one in-flight frame, one newest waiting frame and the last committed frame.
+A hidden, unloaded or minimized host accepts input but starts no conversion or upload. Restoring visibility
+actively displays the latest waiting frame even if no further input arrives. In-flight conversion may
+finish; a newly hidden host defers its UI commit and discards prepared pixels. Showing again may repeat
+that conversion. No occlusion, screen-position, activation or Tab-specific detection is performed.
+
+Successful UI commits update the current frame and mapping, then invoke `OnCommitted` before
+`FrameCommitted`; neither proves monitor presentation. The callback lease is borrowed until return.
+Subscribe before sending frames; retain independent leases and immutable callback metadata for deferred
+work. `DisplayFailed` reports preparation or presentation errors on the owner STA with frame identity,
+requested range and display version. It does not change a completed receipt. Failures are not automatically
+retried; submit a new frame or explicitly set the range to request work again. A failed native presenter
+retains its existing terminal safety contract. Subscriber exceptions are isolated; see
+[event subscriptions](public-api.md#event-subscriptions).
+
+Queries, measurements and snapshots use the last successfully committed frame and mapping, including
+while hidden; before the first display commit there is no current frame. They do not read the waiting
+input. Drawing updates and explicit queries are not suspended by the image pipeline.
+Replaced or processed accepted-frame cleanup failures belong to the pipeline's shared disposal result,
+not the newer receipt. If shutdown prevents delivery of a display failure, disposal retains it.
 
 The CPU presenter owns two reusable WriteableBitmaps. Conversion runs off the UI thread;
 an undisplayed bitmap is written before switching the source. WPF-native 8-bit formats keep
@@ -125,22 +133,15 @@ for adapting algorithm results. The viewport requests WPF high-quality bitmap
 scaling to reduce loss of small features when shrinking images. Display resampling
 does not change original pixels or query results, and is not a subpixel accuracy guarantee.
 
-`DisplayRange` is the latest requested grayscale mapping. Use
-`await viewer.SetDisplayRangeAsync(range)` to change it and observe redraw failures.
-Defaults: Gray8 0–255, Gray16 0–65535, Gray32Float 0–1.
-Finite increasing bounds are required. Values are clipped; NaN/negative infinity render black,
-positive infinity white. Range changes schedule a redraw with a separate display version.
-When a current frame exists, the returned task completes after a redraw or submission
-commits that version; rendering failures fault the task. A newer range request or
-viewer closure cancels an outstanding update. With no current frame, the call only
-configures future submissions and completes immediately. A non-null range for a
-current GPU frame is rejected before changing the request. Do not synchronously wait
-for an update on the Viewer STA.
-An already preparing first submission can still commit the mapping it captured
-before that configuration call; await the first submission before requesting a redraw.
-Snapshot capture uses the last committed range/version, not a range still awaiting
-redraw or one whose update failed. A failed update leaves the requested value readable;
-call `SetDisplayRangeAsync` explicitly to request another update.
+`DisplayRange` is the latest requested grayscale mapping. `viewer.SetDisplayRange(range)` accepts
+configuration on the owner STA and schedules display; it does not wait for a UI commit. Hidden changes
+coalesce to the newest range. Defaults are Gray8 0–255, Gray16 0–65535 and Gray32Float 0–1.
+Bounds must be finite and increasing; values are clipped, NaN/negative infinity render black and positive
+infinity white. A non-null range on the current GPU frame is rejected before changing the request;
+a waiting GPU frame with an incompatible range fails during display. Each request advances the display
+version. An in-flight frame may commit an earlier mapping before a redraw applies the latest request.
+Snapshots use only the last successfully committed range/version. A failure leaves the requested value
+readable and is reported by `DisplayFailed`.
 
 ## Pixel access and measurements
 

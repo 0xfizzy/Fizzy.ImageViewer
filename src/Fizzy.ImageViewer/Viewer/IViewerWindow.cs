@@ -11,6 +11,10 @@ public interface IViewerWindow
     /// <summary>Hides the window on its STA, retaining frames and drawings. Throws ObjectDisposedException after shutdown begins.</summary>
     void Hide();
 
+    /// <summary>Shows or hides without activating or restoring a minimized window. Access dispatches to the viewer STA.</summary>
+    /// <remarks>Reads the window visibility setting, independent of minimized state. Throws after shutdown begins.</remarks>
+    bool Visible { get; set; }
+
     /// <summary>Minimizes the window on its STA. Throws ObjectDisposedException after shutdown begins.</summary>
     void Minimize();
 

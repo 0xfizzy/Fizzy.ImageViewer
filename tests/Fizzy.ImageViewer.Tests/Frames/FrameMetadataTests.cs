@@ -11,10 +11,10 @@ public class FrameMetadataTests
     [Fact]
     public async Task SubmissionDoesNotChangePreviouslyAcquiredLeaseIdentity()
     {
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: true);
         var frame = ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 7 });
         using var before = frame.Acquire();
-        await viewer.SubmitFrameAsync(frame);
+        await viewer.SubmitAndDisplayAsync(frame);
         using var committed = viewer.AcquireCurrentFrame()!;
         using var standaloneCopy = before.Acquire();
         using var committedCopy = committed.Acquire();
@@ -42,8 +42,8 @@ public class FrameMetadataTests
     [InlineData(SnapshotKind.Display)]
     public async Task DerivedPixelsHaveTheirOwnMetadataAndExplicitSource(SnapshotKind kind)
     {
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(2, 2, 4, FramePixelFormat.Gray16), new byte[8]));
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, showWindow: true);
+        await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(2, 2, 4, FramePixelFormat.Gray16), new byte[8]));
         using var source = viewer.AcquireCurrentFrame()!;
         using var region = await source.ReadRegionAsync(new(1, 1, 1, 1));
         using var regionPixels = region.AcquirePixels();

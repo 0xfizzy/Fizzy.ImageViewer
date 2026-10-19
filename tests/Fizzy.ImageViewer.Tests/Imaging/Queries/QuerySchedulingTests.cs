@@ -10,7 +10,7 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class QuerySchedulingTests
 {
-    private static Viewer Viewer()=>new(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),false);
+    private static Viewer Viewer()=>new(NullLogger<Viewer>.Instance,new Rendering.WriteableBitmapPresenter(),true);
     private static ImageFrame Frame(ControlledSource source,Action release)=>new(new FrameStorage(new(2,1,2,FramePixelFormat.Gray8),new byte[]{7,8},source,release));
     [Fact]
     public async Task ClosedLineProfileDiscardsInFlightSamples()
@@ -28,7 +28,7 @@ public class QuerySchedulingTests
                 .Select(s=>s.RootVisual).OfType<System.Windows.Window>().Single(w=>w.Content is Measurements.Presentation.LineProfileWindow.LineProfilePlotControl);
             plot=(Measurements.Presentation.LineProfileWindow.LineProfilePlotControl)window.Content;
         });
-        await viewer.SubmitFrameAsync(Frame(source,()=>{}));
+        await viewer.SubmitAndDisplayAsync(Frame(source,()=>{}));
         try
         {
             await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
@@ -51,13 +51,13 @@ public class QuerySchedulingTests
         await using var viewer=Viewer();viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromSeconds(5)};
         var source=new ControlledSource();int released=0;
         var a=new Client();var b=new Client();
-        await viewer.SubmitFrameAsync(Frame(source,()=>released++));
+        await viewer.SubmitAndDisplayAsync(Frame(source,()=>released++));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>{viewer.Host.Control.Runtime.Queries.Register(a);viewer.Host.Control.Runtime.Queries.Register(b);});
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.Equal(2,source.PointCount);Assert.NotEqual(ApartmentState.STA,source.Apartment);
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>a.Revision++).Task.WaitAsync(TimeSpan.FromSeconds(1));
-        var commit=await viewer.SubmitFrameAsync(ImageFrame.Copy(new(2,1,2,FramePixelFormat.Gray8),new byte[]{9,10}));
-        Assert.Equal(FrameSubmitStatus.Committed,commit.Status);Assert.Equal(0,released);
+        var commit=await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(2,1,2,FramePixelFormat.Gray8),new byte[]{9,10}));
+        Assert.Equal(FrameSubmitStatus.Accepted,commit.Status);Assert.Equal(0,released);
         source.Release.SetResult();
         await a.Published.Task.WaitAsync(TimeSpan.FromSeconds(3));
         Assert.DoesNotContain(42d,a.Values);Assert.Equal(9,a.Values.Last());
@@ -68,7 +68,7 @@ public class QuerySchedulingTests
     {
         var viewer=Viewer();viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromMilliseconds(5)};
         var source=new ControlledSource();int released=0;var item=new Client();
-        await viewer.SubmitFrameAsync(Frame(source,()=>released++));
+        await viewer.SubmitAndDisplayAsync(Frame(source,()=>released++));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Control.Runtime.Queries.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));await Task.Delay(25);
         // Raising the rate threshold does not retroactively accept this result.
@@ -79,7 +79,7 @@ public class QuerySchedulingTests
         await viewer.DisposeAsync();Assert.Equal(1,released);
 
         viewer=Viewer();source=new ControlledSource();released=0;item=new Client();
-        await viewer.SubmitFrameAsync(Frame(source,()=>released++));
+        await viewer.SubmitAndDisplayAsync(Frame(source,()=>released++));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=>viewer.Host.Control.Runtime.Queries.Register(item));
         await source.Entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
         var close=viewer.DisposeAsync().AsTask();await Task.Delay(20);Assert.False(close.IsCompleted);Assert.Equal(0,released);
@@ -92,7 +92,7 @@ public class QuerySchedulingTests
         viewer.QueryOptions=new(){MaxResultAge=TimeSpan.FromSeconds(5)};
         var source=new ControlledSource();source.Release.SetResult();
         var pixel=new Client();var region=new UnsupportedRegion();
-        await viewer.SubmitFrameAsync(Frame(source,()=>{}));
+        await viewer.SubmitAndDisplayAsync(Frame(source,()=>{}));
         await viewer.Host.Window.Dispatcher.InvokeAsync(()=> {
             viewer.Host.Control.Runtime.Queries.Register(pixel);
             viewer.Host.Control.Runtime.Queries.Register(region);

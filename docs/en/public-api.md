@@ -34,6 +34,10 @@ shows it and requests activation. `Hide` hides without clearing frames, drawings
 measurements. `Minimize` changes window state without hiding it. `IsVisible` follows
 WPF visibility (a shown minimized window is still visible); `IsMinimized` is independent.
 Minimizing an already hidden window does not implicitly show it.
+`Visible` reads/writes the window visibility setting. Setting true shows without activation or restoring
+minimized state; `Show()` explicitly restores and activates. Hidden/minimized viewers keep accepting
+latest input but suspend new display work, then display the latest frame on return. `IsVisible` is not
+an occlusion test. Moving offscreen, covering the window or changing focus does not suspend updates.
 
 `DisposeAsync` closes the window and waits for owned background work and the STA to stop.
 Repeated calls observe one completion task and its fixed success or failure result.
@@ -68,11 +72,9 @@ measurements and edits already applied.
 wheel range of 0.01–100. At such a scale, the wheel permits steps toward that range
 and rejects steps farther away, so very large or small images remain navigable.
 
-Use `await SetDisplayRangeAsync(range)` to change the requested grayscale mapping
-and observe rendering failures. `DisplayRange` reads that request; snapshots retain
-the last successfully committed mapping. A newer request or closure cancels an
-outstanding update. Without a current frame the call configures future submissions
-and completes immediately. See [display contracts](frame-pipeline.md#submission-and-display).
+Use `SetDisplayRange(range)` to accept the requested grayscale mapping without waiting for display.
+`DisplayRange` reads that request; snapshots retain the last successfully committed mapping.
+Observe later rendering failures through `DisplayFailed`. See [display contracts](frame-pipeline.md#submission-and-display).
 
 ### Draining work and independent leases
 
@@ -110,7 +112,7 @@ shutdown gate and have no independent disposal contract.
 
 | Interface | Namespace | Responsibility |
 | --- | --- | --- |
-| `IFrameSink` | `.Frames` | Submit owned frames and await commit/drop results |
+| `IFrameSink` | `.Frames` | Transfer frames and await reception results |
 | `ICommittedFrameSource` | `.Frames` | Acquire current original-frame leases and observe commits |
 | `IViewerLifetime` | Root | Observe terminal admission closure without initiating shutdown |
 | `IViewerDisplay` | `.Viewport` | Fit the image to the viewport and configure display range |

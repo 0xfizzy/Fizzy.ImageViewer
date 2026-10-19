@@ -10,7 +10,7 @@ var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 Console.WriteLine(result);
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($"Initial frame: {result.Status}");
 viewer.Show();
 await closed.Task;

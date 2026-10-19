@@ -94,6 +94,7 @@ public class UnifiedMeasurementTests
     public async Task BuiltInAndCustomRoiShareNotificationsEditingQueriesAndLabels(bool custom)
     {
         await using var viewer = Create();
+        viewer.Visible = true;
         var tool = new RoiTool();
         MeasurementItem? item = null;
         var ready = new TaskCompletionSource<MeasurementQueryResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -109,7 +110,7 @@ public class UnifiedMeasurementTests
             item = viewer.Host.Control.Runtime.Measurements.Find(shape)!;
             item.QueryResultChanged += (_, result) => { if (result != null) ready.TrySetResult(result); };
         });
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
+        await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(4, 4, 4, FramePixelFormat.Gray8), Enumerable.Range(0, 16).Select(x => (byte)x).ToArray()));
         var result = Assert.IsType<MeasurementRegionStatisticsResult>(await ready.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {

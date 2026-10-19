@@ -59,7 +59,9 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
     var inputLatency = new List<double>();
     var resizeWork = new List<double>();
     var replaceWork = new List<double>();
-    int committed = 0, superseded = 0, failed = 0;
+    int committed = 0, accepted = 0, failed = 0;
+    viewer.FrameCommitted += (_, _) => Interlocked.Increment(ref committed);
+    viewer.DisplayFailed += (_, _) => Interlocked.Increment(ref failed);
     using var process = Process.GetCurrentProcess();
     var cpu = process.TotalProcessorTime;
     long allocated = GC.GetTotalAllocatedBytes();
@@ -73,8 +75,7 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
         int n = 0;
         while (watch.Elapsed.TotalSeconds < 3) {
             var result = await viewer.SubmitFrameAsync(Frame());
-            if (result.Status == FrameSubmitStatus.Committed) committed++;
-            else if (result.Status == FrameSubmitStatus.Superseded) superseded++;
+            if (result.Status == FrameSubmitStatus.Accepted) accepted++;
             else failed++;
             await Pace(++n);
         }
@@ -106,7 +107,7 @@ foreach (var c in repeat == 1 ? cases : cases.Reverse())
     }
     await Task.WhenAll(stream, update);
     await dispatcher.InvokeAsync(() => CompositionTarget.Rendering -= rendering);
-    var resultRow = new { scenario = c.Name, repeat, stationary, widthOnly, tier, samples, committed, superseded, failed,
+    var resultRow = new { scenario = c.Name, repeat, stationary, widthOnly, tier, samples, committed, accepted, failed,
         inputMs = Stats(inputLatency), resizeSetterMs = Stats(resizeWork), presentMs = Stats(presenter.Samples),
         replaceMs = Stats(replaceWork), renderingGapMs = Stats(renderGaps),
         cpuCorePercent = (process.TotalProcessorTime - cpu).TotalSeconds / watch.Elapsed.TotalSeconds * 100,

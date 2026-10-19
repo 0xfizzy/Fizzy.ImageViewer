@@ -14,7 +14,7 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class PublicApiTests
 {
-    private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+    private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), true);
 
     [Fact]
     public async Task InterfaceControlsWindowFromWorkerAndRetainsHiddenContent()
@@ -41,7 +41,7 @@ public class PublicApiTests
             queries.QueryOptions = new();
             Assert.NotNull(queries.QueryOptions);
             _ = queries.QueryMetrics;
-            await display.SetDisplayRangeAsync(new(0, 255));
+            display.SetDisplayRange(new(0, 255));
             Assert.Equal(display.DisplayRange, viewer.DisplayRange);
             registration = menus.RegisterMenuItem(new Fizzy.ImageViewer.Menus.MenuItem("Inspect", () => { }));
             window.Show();
@@ -53,8 +53,9 @@ public class PublicApiTests
             Assert.False(window.IsMinimized);
             window.Hide();
             Assert.False(window.IsVisible);
-            var result = await sink.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
-            Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+            window.Show();
+            var result = await api.SubmitAndDisplayAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+            Assert.Equal(FrameSubmitStatus.Accepted, result.Status);
             using var line = drawing.DrawLine(new(0, 0), new(1, 1), Brushes.Red);
             window.Show();
             using var lease = frames.AcquireCurrentFrame();

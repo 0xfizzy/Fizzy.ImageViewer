@@ -192,12 +192,10 @@ Fizzy.ImageViewer.Frames.FrameSubmitResult: public virtual System.Boolean Equals
 Fizzy.ImageViewer.Frames.FrameSubmitResult: public virtual System.Int32 GetHashCode()
 Fizzy.ImageViewer.Frames.FrameSubmitResult: public virtual System.String ToString()
 Fizzy.ImageViewer.Frames.FrameSubmitStatus: public System.Int32 value__
-Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Cancelled = 3
-Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Closed = 4
-Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Committed = 0
-Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Failed = 5
+Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Accepted = 0
+Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Cancelled = 1
+Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Closed = 3
 Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Frozen = 2
-Fizzy.ImageViewer.Frames.FrameSubmitStatus: public const Fizzy.ImageViewer.Frames.FrameSubmitStatus Superseded = 1
 Fizzy.ImageViewer.Frames.ICommittedFrameSource: public abstract Fizzy.ImageViewer.Frames.FrameLease? AcquireCurrentFrame()
 Fizzy.ImageViewer.Frames.ICommittedFrameSource: public abstract event System.EventHandler<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Frames.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.ImageFrame> ReadRegionAsync(Fizzy.ImageViewer.Frames.PixelRegion region, System.Threading.CancellationToken cancellationToken)
@@ -296,6 +294,7 @@ Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean Borderless { public get
 Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean CanUserClose { public get; public set; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean IsMinimized { public get; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean IsVisible { public get; }
+Fizzy.ImageViewer.IViewerWindow: abstract System.Boolean Visible { public get; public set; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Double Height { public get; public set; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Double Left { public get; public set; }
 Fizzy.ImageViewer.IViewerWindow: abstract System.Double Top { public get; public set; }
@@ -311,7 +310,9 @@ Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Imaging.PixelQueryOption
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Layers.ViewerLayers Layers { public get; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Measurements.MeasurementLayer Measurements { public get; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Measurements.MeasurementStyle MeasurementStyle { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: System.Boolean IsMinimized { public get; }
 Fizzy.ImageViewer.ImageViewerControl: System.Boolean IsPixelInfoEnabled { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: System.Boolean Visible { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; }
 Fizzy.ImageViewer.ImageViewerControl: System.String? HudLabelText { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: System.Threading.Tasks.Task WhenStopping { public get; }
@@ -325,7 +326,6 @@ Fizzy.ImageViewer.ImageViewerControl: public Fizzy.ImageViewer.Hud.HudTextHandle
 Fizzy.ImageViewer.ImageViewerControl: public System.Boolean UnregisterMeasurementTool(System.String toolId)
 Fizzy.ImageViewer.ImageViewerControl: public System.IDisposable RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool tool)
 Fizzy.ImageViewer.ImageViewerControl: public System.IDisposable RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem menuItem)
-Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task SetDisplayRangeAsync(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
 Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Frames.PixelRegion region, System.Threading.CancellationToken cancellationToken = default)
 Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken cancellationToken = default)
 Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.ValueTask DisposeAsync()
@@ -333,12 +333,14 @@ Fizzy.ImageViewer.ImageViewerControl: public System.Threading.Tasks.ValueTask<Fi
 Fizzy.ImageViewer.ImageViewerControl: public System.Void ActivateMeasurementTool(System.String toolId)
 Fizzy.ImageViewer.ImageViewerControl: public System.Void EndInteraction()
 Fizzy.ImageViewer.ImageViewerControl: public System.Void FitToViewport()
+Fizzy.ImageViewer.ImageViewerControl: public System.Void SetDisplayRange(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
 Fizzy.ImageViewer.ImageViewerControl: public ctor()
 Fizzy.ImageViewer.ImageViewerControl: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.ImageViewerControl>? logger)
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
+Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Viewport.DisplayFailure>? DisplayFailed
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Maximum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Minimum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public System.Boolean Equals(Fizzy.ImageViewer.Imaging.GrayDisplayRange other)
@@ -628,6 +630,7 @@ Fizzy.ImageViewer.Viewer: System.Boolean CanUserClose { public get; public set; 
 Fizzy.ImageViewer.Viewer: System.Boolean IsMinimized { public get; }
 Fizzy.ImageViewer.Viewer: System.Boolean IsPixelInfoEnabled { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Boolean IsVisible { public get; }
+Fizzy.ImageViewer.Viewer: System.Boolean Visible { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Double Height { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Double Left { public get; public set; }
 Fizzy.ImageViewer.Viewer: System.Double Top { public get; public set; }
@@ -646,7 +649,6 @@ Fizzy.ImageViewer.Viewer: public Fizzy.ImageViewer.Hud.HudTextHandle DrawHudText
 Fizzy.ImageViewer.Viewer: public System.Boolean UnregisterMeasurementTool(System.String toolId)
 Fizzy.ImageViewer.Viewer: public System.IDisposable RegisterMeasurementTool(Fizzy.ImageViewer.Measurements.IMeasurementTool tool)
 Fizzy.ImageViewer.Viewer: public System.IDisposable RegisterMenuItem(Fizzy.ImageViewer.Menus.IMenuItem menuItem)
-Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task SetDisplayRangeAsync(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, Fizzy.ImageViewer.Frames.PixelRegion region, System.Threading.CancellationToken cancellationToken = default)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.Task<Fizzy.ImageViewer.Snapshots.ImageSnapshot> CaptureSnapshotAsync(Fizzy.ImageViewer.Snapshots.SnapshotKind kind, System.Threading.CancellationToken cancellationToken = default)
 Fizzy.ImageViewer.Viewer: public System.Threading.Tasks.ValueTask DisposeAsync()
@@ -656,16 +658,32 @@ Fizzy.ImageViewer.Viewer: public System.Void EndInteraction()
 Fizzy.ImageViewer.Viewer: public System.Void FitToViewport()
 Fizzy.ImageViewer.Viewer: public System.Void Hide()
 Fizzy.ImageViewer.Viewer: public System.Void Minimize()
+Fizzy.ImageViewer.Viewer: public System.Void SetDisplayRange(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
 Fizzy.ImageViewer.Viewer: public System.Void Show()
 Fizzy.ImageViewer.Viewer: public ctor(Microsoft.Extensions.Logging.ILogger<Fizzy.ImageViewer.Viewer>? logger = null, System.Double left = NaN, System.Double top = NaN, System.Double width = NaN, System.Double height = NaN, System.Boolean showWindow = true)
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Frames.FrameInfo>? FrameCommitted
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementChanged
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
+Fizzy.ImageViewer.Viewer: public event System.EventHandler<Fizzy.ImageViewer.Viewport.DisplayFailure>? DisplayFailed
 Fizzy.ImageViewer.Viewer: public event System.EventHandler? Closed
+Fizzy.ImageViewer.Viewport.DisplayFailure: Fizzy.ImageViewer.Frames.FrameInfo Frame { public get; public init; }
+Fizzy.ImageViewer.Viewport.DisplayFailure: System.Exception Error { public get; public init; }
+Fizzy.ImageViewer.Viewport.DisplayFailure: System.Int64 DisplayVersion { public get; public init; }
+Fizzy.ImageViewer.Viewport.DisplayFailure: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; public init; }
+Fizzy.ImageViewer.Viewport.DisplayFailure: public Fizzy.ImageViewer.Viewport.DisplayFailure <Clone>$()
+Fizzy.ImageViewer.Viewport.DisplayFailure: public System.Boolean Equals(Fizzy.ImageViewer.Viewport.DisplayFailure? other)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public System.Void Deconstruct(out Fizzy.ImageViewer.Frames.FrameInfo Frame, out System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange, out System.Int64 DisplayVersion, out System.Exception Error)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public ctor(Fizzy.ImageViewer.Frames.FrameInfo Frame, System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange, System.Int64 DisplayVersion, System.Exception Error)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public static System.Boolean op_Equality(Fizzy.ImageViewer.Viewport.DisplayFailure? left, Fizzy.ImageViewer.Viewport.DisplayFailure? right)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public static System.Boolean op_Inequality(Fizzy.ImageViewer.Viewport.DisplayFailure? left, Fizzy.ImageViewer.Viewport.DisplayFailure? right)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public virtual System.Boolean Equals(System.Object? obj)
+Fizzy.ImageViewer.Viewport.DisplayFailure: public virtual System.Int32 GetHashCode()
+Fizzy.ImageViewer.Viewport.DisplayFailure: public virtual System.String ToString()
 Fizzy.ImageViewer.Viewport.IViewerDisplay: abstract System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; }
-Fizzy.ImageViewer.Viewport.IViewerDisplay: public abstract System.Threading.Tasks.Task SetDisplayRangeAsync(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
 Fizzy.ImageViewer.Viewport.IViewerDisplay: public abstract System.Void FitToViewport()
+Fizzy.ImageViewer.Viewport.IViewerDisplay: public abstract System.Void SetDisplayRange(System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> range)
+Fizzy.ImageViewer.Viewport.IViewerDisplay: public abstract event System.EventHandler<Fizzy.ImageViewer.Viewport.DisplayFailure>? DisplayFailed
 abstract class Fizzy.ImageViewer.Drawing.DrawingElement : System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>
 abstract class Fizzy.ImageViewer.Layers.ViewerLayer
 abstract class Fizzy.ImageViewer.Measurements.MeasurementGeometry : System.IEquatable<Fizzy.ImageViewer.Measurements.MeasurementGeometry>
@@ -736,6 +754,7 @@ sealed class Fizzy.ImageViewer.Menus.MenuItem : Fizzy.ImageViewer.Menus.IMenuIte
 sealed class Fizzy.ImageViewer.Menus.SeparatorMenuItem : Fizzy.ImageViewer.Menus.IMenuItem
 sealed class Fizzy.ImageViewer.Snapshots.ImageSnapshot : System.IDisposable
 sealed class Fizzy.ImageViewer.Viewer : Fizzy.ImageViewer.Drawing.IViewerDrawing, Fizzy.ImageViewer.Frames.ICommittedFrameSource, Fizzy.ImageViewer.Frames.IFrameSink, Fizzy.ImageViewer.Hud.IViewerHud, Fizzy.ImageViewer.IViewer, Fizzy.ImageViewer.IViewerCapabilities, Fizzy.ImageViewer.IViewerLifetime, Fizzy.ImageViewer.IViewerWindow, Fizzy.ImageViewer.Imaging.IViewerQueries, Fizzy.ImageViewer.Measurements.IViewerMeasurements, Fizzy.ImageViewer.Menus.IViewerMenu, Fizzy.ImageViewer.Snapshots.ISnapshotSource, Fizzy.ImageViewer.Viewport.IViewerDisplay, System.IAsyncDisposable
+sealed class Fizzy.ImageViewer.Viewport.DisplayFailure : System.IEquatable<Fizzy.ImageViewer.Viewport.DisplayFailure>
 static class Fizzy.ImageViewer.Frames.CpuFramePixelReader
 static class Fizzy.ImageViewer.Frames.D3D9ImageFrame
 static class Fizzy.ImageViewer.Frames.FramePixelFormats

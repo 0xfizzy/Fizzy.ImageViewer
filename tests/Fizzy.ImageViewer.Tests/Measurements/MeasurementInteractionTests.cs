@@ -23,7 +23,7 @@ namespace Fizzy.ImageViewer.Tests;
 [Collection("Viewer")]
 public class MeasurementInteractionTests
 {
-    private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+    private static Viewer Create() => new(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), true);
     private static MeasurementOverlay Overlay(Viewer viewer) => viewer.Layers.Measurements.Root.Children.OfType<MeasurementOverlay>().Single();
 
     [Theory]
@@ -70,7 +70,7 @@ public class MeasurementInteractionTests
     public async Task CrossingEveryCornerKeepsGeometryQueryAndExportConsistent(int index, double x, double y)
     {
         await using var viewer = Create();
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(10, 10, 10, FramePixelFormat.Gray8), Enumerable.Range(0, 100).Select(i => (byte)i).ToArray()));
+        await viewer.SubmitAndDisplayAsync(ImageFrame.Copy(new(10, 10, 10, FramePixelFormat.Gray8), Enumerable.Range(0, 100).Select(i => (byte)i).ToArray()));
         MenuSnapshotSession.Target? frozen = null;
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {

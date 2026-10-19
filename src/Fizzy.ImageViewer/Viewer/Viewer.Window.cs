@@ -75,7 +75,22 @@ public partial class Viewer
     });
 
     /// <inheritdoc />
-    public void Hide() => InvokeAlive(() => _host.Window.Hide());
+    public void Hide() => Visible = false;
+
+    /// <inheritdoc />
+    public bool Visible
+    {
+        get => InvokeAlive(() => _host.Window.Visibility == Visibility.Visible);
+        set => InvokeAlive(() =>
+        {
+            var window = _host.Window;
+            if (!value) { window.Hide(); return; }
+            var activate = window.ShowActivated;
+            window.ShowActivated = false;
+            try { window.Show(); }
+            finally { window.ShowActivated = activate; }
+        });
+    }
 
     /// <inheritdoc />
     public void Minimize() => InvokeAlive(() => _host.Window.WindowState = WindowState.Minimized);

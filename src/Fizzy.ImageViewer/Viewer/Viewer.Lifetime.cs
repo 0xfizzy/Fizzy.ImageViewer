@@ -32,6 +32,7 @@ public partial class Viewer
         lock (control.Runtime.Lifetime.Gate)
         {
             _frameCommitted = null;
+            _displayFailed = null;
             _measurementCompleted = null;
             _measurementRemoved = null;
             _measurementChanged = null;

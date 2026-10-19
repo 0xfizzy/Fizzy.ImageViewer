@@ -13,7 +13,9 @@ public class EventSubscriptionTests
     [InlineData(true)]
     public Task FrameSubscriptionsUseSnapshotsAndPreserveDuplicateSemantics(bool standalone) => ControlTestDispatcher.Run(async () =>
     {
-        await using IViewer owner = standalone ? new Viewer(showWindow: false) : new ImageViewerControl();
+        await using IViewer owner = standalone ? new Viewer(showWindow: true) : new ImageViewerControl();
+        var window = standalone ? null : new System.Windows.Window { Content = owner, ShowActivated = false };
+        window?.Show();
         IViewerCapabilities view = owner;
         var order = new List<string>();
         var senders = new List<object?>();
@@ -41,6 +43,7 @@ public class EventSubscriptionTests
         await Submit(view);
         Assert.Equal(new[] { "first", "duplicate", "late" }, order);
         await owner.DisposeAsync();
+        window?.Close();
         Assert.Throws<ObjectDisposedException>(() => view.FrameCommitted += second);
         view.FrameCommitted -= second;
         view.FrameCommitted -= second;
@@ -176,7 +179,7 @@ public class EventSubscriptionTests
     [Fact]
     public async Task ClosedKeepsCapturedSubscribersAndRejectsReentrantSubscription()
     {
-        await using var viewer = new Viewer(showWindow: false);
+        await using var viewer = new Viewer(showWindow: true);
         var order = new List<string>();
         object? senderSeen = null;
         Exception? rejected = null;
@@ -197,9 +200,9 @@ public class EventSubscriptionTests
         Assert.IsType<ObjectDisposedException>(rejected);
     }
 
-    private static async Task Submit(IFrameSink sink)
+    private static async Task Submit(IViewerCapabilities sink)
     {
-        var result = await sink.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
-        Assert.Equal(FrameSubmitStatus.Committed, result.Status);
+        var result = await sink.SubmitAndDisplayAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }));
+        Assert.Equal(FrameSubmitStatus.Accepted, result.Status);
     }
 }

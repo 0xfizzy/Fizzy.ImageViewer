@@ -21,7 +21,7 @@ public class ViewerInitializationTests
         await using var viewer = explicitNull ? new Viewer(logger: null, showWindow: false) : new Viewer(showWindow: false);
         Assert.False(viewer.IsVisible);
         var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
-        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+        Assert.Equal(FrameSubmitStatus.Accepted, (await viewer.SubmitFrameAsync(
             ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }))).Status);
         await viewer.DisposeAsync();
         Assert.False(sta.IsAlive);
@@ -92,7 +92,7 @@ public class ViewerInitializationTests
         viewer.Title = "Configured before show";
         var closed = 0;
         viewer.Closed += (_, _) => closed++;
-        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+        Assert.Equal(FrameSubmitStatus.Accepted, (await viewer.SubmitFrameAsync(
             ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }))).Status);
         Assert.False(viewer.IsVisible);
         viewer.Show();
@@ -156,7 +156,7 @@ public class ViewerInitializationTests
         Assert.False(sta.IsAlive);
         Assert.Equal(1, presenter.Disposals);
         Assert.Equal(1, closed);
-        Assert.Null(typeof(Viewer).GetField("Closed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewer));
+        Assert.Null(typeof(Viewer).GetField("_closed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(viewer));
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class ViewerInitializationTests
         var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
         var sta = await viewer.Host.Window.Dispatcher.InvokeAsync(() => Thread.CurrentThread);
         var frameFailure = new InvalidOperationException("frame release");
-        Assert.Equal(FrameSubmitStatus.Committed, (await viewer.SubmitFrameAsync(
+        Assert.Equal(FrameSubmitStatus.Accepted, (await viewer.SubmitFrameAsync(
             ImageFrame.TakeOwnership(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 }, () => throw frameFailure))).Status);
         var failure = await Assert.ThrowsAsync<AggregateException>(() => viewer.DisposeAsync().AsTask());
         Assert.Contains(frameFailure, failure.Flatten().InnerExceptions);

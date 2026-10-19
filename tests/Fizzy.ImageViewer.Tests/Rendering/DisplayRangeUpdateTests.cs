@@ -2,6 +2,7 @@ using Fizzy.ImageViewer.Frames;
 using Fizzy.ImageViewer.Imaging;
 using Fizzy.ImageViewer.Rendering;
 using Fizzy.ImageViewer.Snapshots;
+using Fizzy.ImageViewer.Viewport;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Windows.Media;
 using Xunit;
@@ -12,24 +13,31 @@ namespace Fizzy.ImageViewer.Tests;
 public class DisplayRangeUpdateTests
 {
     [Fact]
-    public async Task EmptyViewerConfiguresFutureSubmissionImmediately()
+    public async Task EmptyHiddenViewerConfiguresFutureSubmissionImmediately()
     {
         await using var viewer = new Viewer(showWindow: false);
-        var update = viewer.SetDisplayRangeAsync(new(0, 100));
-        Assert.True(update.IsCompletedSuccessfully);
+        viewer.SetDisplayRange(new(0, 100));
         Assert.Equal(new GrayDisplayRange(0, 100), viewer.DisplayRange);
+        Assert.Null(viewer.AcquireCurrentFrame());
     }
 
     [Fact]
     public async Task RedrawFailureIsObservableAndSnapshotKeepsCommittedRange()
     {
         var presenter = new FailingPresenter();
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 100 }));
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true);
+        await viewer.SubmitAndDisplayAsync(Frame(100));
         presenter.Fail = true;
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => viewer.SetDisplayRangeAsync(new(0, 100)));
-        Assert.Equal("redraw failed", error.Message);
-        Assert.Equal(new GrayDisplayRange(0, 100), viewer.DisplayRange);
+        var failed = new TaskCompletionSource<DisplayFailure>(TaskCreationOptions.RunContinuationsAsynchronously);
+        viewer.DisplayFailed += (_, _) => throw new InvalidOperationException("subscriber");
+        viewer.DisplayFailed += (sender, failure) => { Assert.Same(viewer, sender); failed.TrySetResult(failure); };
+        viewer.SetDisplayRange(new(0, 100));
+        var error = await failed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("redraw failed", error.Error.Message);
+        Assert.Equal(1, error.DisplayVersion);
+        Assert.Equal(new GrayDisplayRange(0, 100), error.DisplayRange);
+        await viewer.Host.Control.Runtime.Pipeline.Completion;
+        Assert.Equal(2, presenter.Calls); // No automatic retry.
         using var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
         using var pixels = snapshot.AcquirePixels();
         Assert.Equal(0, snapshot.DisplayVersion);
@@ -37,86 +45,130 @@ public class DisplayRangeUpdateTests
     }
 
     [Fact]
-    public async Task LaterSettingCancelsPendingUpdateAndLatestCommits()
-    {
-        await using var viewer = new Viewer(showWindow: false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 100 }));
-        Task? first = null, second = null;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
-        {
-            first = viewer.SetDisplayRangeAsync(new(0, 100));
-            second = viewer.SetDisplayRangeAsync(new(0, 200));
-        });
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first!);
-        await second!.WaitAsync(TimeSpan.FromSeconds(5));
-        using var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
-        Assert.Equal(2, snapshot.DisplayVersion);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task QueuedSubmissionTerminatesUpdateWithoutDuplicateRedraw(bool fail, bool cancel)
+    public async Task HiddenSettingsCoalesceAndResumeWithoutNewInput()
     {
         var presenter = new FailingPresenter();
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 100 }));
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true);
+        await viewer.SubmitAndDisplayAsync(Frame(100));
+        viewer.Hide();
+        viewer.SetDisplayRange(new(0, 100));
+        viewer.SetDisplayRange(new(0, 200));
+        Assert.Equal(1, presenter.Calls);
+        using (var previous = await viewer.CaptureSnapshotAsync(SnapshotKind.Display)) Assert.Equal(0, previous.DisplayVersion);
+        viewer.Visible = true;
+        await presenter.Second.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await viewer.Host.Control.Runtime.Pipeline.Completion;
+        using var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
+        Assert.Equal(2, snapshot.DisplayVersion);
+        Assert.Equal(2, presenter.Calls);
+    }
+
+    [Fact]
+    public async Task LatestSubmissionUsesLatestHiddenSettingWithoutDuplicateRedraw()
+    {
+        var presenter = new FailingPresenter();
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true);
+        await viewer.SubmitAndDisplayAsync(Frame(100));
+        viewer.Hide();
+        viewer.SetDisplayRange(new(0, 200));
+        var shown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var cancellation = new CancellationTokenSource();
-        Task update;
-        Task<FrameSubmitResult> submission;
-        lock (viewer.Host.Control.Runtime.Lifetime.Gate)
-        {
-            presenter.Fail = fail;
-            update = viewer.SetDisplayRangeAsync(new(0, 200));
-            submission = viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 50 }), cancellationToken: cancellation.Token).AsTask();
-            if (cancel) cancellation.Cancel();
-        }
-        var result = await submission;
-        Assert.Equal(fail ? FrameSubmitStatus.Failed : cancel ? FrameSubmitStatus.Cancelled : FrameSubmitStatus.Committed, result.Status);
-        if (fail) await Assert.ThrowsAsync<InvalidOperationException>(() => update);
-        else await update.WaitAsync(TimeSpan.FromSeconds(5));
+        var receipt = await viewer.SubmitFrameAsync(Frame(50), new() { OnCommitted = _ => shown.TrySetResult() }, cancellation.Token);
+        cancellation.Cancel();
+        Assert.Equal(FrameSubmitStatus.Accepted, receipt.Status);
+        viewer.Visible = true;
+        await shown.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await viewer.Host.Control.Runtime.Pipeline.Completion;
         Assert.Equal(2, presenter.Calls);
     }
 
     [Fact]
-    public async Task ShutdownCancelsPendingDisplayUpdate()
+    public async Task ShutdownDoesNotWaitForHiddenDisplayConfiguration()
     {
         var viewer = new Viewer(showWindow: false);
-        await viewer.SubmitFrameAsync(ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 100 }));
-        Task? update = null;
-        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
-        {
-            update = viewer.SetDisplayRangeAsync(new(0, 200));
-            _ = viewer.DisposeAsync();
-        });
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => update!);
-        await viewer.DisposeAsync();
+        await viewer.SubmitFrameAsync(Frame(100));
+        viewer.SetDisplayRange(new(0, 200));
+        await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Fact]
     public async Task CurrentGpuRangeRejectionIsSynchronousAndPreservesRequest()
     {
         await using var viewer = new Viewer(showWindow: false);
-        await viewer.SetDisplayRangeAsync(new(0, 100));
+        viewer.SetDisplayRange(new(0, 100));
         using var frame = D3D9ImageFrame.TakeOwnership(new(1, 1, 4, FramePixelFormat.Bgra32), (nint)1,
             new UnexpectedPixelSource(), () => { });
         using var current = frame.Acquire();
-        // Install only the pipeline's retained lease; never bind the sentinel native surface.
         var field = typeof(FramePipeline).GetField("_currentFrame",
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-        lock (viewer.Host.Control.Runtime.Lifetime.Gate)
+        await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
+            // Never attach the sentinel native surface.
             field.SetValue(viewer.Host.Control.Runtime.Pipeline, current);
             try
             {
-                Assert.Throws<NotSupportedException>(() => { _ = viewer.SetDisplayRangeAsync(new(0, 200)); });
+                Assert.Throws<NotSupportedException>(() => viewer.SetDisplayRange(new(0, 200)));
                 Assert.Equal(new GrayDisplayRange(0, 100), viewer.DisplayRange);
             }
             finally { field.SetValue(viewer.Host.Control.Runtime.Pipeline, null); }
-        }
+        });
     }
+
+    [Fact]
+    public async Task PendingGpuRangeFailureIsReportedOnlyWhenDisplayResumes()
+    {
+        await using var viewer = new Viewer(showWindow: false);
+        viewer.SetDisplayRange(new(0, 100));
+        var failed = new TaskCompletionSource<DisplayFailure>(TaskCreationOptions.RunContinuationsAsynchronously);
+        viewer.DisplayFailed += (_, failure) => failed.TrySetResult(failure);
+        int released = 0;
+        var receipt = await viewer.SubmitFrameAsync(D3D9ImageFrame.TakeOwnership(
+            new(1, 1, 4, FramePixelFormat.Bgra32), (nint)1, new UnexpectedPixelSource(), () => released++));
+        Assert.Equal(FrameSubmitStatus.Accepted, receipt.Status);
+        Assert.False(failed.Task.IsCompleted);
+        Assert.Equal(0, released);
+        viewer.Visible = true;
+        var failure = await failed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(receipt.FrameId, failure.Frame.FrameId);
+        Assert.IsType<NotSupportedException>(failure.Error);
+        await viewer.Host.Control.Runtime.Pipeline.Completion;
+        Assert.Equal(1, released);
+        Assert.Null(viewer.AcquireCurrentFrame());
+    }
+
+    [Fact]
+    public async Task FreezeDefersQueuedRedrawUntilMenuResumes()
+    {
+        var presenter = new FailingPresenter();
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true);
+        await viewer.SubmitAndDisplayAsync(Frame(100));
+        using var queued = new ManualResetEventSlim();
+        var dispatcher = viewer.Host.Window.Dispatcher;
+        System.Windows.Threading.DispatcherHookEventHandler hook = (_, e) =>
+        {
+            if (e.Operation.Priority == System.Windows.Threading.DispatcherPriority.Render) queued.Set();
+        };
+        dispatcher.Hooks.OperationPosted += hook;
+        try
+        {
+            await dispatcher.InvokeAsync(() =>
+            {
+                viewer.SetDisplayRange(new(0, 200));
+                Assert.True(queued.Wait(TimeSpan.FromSeconds(5)));
+                viewer.Host.Control.Runtime.MenuSession.Open();
+            });
+            await viewer.Host.Control.Runtime.Pipeline.Completion;
+            Assert.Equal(1, presenter.Calls);
+            await dispatcher.InvokeAsync(viewer.Host.Control.Runtime.MenuSession.Close);
+            await presenter.Second.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await viewer.Host.Control.Runtime.Pipeline.Completion;
+            using var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display);
+            Assert.Equal(1, snapshot.DisplayVersion);
+        }
+        finally { dispatcher.Hooks.OperationPosted -= hook; }
+    }
+
+    private static ImageFrame Frame(byte value) => ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { value });
 
     private sealed class UnexpectedPixelSource : IFramePixelSource
     {
@@ -130,9 +182,10 @@ public class DisplayRangeUpdateTests
         private readonly WriteableBitmapPresenter _inner = new();
         internal bool Fail;
         internal int Calls;
+        internal TaskCompletionSource Second = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public ImageSource Present(DisplayBuffer pixels)
         {
-            Calls++;
+            if (++Calls == 2) Second.TrySetResult();
             return Fail ? throw new InvalidOperationException("redraw failed") : _inner.Present(pixels);
         }
         public void Dispose() => _inner.Dispose();

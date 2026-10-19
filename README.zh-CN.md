@@ -38,13 +38,13 @@ Array.Fill(pixels, (byte)128);
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($"Initial frame: {result.Status}");
 viewer.Show();
 await closed.Task;
 ```
 
-提交会立即转移帧所有权，包括拒绝和取消的情况。`Committed` 表示 UI 已接纳该帧，不代表物理屏幕已显示。
+提交会立即转移帧所有权，包括拒绝和取消的情况。`Accepted` 表示最新帧管线已接管所有权，不代表显示完成；隐藏时仅保留最新输入。
 
 ## 核心功能
 

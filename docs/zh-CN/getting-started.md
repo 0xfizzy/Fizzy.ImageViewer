@@ -41,7 +41,7 @@ Array.Fill(pixels, (byte)128);
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
 if (result.Error is { } error) throw error;
-if (result.Status != FrameSubmitStatus.Committed)
+if (result.Status != FrameSubmitStatus.Accepted)
     throw new InvalidOperationException($"Initial frame: {result.Status}");
 
 viewer.Show();
@@ -49,7 +49,7 @@ await closed.Task;
 // await using waits for shutdown and reports cleanup failures.
 ```
 
-在 `Show()` 前配置并订阅事件。提交会立即转移所有权，即使操作被取消或 Viewer 已关闭也一样：不要重复提交同一帧，也不要释放已转移的存储。`Committed` 表示 UI 已接受该帧，不代表显示器已显示。应用应同时检查 `Status` 和 `Error`，丢弃的帧也不例外。
+在 `Show()` 前配置并订阅事件。提交会立即转移所有权，即使操作被取消或 Viewer 已关闭也一样：不要重复提交同一帧，也不要释放已转移的存储。`Accepted` 表示最新帧管线已接管所有权，不代表显示完成；隐藏时仅保留最新输入。应用应同时检查 `Status` 和 `Error`，丢弃的帧也不例外。
 
 `Closed` 是通知，不证明渲染和查询已排空。先停止并等待生产者结束，再等待 `DisposeAsync`；不要在 Viewer 回调中同步等待这些操作。Viewer 对应一次窗口生命周期，关闭后应新建实例。
 

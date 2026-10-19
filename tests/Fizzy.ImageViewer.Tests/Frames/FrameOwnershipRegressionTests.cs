@@ -14,7 +14,7 @@ public class FrameOwnershipRegressionTests
     public async Task ShutdownWaitsForSupersededSubmissionRelease()
     {
         var presenter = new BlockingPresenter();
-        var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, false);
+        var viewer = new Viewer(NullLogger<Viewer>.Instance, presenter, true);
         using var release = new ManualResetEventSlim();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<FrameSubmitResult>? replacement = null;
@@ -28,7 +28,7 @@ public class FrameOwnershipRegressionTests
             presenter.Release.Set();
             var closing = viewer.DisposeAsync().AsTask();
             await Assert.ThrowsAsync<TimeoutException>(() => closing.WaitAsync(TimeSpan.FromMilliseconds(200)));
-            Assert.False(replaced.IsCompleted);
+            Assert.True(replaced.IsCompletedSuccessfully);
             Assert.False(replacement.IsCompleted);
         }
         finally { release.Set(); presenter.Release.Set(); if (replacement != null) await replacement; await viewer.DisposeAsync(); }

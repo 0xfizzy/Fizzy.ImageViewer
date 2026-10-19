@@ -175,10 +175,10 @@ public class MeasurementToolProtocolTests
     [InlineData(true)]
     public async Task PublicToolReadsFrameAndMeasurementOwnsCleanup(bool finish)
     {
-        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), false);
+        await using var viewer = new Viewer(NullLogger<Viewer>.Instance, new WriteableBitmapPresenter(), true);
         var tool = new FrameTool { Finish = finish };
         ImageFrame Frame() => ImageFrame.Copy(new(1, 1, 1, FramePixelFormat.Gray8), new byte[] { 42 });
-        await viewer.SubmitFrameAsync(Frame());
+        await viewer.SubmitAndDisplayAsync(Frame());
         await viewer.Host.Window.Dispatcher.InvokeAsync(() =>
         {
             viewer.RegisterMeasurementTool(tool); viewer.ActivateMeasurementTool(tool.Id); viewer.Host.Control.Runtime.Interaction.ImageDown(0, 0);

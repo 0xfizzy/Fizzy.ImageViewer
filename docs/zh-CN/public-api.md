@@ -22,6 +22,8 @@ viewer.Show();
 
 窗口属性和操作同步调度到 Viewer STA，关闭开始后抛出 `ObjectDisposedException`。`Show` 显示、恢复最小化并请求激活；`Hide` 隐藏但保留帧、绘图和测量；`Minimize` 改变状态但不隐藏，也不隐式显示原本隐藏的窗口。`IsVisible` 遵循 WPF 可见性，已显示但最小化的窗口仍可见；`IsMinimized` 独立反映最小化状态。
 
+`Visible` 读写窗口显隐设置；设为 true 只显示，不激活或解除最小化，`Show()` 才显式恢复并激活。隐藏或最小化时继续接收最新输入，但暂停新的显示工作；恢复后显示最新帧。`IsVisible` 不检测遮挡，移出屏幕、被覆盖或失去焦点不会暂停更新。
+
 `DisposeAsync` 关闭窗口，等待所属后台工作与 STA 停止。重复调用观察同一个完成任务及其固定成功或失败结果。资源清理失败在其他安全清理和真实 STA 退出后报告；通知订阅异常记录并隔离。`Closed` 的订阅在终止通知交付后释放。Viewer 只对应一次窗口生命周期，关闭后不能重新显示，应创建新实例。
 
 构造时在启动 STA 前验证窗口边界。初始化失败在所属线程执行安全清理并排空后台工作，然后重新抛出原始异常；清理也失败时，聚合保留两类错误。无法证明安全分离的 native 资源保持隔离，不释放或复用；关闭任务失败不证明资源全部释放。
@@ -36,7 +38,7 @@ viewer.Show();
 
 `FitToViewport` 将完整图像居中，可能选择超出滚轮常规 0.01–100 范围的缩放。此时滚轮允许朝该范围变化，拒绝继续远离该范围。
 
-用 `await SetDisplayRangeAsync(range)` 请求灰度映射并观察重绘失败。`DisplayRange` 读取最新请求，快照保留最后成功提交的映射；较新请求或关闭会取消等待中的更新。没有当前帧时，只配置后续输入并立即完成。完整规则见[显示契约](frame-pipeline.md#提交与显示)。
+用 `SetDisplayRange(range)` 接受灰度映射请求，不等待显示；`DisplayRange` 读取请求，快照保留最后成功提交的映射。后续显示失败通过 `DisplayFailed` 观察。完整规则见[显示契约](frame-pipeline.md#提交与显示)。
 
 ### 排空与独立租约
 
@@ -64,7 +66,7 @@ viewer.Show();
 
 | 接口 | 命名空间 | 职责 |
 | --- | --- | --- |
-| `IFrameSink` | `.Frames` | 提交拥有的帧并等待提交/丢弃结果 |
+| `IFrameSink` | `.Frames` | 转移帧并等待接收结果 |
 | `ICommittedFrameSource` | `.Frames` | 获取当前原始帧租约，观察提交 |
 | `IViewerLifetime` | 根命名空间 | 被动观察最终停止接纳，不发起关闭 |
 | `IViewerDisplay` | `.Viewport` | 适应窗口与显示范围 |

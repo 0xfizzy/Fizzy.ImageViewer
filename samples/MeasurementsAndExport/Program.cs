@@ -12,8 +12,13 @@ viewer.MeasurementCompleted += (_, e) => Console.WriteLine($"Completed: {e.Snaps
 viewer.MeasurementChanged += (_, e) => Console.WriteLine($"Changed: {e.Snapshot}; query: {e.QueryResult}");
 using var registration = viewer.RegisterMeasurementTool(new PointTool());
 var pixels = Enumerable.Range(0, 640 * 480).Select(i => (byte)i).ToArray();
+var displayed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+viewer.FrameCommitted += (_, _) => displayed.TrySetResult();
+viewer.DisplayFailed += (_, failure) => displayed.TrySetException(failure.Error);
 await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+viewer.Show();
+await displayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
 using (var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display))
 {
     var directory = Path.GetFullPath(args.Length > 0 ? args[0] : "artifacts/samples");
