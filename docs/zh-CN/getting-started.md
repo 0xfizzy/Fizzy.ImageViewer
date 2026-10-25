@@ -76,11 +76,13 @@ viewer.ActivateMeasurementTool(
 
 ```powershell
 dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/ApplicationEndpoint
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 ```
 
+- [ApplicationEndpoint](../../samples/ApplicationEndpoint/App.xaml.cs): DI、帧所有权输入、ViewModel 命令与宿主异步清理。
 - [BasicViewer](../../samples/BasicViewer/Program.cs)：显示复制的灰度像素并等待关闭。
 - [LiveOverlays](../../samples/LiveOverlays/Program.cs)：模拟帧流、复用批量句柄、先结束生产再释放。
 - [MeasurementsAndExport](../../samples/MeasurementsAndExport/Program.cs)：独立点测量会话、通知和 `artifacts/samples/` 下的 PNG 输出。

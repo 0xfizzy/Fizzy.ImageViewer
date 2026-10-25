@@ -20,6 +20,7 @@
 - [入门](getting-started.md): 创建第一个图像显示应用。
 - [实时流集成](live-streaming.md)：限制生产和叠加工作量。
 - [Viewer 与生命周期](public-api.md): 配置 Viewer 并管理窗口生命周期。
+- [应用端点](application-integration.md): DI、帧 sink 与应用显示接口。
 
 ## 帧与处理
 

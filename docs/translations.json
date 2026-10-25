@@ -1,12 +1,13 @@
 {
+  "docs/en/application-integration.md": "c716d2dea2a10c118bac0b42b8e903d89ffe89b0cb9be9cc910cb55c690a0c2c",
   "docs/en/architecture.md": "25a5a77e7762efbf8a1b20813c1be4afb82e291dd2e29b0b22e700b8f16cab2f",
   "docs/en/cuda.md": "5390f555d9912c5e8c0d211a7483f6108292763c6d55c124e0b0c159f1b1d8de",
   "docs/en/documentation.md": "fb4a47b471bba34568d38db1d50f57745f1ba8c936d9b5c99735526f1c032c62",
   "docs/en/drawing-layers.md": "886a51c4804f8da8ab581ee213e9eca86b15842983e1bbea67ae0125fad8df91",
-  "docs/en/embedding.md": "43267747a6561e86d3cf8f4daca4cc03e65dcdf43d7088f72418cb3e2375ff16",
+  "docs/en/embedding.md": "44a7e508f508e59f3ec1fde66fb8e8a2e3fd252fb575cd057e2dd453df383bfd",
   "docs/en/frame-pipeline.md": "2b1c6059ceede9cf716eb22450353bfed528e2b13d9a82238306a889bd53872a",
-  "docs/en/getting-started.md": "5422993faf8a43fb22062f9ae31c373148e2797bdcef1658cbe43c0a475d375e",
-  "docs/en/index.md": "d2f03ce7c440162ba890867f046db3ef404630fa67f27d11e8d1fd0ab76552d6",
+  "docs/en/getting-started.md": "62e25a6a103d859221d95358de98bd6d6f781bd46c40d81599529724fb8ed07e",
+  "docs/en/index.md": "c4a09c63ac98ef76bc4c5cf87e17409c90456d21fe3822c5d6b1e44a27558b82",
   "docs/en/live-streaming.md": "9148825c3790ed82ae4afce2fd12aa5c3262463790c595f6b49d65dbc7621818",
   "docs/en/measurement-tools.md": "344c4cf694fafc80e7ccdd6ed5ca7002601c95b8c9f6f2a72f9c5c5d1a64ff69",
   "docs/en/measurements.md": "7ce058aea2d0a0ae67aeda00ee5029c3922cd05c7d596527bad9f86b4a3b252f",
@@ -15,5 +16,5 @@
   "docs/en/releasing.md": "690802a7bc3f866270ab728fb1b439b6677c9901d202f7471dc1ada0eee61f3e",
   "docs/en/snapshots.md": "27e0c7f86156422e090ba2cd91804ef02df15877d42e6ecdfcaee0ebbe414d74",
   "docs/en/validation.md": "00d2d36e297695407d7af1eb5d78cfbbcc4085b5075b0d418c153d2cd9766f32",
-  "README.md": "ae329e99faf8ac7343793beed72551c61db7865233181f1fcee5ffab8fe60bc4"
+  "README.md": "1d41d42a04c9bf68f14cdf974cb77c65ae8282906ee41f96b4433af181ad8622"
 }

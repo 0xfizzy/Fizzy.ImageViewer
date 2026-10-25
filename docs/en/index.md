@@ -20,6 +20,7 @@ Choose a component guide to integrate image viewing, drawing, measurements, and 
 - [Getting started](getting-started.md): Build your first viewer application.
 - [Live streaming](live-streaming.md): Bound producer and overlay work.
 - [Viewer and lifetime](public-api.md): Configure the viewer and manage its window lifetime.
+- [Application endpoints](application-integration.md): DI, frame sinks and application display interfaces.
 
 ## Frames and processing
 

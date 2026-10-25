@@ -59,6 +59,10 @@ Repeated disposal calls share one completion and its success or failure. Disposa
 
 If the dispatcher shuts down prematurely, the control attempts to stop and safely clean up on `ShutdownStarted`, and its disposal result reports the lifecycle failure. This fallback does not replace awaited disposal. Unsafe native resources remain isolated rather than freed or reused. Cleanup failures while ending an unloaded interaction are logged and retained for final disposal.
 
+## Application endpoints
+
+Separate pipeline and ViewModel dependencies through application-owned interfaces; see [application integration](application-integration.md) and the [ApplicationEndpoint example](../../samples/ApplicationEndpoint/App.xaml.cs). Direct calls remain suitable for simple windows.
+
 ## Run the example
 
 ```powershell

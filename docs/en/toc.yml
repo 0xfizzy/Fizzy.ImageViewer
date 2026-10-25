@@ -6,6 +6,8 @@
       href: getting-started.md
     - name: Embed in WPF
       href: embedding.md
+    - name: Application endpoints
+      href: application-integration.md
     - name: Live streaming
       href: live-streaming.md
     - name: Viewer and lifetime

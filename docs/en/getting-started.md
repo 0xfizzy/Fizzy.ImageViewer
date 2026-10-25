@@ -76,11 +76,13 @@ Run from the repository root. These manual checks open WPF windows:
 
 ```powershell
 dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/ApplicationEndpoint
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 ```
 
+- [ApplicationEndpoint](../../samples/ApplicationEndpoint/App.xaml.cs): DI, owned frame input, ViewModel commands and asynchronous host cleanup.
 - [BasicViewer](../../samples/BasicViewer/Program.cs): copied grayscale pixels and awaited closure.
 - [LiveOverlays](../../samples/LiveOverlays/Program.cs): simulated frames, reusable batch handle, production ending before disposal.
 - [MeasurementsAndExport](../../samples/MeasurementsAndExport/Program.cs): fresh-session point tool, events and PNG output under `artifacts/samples/`.

@@ -6,6 +6,8 @@
       href: getting-started.md
     - name: 嵌入 WPF
       href: embedding.md
+    - name: 应用端点
+      href: application-integration.md
     - name: 实时流集成
       href: live-streaming.md
     - name: Viewer 与生命周期

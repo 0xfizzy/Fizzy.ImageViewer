@@ -55,6 +55,10 @@ if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
 
 Dispatcher 提前关闭时，控件在 `ShutdownStarted` 中尽力停止和安全清理，释放结果报告生命周期失败；这不能代替正常等待释放。无法安全释放的 native 资源保持隔离，不释放或复用。卸载交互清理失败会记录日志，并保留至最终释放结果。
 
+## 应用端点
+
+通过应用自有接口隔离 pipeline 与 ViewModel 的依赖，见[应用集成](application-integration.md)和 [ApplicationEndpoint 示例](../../samples/ApplicationEndpoint/App.xaml.cs)。简单窗口仍适合直接调用。
+
 ## 运行示例
 
 ```powershell
