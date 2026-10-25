@@ -14,7 +14,8 @@ namespace Fizzy.ImageViewer;
 /// <remarks>Create on an STA. Library operations marshal to that dispatcher; inherited WPF members
 /// retain WPF thread affinity. Unloading ends interaction but retains content. The owner must await
 /// DisposeAsync before stopping the dispatcher. A disposed control cannot be reused.
-/// Content is managed by the library and must not be replaced.</remarks>
+/// Content is managed by the library and must not be replaced. The owned viewport clips image,
+/// drawing, measurement and HUD content to its layout bounds.</remarks>
 public sealed partial class ImageViewerControl : UserControl, IViewer
 {
     private readonly ViewerRuntime _runtime;
@@ -42,7 +43,8 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
         _runtime = new ViewerRuntime(this, logger, presenter);
         try
         {
-            _surface = new Grid { Background = Brushes.Black };
+            // Image, drawings, measurements and HUD share this viewport boundary.
+            _surface = new Grid { Background = Brushes.Black, ClipToBounds = true };
             ImageViewport = new ImageViewport(_surface);
             _layers = new Layers.ViewerLayers(ImageViewport.TransformGroup, _runtime.Lifetime, logger);
             HudLayer = new HudLayer();

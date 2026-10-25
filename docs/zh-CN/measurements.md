@@ -46,7 +46,7 @@ Viewer 和句柄的通知共用 STA 上的 FIFO 队列。每次变化先捕获�
 
 ## 编辑与删除
 
-点击已完成测量进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 `Measurement` 句柄调用 `UpdateGeometry` 或 `Dispose`；`viewer.Measurements.Clear()` 清空全部测量。
+点击已完成测量将其选中，再从右键菜单选择 **Edit** 进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 `Measurement` 句柄调用 `UpdateGeometry` 或 `Dispose`；`viewer.Measurements.Clear()` 清空全部测量。
 
 句柄事件使用 `EventHandler<MeasurementGeometry>` 和 `EventHandler<MeasurementQueryResult?>`，
 sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，退订仍安全，不撤回已捕获的通知。
@@ -87,7 +87,7 @@ sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，�
 
 每项测量拥有几何、框架视觉、标签、可选查询和注册资源。预览已经是被拥有的测量；`Complete` 保留它并启用查询，取消会释放未完成项。完成时不重新附加视觉。菜单同时固定帧和 ROI，后续编辑不改变已捕获导出目标。
 
-删除、清空、曲线关闭和 Viewer 关闭都进入幂等释放。专用资源清理失败后仍尝试移除标签和主图形；移除后才发出通知。Viewer 关闭先停止交互和查询、释放测量，再清图层和帧；`DisposeAsync` 等待在途查询释放自己的租约，包括不立即响应取消的后端。
+删除、清空、曲线关闭和 Viewer 关闭都进入幂等释放。专用资源清理失败后仍尝试移除标签和主图形；移除后才发出通知。Viewer 关闭停止接纳和帧管线、结束交互、取消查询、释放测量并清空图层。在途渲染和查询持有各自的帧租约；`DisposeAsync` 等待这些工作完成，包括不立即响应取消的后端。调用方持有的独立租约可越过释放继续存续。
 
 ## 交互规则
 

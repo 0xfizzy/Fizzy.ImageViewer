@@ -4,6 +4,7 @@ using Fizzy.ImageViewer.Frames;
 await using var viewer = new Viewer(showWindow: false);
 var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 viewer.Closed += (_, _) => closed.TrySetResult();
+viewer.DisplayFailed += (_, failure) => Console.Error.WriteLine($"Display failed: {failure.Error}");
 viewer.Title = "Basic viewer — close the window to exit";
 var pixels = Enumerable.Range(0, 640 * 480).Select(i => (byte)(i % 640)).ToArray();
 var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(

@@ -55,7 +55,7 @@ but completion does not promise query readiness. Custom tools may additionally s
 
 ## Edit and remove
 
-Click a completed measurement to edit it, and drag its control points. Delete removes the selected item; Escape ends creation or editing and retains already-applied edits. Use the event's `Measurement` handle for programmatic `UpdateGeometry` or `Dispose`, and `viewer.Measurements.Clear()` to remove all measurements.
+Click a completed measurement to select it, then choose **Edit** in the context menu and drag its control points. Delete removes the selected item; Escape ends creation or editing and retains already-applied edits. Use the event's `Measurement` handle for programmatic `UpdateGeometry` or `Dispose`, and `viewer.Measurements.Clear()` to remove all measurements.
 
 Handle events use `EventHandler<MeasurementGeometry>` and
 `EventHandler<MeasurementQueryResult?>`, with the measurement itself as sender.
@@ -178,10 +178,11 @@ WPF properties directly is not a supported way to change measurements.
 Deletion, clear, plot-window closure and viewer closure converge on idempotent
 item disposal: release specialized resources, then remove the label and primary
 visual even if a resource fails to close. Removing a visual notifies observers **after** it is
-removed, making repeated and reentrant removal harmless. Closing the viewer first
-stops interaction, cancels queries and disposes items, then clears layers and
-releases its frames. `DisposeAsync` waits for in-flight queries to release their own
-leases, including sources that do not immediately honor cancellation.
+removed, making repeated and reentrant removal harmless. Closing the viewer stops
+admission and the frame pipeline, ends interaction, cancels queries, disposes items
+and clears layers. In-flight rendering and queries retain their own frame leases;
+`DisposeAsync` waits for their completion, including sources that do not immediately
+honor cancellation. Independent caller-owned leases may outlive disposal.
 
 ## Interaction
 

@@ -20,6 +20,7 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
         if (_coordinator != null) throw new InvalidOperationException("Input is already connected.");
         _coordinator = coordinator;
         input.Container.Focusable = true;
+        input.InputSurface.PreviewMouseDown += FocusViewport;
         input.ImageMouseDown += ImageDown;
         input.ImageMouseMove += ImageMove;
         input.Container.PreviewKeyDown += KeyDown;
@@ -53,6 +54,12 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
     }
     private void ImageDown(double x, double y) => Dispatch(() => _coordinator?.ImageDown(x, y));
     private void ImageMove(double x, double y) => Dispatch(() => _coordinator?.ImageMove(x, y));
+    private void FocusViewport(object sender, MouseButtonEventArgs e)
+    {
+        // A sibling viewer or host editor may own focus. Keep an existing measurement
+        // focus within this viewport; selection can move it to the overlay afterwards.
+        if (!input.InputSurface.IsKeyboardFocusWithin) input.Container.Focus();
+    }
     private void KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape) { e.Handled = true; Dispatch(() => _coordinator!.Cancel()); }
@@ -79,6 +86,7 @@ internal sealed class ViewerInputBinding(ImageViewport input, MeasurementOverlay
     {
         if (_coordinator == null) return;
         Restore();
+        input.InputSurface.PreviewMouseDown -= FocusViewport;
         input.ImageMouseDown -= ImageDown;
         input.ImageMouseMove -= ImageMove;
         input.Container.PreviewKeyDown -= KeyDown;

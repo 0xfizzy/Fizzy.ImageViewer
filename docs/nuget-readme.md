@@ -1,6 +1,6 @@
 # Fizzy.ImageViewer
 
-View, draw, measure, and inspect images in Windows/.NET 8 WPF applications. Each Viewer owns an independent window; applications provide image acquisition and device integration.
+View, draw, measure, and inspect images in Windows/.NET 8 and .NET 10 WPF applications. Embed `ImageViewerControl` in an existing WPF window, or use `Viewer` with an independent window and STA. Applications provide image acquisition and device integration.
 
 ## Install
 
@@ -31,7 +31,23 @@ viewer.Show();
 await closed.Task;
 ```
 
-Submission transfers ownership immediately, including rejection or cancellation. Reception completion does not mean display. Hidden viewers retain the newest input; observe FrameCommitted and DisplayFailed for subsequent display outcomes.
+Submission transfers ownership immediately, including rejection or cancellation. `Accepted` means reception only, not display completion or permission to recycle the buffer. Hidden viewers retain the newest input; observe `FrameCommitted` and `DisplayFailed` for subsequent display outcomes. Recycle owned storage only from its final-release callback, or use `ImageFrame.Copy` for reusable producer buffers.
+
+## Embed in WPF
+
+```xml
+<viewer:ImageViewerControl
+    xmlns:viewer="clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer"
+    x:Name="ImageViewer"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />
+```
+
+Create on the host STA and call the same frame, drawing and measurement APIs.
+Unloading ends interaction but preserves content for reattachment on the same dispatcher.
+The owner must await `ImageViewer.DisposeAsync()` before stopping the host dispatcher;
+disposal never closes the host window. See the
+[embedding guide and complete shutdown example](https://0xfizzy.github.io/Fizzy.ImageViewer/en/embedding.html)
+([中文](https://0xfizzy.github.io/Fizzy.ImageViewer/zh-CN/embedding.html)).
 
 ## Features
 

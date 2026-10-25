@@ -20,6 +20,11 @@ Target `net8.0-windows` or `net10.0-windows` with `UseWPF` enabled, and referenc
 
 The parameterless constructor supports XAML. Code can use `new ImageViewerControl(logger)` with an `ILogger<ImageViewerControl>`; null disables logging. Create the control on its host's STA. It is ready to accept frames before `Loaded`, and must be disposed even if never loaded. The library owns `Content`; replacement is rejected. Use ordinary WPF layout properties, not a replacement content or template.
 
+The owned viewport clips image, drawing, measurement and HUD content to its layout bounds,
+including after zoom, pan and resize. You do not need to set `ClipToBounds` on the public control.
+Clicking a viewport takes keyboard focus back from host UI or another viewer; Escape and Delete
+apply to the focused viewer's interaction. Each control keeps its own tools, selection and layers.
+
 After `InitializeComponent`, use the same viewing methods as on `Viewer`:
 
 ```csharp
@@ -35,6 +40,11 @@ if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
 ```
 
 Submission transfers frame ownership immediately, including rejection and cancellation. Fit the image after layout with `FitToViewport()`. Drawing, measurements, HUD, pixel queries, snapshots and menus share the standalone viewer's contracts. Line-profile measurements may open their own plot window. There are no frame-binding dependency properties or viewer commands; call the methods from your application adapter.
+
+`Accepted` reports reception only, not display completion or permission to recycle storage.
+Observe `FrameCommitted` / `OnCommitted` and `DisplayFailed` for later display outcomes;
+an accepted frame may be replaced without display. Use `Copy` for reusable producer buffers,
+or wait for the owned storage's final-release callback before recycling it. See [frames](frame-pipeline.md).
 
 `Visible` controls this element's own WPF visibility (`false` uses `Hidden`). Use inherited `Visibility`
 for XAML bindings or `Collapsed`. `IsVisible` includes ancestor visibility; `IsMinimized` reads the current

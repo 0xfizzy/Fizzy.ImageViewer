@@ -20,6 +20,8 @@
 
 无参构造支持 XAML；代码中可向 `new ImageViewerControl(logger)` 传入 `ILogger<ImageViewerControl>`，null 表示禁用日志。必须在宿主 STA 上创建控件。首次 `Loaded` 前即可提交帧，即使从未加载也必须释放。`Content` 由库管理，替换会被拒绝；使用常规 WPF 布局属性，不替换内容或模板。
 
+自有视口将图像、绘图、测量和 HUD 内容裁剪在其布局边界内，缩放、平移和调整尺寸后同样适用，无需在公共控件上设置 `ClipToBounds`。点击视口会从宿主 UI 或另一个查看器取回键盘焦点；Escape 和 Delete 作用于获得焦点的查看器交互。每个控件独立保留工具、选择和图层状态。
+
 在 `InitializeComponent` 后调用与 `Viewer` 相同的查看方法：
 
 ```csharp
@@ -35,6 +37,8 @@ if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
 ```
 
 提交立即转移帧所有权，包括拒绝和取消。布局完成后通过 `FitToViewport()` 适应图像。绘图、测量、HUD、像素查询、快照和菜单遵循与独立窗口相同的契约；线剖面测量仍可打开独立曲线窗口。不提供帧绑定依赖属性或查看器命令，由应用适配器调用方法。
+
+`Accepted` 仅表示接收，不表示显示完成或缓冲区可回收。通过 `FrameCommitted` / `OnCommitted` 和 `DisplayFailed` 观察后续显示结果；已接受帧可能被替换而从未显示。可复用的生产者缓冲区应使用 `Copy`，或等待已转移存储的最终释放回调后再回收，见[帧契约](frame-pipeline.md)。
 
 `Visible` 控制控件自身 WPF 显隐，false 映射到 `Hidden`；XAML 绑定或需要 `Collapsed` 时使用继承的 `Visibility`。`IsVisible` 包含祖先显隐影响；`IsMinimized` 读取当前所属窗口，无窗口时为 false。这些属性遵循 WPF 线程亲和性。
 只有已加载、有效可见且宿主未最小化时才进行显示工作；暂停期间继续接收，只保留最新等待帧。非当前 Tab 由宿主控制显隐，不进行专门检测；恢复显隐或加载后主动显示最新输入。
