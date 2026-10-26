@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Interface IViewer | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Interface IViewer | Fizzy.ImageViewer ">
+      
+      <meta name="description" content="Viewing capabilities and ownership of asynchronous shutdown.">
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="Fizzy.ImageViewer.IViewer">
+
+
+
+  <h1 id="Fizzy_ImageViewer_IViewer" data-uid="Fizzy.ImageViewer.IViewer" class="text-break">
+Interface IViewer  
+  </h1>
+
+  <div class="facts text-secondary">
+    <dl><dt>Namespace</dt><dd><a class="xref" href="Fizzy.html">Fizzy</a>.<a class="xref" href="Fizzy.ImageViewer.html">ImageViewer</a></dd></dl>
+  <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.dll</dd></dl>
+  </div>
+
+  <div class="markdown summary"><p>Viewing capabilities and ownership of asynchronous shutdown.</p>
+</div>
+  <div class="markdown conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public interface IViewer : IViewerCapabilities, IFrameSink, ICommittedFrameSource, IViewerDisplay, ISnapshotSource, IViewerDrawing, IViewerHud, IViewerMeasurements, IViewerMenu, IViewerQueries, IViewerLifetime, IAsyncDisposable</code></pre>
+  </div>
+
+
+
+
+
+
+
+  <dl class="typelist inheritedMembers">
+    <dt>Inherited Members</dt>
+    <dd>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.IViewerCapabilities.html#Fizzy_ImageViewer_IViewerCapabilities_Layers">IViewerCapabilities.Layers</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Frames.IFrameSink.html#Fizzy_ImageViewer_Frames_IFrameSink_SubmitFrameAsync_Fizzy_ImageViewer_Frames_ImageFrame_Fizzy_ImageViewer_Frames_FrameSubmissionOptions_System_Threading_CancellationToken_">IFrameSink.SubmitFrameAsync(ImageFrame, FrameSubmissionOptions, CancellationToken)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Frames.ICommittedFrameSource.html#Fizzy_ImageViewer_Frames_ICommittedFrameSource_AcquireCurrentFrame">ICommittedFrameSource.AcquireCurrentFrame()</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Frames.ICommittedFrameSource.html#Fizzy_ImageViewer_Frames_ICommittedFrameSource_FrameCommitted">ICommittedFrameSource.FrameCommitted</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_FitToViewport">IViewerDisplay.FitToViewport()</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_SetDisplayRange_System_Nullable_Fizzy_ImageViewer_Imaging_GrayDisplayRange__">IViewerDisplay.SetDisplayRange(GrayDisplayRange?)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayRange">IViewerDisplay.DisplayRange</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Viewport.IViewerDisplay.html#Fizzy_ImageViewer_Viewport_IViewerDisplay_DisplayFailed">IViewerDisplay.DisplayFailed</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Snapshots.ISnapshotSource.html#Fizzy_ImageViewer_Snapshots_ISnapshotSource_CaptureSnapshotAsync_Fizzy_ImageViewer_Snapshots_SnapshotKind_System_Threading_CancellationToken_">ISnapshotSource.CaptureSnapshotAsync(SnapshotKind, CancellationToken)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Snapshots.ISnapshotSource.html#Fizzy_ImageViewer_Snapshots_ISnapshotSource_CaptureSnapshotAsync_Fizzy_ImageViewer_Snapshots_SnapshotKind_Fizzy_ImageViewer_Frames_PixelRegion_System_Threading_CancellationToken_">ISnapshotSource.CaptureSnapshotAsync(SnapshotKind, PixelRegion, CancellationToken)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawLine_System_Windows_Point_System_Windows_Point_System_Windows_Media_Brush_System_Double_">IViewerDrawing.DrawLine(Point, Point, Brush, double)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawText_System_Windows_Point_System_String_System_Windows_Media_Brush_System_Double_System_Windows_Vector_">IViewerDrawing.DrawText(Point, string, Brush, double, Vector)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCrosshair_System_Windows_Point_System_Windows_Media_Brush_System_Double_System_Double_">IViewerDrawing.DrawCrosshair(Point, Brush, double, double)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawRectangle_System_Windows_Rect_System_Windows_Media_Brush_System_Double_">IViewerDrawing.DrawRectangle(Rect, Brush, double)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_DrawCircle_System_Windows_Point_System_Double_System_Windows_Media_Brush_System_Double_System_Windows_Media_Brush_">IViewerDrawing.DrawCircle(Point, double, Brush, double, Brush)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Drawing.IViewerDrawing.html#Fizzy_ImageViewer_Drawing_IViewerDrawing_Markers">IViewerDrawing.Markers</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Hud.IViewerHud.html#Fizzy_ImageViewer_Hud_IViewerHud_DrawHudText_System_String_System_Windows_Media_Brush_System_Nullable_System_Windows_Point__Fizzy_ImageViewer_Hud_AnchorAlignment_System_Double_">IViewerHud.DrawHudText(string, Brush, Point?, AnchorAlignment, double)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Hud.IViewerHud.html#Fizzy_ImageViewer_Hud_IViewerHud_HudLabelText">IViewerHud.HudLabelText</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Hud.IViewerHud.html#Fizzy_ImageViewer_Hud_IViewerHud_IsPixelInfoEnabled">IViewerHud.IsPixelInfoEnabled</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_ActivateMeasurementTool_System_String_">IViewerMeasurements.ActivateMeasurementTool(string)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_EndInteraction">IViewerMeasurements.EndInteraction()</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_RegisterMeasurementTool_Fizzy_ImageViewer_Measurements_IMeasurementTool_">IViewerMeasurements.RegisterMeasurementTool(IMeasurementTool)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_UnregisterMeasurementTool_System_String_">IViewerMeasurements.UnregisterMeasurementTool(string)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_Measurements">IViewerMeasurements.Measurements</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementStyle">IViewerMeasurements.MeasurementStyle</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementCompleted">IViewerMeasurements.MeasurementCompleted</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementRemoved">IViewerMeasurements.MeasurementRemoved</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Measurements.IViewerMeasurements.html#Fizzy_ImageViewer_Measurements_IViewerMeasurements_MeasurementChanged">IViewerMeasurements.MeasurementChanged</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Menus.IViewerMenu.html#Fizzy_ImageViewer_Menus_IViewerMenu_RegisterMenuItem_Fizzy_ImageViewer_Menus_IMenuItem_">IViewerMenu.RegisterMenuItem(IMenuItem)</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Imaging.IViewerQueries.html#Fizzy_ImageViewer_Imaging_IViewerQueries_QueryOptions">IViewerQueries.QueryOptions</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.Imaging.IViewerQueries.html#Fizzy_ImageViewer_Imaging_IViewerQueries_QueryMetrics">IViewerQueries.QueryMetrics</a>
+    </div>
+    <div>
+      <a class="xref" href="Fizzy.ImageViewer.IViewerLifetime.html#Fizzy_ImageViewer_IViewerLifetime_WhenStopping">IViewerLifetime.WhenStopping</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.iasyncdisposable.disposeasync">IAsyncDisposable.DisposeAsync()</a>
+    </div>
+  </dd></dl>
+
+
+
+
+  <h2 id="Fizzy_ImageViewer_IViewer_remarks">Remarks</h2>
+  <div class="markdown level0 remarks"><p>Only the owner disposes the viewer. Borrow IViewerCapabilities or individual capability
+interfaces otherwise. Window operations require IViewerWindow.</p>
+</div>
+
+
+
+</article>
+
+
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

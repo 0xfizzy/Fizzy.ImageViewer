@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Custom measurement tools | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Custom measurement tools | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="custom-measurement-tools">Custom measurement tools</h1>
+
+<p><a href="../zh-CN/measurement-tools.html">简体中文</a></p>
+<p>Implement a tool when an application needs its own interactive creation workflow. Start with <a href="measurements.html">built-in measurements</a> if the existing tools are sufficient. Noninteractive annotations use <a href="drawing-layers.html">drawing layers</a>; there is no standalone measurement creation or saved-ROI restoration API.</p>
+<h2 id="create-and-register-a-tool">Create and register a tool</h2>
+<p>This complete tool creates a rectangle with the same editing, statistics and notifications as the built-in ROI. Each activation gets a new session.</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Measurements;
+using System.Windows;
+
+public sealed class CustomRoi : IMeasurementTool
+{
+    public string Id =&gt; &quot;custom-roi&quot;;
+    public string DisplayName =&gt; &quot;Custom ROI&quot;;
+    public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+        =&gt; new Session(context);
+
+    private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
+    {
+        private IMeasurement? _preview;
+        private Point _start;
+
+        public MeasurementClickResult OnClick(Point point)
+        {
+            if (_preview is null or { IsDisposed: true })
+            {
+                _start = point;
+                _preview = context.CreateMeasurement(
+                    MeasurementGeometry.Rectangle(point, point),
+                    new() { Query = MeasurementQueryKind.RegionStatistics });
+                return MeasurementClickResult.Continue;
+            }
+            OnMouseMove(point);
+            _preview.Complete();
+            return MeasurementClickResult.Finish;
+        }
+
+        public void OnMouseMove(Point point)
+        {
+            if (_preview is { IsDisposed: false })
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_start, point));
+        }
+
+        // The framework releases unfinished measurements after cancellation.
+        public void Cancel() { }
+        public void Dispose() { }
+    }
+}
+</code></pre>
+<p>Keep the registration alive while the feature is installed:</p>
+<pre><code class="lang-csharp">using var registration = viewer.RegisterMeasurementTool(new CustomRoi());
+viewer.ActivateMeasurementTool(&quot;custom-roi&quot;);
+</code></pre>
+<p>Choose a query using the <a href="measurements.html#queries-and-retained-results">geometry/query table</a>. Call <code>Complete()</code> for every item that should survive the session; returning <code>Finish</code> only ends input.</p>
+<h2 id="tool-registration-ownership">Tool registration ownership</h2>
+<p><code>RegisterMeasurementTool(tool)</code> returns an <code>IDisposable</code> handle for that registration.
+Dispose it from any thread to revoke only that instance and cancel its active session.
+Disposal is idempotent and safe after viewer closure; completed measurements survive.
+The caller owns the tool object, which is never disposed by the registration.
+Keep the handle for the installing component's lifetime. Ignoring it retains the
+registration until global unregistration or viewer closure.
+Registration captures <code>Id</code> and <code>DisplayName</code> once on the Viewer STA. After those
+external getters return, the viewer checks its lifetime again before accepting the
+registration. If a getter closes the viewer reentrantly, registration is rejected
+with <code>ObjectDisposedException</code> and no tool is retained.</p>
+<p><code>UnregisterMeasurementTool(id)</code> is a viewer-wide management operation: it removes
+whichever registration currently has that ID. Component cleanup should instead dispose
+its own handle, so it cannot remove a replacement registered under the same ID.
+Revocation takes effect before cancellation callbacks. Callback failures propagate to
+explicit callers after cleanup; they do not restore the revoked registration.</p>
+<p>Activation captures the registration instance before interrupting the previous session.
+Invalid initial requests preserve the current interaction. Reentrant callbacks may
+supersede a request; the superseded request never activates a same-ID replacement.
+Built-in menu actions retain the registration captured when the menu opens and ignore
+it if revoked, hidden, input-disabled or clearing when clicked.</p>
+<h2 id="extension-boundary">Extension boundary</h2>
+<p>Measurement tools use a stable, ordinal <code>Id</code> for programmatic lookup and a separate
+<code>DisplayName</code> for menus. Registration rejects duplicate IDs; <code>UnregisterMeasurementTool</code>
+removes only the registry entry and cancels an active session for that ID while leaving
+completed measurement items intact. Menus are backed by the same registry and are
+updated for subsequent openings when tools are registered or unregistered.</p>
+<p>Use <code>viewer.ActivateMeasurementTool(MeasurementToolIds.Length)</code> for built-in tools; the other
+constants are <code>Point</code>, <code>RectangleRoi</code> and <code>LineProfile</code>. Custom tools implement both <code>Id</code>
+and <code>DisplayName</code>, and are installed with <code>RegisterMeasurementTool</code>. IDs are
+case-sensitive; blank IDs or display names are rejected. <code>ActivateMeasurementTool</code> throws
+<code>KeyNotFoundException</code> for an unknown ID and <code>InvalidOperationException</code> when the
+measurement layer is hidden or its configured hit testing is disabled. <code>UnregisterMeasurementTool(id)</code> returns whether an entry
+was removed. Call <code>EndInteraction()</code> to cancel creation or end editing; completed measurements and applied edits remain.</p>
+<p>Built-in and custom registrations implement <code>IMeasurementTool</code>: <code>Id</code>, <code>DisplayName</code>, and
+<code>CreateSession(IMeasurementToolContext)</code>. Each activation calls the factory on the viewer STA
+and requires a new <code>IMeasurementToolSession</code>. Store preview handles, first-click coordinates
+and other mutable interaction state in this session. The registration contains reusable
+configuration; sharing it across viewers requires a thread-safe factory and configuration.</p>
+<p>The session receives <code>OnClick(Point)</code>, <code>OnMouseMove(Point)</code> and <code>Cancel()</code> callbacks and retains
+its own creation context. Returning <code>MeasurementClickResult.Finish</code> from <code>OnClick</code> ends input; <code>Continue</code> retains it; call <code>Complete()</code> on each
+measurement to retain it. Unfinished measurements are released automatically. Normal completion
+does not call <code>Cancel</code>; interruption calls it once after ending the creation context and releases
+previews even if cancellation throws.
+Every returned session is disposed exactly once on the STA, including normal completion,
+callback failure and factory supersession. Put session-only resource cleanup in <code>Dispose</code>;
+keep <code>Cancel</code> for cancellation-specific behavior. The creation context ends before either
+callback. A disposal callback can start a replacement during normal operation; the old
+session's cleanup cannot end that replacement.</p>
+<p>Factories may create previews and may reenter viewer APIs. A newer activation takes precedence.
+If a factory returns after its activation was interrupted, its returned session is cancelled
+without changing the newer session. A factory failure or null return releases its unfinished
+measurements; the factory owns cleanup of resources not yet transferred to a measurement.
+A retained context cannot create measurements after its activation ends. For asynchronous
+work, call <code>context.Finish()</code> to end only that context's activation after committing the
+items to retain. It dispatches to the viewer STA and returns false for an ended,
+superseded or closed context; it never ends a replacement session. <code>IMeasurement.Complete()</code>
+commits one item and releases its reference to the creation context without finishing the
+tool session. Each context, item and event snapshot
+retains <code>Origin</code> with the registration's <code>ToolId</code> and activation's <code>SessionId</code>; multiple
+items from one activation share the origin, while later activations get a new session ID.
+Revoking a registration during cancellation invalidates an outer request to start that
+registration, even when another registration subsequently uses the same ID.</p>
+<h2 id="reentry-cancellation-and-failure">Reentry, cancellation and failure</h2>
+<p>During normal operation, a session started synchronously inside a tool callback
+or completion notification takes precedence, even when it uses the same tool.
+Returning or throwing from the old callback does not cancel that session or
+restore its input state. This also applies when cancellation interrupts an outer
+start request: the callback's session wins. Exceptions from tool callbacks propagate
+to explicit API callers; framework input and plot-window callbacks log failures and keep
+the viewer usable. Cleanup restores idle only if that operation still owns the session.
+When operation and cleanup both fail, an aggregate retains the original failure first
+and the cleanup failure after it; cleanup still attempts all owned resources.
+Completion/removal notification subscribers are instead isolated: their exceptions
+are logged and later subscribers still run.</p>
+<p>Cancellation ends the outgoing creation context before invoking the tool and then releases
+that session's unfinished items. Normal completion also ends the context and releases only
+its unfinished items. Completed items belong to the measurement collection until removal.
+A callback interrupted by a newer session cannot create through its old context; creation
+throws <code>ObjectDisposedException</code>. Measurements created by the new session survive cleanup,
+even when a disposal callback starts it. Cleanup attempts every owned preview and propagates
+combined session and preview failures to explicit callers. Framework input callbacks log
+these failures; viewer shutdown includes them in <code>DisposeAsync</code>. Bulk measurement cleanup
+rejects new measurement creation.
+Once viewer shutdown begins, <code>ActivateMeasurementTool</code> throws <code>ObjectDisposedException</code>;
+shutdown cleans both completed and unfinished measurements and waits for owned queries.</p>
+<h2 id="resources-and-threads">Resources and threads</h2>
+<p>Tool callbacks, context creation and notifications run on the viewer STA. Returned
+<code>IMeasurement</code> handles dispatch reads, updates and subscription changes to that STA,
+so background work can update or complete a live preview without retaining a dispatcher.
+Cancellation still disposes unfinished previews; late updates/completion then throw
+<code>ObjectDisposedException</code>. The handle supplied by <code>MeasurementEventArgs.Measurement</code>
+also supports application-driven updates to completed measurements. <code>Dispose</code> and event
+unsubscription are safe after closure; <code>Id</code>, <code>Origin</code> and <code>IsDisposed</code> remain readable, while other
+access requires a running viewer. Do not block STA callbacks waiting for workers that
+call these handles.</p>
+<p>Use <code>AddResource</code> and <code>OnDispose</code> to bind external resources and event subscriptions to the
+measurement. <code>AddResource</code> transfers ownership only when it succeeds. If it throws, the
+call does not change ownership: a new resource remains the caller's responsibility, while
+re-registering the same instance is rejected and leaves the measurement's existing ownership
+intact. Do not share an owned resource across measurements. Unregistering a tool retains
+completed measurements. Selection and deletion
+target the measurement owner, which removes both its primary visual and label. Setting
+<code>Measurements.IsVisible = false</code> cancels previews but retains completed items.
+<code>Viewer.Hide()</code> retains the active tool session and previews; clear and viewer closure dispose all items.</p>
+<p>Disposal revokes queries, executes cleanup callbacks, disposes resources, closes the plot
+and removes visuals. Every stage is attempted after failures. Explicit disposal aggregates
+cleanup errors. Explicit layer clearing and interaction cancellation propagate cleanup errors
+after attempting all items; framework input callbacks log them. Viewer shutdown includes
+resource cleanup failures in its shared <code>DisposeAsync</code> result. Disposal is idempotent and
+does not retry resources whose disposal already ran.
+Creation is rejected during bulk cleanup and shutdown. Geometry/result and viewer event
+subscriber failures are logged and isolated. <code>Viewer.FrameCommitted</code> is a viewer-level notification, not a
+query execution callback.</p>
+<p>See <a href="measurements.html">measurement results</a> and <a href="public-api.html">Viewer lifetime</a>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

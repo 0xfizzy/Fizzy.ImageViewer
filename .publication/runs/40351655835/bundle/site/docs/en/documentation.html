@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Building and maintaining documentation | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Building and maintaining documentation | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="building-and-maintaining-documentation">Building and maintaining documentation</h1>
+
+<p><a href="../zh-CN/documentation.html">简体中文</a></p>
+<p>Maintain English XML as the symbol contract, English guides as cross-API protocols, and matching Chinese guides. Do not add runtime behavior to make comments pass. Review ownership, return meaning, cancellation, threading and cleanup against implementation and tests; compiler success is not semantic coverage.</p>
+<h2 id="build-and-preview">Build and preview</h2>
+<p>The DocFX configuration is <code>docs/docfx.json</code>; the site homepage and top-level navigation are under <code>docs/index.md</code> / <code>docs/toc.yml</code>. <code>Build-Docs</code> stages inputs under <code>artifacts/docs/source/</code> and runs this configuration there, using the output paths defined below.</p>
+<p>Install PowerShell 7, the .NET 10 SDK selected by <code>global.json</code>, the .NET 8 Desktop Runtime, Node.js 22.14.0 and Git. The SDK baseline is 10.0.401, with later stable 10.0 feature bands allowed. The package targets .NET 10 and .NET 8; API reference generation uses the .NET 8 assembly for their shared contract. The repository pins DocFX and Playwright. Run from the repository root:</p>
+<pre><code class="lang-powershell">npm ci
+npx playwright install chromium
+./scripts/Build-Docs.ps1
+node scripts/Test-Browser.mjs
+./scripts/Serve-Docs.ps1
+</code></pre>
+<p><code>Build-Docs</code> validates translations, restores locked packages, recompiles strict XML, extracts reference metadata from actual DLL/XML, builds the site, checks HTML links and runs browser smoke. No WPF example, device, publication or deployment is started. API input, inventory and site output stay in <code>artifacts/docs/</code>. Preview uses the configured project prefix and <code>/dev/</code> or <code>/v{version}/</code>; use the printed HTTP URL, not a file URL. Ctrl+C stops preview.</p>
+<p><code>Test-Browser</code> runs pinned Chromium against a local server, checking English/Chinese entrypoints, one API page, language switching, search result navigation, version selection, missing-page fallback and page errors. Desktop and narrow-screen review images are saved for both languages; the result report and failure image are in <code>artifacts/docs/browser/</code>. Simulated version mounts do not establish that any real release was deployed. After deployment, use <code>node scripts/Test-Browser.mjs --url https://0xfizzy.github.io/Fizzy.ImageViewer/dev/</code> for live checks; version fallback remains a local fixture.</p>
+<p>For wording or translation-only changes, review the content and diff; when links change, check their targets and anchors. Run <code>scripts/Build-Docs.ps1</code> for changes to public declarations, XML documentation, page structure, navigation, templates or generation tools; it already includes browser smoke. Run <code>node scripts/Test-Browser.mjs</code> for changes to page templates, styles, scripts, site routes or version switching; do not repeat it if the documentation build already covered the same changes. CI applies the complete gate on every push and pull request. Internal-only changes preserving contracts need no unrelated guide edits. Builds sharing library output must be sequential.</p>
+<h2 id="translation-review">Translation review</h2>
+<p>English guides are under <code>docs/en/</code>, matching Chinese filenames under <code>docs/zh-CN/</code>. Keep counterpart links, API identifiers and example source consistent. The checker requires both language links and both navigation entries, and rejects orphan translations. The package README is an English packaging template, excluded from guide translation pairs.</p>
+<p>After reviewing the final source against its translation:</p>
+<pre><code class="lang-powershell">./scripts/Test-Documentation.ps1 -AcceptTranslation docs/en/snapshots.md
+./scripts/Test-Documentation.ps1
+</code></pre>
+<p><code>docs/translations.json</code> records normalized source hashes; newline-only changes do not invalidate review. Never accept a source hash without reviewing the translation. Link checks remain active during acceptance. Review rendered pages in both languages when changing page structure or presentation.</p>
+<h2 id="samples-and-gates">Samples and gates</h2>
+<pre><code class="lang-powershell">./scripts/Test-Samples.ps1
+./scripts/Test-DocumentationGate.ps1
+./scripts/Test-ReleaseGate.ps1
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
+./scripts/Test-Workflows.ps1
+</code></pre>
+<p>Sample builds do not open windows. Run the <a href="getting-started.html">examples</a> manually for interaction checks. Documentation fixtures reject missing XML, stale/missing translations and broken links; release fixtures check same-version replacement, stale candidates, stable ordering, payload comparison and restore. Recovery runs the actual orchestration against fake GitHub/NuGet/Pages boundaries in a separate process, including a lost NuGet response and failed Pages deployment. Its report is <code>artifacts/recovery-fixture/result.json</code>; this is explicitly a simulation. Workflow checks use checksum-pinned actionlint 1.7.7. Tests use disposable <code>artifacts/</code> directories and do not publish real versions.</p>
+<p>Dependency changes require an intentional unlocked restore/npm install, review of lockfile diffs, and a subsequent locked gate. Never regenerate locks during release. Generated HTML, API metadata and local reports are not source-controlled.</p>
+<h2 id="versioned-publication">Versioned publication</h2>
+<p><code>docs/site.json</code> is the single source for repository, origin, project prefix, minimum retained version and archive branch. Fixed documentation uses <code>/v{version}/</code>; updates replace that directory. Main uses <code>/dev/</code>. Each version retains its search, assets, examples and source identity. Git history keeps prior contents for rollback; public revision paths and revision selection do not exist.</p>
+<p>The archive branch retains generated sites; GitHub Release assets retain original bundles independently of Actions retention. Do not edit archived version files. Follow the <a href="releasing.html">release SOP</a> for first-time setup, publication, partial failure and recovery. Building documentation never authorizes publication.</p>
+<p><code>Serve-Docs.ps1 -SiteDirectory artifacts/docs/site -Port 8087</code> serves existing output at its true project/version prefix without building or network access. Development deployment rejects a build whose SHA is no longer current main after acquiring the shared deployment lock.</p>
+<p>Each newly built snapshot includes <code>pages.json</code> with its pages and anchors. Version switching uses that inventory, falls back to the corresponding API or language homepage when a page is absent, and retains only existing anchors. If an older snapshot has no inventory or a request fails, the selector restores the current version and exposes the error in its tooltip; open that version directly if needed. Historical snapshots are not rewritten.</p>
+<p>The bilingual homepage is not a translation pair. Guide pairs use identical filenames under <code>docs/en/</code> and <code>docs/zh-CN/</code>; the NuGet README remains a packaging template. The published homepage is <code>index.html</code>, guides retain their language directories, and API output remains under <code>api/</code>. Version switching opens the same path if it exists, otherwise the target language homepage or site homepage. Historical archives are not rewritten. Changes to templates, scripts or build configuration require the normal development/release workflow; the documentation-only update gate does not authorize them.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

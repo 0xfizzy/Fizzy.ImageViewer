@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>CUDA integration | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="CUDA integration | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="cuda-integration">CUDA integration</h1>
+
+<p><a href="../zh-CN/cuda.html">简体中文</a></p>
+<p>Use one optional <code>Fizzy.ImageViewer.Cuda11</code>, <code>.Cuda12</code> or <code>.Cuda13</code> package for CUDA-resident Gray8, Bgr24, Rgb24,
+Bgra32, Pbgra32 and Rgba32 images. It supplies WPF-compatible display conversion and original
+pixel queries. Consumers implement a small execution bridge; neither the core viewer nor the
+extension depends on a particular application or compute runtime.</p>
+<h2 id="create-a-frame">Create a frame</h2>
+<p>Implement <code>ICudaFrameSource</code> for one independently retained, immutable source image. Its
+<code>Descriptor</code> describes original pixels. Pass that source to the factory:</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Cuda;
+
+ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
+</code></pre>
+<p>The factory immediately owns a nonnull source, including on validation failure or cancellation.
+It returns an <code>ImageFrame</code> with its own <code>IFramePixelSource</code>; consumers do not construct a second
+query adapter. Submission transfers the frame as usual. The final frame/lease release releases
+the source and the independent display resource token. Independent leases can outlive Viewer;
+the bridge's execution service must remain usable until those leases and their reads end.</p>
+<h2 id="execution-bridge">Execution bridge</h2>
+<p><code>ICudaFrameSource.ExecuteAsync</code> invokes the synchronous callback exactly once, off the viewer
+STA, after establishing source readiness. It must support concurrent calls or serialize its
+backend. Do not retain or reenter the callback. A callback borrows an <code>ICudaExecutionScope</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Consumer responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Context / Stream</td>
+<td>Standard CUDA handles, not runtime-private object handles; keep the context valid through external resource cleanup</td>
+</tr>
+<tr>
+<td>InputPointer / InputByteLength / RowStride</td>
+<td>Register read-only input use before exporting the device address; storage covers all referenced rows</td>
+</tr>
+<tr>
+<td>AllocateScratch</td>
+<td>Supply device or pinned host memory owned by this operation, retained through safe completion</td>
+</tr>
+<tr>
+<td>RegisterResource</td>
+<td>Register an <code>ICudaResource</code> before GPU access and return an independent ownership token</td>
+</tr>
+<tr>
+<td>WaitForGpuCompletion</td>
+<td>Prove submitted access ended without cancellation; do not end the operation</td>
+</tr>
+</tbody>
+</table>
+<p>The source descriptor's stride need not match a backend's device pitch; the scope provides the
+actual device row stride. Both layouts must have the same dimensions, format and pixel values.
+The extension validates dimensions, supported formats and accessible extent, not arbitrary
+pointer validity. CPU input, negative strides, multi-plane storage and foreign opaque handles
+are not accepted.</p>
+<p>The frame factory immediately takes ownership. In contrast, <code>RegisterResource</code> transfers cleanup responsibility only on success; on failure the registering caller still owns cleanup.</p>
+<p>The bridge owns the operation's final completion and retirement. A resource remains retained
+by both the operation and the returned token. Only final safe release calls <code>ICudaResource.Release</code>.
+If that cleanup fails, preserve the resource and context, report the failure through the runtime's
+failure channel and quarantine; never retry destructive cleanup. A failed native call or wait
+is not proof that device access ended. The bridge must drain or isolate all registered inputs,
+scratch and external resources before allowing them to be reclaimed.</p>
+<p>Cancellation before execution avoids GPU work. After enqueue, cancellation stops delivery but
+never bypasses completion. Query host bytes are read only after a successful scope wait and
+copied into independent results before scope exit. Surface publication also waits for the bridge's
+final <code>ExecuteAsync</code> completion. Consumer exceptions propagate unchanged; extension native
+failures use <code>CudaException</code> with a typed <code>CudaErrorDomain</code> and the original native code. Operation and owned cleanup failures
+are preserved together.</p>
+<h2 id="formats-and-transfer-costs">Formats and transfer costs</h2>
+<p>Gray8 expands to opaque BGRA. Bgr24/Rgb24 preserve original channels and add opaque alpha.
+Bgra32 and Rgba32 preserve straight-alpha original values; display premultiplies each color as
+<code>(color * alpha + 127) / 255</code>, with channel reordering for RGBA. Pbgra32 is already premultiplied:
+its display path copies directly into the mapped texture without a conversion kernel or temporary
+BGRA buffer. Original samples/statistics never unpremultiply. Raw TIFF preserves original values;
+Display snapshots use the same standard mapping as the display surface.</p>
+<p>Display does not read the image back to CPU, but still copies within device memory. Other formats
+also use a conversion buffer. Each surface is separately allocated and immutable; there is no
+texture pool. D3D9Ex devices are shared by active surfaces in the same CUDA context. Device/adapter
+compatibility and CUDA/D3D9 interoperation remain required.</p>
+<p>Queries download requested samples, compact count/min/max/sum statistics (32 bytes per semantic
+channel), or the specified region. Gather splits at 65,536 points while preserving input order.
+Statistics reorder source channels into Gray or R/G/B[/A]; small ROIs use only the needed reduction
+blocks, capped at 256. Full snapshots explicitly request the full image. No implicit full-image
+cache or download fallback exists. <code>CudaDiagnostics.QueryMetrics</code> counts extension transfers and
+active query callbacks, not runtime allocations or quarantined bytes.
+<code>EnqueuedQueries</code> and <code>EnqueuedResultBytes</code> count native calls that returned successfully; each gather
+chunk counts separately, and partial enqueue before failure is not fully counted. <code>ActiveQueries</code> and
+<code>ActiveResultBytes</code> cover query execution and managed result copying; zero is not proof of GPU
+completion or empty quarantine. <code>GetLiveSurfaceCount()</code> loads the
+native DLL and includes retained native surface owners.</p>
+<p>No high-bit-depth CUDA mapping, premultiplied RGBA, Bayer conversion, custom LUT/range, D3D11/12
+input, software fallback or device reconstruction is provided. WPF attachment and restoration
+follow the <a href="frame-pipeline.html#gpu-surfaces-and-explicit-pixel-queries">frame contract</a>.</p>
+<h2 id="build-and-deployment">Build and deployment</h2>
+<p>Choose exactly one complete package: <code>Fizzy.ImageViewer.Cuda11</code>,
+<code>Fizzy.ImageViewer.Cuda12</code>, or <code>Fizzy.ImageViewer.Cuda13</code>, matching the host's CUDA
+major version. All three use the same <code>Fizzy.ImageViewer.Cuda</code> namespace and assembly.
+Do not combine variants, including through transitive dependencies, or combine a variant
+with the former <code>Fizzy.ImageViewer.Cuda</code> package. The build rejects these combinations.
+Previously published packages remain immutable; new releases use the explicit names.</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Build Toolkit</th>
+<th>Host compiler</th>
+<th>Default architecture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fizzy.ImageViewer.Cuda11</td>
+<td>11.8.0</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda12</td>
+<td>12.6.3</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda13</td>
+<td>13.0.2</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+</tbody>
+</table>
+<p>These are build baselines, not certification of every minor version, GPU or execution
+feature. Native ABI 1 uses standard CUDA handles and caller-owned storage. The host
+must preserve its context, stream, memory and completion guarantees. A compatible
+NVIDIA driver, GPU and CUDA/D3D9Ex adapter remain required. Static CUDA and MSVC
+runtimes mean package consumers do not need the build Toolkit or Visual Studio.
+No dependency is downloaded or compiled at application startup.</p>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer.Cuda11
+</code></pre>
+<p>Ordinary managed development needs no CUDA toolchain. For local native development,
+keep one Toolkit (11.8 by default) and an MSVC toolset supported by that Toolkit.
+The setup script installs the CI baseline: VS 2022 Build Tools with MSVC 14.38
+and Windows SDK 10.0.22621.0; the full IDE and v142 are unnecessary.
+The installer also selects the standard MSVC x64/x86 tools component because nvcc
+requires its <code>vcvarsall.bat</code> installation layout, even when the environment is loaded
+through <code>VsDevCmd.bat</code>. This brings in the VS 2022 default toolset as an installation
+dependency; local builds select the newest installed compatible toolset.
+Run the installer option from an elevated PowerShell when those components are missing:</p>
+<pre><code class="lang-powershell">./scripts/Setup-Cuda.ps1 -InstallBuildTools
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
+# Explicit hardware execution; requires a suitable local GPU and desktop environment.
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -RunHardwareTests
+</code></pre>
+<p>Setup prepares pinned CMake 3.31.8 and Ninja 1.12.1 under <code>artifacts/cuda/tools</code>.
+It does not change the NVIDIA driver or persistent environment variables. Build scripts
+select a compatible MSVC in a child process and use Ninja without CUDA Visual Studio integration.
+Use <code>-MsvcVersion 14.38</code> on <code>Build-Cuda.ps1</code> or <code>Test-Cuda.ps1</code> to select a toolset
+explicitly, or omit it for automatic selection. The Toolkit's compiler checks remain
+enabled: a stable C ABI does not make unsupported host compilers valid for nvcc.
+For example, CUDA 11.8 accepts MSVC 19.1x–19.3x, but rejects 19.4x.
+Build records capture the actual compiler version; CI and release builds pin 14.38.
+Use <code>-CudaRoot</code> to select an existing Toolkit. CI additionally uses
+<code>Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools</code> to fetch only
+SHA-256-verified NVIDIA compiler components. The shared matrix is
+<code>eng/cuda-matrix.json</code>. Release builds require its exact versions.</p>
+<p>Native outputs live under <code>build/&lt;Configuration&gt;/native/cuda&lt;major&gt;/</code>; intermediates
+under <code>build/obj/cuda/&lt;major&gt;/&lt;Configuration&gt;/</code>; native tests under
+<code>build/&lt;Configuration&gt;/tests/Cuda&lt;major&gt;/</code>. Reports and temporary packages go to
+<code>artifacts/cuda/&lt;major&gt;/</code>. Native DLLs carry a separate build record identifying source,
+compiler and checksum. Packaging rejects missing, stale, mismatched or modified inputs:</p>
+<pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
+</code></pre>
+<p>GitHub Actions compiles all three variants, compiles native tests, runs managed CUDA
+tests on .NET 8/10, and verifies package contents and consumer publishing. Standard
+Windows runners do not execute GPU tests. A successful matrix therefore establishes
+build and package compatibility, not CUDA 12/13 hardware or physical presentation.
+Local hardware mode runs bounded native tests for six formats, alpha, padded pitch,
+gather, ROI, statistics, D3D9Ex surface readback and cleanup. Readback is not a test of
+physical screen presentation. Requested hardware tests never silently skip on an
+unsuitable environment. See <a href="releasing.html#optional-cuda-package">release preparation and recovery</a>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
