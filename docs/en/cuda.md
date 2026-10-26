@@ -120,8 +120,12 @@ dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
 Ordinary managed development needs no CUDA toolchain. For local native development,
-keep one Toolkit (11.8 by default). Install only VS 2022 Build Tools with MSVC
+keep one Toolkit (11.8 by default). Install VS 2022 Build Tools with MSVC
 14.38 and Windows SDK 10.0.22621.0; the full IDE and v142 are unnecessary.
+The installer also selects the standard MSVC x64/x86 tools component because nvcc
+requires its `vcvarsall.bat` installation layout, even when the environment is loaded
+through `VsDevCmd.bat`. This brings in the VS 2022 default toolset as an installation
+dependency; CUDA builds still explicitly select 14.38.
 Run the installer option from an elevated PowerShell when those components are missing:
 
 ```powershell

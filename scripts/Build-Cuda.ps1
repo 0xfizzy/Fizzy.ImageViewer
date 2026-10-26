@@ -41,7 +41,8 @@ if ((& $cmake --version | Select-Object -First 1) -cne "cmake version $($matrix.
 $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 $vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires $matrix.msvcComponent -latest -property installationPath }
 if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
-if (!(Test-Path "$vs/VC/Auxiliary/Build/vcvarsall.bat")) { throw 'C++ Build Tools core features missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
+if (!(Test-Path "$vs/Common7/Tools/VsDevCmd.bat")) { throw 'C++ Build Tools environment missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
+if (!(Test-Path "$vs/VC/Auxiliary/Build/vcvarsall.bat")) { throw 'nvcc requires the Visual Studio C++ tools installation layout (vcvarsall.bat). Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
 $compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
 if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
 $cl = (Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe').Replace('\','/')
@@ -57,7 +58,7 @@ $dirty = [bool](& git -C $repo status --porcelain)
 $sourceHash = Get-CudaSourceIdentity
 $commands = @(
     '@echo off',
-    ('call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64 {1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
+    ('call "{0}\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64 -winsdk={1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
     'if errorlevel 1 exit /b %errorlevel%',
     ('if not "%VCToolsVersion%"=="{0}" exit /b 2' -f $compiler.Name),
     ('if not "%WindowsSDKVersion%"=="{0}\" exit /b 3' -f $matrix.sdk),

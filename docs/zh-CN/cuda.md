@@ -88,8 +88,11 @@ dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
 普通托管开发不需要 CUDA 工具链。本机 native 开发只保留一个 Toolkit，默认 11.8。
-仅需安装 VS 2022 Build Tools、MSVC 14.38 和 Windows SDK 10.0.22621.0；
-不需要完整 IDE 或 v142。缺少组件时，在管理员 PowerShell 中运行安装选项：
+安装 VS 2022 Build Tools、MSVC 14.38 和 Windows SDK 10.0.22621.0，
+不需要完整 IDE 或 v142。安装脚本还会选择标准 MSVC x64/x86 工具组件：
+即使通过 `VsDevCmd.bat` 加载环境，nvcc 仍要求其 `vcvarsall.bat` 安装目录结构。
+该依赖会带入 VS 2022 默认工具集，但 CUDA 编译仍显式选择 14.38。
+缺少组件时，在管理员 PowerShell 中运行安装选项：
 
 ```powershell
 ./scripts/Setup-Cuda.ps1 -InstallBuildTools
