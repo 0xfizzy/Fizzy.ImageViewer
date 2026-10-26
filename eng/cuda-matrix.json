@@ -94,6 +94,7 @@
     }
   ],
   "msvcComponent": "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+  "msvcCoreComponent": "Microsoft.VisualStudio.Component.VC.CoreBuildTools",
   "sdkComponent": "Microsoft.VisualStudio.Component.Windows11SDK.22621",
   "visualStudioBootstrapper": "https://aka.ms/vs/17/release/vs_BuildTools.exe"
 }

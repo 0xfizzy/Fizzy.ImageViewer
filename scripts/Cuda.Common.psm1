@@ -34,7 +34,8 @@ function Assert-CudaNative([int]$Major, [string]$Configuration, [string]$Directo
     if ($Release) {
         Assert-ReleaseIdentity (Get-PackageVersion)
         $variant = Get-CudaVariant $Major
-        if ($info.dirty -or $info.nvcc -cne $variant.nvcc -or $info.architectures -cne $variant.architectures) { throw 'Release requires clean sources and the exact CUDA matrix baseline.' }
+        $matrix = Get-CudaMatrix
+        if ($info.dirty -or $info.nvcc -cne $variant.nvcc -or $info.toolkit -cne $variant.toolkit -or $info.architectures -cne $variant.architectures -or $info.msvc -notlike "$($matrix.msvc).*" -or $info.sdk -cne $matrix.sdk -or $info.cmake -cne $matrix.cmake.version -or $info.ninja -cne $matrix.ninja.version) { throw 'Release requires clean sources and the exact CUDA matrix baseline.' }
     }
     $info
 }

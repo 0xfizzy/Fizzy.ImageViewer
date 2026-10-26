@@ -11,6 +11,7 @@ Import-Module "$PSScriptRoot/Cuda.Common.psm1" -Force
 $repo = Get-Repo
 $matrix = Get-CudaMatrix
 $variant = Get-CudaVariant $CudaMajor
+$explicitCudaRoot = ![string]::IsNullOrWhiteSpace($CudaRoot)
 if (!$CudaRoot) {
     $downloaded = "$repo/artifacts/cuda/tools/cuda$CudaMajor"
     $CudaRoot = if (Test-Path "$downloaded/bin/nvcc.exe") { $downloaded } else { $env:CUDA_PATH }
@@ -28,9 +29,10 @@ if (Test-Path "$CudaRoot/version.json") {
     $toolkit = (Get-Content "$CudaRoot/version.json" -Raw | ConvertFrom-Json).cuda.version
 }
 if ([int]$nvcc.Split('.')[0] -ne $CudaMajor) { throw 'CUDA Toolkit major differs from -CudaMajor.' }
+if (!$explicitCudaRoot -and $nvcc -cne $variant.nvcc) { throw 'Default builds require the matrix Toolkit. Use -CudaRoot explicitly for another local Toolkit of the same major.' }
 if ($Release) {
     Assert-ReleaseIdentity (Get-PackageVersion)
-    if ($nvcc -cne $variant.nvcc -or $Architectures -cne $variant.architectures) { throw 'Release requires the exact CUDA matrix baseline.' }
+    if ($nvcc -cne $variant.nvcc -or $toolkit -cne $variant.toolkit -or $Architectures -cne $variant.architectures) { throw 'Release requires the exact CUDA matrix baseline.' }
 }
 $cmake = "$repo/artifacts/cuda/tools/cmake/cmake-$($matrix.cmake.version)-windows-x86_64/bin/cmake.exe"
 $ninja = "$repo/artifacts/cuda/tools/ninja/ninja.exe"
@@ -39,6 +41,7 @@ if ((& $cmake --version | Select-Object -First 1) -cne "cmake version $($matrix.
 $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
 $vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires $matrix.msvcComponent -latest -property installationPath }
 if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
+if (!(Test-Path "$vs/VC/Auxiliary/Build/vcvarsall.bat")) { throw 'C++ Build Tools core features missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
 $compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
 if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
 $cl = (Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe').Replace('\','/')
