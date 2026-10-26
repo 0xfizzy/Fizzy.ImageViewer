@@ -72,15 +72,21 @@ WPF 附加与恢复遵循[帧契约](frame-pipeline.md#gpu-表面与显式像素
 也不得与旧 `Fizzy.ImageViewer.Cuda` 包混用；构建会明确拒绝这些组合。
 已经发布的包保持不可变，新版本使用明确的大版本包名。
 
-| 包 | 构建 Toolkit | Host 编译器 | 默认架构 |
+| 包 | 构建 Toolkit | Host 编译器 | 架构覆盖 |
 | --- | --- | --- | --- |
-| Fizzy.ImageViewer.Cuda11 | 11.8.0 | MSVC 14.38（v143） | SM 7.5 |
-| Fizzy.ImageViewer.Cuda12 | 12.6.3 | MSVC 14.38（v143） | SM 7.5 |
-| Fizzy.ImageViewer.Cuda13 | 13.0.2 | MSVC 14.38（v143） | SM 7.5 |
+| Fizzy.ImageViewer.Cuda11 | 11.8.0 | MSVC 14.38（v143） | Pascal 及更新的常见 GPU |
+| Fizzy.ImageViewer.Cuda12 | 12.6.3 | MSVC 14.38（v143） | Pascal 及更新的常见 GPU |
+| Fizzy.ImageViewer.Cuda13 | 13.0.2 | MSVC 14.38（v143） | Turing 及更新的常见 GPU |
 
-这些是构建基线，不代表所有小版本、GPU 和执行特性都已认证。Native ABI 1 使用标准
-CUDA 句柄及调用方持有的存储；宿主必须保证上下文、流、内存和完成协议有效。
-运行仍要求兼容的 NVIDIA 驱动、GPU 及 CUDA/D3D9Ex 适配器。CUDA 与 MSVC Runtime
+支持范围按架构和功能条件定义，不建立显卡型号白名单，也不要求每种型号都经过实测。
+较新 GPU 可以使用旧 Toolkit 构建的兼容机器码，或由驱动对包内 PTX 进行 JIT 编译；
+不要求其 SM 编号逐一出现在包中。应用用户无需配置 PTX。
+这种前向兼容不承诺未知未来硬件的所有行为。
+
+计算能力覆盖与显示支持是两个条件：显示要求可用的 Windows CUDA/D3D9Ex 互操作环境，
+包括兼容的 GPU/适配器和 NVIDIA 驱动。驱动须支持包使用的 CUDA Runtime 及所需的 PTX JIT。
+Native ABI 1 使用标准 CUDA 句柄及调用方持有的存储；宿主必须保证上下文、流、内存和完成协议有效。
+CUDA 与 MSVC Runtime
 静态链接，因此包使用者无需安装本库的 Toolkit 或 Visual Studio。应用启动时不下载或编译依赖。
 
 ```powershell
@@ -98,8 +104,8 @@ MSVC 14.38 和 Windows SDK 10.0.22621.0，不需要完整 IDE 或 v142。
 ```powershell
 ./scripts/Setup-Cuda.ps1 -InstallBuildTools
 ./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
-# 显式执行硬件测试，要求合适的本机 GPU 和桌面环境。
-./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -RunHardwareTests
+# 在合适的本机 GPU/桌面环境验证正式架构覆盖。
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -FullMatrix -RunHardwareTests
 ```
 
 Setup 将固定版本 CMake 3.31.8 和 Ninja 1.12.1 准备到 `artifacts/cuda/tools`，
@@ -112,17 +118,32 @@ C ABI 稳定不代表 nvcc 可以使用不受支持的宿主编译器。例如 C
 `Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools`，只下载经过
 SHA-256 校验的 NVIDIA 编译组件。公共矩阵为 `eng/cuda-matrix.json`，发布要求精确匹配。
 
+本地构建默认使用 `nvidia-smi` 识别的本机 GPU 架构，仅编译原生机器码，例如 T600 选择
+`75-real`。使用 `-Architectures '75-real;86-real'` 显式指定 CMake CUDA 目标，或使用
+`-FullMatrix` 在无需 GPU 的情况下编译正式列表。无法识别 GPU 时必须显式选择，不猜测架构。
+nvcc 会拒绝不支持的目标。CI 和 `-Release` 始终使用完整矩阵，拒绝冲突的架构覆盖参数。
+
+矩阵采用 CMake `CUDA_ARCHITECTURES` 表示法：CUDA 11.8/12.6 包含
+`60-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;90-virtual`；
+CUDA 13.0 包含 `75-real;80-real;86-real;89-real;90-real;100-real;120-real;120-virtual`。
+常见目标携带原生机器码，最高目标另携带 PTX 以支持前向兼容，不使用架构专属的 `a`/`f` 目标。
+
 Native 输出位于 `build/<Configuration>/native/cuda<major>/`，中间文件位于
 `build/obj/cuda/<major>/<Configuration>/`，native 测试位于
 `build/<Configuration>/tests/Cuda<major>/`。报告及临时包位于 `artifacts/cuda/<major>/`。
-Native DLL 附有独立构建记录，标识源码、编译器和哈希；打包拒绝缺失、陈旧、不匹配或被修改的输入：
+Native DLL 附有独立构建记录，标识源码、编译器、请求架构、二进制检查和哈希。
+每次构建都使用所选 Toolkit 的 `cuobjdump`，检查最终 DLL 中两个 kernel 模块的机器码与 PTX。
+`architectures.*` 保留检查证据；`build.json` 另记录 DLL 字节数和配置/构建耗时，增量构建与
+干净构建的耗时不可直接比较。打包拒绝缺失、陈旧、不匹配或被修改的输入；正式归档还拒绝
+将本地单架构产物作为完整产物：
 
 ```powershell
 ./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
 dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
 ```
 
-GitHub Actions 编译三个变体及 native 测试，在 .NET 8/10 运行托管 CUDA 测试，并验证
+GitHub Actions 使用三个固定 Toolkit 编译完整架构列表、检查 DLL 内容及编译 native 测试，
+在 .NET 8/10 运行托管 CUDA 测试，并验证
 包内容和消费者发布输出。普通 Windows runner 不执行 GPU 测试；矩阵通过只证明构建与
 打包兼容，不证明 CUDA 12/13 的硬件或真实显示。显式本机硬件模式运行有超时限制的
 native 测试，覆盖六种格式、alpha、带 padding 的 stride、gather、ROI、统计、D3D9Ex

@@ -4,6 +4,8 @@ param(
     [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
     [string]$CudaRoot,
     [string]$MsvcVersion,
+    [string]$Architectures,
+    [switch]$FullMatrix,
     [switch]$RunHardwareTests,
     [switch]$Release
 )
@@ -16,10 +18,11 @@ Push-Location $repo
 try {
     $version = Get-PackageVersion
     $id = "Fizzy.ImageViewer.Cuda$CudaMajor"
-    & "$PSScriptRoot/Build-Cuda.ps1" -CudaMajor $CudaMajor -Configuration $Configuration -CudaRoot $CudaRoot -MsvcVersion $MsvcVersion -Release:$Release
+    & "$PSScriptRoot/Build-Cuda.ps1" -CudaMajor $CudaMajor -Configuration $Configuration -CudaRoot $CudaRoot -MsvcVersion $MsvcVersion -Architectures $Architectures -FullMatrix:$FullMatrix -Release:$Release
     $nativeDir = "$repo/build/$Configuration/native/cuda$CudaMajor"
     $info = Assert-CudaNative $CudaMajor $Configuration $nativeDir -Release:$Release
     Copy-Item "$nativeDir/build.json","$nativeDir/exports.txt","$nativeDir/dependencies.txt" $output
+    Copy-Item "$nativeDir/architectures.*" $output
     Invoke-Checked dotnet @('restore','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','--locked-mode',"-p:CudaMajor=$CudaMajor")
     foreach ($framework in @('net8.0-windows','net10.0-windows')) {
         Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c',$Configuration,'-f',$framework,'--no-restore',"-p:CudaMajor=$CudaMajor",'--filter','FullyQualifiedName~Cuda','--logger','trx;LogFileName=cuda.trx','--results-directory',"$output/tests/$framework")

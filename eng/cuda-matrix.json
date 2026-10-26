@@ -17,7 +17,7 @@
       "toolkit": "11.8.0",
       "major": 11,
       "nvcc": "11.8.89",
-      "architectures": "75",
+      "architectures": "60-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;90-virtual",
       "archives": [
         {
           "component": "cuda_nvcc",
@@ -33,6 +33,11 @@
           "component": "cuda_cccl",
           "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-11.8.89-archive.zip",
           "sha256": "548fe5e0cf6a64568a61713cdb475306ce7445d98dfbbe7f910fd78a7f6b616c"
+        },
+        {
+          "component": "cuda_cuobjdump",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cuobjdump/windows-x86_64/cuda_cuobjdump-windows-x86_64-11.8.86-archive.zip",
+          "sha256": "9961e1770fdde91844938a7046d03d7dfa3c3ff7271f77e9e859ca84d631ebf4"
         }
       ]
     },
@@ -40,7 +45,7 @@
       "toolkit": "12.6.3",
       "major": 12,
       "nvcc": "12.6.85",
-      "architectures": "75",
+      "architectures": "60-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;90-virtual",
       "archives": [
         {
           "component": "cuda_nvcc",
@@ -56,6 +61,11 @@
           "component": "cuda_cccl",
           "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-12.6.77-archive.zip",
           "sha256": "469b783b6731964170b3d27ae214e97e2a63ec93c57ace3ed4052e6d01261f2e"
+        },
+        {
+          "component": "cuda_cuobjdump",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cuobjdump/windows-x86_64/cuda_cuobjdump-windows-x86_64-12.6.77-archive.zip",
+          "sha256": "b9207c09a5d6b34e6bdd8ff2093b3d101ef85f08b34c8ba8d710050b522661ae"
         }
       ]
     },
@@ -63,7 +73,7 @@
       "toolkit": "13.0.2",
       "major": 13,
       "nvcc": "13.0.88",
-      "architectures": "75",
+      "architectures": "75-real;80-real;86-real;89-real;90-real;100-real;120-real;120-virtual",
       "archives": [
         {
           "component": "cuda_nvcc",
@@ -89,6 +99,11 @@
           "component": "libnvvm",
           "url": "https://developer.download.nvidia.com/compute/cuda/redist/libnvvm/windows-x86_64/libnvvm-windows-x86_64-13.0.88-archive.zip",
           "sha256": "6dda4a82d22a2c173a65c66b4b4c933e3424a56ce845e2864bdca9cc66e6c524"
+        },
+        {
+          "component": "cuda_cuobjdump",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cuobjdump/windows-x86_64/cuda_cuobjdump-windows-x86_64-13.0.85-archive.zip",
+          "sha256": "cddbc524dc229c708cc989e4ff2d636ba342c695e0f60c1026a1b5f76de4b77b"
         }
       ]
     }

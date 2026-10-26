@@ -16,6 +16,7 @@ foreach($major in @(11,12,13)) {
     Copy-Item $source "$bundle/cuda-$major" -Recurse
     $report=Get-Content "$source/validation.json" -Raw | ConvertFrom-Json
     $build=Get-Content "$source/build.json" -Raw | ConvertFrom-Json
+    Assert-CudaArchitectureInspection $build $source
     $variant=Get-CudaVariant $major
     $matrix=Get-CudaMatrix
     if($build.nvcc -cne $variant.nvcc -or $build.toolkit -cne $variant.toolkit -or $build.architectures -cne $variant.architectures -or $build.msvc -notlike "$($matrix.msvc).*" -or $build.sdk -cne $matrix.sdk -or $build.cmake -cne $matrix.cmake.version -or $build.ninja -cne $matrix.ninja.version){throw 'CUDA release toolchain differs from matrix.'}

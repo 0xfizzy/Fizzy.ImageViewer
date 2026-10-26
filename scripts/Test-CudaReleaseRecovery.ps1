@@ -31,6 +31,14 @@ foreach($major in @(11,12,13)){
     $hash=New-FixturePackage $id "$bundle/$path"
     $variant = $matrix.variants | Where-Object major -eq $major
     Write-Json @{schema=1;major=$major;configuration='Release';commit=$commit;dirty=$false;nativeHash=$hash;nvcc=$variant.nvcc;toolkit=$variant.toolkit;architectures=$variant.architectures;msvc="$($matrix.msvc).33130";sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version} "$bundle/cuda-$major/build.json"
+    Import-Module "$PSScriptRoot/Cuda.Common.psm1"
+    $build = Get-Content "$bundle/cuda-$major/build.json" -Raw | ConvertFrom-Json
+    $targets = Get-CudaArchitectureTargets $variant.architectures
+    Set-Content "$bundle/cuda-$major/architectures.elf.txt" 'fixture ELF'
+    Set-Content "$bundle/cuda-$major/architectures.ptx.txt" 'fixture PTX'
+    $inspection = @{nativeHash=$hash;architectures=$variant.architectures;modules=@(@{name='display';real=$targets.real;ptx=$targets.ptx},@{name='queries';real=$targets.real;ptx=$targets.ptx});elfHash=(Get-Hash "$bundle/cuda-$major/architectures.elf.txt");ptxHash=(Get-Hash "$bundle/cuda-$major/architectures.ptx.txt")}
+    $build | Add-Member -NotePropertyName architectureInspection -NotePropertyValue $inspection
+    Write-Json $build "$bundle/cuda-$major/build.json"
     Write-Json @{passed=$true;release=$true;major=$major;packageId=$id;version=$version;commit=$commit;nativeHash=$hash;packageHash=(Get-Hash "$bundle/$path")} "$bundle/cuda-$major/validation.json"
     $entries+=@{major=$major;packageId=$id;path=$path;nativeHash=$hash}
 }
@@ -62,6 +70,18 @@ try {
     $wrongBuild.toolkit = 'wrong'
     Write-Json $wrongBuild $buildPath
     Expect-Failure { & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/wrong-toolchain" } 'toolchain differs'
+    Set-Content $buildPath $buildText -NoNewline
+    $wrongBuild = $buildText | ConvertFrom-Json
+    $wrongBuild.architectures = '75-real'
+    $wrongBuild.architectureInspection.architectures = '75-real'
+    foreach ($module in $wrongBuild.architectureInspection.modules) { $module.real = @('75'); $module.ptx = @() }
+    Write-Json $wrongBuild $buildPath
+    Expect-Failure { & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/single-architecture" } 'toolchain differs'
+    Set-Content $buildPath $buildText -NoNewline
+    $wrongBuild = $buildText | ConvertFrom-Json
+    $wrongBuild.architectureInspection.modules[0].ptx = @()
+    Write-Json $wrongBuild $buildPath
+    Expect-Failure { & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/missing-ptx" } 'inspection targets mismatch'
     Set-Content $buildPath $buildText -NoNewline
 } finally { Remove-Item Function:global:git }
 $manifest.packages=@($entries[0],$entries[1])

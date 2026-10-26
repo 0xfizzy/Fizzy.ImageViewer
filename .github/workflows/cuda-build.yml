@@ -40,7 +40,7 @@ jobs:
           CUDA_RELEASE: ${{ inputs.release }}
         run: |
           $msvc = (Get-Content eng/cuda-matrix.json -Raw | ConvertFrom-Json).msvc
-          ./scripts/Test-Cuda.ps1 -CudaMajor ${{ inputs.major }} -MsvcVersion $msvc -Release:($env:CUDA_RELEASE -eq 'true')
+          ./scripts/Test-Cuda.ps1 -CudaMajor ${{ inputs.major }} -MsvcVersion $msvc -FullMatrix -Release:($env:CUDA_RELEASE -eq 'true')
       - name: Upload variant and diagnostics
         uses: actions/upload-artifact@v4
         if: always()
@@ -52,6 +52,7 @@ jobs:
             artifacts/cuda/${{ inputs.major }}/build.json
             artifacts/cuda/${{ inputs.major }}/exports.txt
             artifacts/cuda/${{ inputs.major }}/dependencies.txt
+            artifacts/cuda/${{ inputs.major }}/architectures.*
             artifacts/cuda/${{ inputs.major }}/validation.json
             artifacts/cuda/${{ inputs.major }}/validation.log
             artifacts/cuda/${{ inputs.major }}/tests/

@@ -2,7 +2,8 @@
 param(
     [ValidateSet(11,12,13)][int]$CudaMajor = 11,
     [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
-    [string]$Architectures = '75',
+    [string]$Architectures,
+    [switch]$FullMatrix,
     [string]$CudaRoot,
     [string]$MsvcVersion,
     [switch]$Release
@@ -12,6 +13,8 @@ Import-Module "$PSScriptRoot/Cuda.Common.psm1" -Force
 $repo = Get-Repo
 $matrix = Get-CudaMatrix
 $variant = Get-CudaVariant $CudaMajor
+$Architectures = Resolve-CudaArchitectures $CudaMajor $Architectures -FullMatrix:($FullMatrix -or $Release -or $env:CI -eq 'true')
+$timer = [Diagnostics.Stopwatch]::StartNew()
 $explicitCudaRoot = ![string]::IsNullOrWhiteSpace($CudaRoot)
 if (!$CudaRoot) {
     $downloaded = "$repo/artifacts/cuda/tools/cuda$CudaMajor"
@@ -97,6 +100,8 @@ $commands = @(
 $commandFile = "$build/build.cmd"
 $commands | Set-Content $commandFile -Encoding ascii
 Invoke-Checked $env:ComSpec @('/d','/c',$commandFile)
+$timer.Stop()
+$inspection = Test-CudaBinaryArchitectures "$CudaRoot/bin/cuobjdump.exe" "$output/Fizzy.ImageViewer.Cuda.Native.dll" $Architectures $output
 $exports = Get-Content "$output/exports.txt" -Raw
 foreach ($symbol in @('fv_abi_version','fv_error','fv_error_domain','fv_error_code','fv_display_create','fv_display_write','fv_display_release','fv_display_live_surfaces','fv_query')) {
     if ($exports -notmatch "\b$symbol\b") { throw "Missing native ABI export: $symbol" }
@@ -104,6 +109,6 @@ foreach ($symbol in @('fv_abi_version','fv_error','fv_error_domain','fv_error_co
 $dependencies = Get-Content "$output/dependencies.txt" -Raw
 if ($dependencies -match '(?i)\b(cudart\d*|vcruntime\d*|msvcp\d*)[^\s]*\.dll\b') { throw 'Native DLL unexpectedly depends on a dynamic CUDA/MSVC runtime.' }
 if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed during compilation.' }
-$info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
+$info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll");architectureInspection=$inspection;nativeBytes=(Get-Item "$output/Fizzy.ImageViewer.Cuda.Native.dll").Length;buildSeconds=$timer.Elapsed.TotalSeconds}
 Write-Json $info "$output/build.json"
 Write-Host "CUDA $CudaMajor native build complete: $output"

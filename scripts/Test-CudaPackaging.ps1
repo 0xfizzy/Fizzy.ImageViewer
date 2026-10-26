@@ -13,7 +13,21 @@ Set-Content "$native/Fizzy.ImageViewer.Cuda.Native.dll" 'fixture: not executable
 Expect-Failure { Assert-CudaNative 11 Release $native } 'required'
 $record = @{schema=1;major=11;configuration='Release';commit=(Get-Commit);dirty=$true;sourceHash=(Get-CudaSourceIdentity);nativeHash=(Get-Hash "$native/Fizzy.ImageViewer.Cuda.Native.dll")}
 Write-Json $record "$native/build.json"
+Expect-Failure { Assert-CudaNative 11 Release $native } 'Missing CUDA binary architecture inspection'
+$record.architectures = '75-real'
+Set-Content "$native/architectures.elf.txt" 'fixture ELF'
+Set-Content "$native/architectures.ptx.txt" 'fixture without PTX'
+$record.architectureInspection = @{nativeHash=$record.nativeHash;architectures=$record.architectures;modules=@(@{name='display';real=@('75');ptx=@()},@{name='queries';real=@('75');ptx=@()});elfHash=(Get-Hash "$native/architectures.elf.txt");ptxHash=(Get-Hash "$native/architectures.ptx.txt")}
+Write-Json $record "$native/build.json"
 $null = Assert-CudaNative 11 Release $native
+Add-Content "$native/architectures.elf.txt" 'tamper'
+Expect-Failure { Assert-CudaNative 11 Release $native } 'inspection checksum'
+Set-Content "$native/architectures.elf.txt" 'fixture ELF'
+foreach ($major in @(11,12,13)) {
+    if ((Resolve-CudaArchitectures $major -FullMatrix) -cne (Get-CudaVariant $major).architectures) { throw 'Full matrix selection failed.' }
+    Expect-Failure { Resolve-CudaArchitectures $major '75-real' -FullMatrix } 'cannot override'
+}
+Expect-Failure { Resolve-CudaArchitectures 13 '90a-real' } 'numeric CMake targets'
 Expect-Failure { Assert-CudaNative 12 Release $native } 'variant/configuration'
 Expect-Failure { Assert-CudaNative 11 Debug $native } 'variant/configuration'
 $record.sourceHash = 'wrong'
