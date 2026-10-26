@@ -117,6 +117,8 @@ internal sealed class ViewerRuntime(ImageViewerControl view, ILogger logger, Ren
         if (_closed) return;
         _lifetime.BeginDisposal();
         _closed = true;
+        Cleanup(_view.DetachImageSource);
+        Cleanup(_view.DetachViewerCommands);
         Cleanup(() => _menuController?.Dispose());
         Cleanup(() => _menuManager?.Dispose());
         Cleanup(() => _pipeline?.StopOnUiThread());

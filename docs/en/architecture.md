@@ -133,6 +133,14 @@ descriptor and memory slice with CpuFramePixelSource; the GPU factory receives t
 source. FrameStorage only retains these components and manages reference counting and final
 release. It does not select a backend or independently dispose the pixel source.
 
+ImageBindingSource owns one independent frame lease on its host dispatcher. Control binding
+adapts source changes to independent ImageFrame references submitted to the existing pipeline,
+without a second queue, pixel copy or storage implementation. The source remains an empty,
+readable binding object after disposal; controls never store a consumed frame token in their
+dependency property. Source notifications and binding attachment are serialized by the host STA.
+ImageViewerCommands and their control bindings adapt WPF routing to viewport and interaction
+operations; activation availability reuses the coordinator's side-effect-free admission check.
+
 FrameLease is the backend-independent read boundary: each asynchronous operation retains
 its own lease, validates requests and results, and supplies frame provenance. Region reads
 return an independently owned CPU ImageFrame; RegionPixels adds the source frame and region

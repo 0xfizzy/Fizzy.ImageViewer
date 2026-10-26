@@ -10,6 +10,8 @@ public sealed class FrameLease : IDisposable
         Info = new(0, storage.Descriptor, null);
     }
     private FrameStorage Storage => Volatile.Read(ref _storage) ?? throw new ObjectDisposedException(nameof(FrameLease));
+    internal ImageFrame TransferToFrame() => new(Interlocked.Exchange(ref _storage, null)
+        ?? throw new ObjectDisposedException(nameof(FrameLease)));
     /// <summary>Layout of the retained pixels. Access after disposal throws ObjectDisposedException.</summary>
     public FrameDescriptor Descriptor => Storage.Descriptor;
     /// <summary>Borrows existing CPU memory without copying; returns false for GPU storage. Keep this lease alive while using the memory.</summary>

@@ -26,7 +26,13 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
     internal string? ActiveId => _activation?.Registration.Id;
     private readonly MeasurementLayer _measurementLayer;
     private bool _disposed;
-    public InteractionMode Mode { get; private set; }
+    internal event Action? StateChanged;
+    private InteractionMode _mode;
+    public InteractionMode Mode
+    {
+        get => _mode;
+        private set { if (_mode == value) return; _mode = value; StateChanged?.Invoke(); }
+    }
     public MeasurementItem? SelectedMeasurement { get; private set; }
     internal MeasurementEditController Editor => _edit;
 
@@ -69,6 +75,9 @@ internal sealed class MeasurementInteractionCoordinator : IDisposable
     }
     internal MeasurementActivationResult ActivateMeasurementTool(string toolId)
         => ActivateMeasurementTool(_tools.FindRegistration(toolId));
+
+    internal bool CanActivateMeasurementTool(string toolId)
+        => Admission(_tools.FindRegistration(toolId)) == MeasurementActivationResult.Started;
 
     internal MeasurementActivationResult ActivateMeasurementTool(MeasurementToolRegistry.Registration? registration)
     {

@@ -36,6 +36,7 @@ public partial class ImageViewerControl
 
     private void UpdateDisplayVisibility()
     {
+        System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         if (!_runtime.Lifetime.IsStopping)
             _runtime.Pipeline.SetDisplayEnabled(IsLoaded && IsVisible && !IsMinimized);
     }

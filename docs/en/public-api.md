@@ -68,6 +68,14 @@ the same state. Both properties can be configured before showing the window.
 `EndInteraction()` cancels unfinished creation or ends editing, preserving completed
 measurements and edits already applied.
 
+For WPF binding, `ImageViewerControl.ImageSource` borrows a UI-thread-owned `ImageBindingSource`;
+the source and each control retain independent frame references. Its read-only
+`ImageSourceSubmitResult` reports binding reception. `ImageViewerCommands` exposes routed
+FitToViewport, ActivateMeasurementTool (tool ID parameter) and EndInteraction commands with
+per-target availability. These WPF conveniences belong to the embedded control, not the
+host-independent capability interfaces. See [embedding](embedding.md) for lifetime, clearing,
+threading, command routing and error observation.
+
 `FitToViewport` centers the full image and may choose a scale outside the ordinary
 wheel range of 0.01–100. At such a scale, the wheel permits steps toward that range
 and rejects steps farther away, so very large or small images remain navigable.

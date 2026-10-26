@@ -9,6 +9,7 @@ internal sealed class MeasurementToolRegistry
         internal void Invalidate() { Handle?.Invalidate(); Handle = null; }
     }
     private readonly Dictionary<string, Registration> _tools = new(StringComparer.Ordinal);
+    internal event Action? Changed;
     internal Registration[] RegisteredTools => _tools.Values.ToArray();
     internal Registration RegisterTool(IMeasurementTool tool)
     {
@@ -22,6 +23,7 @@ internal sealed class MeasurementToolRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         var registration = new Registration(id, name, tool);
         if (!_tools.TryAdd(id, registration)) throw new ArgumentException($"Measurement tool '{id}' is already registered.", nameof(tool));
+        Changed?.Invoke();
         return registration;
     }
     internal bool UnregisterTool(Registration registration)
@@ -29,6 +31,7 @@ internal sealed class MeasurementToolRegistry
         if (!Contains(registration)) return false;
         _tools.Remove(registration.Id);
         registration.Invalidate();
+        Changed?.Invoke();
         return true;
     }
     internal IMeasurementTool? Find(string id) => _tools.GetValueOrDefault(id)?.Tool;

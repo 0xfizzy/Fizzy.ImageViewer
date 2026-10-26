@@ -202,6 +202,9 @@ Fizzy.ImageViewer.Frames.IFramePixelSource: public abstract System.Threading.Tas
 Fizzy.ImageViewer.Frames.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.PixelSample[]> ReadPixelsAsync(System.ReadOnlyMemory<Fizzy.ImageViewer.Frames.PixelCoordinate> coordinates, System.Threading.CancellationToken cancellationToken)
 Fizzy.ImageViewer.Frames.IFramePixelSource: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.RegionStatistics> ComputeRegionStatisticsAsync(Fizzy.ImageViewer.Frames.PixelRegion region, System.Threading.CancellationToken cancellationToken)
 Fizzy.ImageViewer.Frames.IFrameSink: public abstract System.Threading.Tasks.ValueTask<Fizzy.ImageViewer.Frames.FrameSubmitResult> SubmitFrameAsync(Fizzy.ImageViewer.Frames.ImageFrame frame, Fizzy.ImageViewer.Frames.FrameSubmissionOptions? options = null, System.Threading.CancellationToken cancellationToken = default)
+Fizzy.ImageViewer.Frames.ImageBindingSource: public System.Void Dispose()
+Fizzy.ImageViewer.Frames.ImageBindingSource: public System.Void SetFrame(Fizzy.ImageViewer.Frames.ImageFrame? frame)
+Fizzy.ImageViewer.Frames.ImageBindingSource: public ctor()
 Fizzy.ImageViewer.Frames.ImageFrame: Fizzy.ImageViewer.Frames.FrameDescriptor Descriptor { public get; }
 Fizzy.ImageViewer.Frames.ImageFrame: public Fizzy.ImageViewer.Frames.FrameLease Acquire()
 Fizzy.ImageViewer.Frames.ImageFrame: public System.Void Dispose()
@@ -304,7 +307,11 @@ Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Hide()
 Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Minimize()
 Fizzy.ImageViewer.IViewerWindow: public abstract System.Void Show()
 Fizzy.ImageViewer.IViewerWindow: public abstract event System.EventHandler? Closed
+Fizzy.ImageViewer.ImageViewerCommands: static System.Windows.Input.RoutedCommand ActivateMeasurementTool { public get; }
+Fizzy.ImageViewer.ImageViewerCommands: static System.Windows.Input.RoutedCommand EndInteraction { public get; }
+Fizzy.ImageViewer.ImageViewerCommands: static System.Windows.Input.RoutedCommand FitToViewport { public get; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Drawing.DrawingLayer Markers { public get; }
+Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Frames.ImageBindingSource? ImageSource { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Imaging.PixelQueryMetrics QueryMetrics { public get; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Imaging.PixelQueryOptions QueryOptions { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Layers.ViewerLayers Layers { public get; }
@@ -313,6 +320,7 @@ Fizzy.ImageViewer.ImageViewerControl: Fizzy.ImageViewer.Measurements.Measurement
 Fizzy.ImageViewer.ImageViewerControl: System.Boolean IsMinimized { public get; }
 Fizzy.ImageViewer.ImageViewerControl: System.Boolean IsPixelInfoEnabled { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: System.Boolean Visible { public get; public set; }
+Fizzy.ImageViewer.ImageViewerControl: System.Nullable<Fizzy.ImageViewer.Frames.FrameSubmitResult> ImageSourceSubmitResult { public get; }
 Fizzy.ImageViewer.ImageViewerControl: System.Nullable<Fizzy.ImageViewer.Imaging.GrayDisplayRange> DisplayRange { public get; }
 Fizzy.ImageViewer.ImageViewerControl: System.String? HudLabelText { public get; public set; }
 Fizzy.ImageViewer.ImageViewerControl: System.Threading.Tasks.Task WhenStopping { public get; }
@@ -341,6 +349,8 @@ Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.Ima
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementCompleted
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Measurements.MeasurementEventArgs>? MeasurementRemoved
 Fizzy.ImageViewer.ImageViewerControl: public event System.EventHandler<Fizzy.ImageViewer.Viewport.DisplayFailure>? DisplayFailed
+Fizzy.ImageViewer.ImageViewerControl: public static readonly System.Windows.DependencyProperty ImageSourceProperty
+Fizzy.ImageViewer.ImageViewerControl: public static readonly System.Windows.DependencyProperty ImageSourceSubmitResultProperty
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Maximum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: System.Double Minimum { public get; }
 Fizzy.ImageViewer.Imaging.GrayDisplayRange: public System.Boolean Equals(Fizzy.ImageViewer.Imaging.GrayDisplayRange other)
@@ -727,6 +737,7 @@ sealed class Fizzy.ImageViewer.Drawing.RectangleElement : Fizzy.ImageViewer.Draw
 sealed class Fizzy.ImageViewer.Drawing.TextElement : Fizzy.ImageViewer.Drawing.DrawingElement, System.IEquatable<Fizzy.ImageViewer.Drawing.DrawingElement>, System.IEquatable<Fizzy.ImageViewer.Drawing.TextElement>
 sealed class Fizzy.ImageViewer.Frames.FrameLease : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.FrameSubmissionOptions : System.IEquatable<Fizzy.ImageViewer.Frames.FrameSubmissionOptions>
+sealed class Fizzy.ImageViewer.Frames.ImageBindingSource : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.ImageFrame : System.IDisposable
 sealed class Fizzy.ImageViewer.Frames.PixelSamplesResult
 sealed class Fizzy.ImageViewer.Frames.RegionPixels : System.IDisposable
@@ -758,6 +769,7 @@ sealed class Fizzy.ImageViewer.Viewport.DisplayFailure : System.IEquatable<Fizzy
 static class Fizzy.ImageViewer.Frames.CpuFramePixelReader
 static class Fizzy.ImageViewer.Frames.D3D9ImageFrame
 static class Fizzy.ImageViewer.Frames.FramePixelFormats
+static class Fizzy.ImageViewer.ImageViewerCommands
 static class Fizzy.ImageViewer.Measurements.MeasurementToolIds
 struct Fizzy.ImageViewer.Frames.ChannelStatistics : System.IEquatable<Fizzy.ImageViewer.Frames.ChannelStatistics>
 struct Fizzy.ImageViewer.Frames.FrameDescriptor : System.IEquatable<Fizzy.ImageViewer.Frames.FrameDescriptor>

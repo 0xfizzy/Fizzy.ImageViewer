@@ -1,5 +1,4 @@
 using Fizzy.ImageViewer.Frames;
-using Fizzy.ImageViewer.Measurements;
 using System.ComponentModel;
 using System.Windows;
 
@@ -8,17 +7,26 @@ namespace EmbeddedViewer;
 public partial class MainWindow : Window
 {
     private readonly CancellationTokenSource _stop = new();
+    private readonly ImageViewModel _model = new();
     private Task? _producer;
+    private Task? _imageLoad;
     private bool _closing, _closeReady;
 
-    public MainWindow() => InitializeComponent();
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContext = _model;
+    }
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
         if (_producer != null) return;
-        ImageViewer.HudLabelText = "Synthetic live image";
+        ImageViewer.HudLabelText = "Bound static image";
+        LiveViewer.HudLabelText = "Explicit live submissions";
         ImageViewer.MeasurementCompleted += (_, e) => Status.Text = $"Measurement completed: {e.Snapshot.Geometry}";
         ImageViewer.DisplayFailed += (_, failure) => Status.Text = $"Display failed: {failure.Error.Message}";
+        LiveViewer.DisplayFailed += (_, failure) => Status.Text = $"Live display failed: {failure.Error.Message}";
+        OnNextImage(sender, args);
         _producer = StreamAsync();
     }
 
@@ -33,7 +41,7 @@ public partial class MainWindow : Window
             {
                 for (int y = 0; y < height; y++)
                     for (int x = 0; x < width; x++) pixels[y * width + x] = (byte)((x + y + phase) % 256);
-                var result = await ImageViewer.SubmitFrameAsync(ImageFrame.Copy(
+                var result = await LiveViewer.SubmitFrameAsync(ImageFrame.Copy(
                     new(width, height, width, FramePixelFormat.Gray8), pixels), cancellationToken: _stop.Token);
                 if (result.Error is { } error) throw error;
                 if (result.Status == FrameSubmitStatus.Closed) break;
@@ -45,9 +53,13 @@ public partial class MainWindow : Window
         catch (Exception error) { Status.Text = $"Stream failed: {error.Message}"; throw; }
     }
 
-    private void FitImage(object sender, RoutedEventArgs args) => ImageViewer.FitToViewport();
-    private void MeasureLength(object sender, RoutedEventArgs args) => ImageViewer.ActivateMeasurementTool(MeasurementToolIds.Length);
-    private void EndInteraction(object sender, RoutedEventArgs args) => ImageViewer.EndInteraction();
+    private async void OnNextImage(object sender, RoutedEventArgs args)
+    {
+        if (_closing || _imageLoad is { IsCompleted: false }) return;
+        _imageLoad = _model.LoadNextAsync();
+        try { await _imageLoad; }
+        catch (Exception error) { Status.Text = $"Image update failed: {error.Message}"; }
+    }
 
     private async void OnClosing(object? sender, CancelEventArgs args)
     {
@@ -60,7 +72,15 @@ public partial class MainWindow : Window
         _stop.Cancel();
         try { if (_producer != null) await _producer; }
         catch (Exception error) { errors.Add(error); }
+        try { if (_imageLoad != null) await _imageLoad; }
+        catch (Exception error) { errors.Add(error); }
+        // All updates have ended. Release the model's reference on the host UI thread;
+        // each viewer still owns its independent pipeline references until disposal.
+        try { _model.Dispose(); }
+        catch (Exception error) { errors.Add(error); }
         try { await ImageViewer.DisposeAsync(); }
+        catch (Exception error) { errors.Add(error); }
+        try { await LiveViewer.DisposeAsync(); }
         catch (Exception error) { errors.Add(error); }
         _stop.Dispose();
         if (errors.Count != 0)

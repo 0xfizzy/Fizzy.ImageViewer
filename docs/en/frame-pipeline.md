@@ -94,6 +94,13 @@ owners from mutating memory: immutability is part of the producer contract.
 
 ## Submission and display
 
+For static XAML images, `ImageBindingSource.SetFrame` retains its own independent reference
+without consuming the supplied `ImageFrame` or copying pixels. Each bound control acquires a
+separate reference into this same pipeline; immutable storage and final-release rules remain
+unchanged. Source updates and disposal are restricted to the host UI thread. This is a binding
+adapter, not another frame queue or a replacement for explicit streaming submissions.
+See [binding lifecycle and results](embedding.md#bind-static-images).
+
 `SubmitFrameAsync` immediately consumes ownership and completes when reception finishes, independently
 of display. Results are `Accepted`, `Frozen`, `Cancelled`, or `Closed`; inspect `Error` for reception-owned
 cleanup failures even on rejection. Cancellation is checked only before acceptance. An accepted frame

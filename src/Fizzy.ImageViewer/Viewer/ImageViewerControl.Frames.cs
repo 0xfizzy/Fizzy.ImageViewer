@@ -22,6 +22,7 @@ public partial class ImageViewerControl
 
     internal void NotifyFrameCommitted(FrameInfo info)
     {
+        System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         foreach (EventHandler<FrameInfo> handler in Volatile.Read(ref _frameCommitted)?.GetInvocationList() ?? [])
             try { handler(this, info); }
             catch (Exception ex) { _logger.LogWarning(ex, "Frame notification failed"); }

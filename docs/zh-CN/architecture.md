@@ -48,6 +48,11 @@ IViewerCapabilities 继承的 IViewerLifetime 只暴露共享的 WhenStopping �
 
 Measurements/Hud 使用共享 Queries；Measurements、Rendering、Snapshots 使用 Imaging；这些模块均向 Frames 依赖，Frames 不依赖 Imaging。帧工厂组合存储和像素源，CPU 共用描述符和切片，GPU 接受生产者像素源。FrameStorage 仅管理引用及最终释放，不选择后端或独立释放像素源。
 
+ImageBindingSource 在宿主 Dispatcher 上拥有一个独立帧租约。控件绑定将源的变化转换成独立 ImageFrame 引用，
+提交到现有管线，不增加第二套队列、像素复制或存储实现。源释放后仍是可读取的空绑定对象；
+控件依赖属性不存储已消费的帧令牌。源通知与绑定关联由宿主 STA 串行处理。
+ImageViewerCommands 及控件命令绑定将 WPF 路由适配到视口和交互操作；激活可执行性复用协调器无副作用的准入检查。
+
 FrameLease 是后端无关读取边界，每次异步读取自持租约并验证请求/结果、提供来源。区域返回独立 CPU ImageFrame，RegionPixels 另存来源，不把源身份赋给派生像素。生产者 release 在最后源租约后清外部查询资源。Raw 快照接管区域，独立像素租约可越过快照。交付结果前先完成必要清理，无法交付时清理候选结果。
 
 ## 所有权与依赖方向

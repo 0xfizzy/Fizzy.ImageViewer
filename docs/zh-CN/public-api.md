@@ -36,6 +36,11 @@ viewer.Show();
 
 `HudLabelText` 控制右上文字；`IsPixelInfoEnabled` 默认为 true，控制左下像素显示和查询订阅，右键菜单共享该设置。两者都可在显示前配置。`EndInteraction()` 取消未完成创建或结束编辑，保留已完成测量和已应用修改。
 
+WPF 绑定入口 `ImageViewerControl.ImageSource` 借用 UI 线程拥有的 `ImageBindingSource`，源和各控件分别持有独立帧引用；
+只读 `ImageSourceSubmitResult` 报告绑定接收结果。`ImageViewerCommands` 提供 FitToViewport、ActivateMeasurementTool（工具 ID 参数）
+和 EndInteraction 路由命令，可执行状态属于各目标控件。这些 WPF 便利用法属于嵌入控件，不加入宿主无关的能力接口。
+生命周期、清除、线程、命令路由和错误观察见[嵌入指南](embedding.md)。
+
 `FitToViewport` 将完整图像居中，可能选择超出滚轮常规 0.01–100 范围的缩放。此时滚轮允许朝该范围变化，拒绝继续远离该范围。
 
 用 `SetDisplayRange(range)` 接受灰度映射请求，不等待显示；`DisplayRange` 读取请求，快照保留最后成功提交的映射。后续显示失败通过 `DisplayFailed` 观察。完整规则见[显示契约](frame-pipeline.md#提交与显示)。

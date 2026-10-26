@@ -11,8 +11,9 @@ using System.Windows.Media;
 namespace Fizzy.ImageViewer;
 
 /// <summary>An embeddable image viewer on its host's WPF dispatcher.</summary>
-/// <remarks>Create on an STA. Library operations marshal to that dispatcher; inherited WPF members
-/// retain WPF thread affinity. Unloading ends interaction but retains content. The owner must await
+/// <remarks>Create on an STA. Library viewing methods marshal to that dispatcher; binding sources,
+/// dependency properties, commands and inherited WPF members retain WPF thread affinity.
+/// Unloading ends interaction but retains content and the image-source association. The owner must await
 /// DisposeAsync before stopping the dispatcher. A disposed control cannot be reused.
 /// Content is managed by the library and must not be replaced. The owned viewport clips image,
 /// drawing, measurement and HUD content to its layout bounds.</remarks>
@@ -54,6 +55,7 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
             _surface.Children.Add(HudLayer);
             Content = _surface;
             _runtime.Initialize(checkpoint);
+            InitializeViewerCommands();
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             IsVisibleChanged += OnVisibilityChanged;
@@ -80,6 +82,7 @@ public sealed partial class ImageViewerControl : UserControl, IViewer
 
     private void OnUnloaded(object sender, RoutedEventArgs args)
     {
+        System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         DetachVisibilityHost();
         if (_runtime.Lifetime.IsStopping) return;
         _runtime.Pipeline.SetDisplayEnabled(false);
