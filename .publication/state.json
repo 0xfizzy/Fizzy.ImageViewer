@@ -1,5 +1,5 @@
 {
-  "lastSuccess": "9883399cab88f46f2b660f0a6b5a0aae343bb995",
+  "lastSuccess": "ca12740f073c3948c9b1714c2b66f147ff9baea1",
   "successes": [
     {
       "commit": "bccf6fd261e73ba85886ead155c9bfb27c9ef44d",
@@ -24,6 +24,10 @@
     {
       "commit": "9883399cab88f46f2b660f0a6b5a0aae343bb995",
       "runId": "39246279182"
+    },
+    {
+      "commit": "ca12740f073c3948c9b1714c2b66f147ff9baea1",
+      "runId": "40346286005"
     }
   ]
 }
