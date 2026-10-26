@@ -45,13 +45,12 @@ try {
     Set-Content "$consumer/Directory.Build.targets" '<Project />'
     Set-Content "$consumer/Consumer.csproj" "<Project Sdk=`"Microsoft.NET.Sdk`"><PropertyGroup><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF><OutputType>Exe</OutputType><RuntimeIdentifier>win-x64</RuntimeIdentifier></PropertyGroup><ItemGroup><PackageReference Include=`"$id`" Version=`"$version`" /></ItemGroup></Project>"
     Set-Content "$consumer/Program.cs" 'System.Console.WriteLine(typeof(Fizzy.ImageViewer.Cuda.ICudaFrameSource).FullName);'
-    Invoke-Checked dotnet @('restore',"$consumer/Consumer.csproj",'--source',$feed,'--source','https://api.nuget.org/v3/index.json','--packages',"$output/nuget-cache")
+    $escapedFeed = [Security.SecurityElement]::Escape($feed)
+    Set-Content "$consumer/NuGet.Config" "<configuration><packageSources><clear /><add key=`"fixture`" value=`"$escapedFeed`" /><add key=`"nuget.org`" value=`"https://api.nuget.org/v3/index.json`" /></packageSources></configuration>"
+    Invoke-Checked dotnet @('restore',"$consumer/Consumer.csproj",'--configfile',"$consumer/NuGet.Config",'--packages',"$output/nuget-cache")
     Invoke-Checked dotnet @('publish',"$consumer/Consumer.csproj",'-c',$Configuration,'--no-restore','--self-contained','false','-o',"$consumer/publish")
     if ((Get-Hash "$consumer/publish/Fizzy.ImageViewer.Cuda.Native.dll") -cne $info.nativeHash) { throw 'Consumer deployment contains the wrong native DLL.' }
     if ($Release) { Assert-ReleaseIdentity $version }
     Write-Json @{schema=1;major=$CudaMajor;packageId=$id;version=$version;commit=$info.commit;release=[bool]$Release;passed=$true;nativeHash=$info.nativeHash;packageHash=(Get-Hash $package);nativeCompilation='passed';managedTests='passed';packageValidation='passed';hardware=$hardware;physicalPresentation='not executed'} "$output/validation.json"
     Write-Host "PASS: CUDA $CudaMajor build, managed tests and package. Hardware: $hardware."
 } finally { Pop-Location; Stop-Transcript | Out-Null }
-
-
-

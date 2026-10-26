@@ -26,12 +26,17 @@ if ($DownloadToolkit) {
     Write-Host "CUDA root: $dest"
 }
 if ($InstallBuildTools) {
+    $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+    $ready = if (Test-Path $vswhere) { & $vswhere -version '[17.0,18.0)' -products '*' -requires $matrix.msvcComponent $matrix.sdkComponent -latest -property installationPath }
+    if ($ready) {
+        Write-Host "Pinned MSVC and SDK already installed: $ready"
+        return
+    }
     [void][IO.Directory]::CreateDirectory($cache)
     $installer = Join-Path $cache 'vs_BuildTools.exe'
     [void](Get-RemoteFile $matrix.visualStudioBootstrapper $installer)
     $signature = Get-AuthenticodeSignature $installer
     if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') { throw 'Invalid Microsoft installer signature.' }
-    $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
     $existing = if (Test-Path $vswhere) { & $vswhere -version '[17.0,18.0)' -products '*' -latest -property installationPath }
     $arguments = @('--quiet','--wait','--norestart','--nocache')
     if ($existing) { $arguments = @('modify') + $arguments + @('--installPath', ('"' + $existing + '"')) }
@@ -42,4 +47,3 @@ if ($InstallBuildTools) {
     if ($process.ExitCode -eq 3010) { Write-Warning 'Build Tools requires a reboot before local validation.' }
 }
 Write-Host 'CUDA build tools prepared. No NVIDIA driver or persistent environment variables were changed.'
-

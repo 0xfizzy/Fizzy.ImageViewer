@@ -23,6 +23,10 @@ if (!$CudaRoot -or !(Test-Path "$CudaRoot/bin/nvcc.exe")) { throw 'Specify -Cuda
 $nvccText = & "$CudaRoot/bin/nvcc.exe" --version
 if ($LASTEXITCODE -or ($nvccText -join ' ') -notmatch 'V(\d+\.\d+\.\d+)') { throw 'Cannot identify nvcc.' }
 $nvcc = $Matches[1]
+$toolkit = "nvcc $nvcc"
+if (Test-Path "$CudaRoot/version.json") {
+    $toolkit = (Get-Content "$CudaRoot/version.json" -Raw | ConvertFrom-Json).cuda.version
+}
 if ([int]$nvcc.Split('.')[0] -ne $CudaMajor) { throw 'CUDA Toolkit major differs from -CudaMajor.' }
 if ($Release) {
     Assert-ReleaseIdentity (Get-PackageVersion)
@@ -73,9 +77,6 @@ foreach ($symbol in @('fv_abi_version','fv_error','fv_error_domain','fv_error_co
 $dependencies = Get-Content "$output/dependencies.txt" -Raw
 if ($dependencies -match '(?i)\b(cudart\d*|vcruntime\d*|msvcp\d*)[^\s]*\.dll\b') { throw 'Native DLL unexpectedly depends on a dynamic CUDA/MSVC runtime.' }
 if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed during compilation.' }
-$info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$variant.toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
+$info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
 Write-Json $info "$output/build.json"
 Write-Host "CUDA $CudaMajor native build complete: $output"
-
-
-

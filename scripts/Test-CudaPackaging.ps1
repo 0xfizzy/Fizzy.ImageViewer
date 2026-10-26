@@ -23,6 +23,12 @@ $record.sourceHash = Get-CudaSourceIdentity
 Write-Json $record "$native/build.json"
 Add-Content "$native/Fizzy.ImageViewer.Cuda.Native.dll" 'tampered'
 Expect-Failure { Assert-CudaNative 11 Release $native } 'checksum'
+foreach ($directory in @("$work/missing",$native)) {
+    $output = & dotnet pack "$PSScriptRoot/../src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj" -c Release --no-build --no-restore "-p:CudaNativeDirectory=$directory" -o "$work/rejected-packages" 2>&1
+    $exit = $LASTEXITCODE
+    $output | Set-Content "$work/pack-$(Split-Path $directory -Leaf).log"
+    if (!$exit -or ($output -join "`n") -notmatch 'CUDA native (DLL and build record are required|checksum mismatch)') { throw "Pack did not enforce native provenance: $output" }
+}
 
 # Synthetic packages exercise NuGet's actual transitive target import and MSBuild.
 $feed = "$work/feed"
@@ -58,4 +64,5 @@ foreach ($case in @('single','direct','transitive','legacy')) {
 }
 Write-Json @{passed=$true;fixture=$true;cases=@('missing DLL/record','wrong variant/configuration/source','tampered DLL','single package','direct/transitive/legacy conflicts')} "$work/result.json"
 Write-Host 'PASS: CUDA native provenance failures and actual NuGet conflict checks.'
+$global:LASTEXITCODE = 0
 
