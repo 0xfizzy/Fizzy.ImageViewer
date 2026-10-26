@@ -33,7 +33,7 @@ $ninja = "$repo/artifacts/cuda/tools/ninja/ninja.exe"
 if (!(Test-Path $cmake) -or !(Test-Path $ninja)) { throw 'Run scripts/Setup-Cuda.ps1 to prepare pinned CMake and Ninja.' }
 if ((& $cmake --version | Select-Object -First 1) -cne "cmake version $($matrix.cmake.version)" -or (& $ninja --version) -cne $matrix.ninja.version) { throw 'Build tool version mismatch.' }
 $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
-$vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64 -latest -property installationPath }
+$vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires $matrix.msvcComponent -latest -property installationPath }
 if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
 $compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
 if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
@@ -57,14 +57,25 @@ $commands = @(
     ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER=cl.exe" "-DCMAKE_CUDA_FLAGS=--use-local-env" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
     'if errorlevel 1 exit /b %errorlevel%',
     ('"{0}" --build "{1}" --parallel 2' -f $cmake,$build),
+    'if errorlevel 1 exit /b %errorlevel%',
+    ('dumpbin /exports "{0}/Fizzy.ImageViewer.Cuda.Native.dll" > "{0}/exports.txt"' -f $output),
+    'if errorlevel 1 exit /b %errorlevel%',
+    ('dumpbin /dependents "{0}/Fizzy.ImageViewer.Cuda.Native.dll" > "{0}/dependencies.txt"' -f $output),
     'exit /b %errorlevel%'
 )
 $commandFile = "$build/build.cmd"
 $commands | Set-Content $commandFile -Encoding ascii
 Invoke-Checked $env:ComSpec @('/d','/c',$commandFile)
+$exports = Get-Content "$output/exports.txt" -Raw
+foreach ($symbol in @('fv_abi_version','fv_error','fv_error_domain','fv_error_code','fv_display_create','fv_display_write','fv_display_release','fv_display_live_surfaces','fv_query')) {
+    if ($exports -notmatch "\b$symbol\b") { throw "Missing native ABI export: $symbol" }
+}
+$dependencies = Get-Content "$output/dependencies.txt" -Raw
+if ($dependencies -match '(?i)\b(cudart\d*|vcruntime\d*|msvcp\d*)[^\s]*\.dll\b') { throw 'Native DLL unexpectedly depends on a dynamic CUDA/MSVC runtime.' }
 if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed during compilation.' }
 $info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$variant.toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
 Write-Json $info "$output/build.json"
 Write-Host "CUDA $CudaMajor native build complete: $output"
+
 
 

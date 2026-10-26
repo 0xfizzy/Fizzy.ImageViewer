@@ -18,7 +18,8 @@ try {
     & "$PSScriptRoot/Build-Cuda.ps1" -CudaMajor $CudaMajor -Configuration $Configuration -CudaRoot $CudaRoot -Release:$Release
     $nativeDir = "$repo/build/$Configuration/native/cuda$CudaMajor"
     $info = Assert-CudaNative $CudaMajor $Configuration $nativeDir -Release:$Release
-    Invoke-Checked dotnet @('restore','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-p:RestorePackagesWithLockFile=false',"-p:CudaMajor=$CudaMajor")
+    Copy-Item "$nativeDir/build.json","$nativeDir/exports.txt","$nativeDir/dependencies.txt" $output
+    Invoke-Checked dotnet @('restore','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','--locked-mode',"-p:CudaMajor=$CudaMajor")
     foreach ($framework in @('net8.0-windows','net10.0-windows')) {
         Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c',$Configuration,'-f',$framework,'--no-restore',"-p:CudaMajor=$CudaMajor",'--filter','FullyQualifiedName~Cuda','--logger','trx;LogFileName=cuda.trx','--results-directory',"$output/tests/$framework")
     }
@@ -47,8 +48,10 @@ try {
     Invoke-Checked dotnet @('restore',"$consumer/Consumer.csproj",'--source',$feed,'--source','https://api.nuget.org/v3/index.json','--packages',"$output/nuget-cache")
     Invoke-Checked dotnet @('publish',"$consumer/Consumer.csproj",'-c',$Configuration,'--no-restore','--self-contained','false','-o',"$consumer/publish")
     if ((Get-Hash "$consumer/publish/Fizzy.ImageViewer.Cuda.Native.dll") -cne $info.nativeHash) { throw 'Consumer deployment contains the wrong native DLL.' }
-    Copy-Item "$nativeDir/build.json" "$output/build.json"
+    if ($Release) { Assert-ReleaseIdentity $version }
     Write-Json @{schema=1;major=$CudaMajor;packageId=$id;version=$version;commit=$info.commit;release=[bool]$Release;passed=$true;nativeHash=$info.nativeHash;packageHash=(Get-Hash $package);nativeCompilation='passed';managedTests='passed';packageValidation='passed';hardware=$hardware;physicalPresentation='not executed'} "$output/validation.json"
     Write-Host "PASS: CUDA $CudaMajor build, managed tests and package. Hardware: $hardware."
 } finally { Pop-Location; Stop-Transcript | Out-Null }
+
+
 

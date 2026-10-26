@@ -48,6 +48,8 @@ jobs:
           path: |
             artifacts/cuda/${{ inputs.major }}/packages/
             artifacts/cuda/${{ inputs.major }}/build.json
+            artifacts/cuda/${{ inputs.major }}/exports.txt
+            artifacts/cuda/${{ inputs.major }}/dependencies.txt
             artifacts/cuda/${{ inputs.major }}/validation.json
             artifacts/cuda/${{ inputs.major }}/validation.log
             artifacts/cuda/${{ inputs.major }}/tests/
@@ -61,3 +63,4 @@ jobs:
           path: build/Release/tests/Cuda${{ inputs.major }}/
           retention-days: 30
           if-no-files-found: error
+

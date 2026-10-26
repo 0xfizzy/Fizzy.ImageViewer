@@ -28,7 +28,7 @@ if ($DownloadToolkit) {
 if ($InstallBuildTools) {
     [void][IO.Directory]::CreateDirectory($cache)
     $installer = Join-Path $cache 'vs_BuildTools.exe'
-    [void](Get-RemoteFile 'https://aka.ms/vs/17/release/vs_BuildTools.exe' $installer)
+    [void](Get-RemoteFile $matrix.visualStudioBootstrapper $installer)
     $signature = Get-AuthenticodeSignature $installer
     if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') { throw 'Invalid Microsoft installer signature.' }
     $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
@@ -36,9 +36,10 @@ if ($InstallBuildTools) {
     $arguments = @('--quiet','--wait','--norestart','--nocache')
     if ($existing) { $arguments = @('modify') + $arguments + @('--installPath', ('"' + $existing + '"')) }
     else { $arguments += @('--installPath','C:\BuildTools2022') }
-    $arguments += @('--add','Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64','--add','Microsoft.VisualStudio.Component.Windows11SDK.22621')
+    $arguments += @('--add',$matrix.msvcComponent,'--add',$matrix.sdkComponent)
     $process = Start-Process $installer -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
     if ($process.ExitCode -notin @(0,3010)) { throw "Build Tools installer failed: $($process.ExitCode)" }
     if ($process.ExitCode -eq 3010) { Write-Warning 'Build Tools requires a reboot before local validation.' }
 }
 Write-Host 'CUDA build tools prepared. No NVIDIA driver or persistent environment variables were changed.'
+

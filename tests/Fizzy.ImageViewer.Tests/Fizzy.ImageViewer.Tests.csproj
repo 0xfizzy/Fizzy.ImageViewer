@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <NuGetLockFilePath Condition="'$(CudaMajor)' == '12' or '$(CudaMajor)' == '13'">packages.cuda$(CudaMajor).lock.json</NuGetLockFilePath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="PublicApi.txt" CopyToOutputDirectory="PreserveNewest" />
