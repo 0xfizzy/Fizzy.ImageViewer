@@ -153,6 +153,12 @@ can extend this lifetime. A frozen viewer can hold a frame indefinitely. Camera 
 allow retention, or their adapters must make a copy. Read-only access does not prevent other
 owners from mutating memory: immutability is part of the producer contract.</p>
 <h2 id="submission-and-display">Submission and display</h2>
+<p>For static XAML images, <code>ImageBindingSource.SetFrame</code> retains its own independent reference
+without consuming the supplied <code>ImageFrame</code> or copying pixels. Each bound control acquires a
+separate reference into this same pipeline; immutable storage and final-release rules remain
+unchanged. Source updates and disposal are restricted to the host UI thread. This is a binding
+adapter, not another frame queue or a replacement for explicit streaming submissions.
+See <a href="embedding.html#bind-static-images">binding lifecycle and results</a>.</p>
 <p><code>SubmitFrameAsync</code> immediately consumes ownership and completes when reception finishes, independently
 of display. Results are <code>Accepted</code>, <code>Frozen</code>, <code>Cancelled</code>, or <code>Closed</code>; inspect <code>Error</code> for reception-owned
 cleanup failures even on rejection. Cancellation is checked only before acceptance. An accepted frame

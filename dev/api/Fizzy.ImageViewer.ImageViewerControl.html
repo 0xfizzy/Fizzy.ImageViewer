@@ -1486,10 +1486,12 @@ Class ImageViewerControl
 
 
   <h2 id="Fizzy_ImageViewer_ImageViewerControl_remarks">Remarks</h2>
-  <div class="markdown level0 remarks"><p>Create on an STA. Library operations marshal to that dispatcher; inherited WPF members
-retain WPF thread affinity. Unloading ends interaction but retains content. The owner must await
+  <div class="markdown level0 remarks"><p>Create on an STA. Library viewing methods marshal to that dispatcher; binding sources,
+dependency properties, commands and inherited WPF members retain WPF thread affinity.
+Unloading ends interaction but retains content and the image-source association. The owner must await
 DisposeAsync before stopping the dispatcher. A disposed control cannot be reused.
-Content is managed by the library and must not be replaced.</p>
+Content is managed by the library and must not be replaced. The owned viewport clips image,
+drawing, measurement and HUD content to its layout bounds.</p>
 </div>
 
 
@@ -1547,6 +1549,72 @@ Content is managed by the library and must not be replaced.</p>
 
 
 
+
+
+
+
+
+
+
+
+
+  <h2 class="section" id="fields">Fields
+</h2>
+
+
+
+  <h3 id="Fizzy_ImageViewer_ImageViewerControl_ImageSourceProperty" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSourceProperty">
+  ImageSourceProperty
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Identifies the one-way image-source binding property.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static readonly DependencyProperty ImageSourceProperty</code></pre>
+  </div>
+
+
+
+
+  <h4 class="section">Field Value</h4>
+  <dl class="parameters">
+    <dt><span class="xref">DependencyProperty</span></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+  <h3 id="Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResultProperty" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResultProperty">
+  ImageSourceSubmitResultProperty
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Identifies the most recent binding reception result.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static readonly DependencyProperty ImageSourceSubmitResultProperty</code></pre>
+  </div>
+
+
+
+
+  <h4 class="section">Field Value</h4>
+  <dl class="parameters">
+    <dt><span class="xref">DependencyProperty</span></dt>
+    <dd></dd>
+  </dl>
 
 
 
@@ -1621,6 +1689,83 @@ an empty string hides the label.</p>
 
 
 
+
+
+
+
+  <a id="Fizzy_ImageViewer_ImageViewerControl_ImageSource_" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSource*"></a>
+
+  <h3 id="Fizzy_ImageViewer_ImageViewerControl_ImageSource" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSource">
+  ImageSource
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Gets or sets a source owned by this control's host dispatcher.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ImageBindingSource? ImageSource { get; set; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.ImageBindingSource.html">ImageBindingSource</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_ImageViewerControl_ImageSource_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Property assignment borrows the source; it never consumes a caller's frame. Null or clearing
+the binding detaches the source and preserves the last displayed image. Unloading retains the
+association. Final disposal detaches it without disposing the source. A disposed source is empty.
+Emptying or detaching does not retract already accepted input, which may still display.
+Explicit submissions and source updates use the same latest-frame pipeline in reception order;
+an unchanged source does not overwrite subsequent explicit submissions.</p>
+</div>
+
+
+
+
+  <a id="Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResult_" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult*"></a>
+
+  <h3 id="Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResult" data-uid="Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult">
+  ImageSourceSubmitResult
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Gets the latest source reception result, or null when detached or the source is empty.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public FrameSubmitResult? ImageSourceSubmitResult { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="Fizzy.ImageViewer.Frames.FrameSubmitResult.html">FrameSubmitResult</a>?</dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResult_remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>Accepted does not mean displayed. Observe DisplayFailed for later rendering errors and
+await DisposeAsync for pipeline cleanup errors. Explicit submissions do not change this property.
+Frozen updates are not retried automatically. This property has WPF thread affinity.</p>
+</div>
 
 
 

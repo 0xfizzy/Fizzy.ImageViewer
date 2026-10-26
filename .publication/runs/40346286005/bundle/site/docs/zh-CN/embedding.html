@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>嵌入 WPF 窗口 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="嵌入 WPF 窗口 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="嵌入-wpf-窗口">嵌入 WPF 窗口</h1>
+
+<p><a href="../en/embedding.html">English</a></p>
+<p>图像需要放入已有窗口、Grid 或 TabControl 时，使用 <code>ImageViewerControl</code>；需要独立窗口及独立 STA 时，使用 <code>Viewer</code>。需要完整查看能力时借用 <code>IViewerCapabilities</code>，仅需部分功能时使用窄接口；拥有者保留 <code>IViewer</code> 负责释放。只有独立窗口 <code>Viewer</code> 实现 <code>IViewerWindow</code>。</p>
+<h2 id="放置与配置">放置与配置</h2>
+<p>项目启用 <code>UseWPF</code>，目标框架为 <code>net8.0-windows</code> 或 <code>net10.0-windows</code>，并引用 Fizzy.ImageViewer。在窗口中放置控件：</p>
+<pre><code class="lang-xml">&lt;Window xmlns=&quot;http://schemas.microsoft.com/winfx/2006/xaml/presentation&quot;
+        xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;
+        xmlns:viewer=&quot;clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer&quot;&gt;
+    &lt;Grid&gt;
+        &lt;viewer:ImageViewerControl x:Name=&quot;ImageViewer&quot; /&gt;
+    &lt;/Grid&gt;
+&lt;/Window&gt;
+</code></pre>
+<p>无参构造支持 XAML；代码中可向 <code>new ImageViewerControl(logger)</code> 传入 <code>ILogger&lt;ImageViewerControl&gt;</code>，null 表示禁用日志。必须在宿主 STA 上创建控件。首次 <code>Loaded</code> 前即可提交帧，即使从未加载也必须释放。<code>Content</code> 由库管理，替换会被拒绝；使用常规 WPF 布局属性，不替换内容或模板。</p>
+<p>自有视口将图像、绘图、测量和 HUD 内容裁剪在其布局边界内，缩放、平移和调整尺寸后同样适用，无需在公共控件上设置 <code>ClipToBounds</code>。点击视口会从宿主 UI 或另一个查看器取回键盘焦点；Escape 和 Delete 作用于获得焦点的查看器交互。每个控件独立保留工具、选择和图层状态。</p>
+<p>在 <code>InitializeComponent</code> 后调用与 <code>Viewer</code> 相同的查看方法：</p>
+<pre><code class="lang-csharp">ImageViewer.HudLabelText = &quot;Camera&quot;;
+var pixels = new byte[640 * 480];
+Array.Fill(pixels, (byte)128);
+var result = await ImageViewer.SubmitFrameAsync(
+    Fizzy.ImageViewer.Frames.ImageFrame.Copy(
+        new(640, 480, 640, Fizzy.ImageViewer.Frames.FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+</code></pre>
+<p>提交立即转移帧所有权，包括拒绝和取消。布局完成后通过 <code>FitToViewport()</code> 适应图像。绘图、测量、HUD、像素查询、快照和菜单遵循与独立窗口相同的契约；线剖面测量仍可打开独立曲线窗口。静态图像和低频切图可使用下述绑定源；实时帧流仍推荐显式 <code>SubmitFrameAsync</code>。</p>
+<p><code>Accepted</code> 仅表示接收，不表示显示完成或缓冲区可回收。通过 <code>FrameCommitted</code> / <code>OnCommitted</code> 和 <code>DisplayFailed</code> 观察后续显示结果；已接受帧可能被替换而从未显示。可复用的生产者缓冲区应使用 <code>Copy</code>，或等待已转移存储的最终释放回调后再回收，见<a href="frame-pipeline.html">帧契约</a>。</p>
+<p><code>Visible</code> 控制控件自身 WPF 显隐，false 映射到 <code>Hidden</code>；XAML 绑定或需要 <code>Collapsed</code> 时使用继承的 <code>Visibility</code>。<code>IsVisible</code> 包含祖先显隐影响；<code>IsMinimized</code> 读取当前所属窗口，无窗口时为 false。这些属性遵循 WPF 线程亲和性。
+只有已加载、有效可见且宿主未最小化时才进行显示工作；暂停期间继续接收，只保留最新等待帧。非当前 Tab 由宿主控制显隐，不进行专门检测；恢复显隐或加载后主动显示最新输入。</p>
+<h2 id="绑定静态图像">绑定静态图像</h2>
+<p>在宿主 UI 线程创建 ViewModel，并暴露稳定的 <code>Fizzy.ImageViewer.Frames.ImageBindingSource</code>：</p>
+<pre><code class="lang-csharp">public ImageBindingSource Image { get; } = new();
+
+// Run on the host UI thread, after producing an immutable buffer.
+public void ShowImage(FrameDescriptor descriptor, byte[] pixels)
+{
+    using var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () =&gt; { });
+    Image.SetFrame(frame);
+    // Do not write pixels again. SetFrame retained an independent reference.
+}
+</code></pre>
+<pre><code class="lang-xml">&lt;viewer:ImageViewerControl x:Name=&quot;ImageViewer&quot; ImageSource=&quot;{Binding Image}&quot; /&gt;
+</code></pre>
+<p>ViewModel 拥有并释放 <code>Image</code>；宿主拥有控件并等待其释放。<code>SetFrame</code> 获取独立引用，不消费输入帧，不复制像素。
+每个已关联控件通过现有帧管线独立保留同一份不可变存储，最后一个引用释放才回收存储。
+池化或 native 存储必须提供实际释放回调；上述空回调仅适用于托管数组。</p>
+<p>源必须在创建它的 UI 线程上创建、更新和释放。同一源可服务同一 Dispatcher 上的多个控件，不支持跨 Dispatcher。
+后台可准备 <code>ImageFrame</code>，但必须保留它，直到等待的 Dispatcher <code>SetFrame</code> 调用完成，再释放调用方自己的帧。
+不要为此源使用后台 setter 或 <code>Binding.IsAsync</code>。显式帧提交保留原有跨线程能力。</p>
+<p>绑定源对象，不绑定可释放的 <code>ImageFrame</code> 或 <code>FrameLease</code>。WPF 可能延迟读取 ViewModel 属性：延迟读取看到源的当前图像，
+源已释放则看到空，不依赖旧帧令牌保持有效直到绑定回调。可以在 UI 线程替换 ViewModel 的源属性并释放旧源；
+<code>PropertyChanged</code> 返回不是所有权交接确认。通常保持稳定源并调用 <code>SetFrame</code> 即可，无须额外属性通知。</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>再次赋值同一个源</td>
+<td>不因依赖属性重复赋值而重新提交</td>
+</tr>
+<tr>
+<td>再次调用 <code>SetFrame</code>，包括传入同一帧</td>
+<td>向每个已关联控件发起一次新接收</td>
+</tr>
+<tr>
+<td><code>SetFrame(null)</code></td>
+<td>释放源的图像引用；控件保留已显示图像</td>
+</tr>
+<tr>
+<td>将 <code>ImageSource</code> 设为 null 或清除绑定</td>
+<td>解除该控件订阅，不释放源，不清空画面</td>
+</tr>
+<tr>
+<td>释放源</td>
+<td>清空源并通知控件，拒绝后续更新；延迟绑定看到空</td>
+</tr>
+<tr>
+<td>卸载、重新加载控件</td>
+<td>保留源关联和最新等待帧；重载时恢复显示</td>
+</tr>
+<tr>
+<td>释放控件</td>
+<td>解除其绑定和源关联并排空管线；其他控件和源保持独立</td>
+</tr>
+</tbody>
+</table>
+<p>清空源或解绑不撤销已接受的输入：等待中或在途帧仍可能显示。这些操作均不清空测量。
+依赖属性保留的已释放源是空源对象，不是失效的所有权令牌。已释放控件不可复用；停止后赋非 null 源会抛出 <code>ObjectDisposedException</code>。</p>
+<p><code>ImageSourceSubmitResult</code> 是只读依赖属性，包含最近一次绑定接收结果，源为空或解绑时为 null。
+可绑定其 <code>Status</code> 和 <code>Error</code> 提供 UI 反馈。结果属于每个控件，不属于源；<code>Accepted</code> 不等于已显示。
+冻结期间更新被拒绝，不自动重试；需要新接收时再次调用 <code>SetFrame</code>。
+通过 <code>FrameCommitted</code>、<code>DisplayFailed</code> 观察后续显示结果，等待 <code>DisposeAsync</code> 观察管线清理失败。
+源自身清理失败在通知所有控件后由 <code>SetFrame</code> 或 <code>Dispose</code> 传播，新值保持安装，不重试清理；外部租约的清理仍由持有者观察。</p>
+<p>绑定与显式提交共享同一个最新帧接收顺序。显式提交可以替换绑定图像；不变的绑定不会重新覆盖它。
+后续 <code>SetFrame</code> 或绑定到另一个非空源会再次提交。<code>SubmitFrameAsync</code> 仍立即消费输入，包括拒绝和取消。</p>
+<h2 id="wpf-命令">WPF 命令</h2>
+<p>按钮、菜单或 <code>KeyBinding</code> 可使用 <code>ImageViewerCommands.FitToViewport</code>、<code>ActivateMeasurementTool</code> 和 <code>EndInteraction</code>，
+无需 MVVM 框架。位于控件外的工具栏应显式指定目标；不指定 <code>CommandTarget</code> 时遵循 WPF 键盘焦点路由。
+不同控件不共享工具会话。</p>
+<pre><code class="lang-xml">&lt;Button Content=&quot;Fit&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.FitToViewport}&quot;
+        CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+&lt;Button Content=&quot;Measure&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}&quot;
+        CommandParameter=&quot;{Binding ToolId}&quot; CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+&lt;Button Content=&quot;End&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.EndInteraction}&quot;
+        CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+</code></pre>
+<p><code>ToolId</code> 为内置 <code>MeasurementToolIds</code> 值或在目标控件注册的自定义工具 ID。
+<code>CanExecute</code> 只检查已存储的注册元数据和图层准入，不创建会话，不调用自定义工具代码。
+注册、交互、图层输入策略、显示与布局、控件可用性变化时刷新可执行状态。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>额外可执行条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FitToViewport</code></td>
+<td>存在已显示图像，视口布局非空</td>
+</tr>
+<tr>
+<td><code>ActivateMeasurementTool</code></td>
+<td>非空白字符串指向已注册工具；测量层可见、允许命中且不在清理</td>
+</tr>
+<tr>
+<td><code>EndInteraction</code></td>
+<td>存在正在创建或编辑的会话；保留已完成测量和已应用编辑</td>
+</tr>
+</tbody>
+</table>
+<p>卸载、隐藏、禁用、最小化或停止后，三个命令均不可执行。激活命令的无效参数不可执行；Fit/End 忽略参数。
+执行时再次检查，不可用则不操作。实际工具执行的异常传播至 WPF 命令调用方；直接方法保留原有异常契约。
+命令调用和状态查询遵循 WPF UI 线程亲和性。</p>
+<p>库不安装全局快捷键。示例在静态图像控件上配置 Ctrl+F、Ctrl+L 和 Ctrl+E。
+已有 Escape 输入和内置菜单复用同一个交互协调器；菜单保留捕获的注册和会话身份，避免延迟点击影响替代会话。
+End 不增加删除、清空、保存或释放操作。</p>
+<h2 id="线程与临时卸载">线程与临时卸载</h2>
+<p>库提供的查看方法按需调度到控件 Dispatcher；绑定源、依赖属性、命令及继承的布局属性和视觉树操作仍遵循 WPF 线程规则。通知在所属 UI 线程执行；嵌入时测量事件 sender 为控件，独立窗口模式为 <code>Viewer</code>。不要同步等待依赖该 Dispatcher 的工作。</p>
+<p>嵌入控件共享应用 UI 线程。应用 UI 繁忙会延迟呈现和交互，同线程多个控件也共享这部分开销。后台帧准备和查询仍独立执行。独立窗口 <code>Viewer</code> 在自己的 STA 上创建同一个控件；两种封装均不额外增加帧复制或提交队列。</p>
+<p><code>Unloaded</code>（包括切换 Tab）会结束当前交互并释放鼠标捕获，但保留帧和已完成测量；卸载期间可继续提交帧。同一 Dispatcher 上重新挂载即可继续使用。卸载不等于最终释放，不支持将实例移动到另一个 Dispatcher。</p>
+<h2 id="异步关闭">异步关闭</h2>
+<p>嵌入方先停止并等待生产者，再在宿主 Dispatcher 仍运行时等待 <code>ImageViewer.DisposeAsync()</code>。普通窗口应取消首次 <code>Closing</code>，异步清理后，在本次处理函数返回后再次请求关闭。<a href="../../samples/EmbeddedViewer/MainWindow.xaml.cs">完整示例</a>实现此模式，防止重复关闭，并报告生产者及清理失败。</p>
+<p>重复释放共享同一完成任务及成功或失败结果。释放停止接纳、排空已接受的帧和查询工作并清理自有资源，不关闭宿主窗口或 Dispatcher。独立帧租约继续有效。已释放的控件是终态，需要新建实例，不能通过重新加载恢复。</p>
+<p>Dispatcher 提前关闭时，控件在 <code>ShutdownStarted</code> 中尽力停止和安全清理，释放结果报告生命周期失败；这不能代替正常等待释放。无法安全释放的 native 资源保持隔离，不释放或复用。卸载交互清理失败会记录日志，并保留至最终释放结果。</p>
+<h2 id="应用端点">应用端点</h2>
+<p>通过应用自有接口隔离 pipeline 与 ViewModel 的依赖，见<a href="application-integration.html">应用集成</a>和 <a href="../../samples/ApplicationEndpoint/App.xaml.cs">ApplicationEndpoint 示例</a>。简单窗口仍适合直接调用。</p>
+<h2 id="运行示例">运行示例</h2>
+<pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+</code></pre>
+<p>示例分别提供绑定静态图像和显式实时提交页签。Next image 在后台准备像素，并在 UI 线程更新 ViewModel 的源；
+实时页签使用显式提交。按钮、菜单和快捷键演示三个命令及显式目标。
+切换页签验证卸载重载，在流式显示时关闭：宿主等待两个生产任务结束，释放 ViewModel 的源，再等待两个控件释放后关闭。
+不需要相机或 GPU。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Integrate ImageViewer through an application endpoint | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Integrate ImageViewer through an application endpoint | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="integrate-imageviewer-through-an-application-endpoint">Integrate ImageViewer through an application endpoint</h1>
+
+<p><a href="../zh-CN/application-integration.html">简体中文</a></p>
+<p>Use an application endpoint when a pipeline, plugins or a ViewModel should not know about windows, named controls or WPF image types. For a simple window, direct calls as shown in <a href="embedding.html">embedding</a> and <a href="../../samples/EmbeddedViewer/MainWindow.xaml.cs">EmbeddedViewer</a> are sufficient.</p>
+<p>The <a href="../../samples/ApplicationEndpoint/App.xaml.cs">ApplicationEndpoint example</a> is a standalone WPF application with synthetic Gray8 frames, two commands and length-result binding. Its endpoint, interfaces and <code>Attach</code> method belong entirely to the example application. They are not ImageViewer APIs or a required architecture for every consumer. No plugin loader or processing pipeline is needed to run it.</p>
+<h2 id="responsibilities-and-calls">Responsibilities and calls</h2>
+<p>The boxes group ownership layers; solid arrows show runtime calls or notifications, and dotted arrows show composition. The application contracts contain no WPF or ImageViewer types.</p>
+<pre><code class="lang-mermaid">flowchart TD
+    subgraph AppLogic[Application logic]
+        Producer[SyntheticProducer]
+        VM[DisplayViewModel]
+    end
+    subgraph AppAdapter[Application adapter]
+        Endpoint[&quot;One ImageViewerEndpoint: IImageSink, IImageDisplay, IImageNotifications&quot;]
+    end
+    subgraph UIHost[WPF host and composition]
+        Host[App and MainWindow]
+    end
+    subgraph Library[ImageViewer library]
+        Control[ImageViewerControl]
+    end
+    Producer --&gt;|IImageSink.PublishAsync| Endpoint
+    VM --&gt;|IImageDisplay commands| Endpoint
+    Endpoint --&gt;|IImageNotifications results| VM
+    Endpoint --&gt;|borrowed viewing capabilities| Control
+    Control --&gt;|measurement and display events| Endpoint
+    Host -.-&gt;|DI resolution and Attach| Endpoint
+    Host -.-&gt;|XAML creation and final disposal| Control
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Application contract</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IImageSink</code></td>
+<td>Consume an owned <code>GrayFrame</code> asynchronously; successful completion means reception, not presentation.</td>
+</tr>
+<tr>
+<td><code>IImageDisplay</code></td>
+<td>Fit the image and start interactive length measurement.</td>
+</tr>
+<tr>
+<td><code>IImageNotifications</code></td>
+<td>Deliver an application <code>LengthResult</code> and display failure messages.</td>
+</tr>
+</tbody>
+</table>
+<p><code>GrayFrame</code> contains width, height, stride and an <code>IMemoryOwner&lt;byte&gt;</code>. <code>LengthResult</code> contains only a distance in image pixels. The adapter maps completed built-in length measurements to this result; it does not expose measurement handles, WPF points or library snapshots. Starting a measurement activates a tool; it does not await the user's clicks. Escape cancels creation without a completed result. Edits to an already completed measurement are outside this minimal result contract.</p>
+<h2 id="register-one-endpoint-under-narrow-interfaces">Register one endpoint under narrow interfaces</h2>
+<p>The application uses <code>Microsoft.Extensions.DependencyInjection</code> without a hosted-service or MVVM framework. <a href="../../samples/ApplicationEndpoint/App.xaml.cs">App.BuildServices</a> registers one endpoint and maps each interface to it:</p>
+<pre><code class="lang-csharp">services.AddSingleton&lt;ImageViewerEndpoint&gt;();
+services.AddSingleton&lt;IImageSink&gt;(
+    sp =&gt; sp.GetRequiredService&lt;ImageViewerEndpoint&gt;());
+services.AddSingleton&lt;IImageDisplay&gt;(
+    sp =&gt; sp.GetRequiredService&lt;ImageViewerEndpoint&gt;());
+services.AddSingleton&lt;IImageNotifications&gt;(
+    sp =&gt; sp.GetRequiredService&lt;ImageViewerEndpoint&gt;());
+services.AddSingleton&lt;SyntheticProducer&gt;();
+services.AddSingleton&lt;DisplayViewModel&gt;();
+</code></pre>
+<p>Registering each interface with its own implementation registration would create separate instances. Here the producer receives only <code>IImageSink</code>; the ViewModel receives <code>IImageDisplay</code> and <code>IImageNotifications</code>. There is no combined business-facing interface. The container lives for this one display session; the window owns the control independently of DI.</p>
+<h2 id="connect-the-xaml-control">Connect the XAML control</h2>
+<p><a href="../../samples/ApplicationEndpoint/MainWindow.xaml">MainWindow.xaml</a> declares the control and binds buttons and status to the ViewModel:</p>
+<pre><code class="lang-xml">&lt;viewer:ImageViewerControl x:Name=&quot;ImageViewer&quot; /&gt;
+</code></pre>
+<p>The composition entry in <a href="../../samples/ApplicationEndpoint/MainWindow.xaml.cs">MainWindow.xaml.cs</a> connects it after <code>InitializeComponent()</code>:</p>
+<pre><code class="lang-csharp">InitializeComponent();
+_endpoint = provider.GetRequiredService&lt;ImageViewerEndpoint&gt;();
+_endpoint.Attach(ImageViewer);
+_viewModel = provider.GetRequiredService&lt;DisplayViewModel&gt;();
+DataContext = _viewModel;
+</code></pre>
+<p>Only this View code uses the named control. The endpoint borrows <code>IViewerCapabilities</code> internally and never disposes it. The host starts the background producer after <code>Loaded</code>; fitting is requested after layout through the button. No dependency properties, control template changes or window lookup are involved.</p>
+<p>One endpoint supports one binding. Before binding, calls fail with <code>InvalidOperationException</code>; after <code>StopAccepting</code>, they fail with the application-defined <code>DisplaySessionStoppedException</code>. Repeated attachment, attachment after stopping and detachment before stopping are rejected. Nothing waits for binding or queues commands. Temporary WPF unloading is governed by the <a href="embedding.html">embedding contract</a>, not an instruction to detach or rebind this endpoint.</p>
+<h2 id="transfer-buffers-without-an-adapter-copy">Transfer buffers without an adapter copy</h2>
+<p>Invoking <code>PublishAsync</code> transfers ownership immediately, including when the endpoint is unbound, stopped, cancelled or fails. The producer must never modify, reuse or dispose the input after invocation. Before invocation, the producer owns cleanup if generating a frame fails.</p>
+<p>The synthetic producer allocates an ordinary array-backed owner for each frame and fills it directly. The adapter calls <code>ImageFrame.TakeOwnership</code> with the existing memory and <code>GrayFrame.Dispose</code> as the release callback, then submits the resulting frame. It adds no pixel copy, pool, cache, queue or asynchronous conversion job. Rendering can still require conversion or upload; this is not a promise of end-to-end zero-copy display.</p>
+<table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Cleanup responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Before calling the sink</td>
+<td>Producer owns the buffer.</td>
+</tr>
+<tr>
+<td>Unbound/stopped, cancellation before wrapping, or memory access failure</td>
+<td>Endpoint disposes the application frame; cleanup failure is preserved with the original error.</td>
+</tr>
+<tr>
+<td><code>ImageFrame.TakeOwnership</code> invoked</td>
+<td>The library invokes release even if descriptor validation fails.</td>
+</tr>
+<tr>
+<td><code>SubmitFrameAsync</code> invoked</td>
+<td>The library consumes the frame on every reception outcome; the final reference releases its storage.</td>
+</tr>
+</tbody>
+</table>
+<p>The owner must allow nonblocking release on any final-releasing thread, including the UI thread. The example owner simply drops its array reference; reclamation is managed by the GC. A future pooled or native owner must respect that same release contract.</p>
+<p>The adapter inspects both submission status and cleanup error. Cancellation becomes an <code>OperationCanceledException</code>; other rejected statuses become an operation failure. A submission error takes precedence over cancellation so cleanup failures are not hidden. Later presentation failures use the separate display notification. The producer awaits each reception; accepted work and retained frames are drained by the library's existing disposal protocol.</p>
+<h2 id="threads-results-and-failures">Threads, results and failures</h2>
+<p>The producer runs on a background task and awaits each sink call. Binding, display commands, notification subscription and detachment run on the host UI thread. Only frame publication crosses that thread boundary in this sample. A small lock coordinates the endpoint's borrowed reference and stopping flag; it is not an additional submission queue or drainage mechanism. A publication that obtained the viewer before stopping may finish; the host awaits its producer before detaching.</p>
+<p>ImageViewer delivers measurement and display notifications on the owning UI thread. The adapter forwards application values synchronously on that thread, so <a href="../../samples/ApplicationEndpoint/DisplayViewModel.cs">DisplayViewModel</a> can update <code>INotifyPropertyChanged</code> state directly. Subscribers must remain short and must not synchronously wait on the Dispatcher. If another adapter publishes results from a worker thread, it must marshal to the UI before updating this ViewModel; that is an application responsibility.</p>
+<p>Command exceptions update the bound status. The host observes producer failure on the UI thread, updates status and retains the fault for shutdown reporting. Display failures update status separately. Only cancellation or the specific stopped-session rejection during intentional shutdown is treated as normal producer termination; other failures remain visible.</p>
+<h2 id="close-in-dependency-order">Close in dependency order</h2>
+<p>The window owns one shared cleanup task, used for startup failure and normal closure. It retains the window object before XAML initialization so a created control can be released even if startup does not reach <code>Show()</code>.</p>
+<pre><code class="lang-mermaid">sequenceDiagram
+    participant Host as WPF host
+    participant VM as ViewModel
+    participant Endpoint as Application endpoint
+    participant Producer as Producer task
+    participant Control as ImageViewerControl
+    Host-&gt;&gt;VM: Disable commands
+    Host-&gt;&gt;Endpoint: StopAccepting
+    Host-&gt;&gt;Producer: Cancel and await completion
+    Note over Producer,Control: Already entered publication finishes; no application work remains
+    Host-&gt;&gt;VM: Detach result subscriptions
+    Host-&gt;&gt;Endpoint: Detach library subscriptions and borrowed reference
+    Host-&gt;&gt;Control: await DisposeAsync
+    Note over Host,Control: Dispatcher remains running during library drainage
+    Host-&gt;&gt;Host: Dispose DI container, report failures, close host
+</code></pre>
+<p>The first <code>Closing</code> is cancelled; repeated close requests do not start another cleanup. After awaiting producer completion, the host detaches subscriptions, awaits control disposal and reports failures. It schedules final closure after the current <code>Closing</code> callback returns. No <code>.Wait()</code> or <code>.Result</code> blocks the UI. Startup and cleanup failures are shown in a dialog; a faulted producer does not prevent control disposal.</p>
+<p>The endpoint owns no independent conversion tasks and therefore has no <code>DisposeAsync</code>, active-call counter or separate drain task. The host's known producer task and the library's disposal completion are sufficient. Detachment alone does not release the viewer. Failed control disposal is reported, not retried as a new session; the library's resource-isolation contract still applies. Any later display session needs a new endpoint and control.</p>
+<h2 id="run-and-validate">Run and validate</h2>
+<p>From the repository root:</p>
+<pre><code class="lang-powershell">dotnet run --project samples/ApplicationEndpoint
+dotnet test tests/ApplicationEndpoint.Tests -c Release
+./scripts/Test-Samples.ps1
+</code></pre>
+<p>The window streams a moving grayscale pattern without a camera or GPU. Click <strong>Fit image</strong>, click <strong>Measure length</strong>, then select two endpoints; the bound status shows the length in pixels. Close while streaming to exercise asynchronous cleanup. The focused tests cover DI identity, rejection and buffer release, cancellation, failed wrapping and host cleanup. Sample builds alone do not execute WPF interaction.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

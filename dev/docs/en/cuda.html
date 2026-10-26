@@ -88,7 +88,7 @@
 <h1 id="cuda-integration">CUDA integration</h1>
 
 <p><a href="../zh-CN/cuda.html">简体中文</a></p>
-<p>Use the optional <code>Fizzy.ImageViewer.Cuda</code> package for CUDA-resident Gray8, Bgr24, Rgb24,
+<p>Use one optional <code>Fizzy.ImageViewer.Cuda11</code>, <code>.Cuda12</code> or <code>.Cuda13</code> package for CUDA-resident Gray8, Bgr24, Rgb24,
 Bgra32, Pbgra32 and Rgba32 images. It supplies WPF-compatible display conversion and original
 pixel queries. Consumers implement a small execution bridge; neither the core viewer nor the
 extension depends on a particular application or compute runtime.</p>
@@ -185,24 +185,92 @@ native DLL and includes retained native surface owners.</p>
 input, software fallback or device reconstruction is provided. WPF attachment and restoration
 follow the <a href="frame-pipeline.html#gpu-surfaces-and-explicit-pixel-queries">frame contract</a>.</p>
 <h2 id="build-and-deployment">Build and deployment</h2>
-<p>The core WPF project needs no CUDA toolchain. The optional managed project also builds without
-initializing CUDA. The CUDA package includes <code>Fizzy.ImageViewer.Cuda.Native.dll</code> under
-<code>runtimes/win-x64/native</code>; an incompatible native ABI fails explicitly. Native ABI 1 is declared
-in <code>native/Cuda/imageviewer_cuda.h</code>; it uses only standard CUDA handles and caller-owned storage.</p>
-<p>Native builds require Windows x64, CUDA Toolkit 11.8 and MSVC v142. The default is SM 7.5 with
-PTX; select architectures appropriate to deployment. No external runtime SDK or sibling checkout
-is required:</p>
-<pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-dotnet build src/Fizzy.ImageViewer.Cuda -c Release
-dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
+<p>Choose exactly one complete package: <code>Fizzy.ImageViewer.Cuda11</code>,
+<code>Fizzy.ImageViewer.Cuda12</code>, or <code>Fizzy.ImageViewer.Cuda13</code>, matching the host's CUDA
+major version. All three use the same <code>Fizzy.ImageViewer.Cuda</code> namespace and assembly.
+Do not combine variants, including through transitive dependencies, or combine a variant
+with the former <code>Fizzy.ImageViewer.Cuda</code> package. The build rejects these combinations.
+Previously published packages remain immutable; new releases use the explicit names.</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Build Toolkit</th>
+<th>Host compiler</th>
+<th>Default architecture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fizzy.ImageViewer.Cuda11</td>
+<td>11.8.0</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda12</td>
+<td>12.6.3</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda13</td>
+<td>13.0.2</td>
+<td>MSVC 14.38 (v143)</td>
+<td>SM 7.5</td>
+</tr>
+</tbody>
+</table>
+<p>These are build baselines, not certification of every minor version, GPU or execution
+feature. Native ABI 1 uses standard CUDA handles and caller-owned storage. The host
+must preserve its context, stream, memory and completion guarantees. A compatible
+NVIDIA driver, GPU and CUDA/D3D9Ex adapter remain required. Static CUDA and MSVC
+runtimes mean package consumers do not need the build Toolkit or Visual Studio.
+No dependency is downloaded or compiled at application startup.</p>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer.Cuda11
 </code></pre>
-<p>Native outputs go to <code>build/Release/native</code>. Packing without the native DLL fails; the core
-package contains neither CUDA binaries nor CUDA source. Runtime execution requires a compatible
-NVIDIA driver. No dependency is downloaded or compiled at application startup.</p>
-<p>The build script compiles native tests without executing them. After separate hardware authorization,
-run <code>ctest --test-dir build/obj/cuda -C Release --output-on-failure -L hardware</code> to check surface
-pixels, six formats, alpha, padded pitch, gather and ROI boundaries. This does not establish physical
-presentation latency, remote desktop, adapter migration or driver-reset recovery.</p>
+<p>Ordinary managed development needs no CUDA toolchain. For local native development,
+keep one Toolkit (11.8 by default) and an MSVC toolset supported by that Toolkit.
+The setup script installs the CI baseline: VS 2022 Build Tools with MSVC 14.38
+and Windows SDK 10.0.22621.0; the full IDE and v142 are unnecessary.
+The installer also selects the standard MSVC x64/x86 tools component because nvcc
+requires its <code>vcvarsall.bat</code> installation layout, even when the environment is loaded
+through <code>VsDevCmd.bat</code>. This brings in the VS 2022 default toolset as an installation
+dependency; local builds select the newest installed compatible toolset.
+Run the installer option from an elevated PowerShell when those components are missing:</p>
+<pre><code class="lang-powershell">./scripts/Setup-Cuda.ps1 -InstallBuildTools
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
+# Explicit hardware execution; requires a suitable local GPU and desktop environment.
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -RunHardwareTests
+</code></pre>
+<p>Setup prepares pinned CMake 3.31.8 and Ninja 1.12.1 under <code>artifacts/cuda/tools</code>.
+It does not change the NVIDIA driver or persistent environment variables. Build scripts
+select a compatible MSVC in a child process and use Ninja without CUDA Visual Studio integration.
+Use <code>-MsvcVersion 14.38</code> on <code>Build-Cuda.ps1</code> or <code>Test-Cuda.ps1</code> to select a toolset
+explicitly, or omit it for automatic selection. The Toolkit's compiler checks remain
+enabled: a stable C ABI does not make unsupported host compilers valid for nvcc.
+For example, CUDA 11.8 accepts MSVC 19.1x–19.3x, but rejects 19.4x.
+Build records capture the actual compiler version; CI and release builds pin 14.38.
+Use <code>-CudaRoot</code> to select an existing Toolkit. CI additionally uses
+<code>Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools</code> to fetch only
+SHA-256-verified NVIDIA compiler components. The shared matrix is
+<code>eng/cuda-matrix.json</code>. Release builds require its exact versions.</p>
+<p>Native outputs live under <code>build/&lt;Configuration&gt;/native/cuda&lt;major&gt;/</code>; intermediates
+under <code>build/obj/cuda/&lt;major&gt;/&lt;Configuration&gt;/</code>; native tests under
+<code>build/&lt;Configuration&gt;/tests/Cuda&lt;major&gt;/</code>. Reports and temporary packages go to
+<code>artifacts/cuda/&lt;major&gt;/</code>. Native DLLs carry a separate build record identifying source,
+compiler and checksum. Packaging rejects missing, stale, mismatched or modified inputs:</p>
+<pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
+</code></pre>
+<p>GitHub Actions compiles all three variants, compiles native tests, runs managed CUDA
+tests on .NET 8/10, and verifies package contents and consumer publishing. Standard
+Windows runners do not execute GPU tests. A successful matrix therefore establishes
+build and package compatibility, not CUDA 12/13 hardware or physical presentation.
+Local hardware mode runs bounded native tests for six formats, alpha, padded pitch,
+gather, ROI, statistics, D3D9Ex surface readback and cleanup. Readback is not a test of
+physical screen presentation. Requested hardware tests never silently skip on an
+unsuitable environment. See <a href="releasing.html#optional-cuda-package">release preparation and recovery</a>.</p>
 
 </article>
 

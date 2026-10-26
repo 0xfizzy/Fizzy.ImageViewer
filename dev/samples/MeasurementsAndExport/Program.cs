@@ -14,9 +14,16 @@ using var registration = viewer.RegisterMeasurementTool(new PointTool());
 var pixels = Enumerable.Range(0, 640 * 480).Select(i => (byte)i).ToArray();
 var displayed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 viewer.FrameCommitted += (_, _) => displayed.TrySetResult();
-viewer.DisplayFailed += (_, failure) => displayed.TrySetException(failure.Error);
-await viewer.SubmitFrameAsync(ImageFrame.Copy(
+viewer.DisplayFailed += (_, failure) =>
+{
+    Console.Error.WriteLine($"Display failed: {failure.Error}");
+    displayed.TrySetException(failure.Error);
+};
+var result = await viewer.SubmitFrameAsync(ImageFrame.Copy(
     new FrameDescriptor(640, 480, 640, FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != FrameSubmitStatus.Accepted)
+    throw new InvalidOperationException($"Initial frame: {result.Status}");
 viewer.Show();
 await displayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
 using (var snapshot = await viewer.CaptureSnapshotAsync(SnapshotKind.Display))

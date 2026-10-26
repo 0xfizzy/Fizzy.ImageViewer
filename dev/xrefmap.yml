@@ -3098,6 +3098,57 @@ references:
   commentId: Overload:Fizzy.ImageViewer.Frames.IFrameSink.SubmitFrameAsync
   fullName: Fizzy.ImageViewer.Frames.IFrameSink.SubmitFrameAsync
   nameWithType: IFrameSink.SubmitFrameAsync
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource
+  name: ImageBindingSource
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html
+  commentId: T:Fizzy.ImageViewer.Frames.ImageBindingSource
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource
+  nameWithType: ImageBindingSource
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.#ctor
+  name: ImageBindingSource()
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource__ctor
+  commentId: M:Fizzy.ImageViewer.Frames.ImageBindingSource.#ctor
+  name.vb: New()
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.ImageBindingSource()
+  fullName.vb: Fizzy.ImageViewer.Frames.ImageBindingSource.New()
+  nameWithType: ImageBindingSource.ImageBindingSource()
+  nameWithType.vb: ImageBindingSource.New()
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.#ctor*
+  name: ImageBindingSource
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource__ctor_
+  commentId: Overload:Fizzy.ImageViewer.Frames.ImageBindingSource.#ctor
+  name.vb: New
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.ImageBindingSource
+  fullName.vb: Fizzy.ImageViewer.Frames.ImageBindingSource.New
+  nameWithType: ImageBindingSource.ImageBindingSource
+  nameWithType.vb: ImageBindingSource.New
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose
+  name: Dispose()
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource_Dispose
+  commentId: M:Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose()
+  nameWithType: ImageBindingSource.Dispose()
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose*
+  name: Dispose
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource_Dispose_
+  commentId: Overload:Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.Dispose
+  nameWithType: ImageBindingSource.Dispose
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame(Fizzy.ImageViewer.Frames.ImageFrame)
+  name: SetFrame(ImageFrame?)
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource_SetFrame_Fizzy_ImageViewer_Frames_ImageFrame_
+  commentId: M:Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame(Fizzy.ImageViewer.Frames.ImageFrame)
+  name.vb: SetFrame(ImageFrame)
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame(Fizzy.ImageViewer.Frames.ImageFrame?)
+  fullName.vb: Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame(Fizzy.ImageViewer.Frames.ImageFrame)
+  nameWithType: ImageBindingSource.SetFrame(ImageFrame?)
+  nameWithType.vb: ImageBindingSource.SetFrame(ImageFrame)
+- uid: Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame*
+  name: SetFrame
+  href: api/Fizzy.ImageViewer.Frames.ImageBindingSource.html#Fizzy_ImageViewer_Frames_ImageBindingSource_SetFrame_
+  commentId: Overload:Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame
+  fullName: Fizzy.ImageViewer.Frames.ImageBindingSource.SetFrame
+  nameWithType: ImageBindingSource.SetFrame
 - uid: Fizzy.ImageViewer.Frames.ImageFrame
   name: ImageFrame
   href: api/Fizzy.ImageViewer.Frames.ImageFrame.html
@@ -4436,6 +4487,48 @@ references:
   commentId: Overload:Fizzy.ImageViewer.IViewerWindow.Width
   fullName: Fizzy.ImageViewer.IViewerWindow.Width
   nameWithType: IViewerWindow.Width
+- uid: Fizzy.ImageViewer.ImageViewerCommands
+  name: ImageViewerCommands
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html
+  commentId: T:Fizzy.ImageViewer.ImageViewerCommands
+  fullName: Fizzy.ImageViewer.ImageViewerCommands
+  nameWithType: ImageViewerCommands
+- uid: Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool
+  name: ActivateMeasurementTool
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_ActivateMeasurementTool
+  commentId: P:Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool
+  nameWithType: ImageViewerCommands.ActivateMeasurementTool
+- uid: Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool*
+  name: ActivateMeasurementTool
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_ActivateMeasurementTool_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.ActivateMeasurementTool
+  nameWithType: ImageViewerCommands.ActivateMeasurementTool
+- uid: Fizzy.ImageViewer.ImageViewerCommands.EndInteraction
+  name: EndInteraction
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_EndInteraction
+  commentId: P:Fizzy.ImageViewer.ImageViewerCommands.EndInteraction
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.EndInteraction
+  nameWithType: ImageViewerCommands.EndInteraction
+- uid: Fizzy.ImageViewer.ImageViewerCommands.EndInteraction*
+  name: EndInteraction
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_EndInteraction_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerCommands.EndInteraction
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.EndInteraction
+  nameWithType: ImageViewerCommands.EndInteraction
+- uid: Fizzy.ImageViewer.ImageViewerCommands.FitToViewport
+  name: FitToViewport
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_FitToViewport
+  commentId: P:Fizzy.ImageViewer.ImageViewerCommands.FitToViewport
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.FitToViewport
+  nameWithType: ImageViewerCommands.FitToViewport
+- uid: Fizzy.ImageViewer.ImageViewerCommands.FitToViewport*
+  name: FitToViewport
+  href: api/Fizzy.ImageViewer.ImageViewerCommands.html#Fizzy_ImageViewer_ImageViewerCommands_FitToViewport_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerCommands.FitToViewport
+  fullName: Fizzy.ImageViewer.ImageViewerCommands.FitToViewport
+  nameWithType: ImageViewerCommands.FitToViewport
 - uid: Fizzy.ImageViewer.ImageViewerControl
   name: ImageViewerControl
   href: api/Fizzy.ImageViewer.ImageViewerControl.html
@@ -4676,6 +4769,42 @@ references:
   commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.HudLabelText
   fullName: Fizzy.ImageViewer.ImageViewerControl.HudLabelText
   nameWithType: ImageViewerControl.HudLabelText
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSource
+  name: ImageSource
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSource
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.ImageSource
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSource
+  nameWithType: ImageViewerControl.ImageSource
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSource*
+  name: ImageSource
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSource_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.ImageSource
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSource
+  nameWithType: ImageViewerControl.ImageSource
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSourceProperty
+  name: ImageSourceProperty
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSourceProperty
+  commentId: F:Fizzy.ImageViewer.ImageViewerControl.ImageSourceProperty
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSourceProperty
+  nameWithType: ImageViewerControl.ImageSourceProperty
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult
+  name: ImageSourceSubmitResult
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResult
+  commentId: P:Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult
+  nameWithType: ImageViewerControl.ImageSourceSubmitResult
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult*
+  name: ImageSourceSubmitResult
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResult_
+  commentId: Overload:Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResult
+  nameWithType: ImageViewerControl.ImageSourceSubmitResult
+- uid: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResultProperty
+  name: ImageSourceSubmitResultProperty
+  href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_ImageSourceSubmitResultProperty
+  commentId: F:Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResultProperty
+  fullName: Fizzy.ImageViewer.ImageViewerControl.ImageSourceSubmitResultProperty
+  nameWithType: ImageViewerControl.ImageSourceSubmitResultProperty
 - uid: Fizzy.ImageViewer.ImageViewerControl.IsMinimized
   name: IsMinimized
   href: api/Fizzy.ImageViewer.ImageViewerControl.html#Fizzy_ImageViewer_ImageViewerControl_IsMinimized

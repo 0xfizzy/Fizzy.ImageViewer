@@ -107,6 +107,10 @@ viewer.Show();
 <p><code>Closed</code> 只报告窗口关闭，不代表渲染、查询或窗口线程结束；没有独立的公共 <code>Close</code> 方法。Viewer 回调运行在其 STA，不得同步等待关闭或依赖该 Dispatcher 的工作。</p>
 <p>关闭后的帧提交仍立即接管帧并返回 <code>Closed</code>，不采用窗口属性的异常策略。绘图和 HUD 句柄关闭后仍可幂等释放。帧排空与租约责任见<a href="frame-pipeline.html">帧与像素</a>，绘图句柄见<a href="drawing-layers.html">绘制</a>。</p>
 <p><code>HudLabelText</code> 控制右上文字；<code>IsPixelInfoEnabled</code> 默认为 true，控制左下像素显示和查询订阅，右键菜单共享该设置。两者都可在显示前配置。<code>EndInteraction()</code> 取消未完成创建或结束编辑，保留已完成测量和已应用修改。</p>
+<p>WPF 绑定入口 <code>ImageViewerControl.ImageSource</code> 借用 UI 线程拥有的 <code>ImageBindingSource</code>，源和各控件分别持有独立帧引用；
+只读 <code>ImageSourceSubmitResult</code> 报告绑定接收结果。<code>ImageViewerCommands</code> 提供 FitToViewport、ActivateMeasurementTool（工具 ID 参数）
+和 EndInteraction 路由命令，可执行状态属于各目标控件。这些 WPF 便利用法属于嵌入控件，不加入宿主无关的能力接口。
+生命周期、清除、线程、命令路由和错误观察见<a href="embedding.html">嵌入指南</a>。</p>
 <p><code>FitToViewport</code> 将完整图像居中，可能选择超出滚轮常规 0.01–100 范围的缩放。此时滚轮允许朝该范围变化，拒绝继续远离该范围。</p>
 <p>用 <code>SetDisplayRange(range)</code> 接受灰度映射请求，不等待显示；<code>DisplayRange</code> 读取请求，快照保留最后成功提交的映射。后续显示失败通过 <code>DisplayFailed</code> 观察。完整规则见<a href="frame-pipeline.html#%E6%8F%90%E4%BA%A4%E4%B8%8E%E6%98%BE%E7%A4%BA">显示契约</a>。</p>
 <h3 id="排空与独立租约">排空与独立租约</h3>

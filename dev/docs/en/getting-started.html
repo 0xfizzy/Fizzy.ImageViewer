@@ -140,11 +140,13 @@ viewer.ActivateMeasurementTool(
 <h2 id="complete-examples">Complete examples</h2>
 <p>Run from the repository root. These manual checks open WPF windows:</p>
 <pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/ApplicationEndpoint
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 </code></pre>
 <ul>
+<li><a href="../../samples/ApplicationEndpoint/App.xaml.cs">ApplicationEndpoint</a>: DI, owned frame input, ViewModel commands and asynchronous host cleanup.</li>
 <li><a href="../../samples/BasicViewer/Program.cs">BasicViewer</a>: copied grayscale pixels and awaited closure.</li>
 <li><a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a>: simulated frames, reusable batch handle, production ending before disposal.</li>
 <li><a href="../../samples/MeasurementsAndExport/Program.cs">MeasurementsAndExport</a>: fresh-session point tool, events and PNG output under <code>artifacts/samples/</code>.</li>

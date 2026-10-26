@@ -546,6 +546,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.ImageBindingSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.Frames.ImageBindingSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.Frames.ImageBindingSource",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.Frames.ImageBindingSource.yml\" sourcestartlinenumber=\"1\">A reusable, dispatcher-owned source for static images and infrequent image changes.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.Frames.ImageFrame.yml",
       "output": {
         ".html": {
@@ -781,6 +795,20 @@
       "IsMRef": true,
       "Title": "Fizzy.ImageViewer.IViewerWindow",
       "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.IViewerWindow.yml\" sourcestartlinenumber=\"1\">Borrowed window control. Operations dispatch to the viewer STA and reject calls once shutdown starts.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "artifacts/docs/api/Fizzy.ImageViewer.ImageViewerCommands.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Fizzy.ImageViewer.ImageViewerCommands.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Fizzy.ImageViewer.ImageViewerCommands",
+      "Summary": "<p sourcefile=\"artifacts/docs/api/Fizzy.ImageViewer.ImageViewerCommands.yml\" sourcestartlinenumber=\"1\">Routed commands handled by ImageViewerControl, without an MVVM framework dependency.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1565,6 +1593,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docs/en/application-integration.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/application-integration.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docs/en/architecture.md",
       "output": {
         ".html": {
@@ -1771,6 +1809,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/application-integration.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/application-integration.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docs/zh-CN/architecture.md",
       "output": {
         ".html": {
@@ -1944,6 +1992,176 @@
     },
     {
       "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/App.xaml",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/App.xaml"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/App.xaml.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/App.xaml.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/ApplicationEndpoint.csproj",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/ApplicationEndpoint.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/ArrayMemoryOwner.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/ArrayMemoryOwner.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/AssemblyInfo.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/AssemblyInfo.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/DisplayCommand.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/DisplayCommand.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/DisplaySessionStoppedException.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/DisplaySessionStoppedException.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/DisplayViewModel.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/DisplayViewModel.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/GrayFrame.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/GrayFrame.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/IImageDisplay.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/IImageDisplay.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/IImageNotifications.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/IImageNotifications.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/IImageSink.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/IImageSink.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/ImageViewerEndpoint.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/ImageViewerEndpoint.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/LengthResult.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/LengthResult.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/MainWindow.xaml",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/MainWindow.xaml"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/MainWindow.xaml.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/MainWindow.xaml.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/ApplicationEndpoint/SyntheticProducer.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/ApplicationEndpoint/SyntheticProducer.cs"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
       "source_relative_path": "samples/BasicViewer/BasicViewer.csproj",
       "output": {
         "resource": {
@@ -1988,6 +2206,16 @@
       "output": {
         "resource": {
           "relative_path": "samples/EmbeddedViewer/EmbeddedViewer.csproj"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "samples/EmbeddedViewer/ImageViewModel.cs",
+      "output": {
+        "resource": {
+          "relative_path": "samples/EmbeddedViewer/ImageViewModel.cs"
         }
       },
       "version": ""

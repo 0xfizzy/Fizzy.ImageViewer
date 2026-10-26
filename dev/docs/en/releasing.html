@@ -99,10 +99,10 @@
 <li>Have another maintainer follow this SOP in the isolated environment, including a deployment failure after package publication. Record commit, workflow run URLs, observed outcomes and unresolved manual checks in a retained release-readiness issue. A local fault fixture is not a real OIDC/Pages exercise.</li>
 </ol>
 <h2 id="prepare-a-release">Prepare a release</h2>
-<p>Update the project version, release notes, affected English XML/guides, Chinese translations and examples in one reviewed PR. Versions are SemVer without build metadata; the project version is <code>1.2.0</code>, its tag and documentation directory are <code>v1.2.0</code>. A prerelease such as <code>1.3.0-rc.1</code> does not replace latest stable.</p>
+<p>Update the project version, release notes, affected English XML/guides, Chinese translations and examples in one reviewed PR. Versions are SemVer without build metadata; the project version is <code>1.3.0</code>, its tag and documentation directory are <code>v1.3.0</code>. A prerelease such as <code>1.3.0-rc.1</code> does not replace latest stable.</p>
 <pre><code class="lang-powershell">npm ci
 npx playwright install chromium
-./scripts/Test-Release.ps1 -Version 1.2.0
+./scripts/Test-Release.ps1 -Version 1.3.0
 node scripts/Test-Browser.mjs
 ./scripts/Serve-Docs.ps1
 </code></pre>
@@ -110,8 +110,8 @@ node scripts/Test-Browser.mjs
 <p>Merge the PR after checks pass. A maintainer explicitly authorizes publication by creating and pushing the tag at the reviewed main commit:</p>
 <pre><code class="lang-powershell">git status --short
 git rev-parse HEAD
-git tag -a v1.2.0 -m 'release v1.2.0'
-git push origin v1.2.0
+git tag -a v1.3.0 -m 'release v1.3.0'
+git push origin v1.3.0
 </code></pre>
 <p>Do not tag until HEAD is the reviewed commit and the checkout is clean. The workflow also checks the project version, tag identity and reachability from <code>origin/main</code>.</p>
 <h2 id="automated-stages-and-success-criteria">Automated stages and success criteria</h2>
@@ -126,11 +126,11 @@ git push origin v1.2.0
 <p>Archive and Pages writes share a concurrency group with development deployment. GitHub may replace pending jobs; a cancelled job is never proof of release completion. The daily/manual audit reports retained tags with missing, draft or inconsistent releases.</p>
 <h2 id="recovery">Recovery</h2>
 <p>Prefer the workflow's manual dispatch from main, selecting the existing tag:</p>
-<pre><code class="lang-powershell">gh workflow run release.yml --ref main -f tag=v1.2.0
+<pre><code class="lang-powershell">gh workflow run release.yml --ref main -f tag=v1.3.0
 gh run list --workflow release.yml --limit 5
 </code></pre>
 <p>Manual recovery uses the reviewed workflow and scripts from main, while package/source identity remains the original tag. Preparation needs <code>contents: write</code> to see draft Release assets; PR validation remains read-only. If a bundle already exists, the workflow downloads it and does not rebuild. If NuGet already contains the version but no archive is visible, preparation stops. Local diagnosis with access to the Release assets:</p>
-<pre><code class="lang-powershell">./scripts/Resume-Release.ps1 -Tag v1.2.0
+<pre><code class="lang-powershell">./scripts/Resume-Release.ps1 -Tag v1.3.0
 ./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle -RequireCompleted
 ./scripts/Test-ReleaseStatus.ps1
 </code></pre>
@@ -188,24 +188,45 @@ gh run list --workflow release.yml --limit 5
 <p>Network retries are bounded; indexing or CDN delay ends in a visible failure rather than presumed success. The audit performs no writes. Workflow logs and GitHub Actions failure notifications are the incident entrypoint. For an unrecoverable automation defect in tagged scripts, use a reviewed workflow fix and the retained bundle; do not mutate the tag or original Release assets.</p>
 <p>Pages deployment identifies each build by its documentation archive commit, not the package source commit. Development and fixed-version updates can share source code but contain different sites. Artifact names include the stage, run and attempt to avoid collisions on retries. Online content verification remains required after the deployment API reports success.</p>
 <h2 id="optional-cuda-package">Optional CUDA package</h2>
-<p>Publish <code>Fizzy.ImageViewer.Cuda</code> separately from the same source tag after the core package is available. On a Windows machine with the <a href="cuda.html#build-and-deployment">CUDA build prerequisites</a>, prepare from the tag's exported source, compile native tests without running hardware, run managed CUDA tests, and seal the original package:</p>
-<pre><code class="lang-powershell">./scripts/New-CudaReleaseBundle.ps1 -Tag v1.2.0
-./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.2.0 -Bundle artifacts/cuda-release-preparation/bundle
-gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
+<p>Publish the three complete packages <code>Fizzy.ImageViewer.Cuda11</code>, <code>.Cuda12</code> and <code>.Cuda13</code>
+from the same source tag after the matching core package is published. Configure NuGet
+Trusted Publishing for all three IDs using owner <code>0xfizzy</code>, repository
+<code>Fizzy.ImageViewer</code>, workflow <code>release.yml</code> and environment <code>github-pages</code>; retain
+<code>NUGET_USER</code>. No local native build or long-lived API key is required.</p>
+<pre><code class="lang-powershell">gh workflow run release.yml --ref main -f tag=v1.3.0 -f component=cuda
 </code></pre>
-<p>Review the preparation transcript, test results and bundle validation before Archive. The separate immutable <code>cuda-release-bundle.zip</code> asset contains the package, native hash, source identity and validation report. It does not replace the core bundle or fixed documentation. The workflow downloads and validates this asset, publishes through the same NuGet Trusted Publishing policy, and compares the downloaded NuGet payload. The policy must authorize the CUDA package ID. Resume with the same dispatch; never rebuild an already published version. Hardware, driver and physical display validation are separate from managed tests and native compilation.</p>
+<p>The workflow first verifies the core archive and published package. If
+<code>cuda-release-bundle.zip</code> exists, it validates and reuses that original archive. Otherwise,
+it rejects already-published or uncertain CUDA package versions without an archive,
+compiles the three fixed toolchains in isolated Windows jobs, and seals the three
+validated packages into one schema-2 bundle. All variants must pass before archiving.
+The immutable bundle includes native hashes, source identities and separate build,
+managed-test, package and hardware-execution results. Standard runners compile but do
+not execute hardware tests. These results do not certify CUDA 12/13 GPU execution.</p>
+<p>After uploading and downloading the archive to verify its contents, the workflow publishes
+11, 12 and 13 in order using OIDC, checking downloaded NuGet payloads. Publication is not
+atomic: resume the same dispatch after partial success; matching packages are verified,
+missing packages are published from the archive, and conflicts stop recovery. Never
+rebuild published versions, move tags or use <code>--skip-duplicate</code>. Existing schema-1 CUDA
+archives retain their original package identity and can still be validated and recovered.
+Core assets and fixed documentation are not replaced by CUDA publication.</p>
+<p>The <code>CUDA validation</code> PR check covers the three compilation/managed/package jobs. Add
+it to branch protection after its first successful run. Actions artifacts retain diagnostics
+for 30 days and are temporary transport; the original Release archive is permanent.
+Release workflow changes require offline recovery/failure gates and a rehearsal against
+an isolated repository and test package IDs, never production IDs.</p>
 <h2 id="documentation-updates-without-publishing-a-package">Documentation updates without publishing a package</h2>
 <p>A completed release and its original package bundle are required. Updates replace <code>/v{version}/</code> as a whole; removed pages disappear. Prepare requires a clean checkout, creates an isolated worktree and branch from the currently deployed documentation source, and captures the archive SHA. <code>-Branch</code> selects the new branch name. Source changes are compared against the original tag.</p>
-<pre><code class="lang-powershell">./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.2.0 -Branch docs/v1.2.0-update
+<pre><code class="lang-powershell">./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.3.0 -Branch docs/v1.3.0-update
 # Edit guides/translations, navigation, sample C# or XML comments.
 # Review translations, accept hashes, commit; do not change runtime/build/tooling.
-./scripts/Update-Docs.ps1 -Action Check -Tag v1.2.0
+./scripts/Update-Docs.ps1 -Action Check -Tag v1.3.0
 # Keep running this script from main; Check automatically selects the prepared source.
-git -C &lt;prepared-source-directory&gt; push -u origin docs/v1.2.0-update
-./scripts/Update-Docs.ps1 -Action Start -Tag v1.2.0 -SourceRef (git -C &lt;prepared-source-directory&gt; rev-parse HEAD)
+git -C &lt;prepared-source-directory&gt; push -u origin docs/v1.3.0-update
+./scripts/Update-Docs.ps1 -Action Start -Tag v1.3.0 -SourceRef (git -C &lt;prepared-source-directory&gt; rev-parse HEAD)
 ./scripts/Update-Docs.ps1 -Action Status
 ./scripts/Update-Docs.ps1 -Action Resume -RunId 123456789
-./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.2.0 -ArchiveCommit &lt;successful-archive-sha&gt;
+./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.3.0 -ArchiveCommit &lt;successful-archive-sha&gt;
 </code></pre>
 <p>Check requires clean committed source and rejects runtime changes before running trusted main tooling. API reference uses the original package DLL with reviewed XML; samples compile against that package. XML, translations, links and Chromium checks must pass. No update modifies NuGet, tags or original Release assets.</p>
 <p>Start requires a full source SHA. If Prepare was not used, Start captures the current archive SHA. Under the shared deployment lock, a changed archive baseline rejects the candidate. Development deployment also rejects an obsolete main SHA. Run payloads and hashes are durably committed beneath <code>.publication/runs/&lt;run-id&gt;/</code> on <code>docs-archive</code>; this internal history is excluded from the public site. The branch retains all original payloads in Git history. Version metadata stores the source commit and file hashes; no revision number is assigned.</p>

@@ -142,7 +142,7 @@ viewer.ActivateMeasurementTool(MeasurementToolIds.RectangleRoi);
 <p>Viewer 和句柄的通知共用 STA 上的 FIFO 队列。每次变化先捕获载荷和订阅者；订阅者重入产生的新事件排在当前通知之后。几何版本不会倒退，完成先于删除，删除后不再变更。收到旧快照时，事件中的实时 <code>Measurement</code> 句柄可能已经变化或释放。</p>
 <p>订阅者中关闭窗口仍会交付已排队的测量通知，<code>Closed</code> 晚于删除通知。订阅异常逐个记录并隔离。事件中的句柄可从任意线程更新或释放，也可在通知中重入释放。自定义工具还可订阅句柄的 <code>GeometryChanged</code> 和 <code>QueryResultChanged</code>。</p>
 <h2 id="编辑与删除">编辑与删除</h2>
-<p>点击已完成测量进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 <code>Measurement</code> 句柄调用 <code>UpdateGeometry</code> 或 <code>Dispose</code>；<code>viewer.Measurements.Clear()</code> 清空全部测量。</p>
+<p>点击已完成测量将其选中，再从右键菜单选择 <strong>Edit</strong> 进入编辑，拖动控制点改变几何；Delete 删除选中项，Escape 结束创建或编辑并保留已应用的修改。程序可通过事件的 <code>Measurement</code> 句柄调用 <code>UpdateGeometry</code> 或 <code>Dispose</code>；<code>viewer.Measurements.Clear()</code> 清空全部测量。</p>
 <p>句柄事件使用 <code>EventHandler&lt;MeasurementGeometry&gt;</code> 和 <code>EventHandler&lt;MeasurementQueryResult?&gt;</code>，
 sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，退订仍安全，不撤回已捕获的通知。
 同步异常隔离及 async-void 工作责任等规则见<a href="public-api.html#%E4%BA%8B%E4%BB%B6%E8%AE%A2%E9%98%85">事件订阅契约</a>。</p>
@@ -191,7 +191,7 @@ sender 为测量本身。测量移除或查看器停止后拒绝添加订阅，�
 <p><code>IViewerMeasurements.Measurements</code> 暴露整层设置和清理，影响其中所有测量；清空会取消交互并删除测量，但保留绘图和 HUD。工具注册和 <code>EndInteraction</code> 也作用于 Viewer 全局状态；工具内部应使用上下文的 <code>Finish</code> 结束自身激活。事件携带可编辑、可删除的实时句柄，并非只读能力。</p>
 <p><code>Viewer.MeasurementStyle</code> 控制未来创建的测量。赋值在调用线程复制并冻结所有画刷；已有项保留其普通和选中样式。创建时的 <code>MeasurementOptions.Style</code> 可覆盖默认值，也会生成快照。</p>
 <p>每项测量拥有几何、框架视觉、标签、可选查询和注册资源。预览已经是被拥有的测量；<code>Complete</code> 保留它并启用查询，取消会释放未完成项。完成时不重新附加视觉。菜单同时固定帧和 ROI，后续编辑不改变已捕获导出目标。</p>
-<p>删除、清空、曲线关闭和 Viewer 关闭都进入幂等释放。专用资源清理失败后仍尝试移除标签和主图形；移除后才发出通知。Viewer 关闭先停止交互和查询、释放测量，再清图层和帧；<code>DisposeAsync</code> 等待在途查询释放自己的租约，包括不立即响应取消的后端。</p>
+<p>删除、清空、曲线关闭和 Viewer 关闭都进入幂等释放。专用资源清理失败后仍尝试移除标签和主图形；移除后才发出通知。Viewer 关闭停止接纳和帧管线、结束交互、取消查询、释放测量并清空图层。在途渲染和查询持有各自的帧租约；<code>DisposeAsync</code> 等待这些工作完成，包括不立即响应取消的后端。调用方持有的独立租约可越过释放继续存续。</p>
 <h2 id="交互规则">交互规则</h2>
 <p>有效的测量启动结束编辑，有效的编辑启动取消创建；无效编辑请求保留当前会话。隐藏测量层、禁用其配置的命中测试、清空或关闭 Viewer 会取消活动会话并释放鼠标捕获。隐藏测量层保留完成项，但取消预览；<code>Viewer.Hide()</code> 保留活动工具和预览。丢失鼠标捕获结束当前拖动但不删除项；捕获失败保留编辑状态，不开始拖动。</p>
 <p>测量期间的临时输入抑制不修改图层的配置标志。恢复输入时重新读取每层当前配置，包括期间新增的层。批量清理期间拒绝创建测量和启动新会话；重入清理是幂等的，一层失败后仍尝试其他层。</p>

@@ -271,6 +271,13 @@ for sampling, conversion and scheduling; refresh rates and result expiration sta
 descriptor and memory slice with CpuFramePixelSource; the GPU factory receives the producer's
 source. FrameStorage only retains these components and manages reference counting and final
 release. It does not select a backend or independently dispose the pixel source.</p>
+<p>ImageBindingSource owns one independent frame lease on its host dispatcher. Control binding
+adapts source changes to independent ImageFrame references submitted to the existing pipeline,
+without a second queue, pixel copy or storage implementation. The source remains an empty,
+readable binding object after disposal; controls never store a consumed frame token in their
+dependency property. Source notifications and binding attachment are serialized by the host STA.
+ImageViewerCommands and their control bindings adapt WPF routing to viewport and interaction
+operations; activation availability reuses the coordinator's side-effect-free admission check.</p>
 <p>FrameLease is the backend-independent read boundary: each asynchronous operation retains
 its own lease, validates requests and results, and supplies frame provenance. Region reads
 return an independently owned CPU ImageFrame; RegionPixels adds the source frame and region
@@ -326,7 +333,7 @@ including from callbacks interrupted by a newer session. An activation aggregate
 registration identity, creation context and callback session; callback reentry validates
 that activation before continuing. Context-scoped finishing cannot affect replacements.</p>
 <p>MeasurementCollection owns membership, visual lookup, creation policy and viewer style.
-ViewerHost constructs MeasurementRuntime and shares it with the collection and interaction
+ViewerRuntime constructs MeasurementRuntime and shares it with the collection and interaction
 coordinator. The runtime supplies handle and creation-context STA dispatch, query registration
 and shared notification execution; MeasurementItem receives the runtime, presentation layer
 and style explicitly. Creation contexts receive the runtime and a frame-acquisition delegate
@@ -367,7 +374,7 @@ its nested control renders the samples.
 MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
 query clients with the shared scheduler; model dispatch and shutdown admission do not
 depend on the visual container. MeasurementCollection owns a primary set of model-driven
-items and a separate visual lookup index. The host creates and closes the collection
+items and a separate visual lookup index. ViewerRuntime creates and closes the collection
 independently of the tool registry. Hit testing resolves a visual to its registered measurement before selection.
 The measurement edit controller receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and

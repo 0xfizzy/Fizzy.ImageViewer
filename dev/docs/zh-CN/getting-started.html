@@ -140,11 +140,13 @@ viewer.ActivateMeasurementTool(
 <h2 id="完整示例">完整示例</h2>
 <p>在仓库根目录执行；这些人工检查会打开 WPF 窗口：</p>
 <pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+dotnet run --project samples/ApplicationEndpoint
 dotnet run --project samples/BasicViewer
 dotnet run --project samples/LiveOverlays
 dotnet run --project samples/MeasurementsAndExport
 </code></pre>
 <ul>
+<li><a href="../../samples/ApplicationEndpoint/App.xaml.cs">ApplicationEndpoint</a>: DI、帧所有权输入、ViewModel 命令与宿主异步清理。</li>
 <li><a href="../../samples/BasicViewer/Program.cs">BasicViewer</a>：显示复制的灰度像素并等待关闭。</li>
 <li><a href="../../samples/LiveOverlays/Program.cs">LiveOverlays</a>：模拟帧流、复用批量句柄、先结束生产再释放。</li>
 <li><a href="../../samples/MeasurementsAndExport/Program.cs">MeasurementsAndExport</a>：独立点测量会话、通知和 <code>artifacts/samples/</code> 下的 PNG 输出。</li>
