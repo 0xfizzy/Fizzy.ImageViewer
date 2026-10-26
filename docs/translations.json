@@ -1,6 +1,6 @@
 {
   "docs/en/application-integration.md": "c716d2dea2a10c118bac0b42b8e903d89ffe89b0cb9be9cc910cb55c690a0c2c",
-  "docs/en/architecture.md": "353cd3666aa9457d38fc4c229db0118912c28e559b96c2223dc6377ada42d3b6",
+  "docs/en/architecture.md": "7740af9cc8d44f2ba6a2ab175a42d15ab4daf10f14ef62afb340e409e77b5a57",
   "docs/en/cuda.md": "5390f555d9912c5e8c0d211a7483f6108292763c6d55c124e0b0c159f1b1d8de",
   "docs/en/documentation.md": "fb4a47b471bba34568d38db1d50f57745f1ba8c936d9b5c99735526f1c032c62",
   "docs/en/drawing-layers.md": "886a51c4804f8da8ab581ee213e9eca86b15842983e1bbea67ae0125fad8df91",
@@ -13,7 +13,7 @@
   "docs/en/measurements.md": "8e8fecf5b8072a2d51f8a035123caea143d92dfedc43e9821491a67f39ecd02f",
   "docs/en/menus.md": "e9a63e10951bbd9f6136b44f675af097f568d2d1bbe03d8c0cad4a6edb72f533",
   "docs/en/public-api.md": "99365dbaf138334057f4fbf5cd9e6d8a928bcd837a1465c1400d31354466b526",
-  "docs/en/releasing.md": "690802a7bc3f866270ab728fb1b439b6677c9901d202f7471dc1ada0eee61f3e",
+  "docs/en/releasing.md": "929afcdd08902475088bd4aa9b9d03bef10b9174823a8a4ae24b8c65880f3345",
   "docs/en/snapshots.md": "27e0c7f86156422e090ba2cd91804ef02df15877d42e6ecdfcaee0ebbe414d74",
   "docs/en/validation.md": "74ffdd1b8f075372bf0c254f0d84bc5c86ad184553f51daad787596942d82873",
   "README.md": "1d41d42a04c9bf68f14cdf974cb77c65ae8282906ee41f96b4433af181ad8622"

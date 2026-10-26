@@ -15,12 +15,12 @@
 
 ## 准备发布
 
-在同一审阅 PR 更新项目版本、发布说明、受影响 XML/英文指南、中文及示例。版本使用不含构建元数据的 SemVer：项目 `1.2.0` 对应 tag 和目录 `v1.2.0`；`1.3.0-rc.1` 不替换稳定版入口。
+在同一审阅 PR 更新项目版本、发布说明、受影响 XML/英文指南、中文及示例。版本使用不含构建元数据的 SemVer：项目 `1.3.0` 对应 tag 和目录 `v1.3.0`；`1.3.0-rc.1` 不替换稳定版入口。
 
 ```powershell
 npm ci
 npx playwright install chromium
-./scripts/Test-Release.ps1 -Version 1.2.0
+./scripts/Test-Release.ps1 -Version 1.3.0
 node scripts/Test-Browser.mjs
 ./scripts/Serve-Docs.ps1
 ```
@@ -32,8 +32,8 @@ node scripts/Test-Browser.mjs
 ```powershell
 git status --short
 git rev-parse HEAD
-git tag -a v1.2.0 -m 'release v1.2.0'
-git push origin v1.2.0
+git tag -a v1.3.0 -m 'release v1.3.0'
+git push origin v1.3.0
 ```
 
 先确认 HEAD 是审阅后的 commit 且检出干净。工作流再次核对项目版本、tag 身份和 `origin/main` 可达性。
@@ -55,14 +55,14 @@ git push origin v1.2.0
 优先从 main 手动触发工作流，指定原 tag：
 
 ```powershell
-gh workflow run release.yml --ref main -f tag=v1.2.0
+gh workflow run release.yml --ref main -f tag=v1.3.0
 gh run list --workflow release.yml --limit 5
 ```
 
 手动恢复使用 main 上已审阅的工作流和脚本，包及源码身份仍为原 tag。准备任务需要 `contents: write` 才能看到草稿 Release 附件；PR 验证仍只读。已有 bundle 时下载原件，不重新构建。NuGet 已有该版本但归档不可见时，准备任务停止。获得 Release 附件访问权限后，本地诊断：
 
 ```powershell
-./scripts/Resume-Release.ps1 -Tag v1.2.0
+./scripts/Resume-Release.ps1 -Tag v1.3.0
 ./scripts/Test-PublishedRelease.ps1 -Bundle artifacts/bundle -RequireCompleted
 ./scripts/Test-ReleaseStatus.ps1
 ```
@@ -91,9 +91,9 @@ Pages 以文档归档提交标识部署版本，而非包的源码提交。开�
 主包可用后，从同一源码 tag 独立发布 `Fizzy.ImageViewer.Cuda`。在满足 [CUDA 构建前提](cuda.md#构建与部署)的 Windows 主机上，从 tag 导出的源码准备产物，编译原生测试但不运行硬件，执行托管 CUDA 测试并封存原始包：
 
 ```powershell
-./scripts/New-CudaReleaseBundle.ps1 -Tag v1.2.0
-./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.2.0 -Bundle artifacts/cuda-release-preparation/bundle
-gh workflow run release.yml --ref main -f tag=v1.2.0 -f component=cuda
+./scripts/New-CudaReleaseBundle.ps1 -Tag v1.3.0
+./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.3.0 -Bundle artifacts/cuda-release-preparation/bundle
+gh workflow run release.yml --ref main -f tag=v1.3.0 -f component=cuda
 ```
 
 Archive 前审查准备日志、测试结果和 bundle 验证报告。独立且不可变的 `cuda-release-bundle.zip` 附件包含包、原生文件哈希、源码身份及验证报告，不替换主包归档或固定文档。工作流下载核验附件，通过同一 NuGet Trusted Publishing 策略发布，再比对下载的 NuGet 有效载荷；策略必须允许 CUDA 包 ID。恢复时重复同一 dispatch，不重新构建已发布版本。硬件、驱动和物理显示验证独立于托管测试及原生编译。
@@ -103,16 +103,16 @@ Archive 前审查准备日志、测试结果和 bundle 验证报告。独立且�
 要求原发布已完成且原始包已归档。更新整体替换 `/v{version}/`，移除的页面随之删除。Prepare 要求干净检出，从当前已部署文档源码创建隔离工作区和分支并记录归档 SHA；`-Branch` 指定新分支名。源码变化始终对照原始 tag 检查。
 
 ```powershell
-./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.2.0 -Branch docs/v1.2.0-update
+./scripts/Update-Docs.ps1 -Action Prepare -Tag v1.3.0 -Branch docs/v1.3.0-update
 # 修改指南/翻译、导航、示例 C# 或 XML 注释。
 # 审阅翻译、接受哈希并提交；不修改运行时代码、构建配置或工具。
-./scripts/Update-Docs.ps1 -Action Check -Tag v1.2.0
+./scripts/Update-Docs.ps1 -Action Check -Tag v1.3.0
 # 始终从 main 运行此脚本；Check 自动选择准备好的源码目录。
-git -C <prepared-source-directory> push -u origin docs/v1.2.0-update
-./scripts/Update-Docs.ps1 -Action Start -Tag v1.2.0 -SourceRef (git -C <prepared-source-directory> rev-parse HEAD)
+git -C <prepared-source-directory> push -u origin docs/v1.3.0-update
+./scripts/Update-Docs.ps1 -Action Start -Tag v1.3.0 -SourceRef (git -C <prepared-source-directory> rev-parse HEAD)
 ./scripts/Update-Docs.ps1 -Action Status
 ./scripts/Update-Docs.ps1 -Action Resume -RunId 123456789
-./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.2.0 -ArchiveCommit <成功归档提交SHA>
+./scripts/Update-Docs.ps1 -Action Rollback -Tag v1.3.0 -ArchiveCommit <成功归档提交SHA>
 ```
 
 Check 要求已提交的干净源树，先拒绝运行时代码变化，再使用受信任的 main 工具构建。API 使用原包 DLL 和审阅后的 XML；示例针对原包编译。XML、翻译、链接及 Chromium 检查必须通过。更新不修改 NuGet、tag 或原始 Release 资产。

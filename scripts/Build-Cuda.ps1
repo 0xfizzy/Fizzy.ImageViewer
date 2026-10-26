@@ -1,14 +1,64 @@
+[CmdletBinding()]
 param(
-    [ValidateSet('Debug','Release')] [string]$Configuration = 'Release',
+    [ValidateSet(11,12,13)][int]$CudaMajor = 11,
+    [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
     [string]$Architectures = '75',
-    [string]$CudaRoot = $env:CUDA_PATH
+    [string]$CudaRoot,
+    [switch]$Release
 )
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent $PSScriptRoot
-if (-not $CudaRoot) { $CudaRoot = Split-Path -Parent (Split-Path -Parent (Get-Command nvcc -ErrorAction Stop).Source) }
-$build = Join-Path $repo 'build/obj/cuda'
-& cmake -S (Join-Path $repo 'native/Cuda') -B $build -G 'Visual Studio 17 2022' -A x64 -T "v142,cuda=$($CudaRoot.Replace('\','/'))" "-DCMAKE_CUDA_ARCHITECTURES=$Architectures" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON
-if ($LASTEXITCODE) { throw 'CUDA configure failed.' }
-& cmake --build $build --config $Configuration --parallel 2
-if ($LASTEXITCODE) { throw 'CUDA build failed.' }
-# Compile only. Hardware execution requires explicit authorization.
+Import-Module "$PSScriptRoot/Cuda.Common.psm1" -Force
+$repo = Get-Repo
+$matrix = Get-CudaMatrix
+$variant = Get-CudaVariant $CudaMajor
+if (!$CudaRoot) {
+    $downloaded = "$repo/artifacts/cuda/tools/cuda$CudaMajor"
+    $CudaRoot = if (Test-Path "$downloaded/bin/nvcc.exe") { $downloaded } else { $env:CUDA_PATH }
+    if (!$CudaRoot) {
+        $command = Get-Command nvcc -ErrorAction SilentlyContinue
+        if ($command) { $CudaRoot = Split-Path (Split-Path $command.Source -Parent) -Parent }
+    }
+}
+if (!$CudaRoot -or !(Test-Path "$CudaRoot/bin/nvcc.exe")) { throw 'Specify -CudaRoot or run Setup-Cuda.ps1 -DownloadToolkit.' }
+$nvccText = & "$CudaRoot/bin/nvcc.exe" --version
+if ($LASTEXITCODE -or ($nvccText -join ' ') -notmatch 'V(\d+\.\d+\.\d+)') { throw 'Cannot identify nvcc.' }
+$nvcc = $Matches[1]
+if ([int]$nvcc.Split('.')[0] -ne $CudaMajor) { throw 'CUDA Toolkit major differs from -CudaMajor.' }
+if ($Release) {
+    Assert-ReleaseIdentity (Get-PackageVersion)
+    if ($nvcc -cne $variant.nvcc -or $Architectures -cne $variant.architectures) { throw 'Release requires the exact CUDA matrix baseline.' }
+}
+$cmake = "$repo/artifacts/cuda/tools/cmake/cmake-$($matrix.cmake.version)-windows-x86_64/bin/cmake.exe"
+$ninja = "$repo/artifacts/cuda/tools/ninja/ninja.exe"
+if (!(Test-Path $cmake) -or !(Test-Path $ninja)) { throw 'Run scripts/Setup-Cuda.ps1 to prepare pinned CMake and Ninja.' }
+if ((& $cmake --version | Select-Object -First 1) -cne "cmake version $($matrix.cmake.version)" -or (& $ninja --version) -cne $matrix.ninja.version) { throw 'Build tool version mismatch.' }
+$vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+$vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64 -latest -property installationPath }
+if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
+$compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
+if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
+$cl = Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe'
+$build = "$repo/build/obj/cuda/$CudaMajor/$Configuration"
+$output = "$repo/build/$Configuration/native/cuda$CudaMajor"
+[void][IO.Directory]::CreateDirectory($build)
+[void][IO.Directory]::CreateDirectory($output)
+# A failed rebuild must not leave an apparently valid prior build record.
+if (Test-Path "$output/build.json") { Remove-Item -LiteralPath "$output/build.json" }
+$dirty = [bool](& git -C $repo status --porcelain)
+$sourceHash = Get-CudaSourceIdentity
+$commands = @(
+    '@echo off',
+    ('call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64 {1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
+    'if errorlevel 1 exit /b %errorlevel%',
+    ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER={5}" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
+    'if errorlevel 1 exit /b %errorlevel%',
+    ('"{0}" --build "{1}" --parallel 2' -f $cmake,$build),
+    'exit /b %errorlevel%'
+)
+$commandFile = "$build/build.cmd"
+$commands | Set-Content $commandFile -Encoding ascii
+Invoke-Checked $env:ComSpec @('/d','/c',$commandFile)
+if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed during compilation.' }
+$info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$variant.toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
+Write-Json $info "$output/build.json"
+Write-Host "CUDA $CudaMajor native build complete: $output"

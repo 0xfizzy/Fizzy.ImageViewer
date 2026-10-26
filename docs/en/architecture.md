@@ -200,7 +200,7 @@ registration identity, creation context and callback session; callback reentry v
 that activation before continuing. Context-scoped finishing cannot affect replacements.
 
 MeasurementCollection owns membership, visual lookup, creation policy and viewer style.
-ViewerHost constructs MeasurementRuntime and shares it with the collection and interaction
+ViewerRuntime constructs MeasurementRuntime and shares it with the collection and interaction
 coordinator. The runtime supplies handle and creation-context STA dispatch, query registration
 and shared notification execution; MeasurementItem receives the runtime, presentation layer
 and style explicitly. Creation contexts receive the runtime and a frame-acquisition delegate
@@ -243,7 +243,7 @@ its nested control renders the samples.
 MeasurementRuntime owns ViewerLifetime and Dispatcher access and registers measurement
 query clients with the shared scheduler; model dispatch and shutdown admission do not
 depend on the visual container. MeasurementCollection owns a primary set of model-driven
-items and a separate visual lookup index. The host creates and closes the collection
+items and a separate visual lookup index. ViewerRuntime creates and closes the collection
 independently of the tool registry. Hit testing resolves a visual to its registered measurement before selection.
 The measurement edit controller receives the measurement directly; unregistered visuals cannot be selected, edited or deleted.
 The pixel HUD independently subscribes to that same scheduler. Query protocol and

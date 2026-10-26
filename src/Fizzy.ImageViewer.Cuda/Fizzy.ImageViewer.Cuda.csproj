@@ -5,15 +5,17 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageId>Fizzy.ImageViewer.Cuda</PackageId>
-    <Version>1.2.0</Version>
+    <CudaMajor Condition="'$(CudaMajor)' == ''">11</CudaMajor>
+    <PackageId>Fizzy.ImageViewer.Cuda$(CudaMajor)</PackageId>
+    <Version>1.3.0</Version>
     <Description>Optional CUDA image display and pixel queries with consumer-owned execution scopes.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../build/$(Configuration)/native</CudaNativeDirectory>
+    <CudaNativeDirectory Condition="'$(CudaNativeDirectory)' == ''">$(MSBuildThisFileDirectory)../../build/$(Configuration)/native/cuda$(CudaMajor)</CudaNativeDirectory>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Fizzy.ImageViewer/Fizzy.ImageViewer.csproj" />
     <InternalsVisibleTo Include="Fizzy.ImageViewer.Tests" />
+    <None Include="buildTransitive/CudaVariant.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" />
   </ItemGroup>
   <Target Name="CollectCudaNative" BeforeTargets="AssignTargetPaths;_GetPackageFiles">
     <ItemGroup>
@@ -24,7 +26,7 @@
     </ItemGroup>
   </Target>
   <Target Name="RequireCudaNativeForPackage" BeforeTargets="GenerateNuspec">
-    <Error Condition="!Exists('$(CudaNativeDirectory)/Fizzy.ImageViewer.Cuda.Native.dll')"
-           Text="Build the matching CUDA native component before packing this optional package." />
+    <Error Condition="'$(CudaMajor)' != '11' and '$(CudaMajor)' != '12' and '$(CudaMajor)' != '13'" Text="CudaMajor must be 11, 12 or 13." />
+    <Exec Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)../../scripts/Test-CudaNative.ps1&quot; -CudaMajor $(CudaMajor) -Configuration $(Configuration) -Directory &quot;$(CudaNativeDirectory)&quot;" />
   </Target>
 </Project>

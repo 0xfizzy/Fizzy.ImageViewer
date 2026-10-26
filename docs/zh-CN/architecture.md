@@ -65,7 +65,7 @@ ViewerLifetime 统一停止门和关闭安全的句柄移除调度，HUD 集合�
 
 MeasurementInteractionCoordinator 唯一拥有工具、版本、模式、选中及转换策略，直接借用 MeasurementLayer。层可见和命中策略限制工具/编辑启动，重入取消后也检查；临时抑制不改配置。Registry 保存可复用注册，每次工厂生成一次性会话。激活聚合注册身份、创建上下文和会话；旧回调继续前验证身份，Finish 只作用所属上下文。所有预览通过所属上下文创建，结束后拒绝创建，每个会话终止恰好清理一次。
 
-MeasurementCollection 拥有成员、视觉索引、创建策略与 Viewer 样式，Host 显式创建并共享 MeasurementRuntime。Runtime 统一 STA/生命周期调度、查询注册和通知，不依赖视觉容器。集合关闭先停 Runtime 再清对象。通知共用 FIFO，重入追加；内部几何投射同步先完成，公共通知后发。
+MeasurementCollection 拥有成员、视觉索引、创建策略与 Viewer 样式，ViewerRuntime 显式创建并共享 MeasurementRuntime。Runtime 统一 STA/生命周期调度、查询注册和通知，不依赖视觉容器。集合关闭先停 Runtime 再清对象。通知共用 FIFO，重入追加；内部几何投射同步先完成，公共通知后发。
 
 Layers 容器拥有附加、变换、输入抑制及生命周期，不依赖具体绘图/测量类型；具体层依赖容器。ViewerLayers 组合消费者能力。DrawingLayer 统一单项和集合句柄；MeasurementLayer 通过清内容通知让集合清模型，层不反向拥有集合。清理门覆盖取消与资源释放全过程，finally 清残留视觉，不依赖 coordinator 存在。
 
@@ -77,7 +77,7 @@ HUD 独立订阅共享 scheduler。查询协议/运行时是内部 Imaging 能�
 
 MenuManager 拥有注册和 WPF 绑定，句柄撤销禁用绑定并释放目标。普通菜单关闭保留绑定至输入排空，以支持 Closed-before-Click；新打开使旧绑定失效。执行可等待、错误隔离、同对象禁止并发。已开始工作自持资源可越过注册/Viewer。
 
-ViewerMenuController 负责内置策略，借用交互、工具、层、HUD 和快照；Menus 下 MenuSnapshotSession 唯一拥有冻结帧/ROI，Snapshots 不拥有菜单策略。Host 在关闭管线前断菜单策略和绑定。Rendering 的 CommittedViewLease 原子固定帧、映射和版本，消费者不拥有管线状态。
+ViewerMenuController 负责内置策略，借用交互、工具、层、HUD 和快照；Menus 下 MenuSnapshotSession 唯一拥有冻结帧/ROI，Snapshots 不拥有菜单策略。ViewerRuntime 在关闭管线前断菜单策略和绑定。Rendering 的 CommittedViewLease 原子固定帧、映射和版本，消费者不拥有管线状态。
 
 ## 像素格式归属
 

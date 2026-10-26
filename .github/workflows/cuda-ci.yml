@@ -1,0 +1,61 @@
+name: CUDA CI
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cuda-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: windows-2022
+    outputs:
+      relevant: ${{ steps.select.outputs.relevant }}
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: select
+        shell: pwsh
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          $relevant = $true
+          if ($env:EVENT_NAME -ne 'workflow_dispatch' -and $env:BASE_SHA -match '^[0-9a-f]{40}$' -and $env:BASE_SHA -ne ('0' * 40)) {
+            $files = @(git diff --name-only $env:BASE_SHA HEAD)
+            if ($LASTEXITCODE) { throw 'Cannot determine changed files.' }
+            $relevant = [bool]($files -match '^(native/Cuda/|src/Fizzy.ImageViewer|tests/|scripts/|eng/cuda-matrix.json|\.github/workflows/|Directory\.|global.json)')
+          }
+          "relevant=$($relevant.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          $variants = (Get-Content eng/cuda-matrix.json -Raw | ConvertFrom-Json).variants
+          $matrix = @{ include = @($variants | ForEach-Object { @{ major=$_.major } }) } | ConvertTo-Json -Compress
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
+  variants:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changes.outputs.matrix) }}
+    uses: ./.github/workflows/cuda-build.yml
+    with:
+      major: ${{ matrix.major }}
+      ref: ${{ github.sha }}
+  result:
+    name: CUDA validation
+    if: always()
+    needs: [changes, variants]
+    runs-on: windows-2022
+    steps:
+      - shell: pwsh
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          VARIANTS: ${{ needs.variants.result }}
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+        run: |
+          if ($env:CHANGES -ne 'success' -or ($env:RELEVANT -eq 'true' -and $env:VARIANTS -ne 'success')) { throw 'CUDA validation failed.' }
+          Write-Host 'PASS: requested CUDA build/managed/package checks. GPU hardware was not executed.'

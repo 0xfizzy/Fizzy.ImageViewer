@@ -11,6 +11,11 @@ consumers compiled against 1.2.0; binary compatibility is not guaranteed.
   hosts the same implementation on its independent window STA.
 - Add borrowed `IViewerCapabilities` and `WhenStopping` observation, plus
   `EmbeddedViewer` and `ApplicationEndpoint` examples with awaited shutdown.
+- Add `ImageBindingSource` and `ImageViewerControl.ImageSource` for static images
+  and infrequent updates, with `ImageSourceSubmitResult` for per-control reception
+  feedback. Live streams continue to use explicit `SubmitFrameAsync`.
+- Add routed `ImageViewerCommands.FitToViewport`, `ActivateMeasurementTool` and
+  `EndInteraction` commands with per-control availability and explicit targets.
 - Separate frame reception from display. Hidden, unloaded and minimized hosts
   retain the latest waiting frame and resume display without requiring new input.
 - Clip image, drawing, measurement and HUD content at the owned viewport boundary,

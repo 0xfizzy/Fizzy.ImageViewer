@@ -1,0 +1,24 @@
+<Project>
+  <UsingTask TaskName="FizzyCheckCudaVariants" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <AssetsFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Using Namespace="System.Collections.Generic" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var packages = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        if (!File.Exists(AssetsFile)) { Log.LogError("Restore packages before validating CUDA variants."); return false; }
+        foreach (Match match in Regex.Matches(File.ReadAllText(AssetsFile), "\"(Fizzy\\.ImageViewer\\.Cuda(?:11|12|13)?)/[^\"]+\"\\s*:", RegexOptions.IgnoreCase))
+            packages.Add(match.Groups[1].Value);
+        if (packages.Count > 1)
+            Log.LogError("Choose exactly one CUDA package; conflicting direct or transitive dependencies: " + string.Join(", ", packages));
+        return !Log.HasLoggedErrors;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="FizzyValidateCudaVariant" BeforeTargets="ResolveAssemblyReferences">
+    <FizzyCheckCudaVariants AssetsFile="$(ProjectAssetsFile)" />
+  </Target>
+</Project>

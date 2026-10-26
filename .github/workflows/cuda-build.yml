@@ -1,0 +1,55 @@
+name: Build CUDA variant
+on:
+  workflow_call:
+    inputs:
+      major:
+        type: number
+        required: true
+      ref:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    name: CUDA ${{ inputs.major }}
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      - uses: actions/cache@v4
+        with:
+          path: artifacts/cuda/downloads
+          key: cuda-downloads-${{ runner.os }}-${{ inputs.major }}-${{ hashFiles('eng/cuda-matrix.json') }}
+      - name: Prepare pinned compiler tools and CUDA components (no driver)
+        shell: pwsh
+        run: ./scripts/Setup-Cuda.ps1 -CudaMajor ${{ inputs.major }} -DownloadToolkit -InstallBuildTools
+      - name: Build, test managed code and validate package
+        shell: pwsh
+        env:
+          CUDA_RELEASE: ${{ inputs.release }}
+        run: ./scripts/Test-Cuda.ps1 -CudaMajor ${{ inputs.major }} -Release:($env:CUDA_RELEASE -eq 'true')
+      - name: Upload variant and diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cuda-${{ inputs.major }}
+          retention-days: 30
+          path: |
+            artifacts/cuda/${{ inputs.major }}/packages/
+            artifacts/cuda/${{ inputs.major }}/build.json
+            artifacts/cuda/${{ inputs.major }}/validation.json
+            artifacts/cuda/${{ inputs.major }}/validation.log
+            artifacts/cuda/${{ inputs.major }}/tests/
+            build/Release/tests/Cuda${{ inputs.major }}/
+          if-no-files-found: warn

@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "msvc": "14.38",
+  "sdk": "10.0.22621.0",
+  "cmake": {
+    "sha256": "81aa9964dbabd71fe02e7ec50472fd3ad56138c49944515ece9001efbff8d719",
+    "url": "https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-windows-x86_64.zip",
+    "version": "3.31.8"
+  },
+  "ninja": {
+    "sha256": "f550fec705b6d6ff58f2db3c374c2277a37691678d6aba463adcbb129108467a",
+    "url": "https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip",
+    "version": "1.12.1"
+  },
+  "variants": [
+    {
+      "toolkit": "11.8.0",
+      "major": 11,
+      "nvcc": "11.8.89",
+      "architectures": "75",
+      "archives": [
+        {
+          "component": "cuda_nvcc",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-11.8.89-archive.zip",
+          "sha256": "4cdd7555f31186e5af0b14ab761838bbc8b5e6441589f5bb326930c7a502dcd3"
+        },
+        {
+          "component": "cuda_cudart",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-11.8.89-archive.zip",
+          "sha256": "988cc9e7d3785d4b1975521f312c57c6814cbf15e73a2b7941d961835f2a945e"
+        },
+        {
+          "component": "cuda_cccl",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-11.8.89-archive.zip",
+          "sha256": "548fe5e0cf6a64568a61713cdb475306ce7445d98dfbbe7f910fd78a7f6b616c"
+        }
+      ]
+    },
+    {
+      "toolkit": "12.6.3",
+      "major": 12,
+      "nvcc": "12.6.85",
+      "architectures": "75",
+      "archives": [
+        {
+          "component": "cuda_nvcc",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-12.6.85-archive.zip",
+          "sha256": "3fb9f76b87c37d02f947354be89b718ad5f2c76b6ab47995265bfa3a068a5e14"
+        },
+        {
+          "component": "cuda_cudart",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-12.6.77-archive.zip",
+          "sha256": "7a313bc0c93b1a50bb03aa9783a199ae70c3b66e2d8084da65e8254a8577b925"
+        },
+        {
+          "component": "cuda_cccl",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-12.6.77-archive.zip",
+          "sha256": "469b783b6731964170b3d27ae214e97e2a63ec93c57ace3ed4052e6d01261f2e"
+        }
+      ]
+    },
+    {
+      "toolkit": "13.0.2",
+      "major": 13,
+      "nvcc": "13.0.88",
+      "architectures": "75",
+      "archives": [
+        {
+          "component": "cuda_nvcc",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/windows-x86_64/cuda_nvcc-windows-x86_64-13.0.88-archive.zip",
+          "sha256": "61760e24a44937c6c29a20ddea69067b4d3860ccd6a9a0564573f840d96e6c5f"
+        },
+        {
+          "component": "cuda_cudart",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cudart/windows-x86_64/cuda_cudart-windows-x86_64-13.0.96-archive.zip",
+          "sha256": "a2ed875f9997aa24904fb70cc9db3acd9308433cde99bc8e63ec1271c9da31b4"
+        },
+        {
+          "component": "cuda_cccl",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_cccl/windows-x86_64/cuda_cccl-windows-x86_64-13.0.85-archive.zip",
+          "sha256": "f4f5187f7976d8057d76e1e04e72c8b7d0a2a22793107a671ad709b1d8d3408d"
+        },
+        {
+          "component": "cuda_crt",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_crt/windows-x86_64/cuda_crt-windows-x86_64-13.0.88-archive.zip",
+          "sha256": "ff413c89dbd96ed3b3dcfac923437de78acea32fb90309277197c8a127588112"
+        },
+        {
+          "component": "libnvvm",
+          "url": "https://developer.download.nvidia.com/compute/cuda/redist/libnvvm/windows-x86_64/libnvvm-windows-x86_64-13.0.88-archive.zip",
+          "sha256": "6dda4a82d22a2c173a65c66b4b4c933e3424a56ce845e2864bdca9cc66e6c524"
+        }
+      ]
+    }
+  ]
+}
