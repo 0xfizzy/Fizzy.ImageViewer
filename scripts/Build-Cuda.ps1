@@ -52,7 +52,9 @@ $commands = @(
     '@echo off',
     ('call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64 {1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
     'if errorlevel 1 exit /b %errorlevel%',
-    ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER={5}" "-DCMAKE_CUDA_FLAGS=--use-local-env" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
+    ('if not "%VCToolsVersion%"=="{0}" exit /b 2' -f $compiler.Name),
+    ('if not "%WindowsSDKVersion%"=="{0}\" exit /b 3' -f $matrix.sdk),
+    ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER=cl.exe" "-DCMAKE_CUDA_FLAGS=--use-local-env" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
     'if errorlevel 1 exit /b %errorlevel%',
     ('"{0}" --build "{1}" --parallel 2' -f $cmake,$build),
     'exit /b %errorlevel%'
@@ -64,4 +66,5 @@ if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed dur
 $info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$variant.toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
 Write-Json $info "$output/build.json"
 Write-Host "CUDA $CudaMajor native build complete: $output"
+
 
