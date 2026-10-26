@@ -24,11 +24,13 @@ function New-FixturePackage($Id,$Path) {
     Get-Hash "$payload/runtimes/win-x64/native/Fizzy.ImageViewer.Cuda.Native.dll"
 }
 $entries=@()
+$matrix = Get-Content "$PSScriptRoot/../eng/cuda-matrix.json" -Raw | ConvertFrom-Json
 foreach($major in @(11,12,13)){
     $id="Fizzy.ImageViewer.Cuda$major"
     $path="cuda-$major/packages/$id.$version.nupkg"
     $hash=New-FixturePackage $id "$bundle/$path"
-    Write-Json @{schema=1;major=$major;configuration='Release';commit=$commit;dirty=$false;nativeHash=$hash} "$bundle/cuda-$major/build.json"
+    $variant = $matrix.variants | Where-Object major -eq $major
+    Write-Json @{schema=1;major=$major;configuration='Release';commit=$commit;dirty=$false;nativeHash=$hash;nvcc=$variant.nvcc;toolkit=$variant.toolkit;architectures=$variant.architectures;msvc="$($matrix.msvc).33130";sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version} "$bundle/cuda-$major/build.json"
     Write-Json @{passed=$true;release=$true;major=$major;packageId=$id;version=$version;commit=$commit;nativeHash=$hash;packageHash=(Get-Hash "$bundle/$path")} "$bundle/cuda-$major/validation.json"
     $entries+=@{major=$major;packageId=$id;path=$path;nativeHash=$hash}
 }
@@ -39,6 +41,29 @@ function Expect-Failure([scriptblock]$Action,[string]$Pattern){
     try{& $Action}catch{if($_.Exception.Message -notmatch $Pattern){throw};return}
     throw "Expected failure: $Pattern"
 }
+# Exercise aggregation without creating or moving a real source tag.
+function global:git {
+    # New-CudaReleaseBundle uses: git -C <repo> rev-parse refs/tags/<tag>^{commit}
+    if ($args.Count -ne 4 -or $args[2] -ne 'rev-parse' -or $args[3] -ne 'refs/tags/v1.3.0^{commit}') { throw 'Unexpected Git call in aggregation fixture.' }
+    $global:LASTEXITCODE = 0
+    'a' * 40
+}
+try {
+    & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/aggregated"
+    $validationPath = "$bundle/cuda-13/validation.json"
+    $validation = Get-Content $validationPath -Raw
+    Remove-Item -LiteralPath $validationPath
+    Expect-Failure { & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/incomplete" } 'Missing validated CUDA 13'
+    if (Test-Path "$work/incomplete/manifest.json") { throw 'Incomplete matrix produced a sealed manifest.' }
+    Set-Content $validationPath $validation -NoNewline
+    $buildPath = "$bundle/cuda-11/build.json"
+    $buildText = Get-Content $buildPath -Raw
+    $wrongBuild = $buildText | ConvertFrom-Json
+    $wrongBuild.toolkit = 'wrong'
+    Write-Json $wrongBuild $buildPath
+    Expect-Failure { & "$PSScriptRoot/New-CudaReleaseBundle.ps1" -Tag "v$version" -InputDirectory $bundle -Output "$work/wrong-toolchain" } 'toolchain differs'
+    Set-Content $buildPath $buildText -NoNewline
+} finally { Remove-Item Function:global:git }
 $manifest.packages=@($entries[0],$entries[1])
 Write-Json $manifest "$bundle/manifest.json"
 Expect-Failure {Assert-CudaBundle $bundle "v$version"} 'exactly variants'
