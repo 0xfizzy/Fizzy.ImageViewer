@@ -3,6 +3,7 @@ param(
     [ValidateSet(11,12,13)][int]$CudaMajor = 11,
     [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
     [string]$CudaRoot,
+    [string]$MsvcVersion,
     [switch]$RunHardwareTests,
     [switch]$Release
 )
@@ -15,7 +16,7 @@ Push-Location $repo
 try {
     $version = Get-PackageVersion
     $id = "Fizzy.ImageViewer.Cuda$CudaMajor"
-    & "$PSScriptRoot/Build-Cuda.ps1" -CudaMajor $CudaMajor -Configuration $Configuration -CudaRoot $CudaRoot -Release:$Release
+    & "$PSScriptRoot/Build-Cuda.ps1" -CudaMajor $CudaMajor -Configuration $Configuration -CudaRoot $CudaRoot -MsvcVersion $MsvcVersion -Release:$Release
     $nativeDir = "$repo/build/$Configuration/native/cuda$CudaMajor"
     $info = Assert-CudaNative $CudaMajor $Configuration $nativeDir -Release:$Release
     Copy-Item "$nativeDir/build.json","$nativeDir/exports.txt","$nativeDir/dependencies.txt" $output

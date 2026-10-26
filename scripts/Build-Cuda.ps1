@@ -4,6 +4,7 @@ param(
     [ValidateSet('Debug','Release')][string]$Configuration = 'Release',
     [string]$Architectures = '75',
     [string]$CudaRoot,
+    [string]$MsvcVersion,
     [switch]$Release
 )
 $ErrorActionPreference = 'Stop'
@@ -39,12 +40,34 @@ $ninja = "$repo/artifacts/cuda/tools/ninja/ninja.exe"
 if (!(Test-Path $cmake) -or !(Test-Path $ninja)) { throw 'Run scripts/Setup-Cuda.ps1 to prepare pinned CMake and Ninja.' }
 if ((& $cmake --version | Select-Object -First 1) -cne "cmake version $($matrix.cmake.version)" -or (& $ninja --version) -cne $matrix.ninja.version) { throw 'Build tool version mismatch.' }
 $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
-$vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires $matrix.msvcComponent -latest -property installationPath }
-if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
-if (!(Test-Path "$vs/Common7/Tools/VsDevCmd.bat")) { throw 'C++ Build Tools environment missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
-if (!(Test-Path "$vs/VC/Auxiliary/Build/vcvarsall.bat")) { throw 'nvcc requires the Visual Studio C++ tools installation layout (vcvarsall.bat). Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
-$compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
-if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
+if ($Release) {
+    if ($MsvcVersion -and $MsvcVersion -ne $matrix.msvc) { throw 'Release requires the matrix MSVC baseline.' }
+    $MsvcVersion = $matrix.msvc
+}
+if ($MsvcVersion -and $MsvcVersion -notmatch '^14\.\d+(?:\.\d+)?$') { throw 'MsvcVersion must be a toolset version, for example 14.38 or 14.38.33130.' }
+# Use the selected Toolkit's own compiler guard to shortlist installed toolsets.
+# nvcc still performs its normal checks; this never overrides compiler support.
+$hostConfig = Get-Content "$CudaRoot/include/crt/host_config.h" -Raw
+$hostRange = [regex]::Match($hostConfig, '#if\s+_MSC_VER\s*<\s*(\d+)\s*\|\|\s*_MSC_VER\s*>=\s*(\d+)')
+if (!$hostRange.Success -and !$MsvcVersion) { throw 'Cannot determine this Toolkit compiler range. Specify -MsvcVersion and let nvcc validate it.' }
+$installations = if (Test-Path $vswhere) { @(& $vswhere -products '*' -property installationPath) } else { @() }
+$candidates = @(foreach ($installation in $installations) {
+    foreach ($directory in Get-ChildItem "$installation/VC/Tools/MSVC" -Directory -ErrorAction SilentlyContinue) {
+        if ($MsvcVersion -and $directory.Name -ne $MsvcVersion -and $directory.Name -notlike "$MsvcVersion.*") { continue }
+        $hostCompiler = Join-Path $directory.FullName 'bin/Hostx64/x64/cl.exe'
+        if (!(Test-Path $hostCompiler)) { continue }
+        $binary = (Get-Item $hostCompiler).VersionInfo
+        $msc = $binary.FileMajorPart * 100 + $binary.FileMinorPart
+        if ($hostRange.Success -and ($msc -lt [int]$hostRange.Groups[1].Value -or $msc -ge [int]$hostRange.Groups[2].Value)) { continue }
+        if (!(Test-Path "$installation/Common7/Tools/VsDevCmd.bat") -or !(Test-Path "$installation/VC/Auxiliary/Build/vcvarsall.bat")) { continue }
+        [pscustomobject]@{installation=$installation;directory=$directory;version=[version]$directory.Name}
+    }
+})
+$selected = $candidates | Sort-Object version -Descending | Select-Object -First 1
+if (!$selected) { throw "No complete MSVC installation compatible with CUDA $nvcc and requested version '$MsvcVersion'. Install supported C++ x64/x86 tools including vcvarsall.bat; Setup-Cuda.ps1 -InstallBuildTools prepares the CI baseline." }
+$vs = $selected.installation
+$compiler = $selected.directory
+Write-Host "Selected MSVC $($compiler.Name): $vs"
 $cl = (Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe').Replace('\','/')
 $CudaRoot = $CudaRoot.Replace('\','/')
 $repo = $repo.Replace('\','/')
@@ -58,7 +81,7 @@ $dirty = [bool](& git -C $repo status --porcelain)
 $sourceHash = Get-CudaSourceIdentity
 $commands = @(
     '@echo off',
-    ('call "{0}\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64 -winsdk={1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
+    ('call "{0}\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 -host_arch=x64 -winsdk={1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$compiler.Name),
     'if errorlevel 1 exit /b %errorlevel%',
     ('if not "%VCToolsVersion%"=="{0}" exit /b 2' -f $compiler.Name),
     ('if not "%WindowsSDKVersion%"=="{0}\" exit /b 3' -f $matrix.sdk),

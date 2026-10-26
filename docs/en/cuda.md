@@ -120,12 +120,13 @@ dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
 Ordinary managed development needs no CUDA toolchain. For local native development,
-keep one Toolkit (11.8 by default). Install VS 2022 Build Tools with MSVC
-14.38 and Windows SDK 10.0.22621.0; the full IDE and v142 are unnecessary.
+keep one Toolkit (11.8 by default) and an MSVC toolset supported by that Toolkit.
+The setup script installs the CI baseline: VS 2022 Build Tools with MSVC 14.38
+and Windows SDK 10.0.22621.0; the full IDE and v142 are unnecessary.
 The installer also selects the standard MSVC x64/x86 tools component because nvcc
 requires its `vcvarsall.bat` installation layout, even when the environment is loaded
 through `VsDevCmd.bat`. This brings in the VS 2022 default toolset as an installation
-dependency; CUDA builds still explicitly select 14.38.
+dependency; local builds select the newest installed compatible toolset.
 Run the installer option from an elevated PowerShell when those components are missing:
 
 ```powershell
@@ -137,7 +138,12 @@ Run the installer option from an elevated PowerShell when those components are m
 
 Setup prepares pinned CMake 3.31.8 and Ninja 1.12.1 under `artifacts/cuda/tools`.
 It does not change the NVIDIA driver or persistent environment variables. Build scripts
-select MSVC 14.38 in a child process and use Ninja without CUDA Visual Studio integration.
+select a compatible MSVC in a child process and use Ninja without CUDA Visual Studio integration.
+Use `-MsvcVersion 14.38` on `Build-Cuda.ps1` or `Test-Cuda.ps1` to select a toolset
+explicitly, or omit it for automatic selection. The Toolkit's compiler checks remain
+enabled: a stable C ABI does not make unsupported host compilers valid for nvcc.
+For example, CUDA 11.8 accepts MSVC 19.1x–19.3x, but rejects 19.4x.
+Build records capture the actual compiler version; CI and release builds pin 14.38.
 Use `-CudaRoot` to select an existing Toolkit. CI additionally uses
 `Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools` to fetch only
 SHA-256-verified NVIDIA compiler components. The shared matrix is

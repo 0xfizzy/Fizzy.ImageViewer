@@ -38,7 +38,9 @@ jobs:
         shell: pwsh
         env:
           CUDA_RELEASE: ${{ inputs.release }}
-        run: ./scripts/Test-Cuda.ps1 -CudaMajor ${{ inputs.major }} -Release:($env:CUDA_RELEASE -eq 'true')
+        run: |
+          $msvc = (Get-Content eng/cuda-matrix.json -Raw | ConvertFrom-Json).msvc
+          ./scripts/Test-Cuda.ps1 -CudaMajor ${{ inputs.major }} -MsvcVersion $msvc -Release:($env:CUDA_RELEASE -eq 'true')
       - name: Upload variant and diagnostics
         uses: actions/upload-artifact@v4
         if: always()

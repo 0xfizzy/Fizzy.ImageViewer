@@ -88,10 +88,11 @@ dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
 普通托管开发不需要 CUDA 工具链。本机 native 开发只保留一个 Toolkit，默认 11.8。
-安装 VS 2022 Build Tools、MSVC 14.38 和 Windows SDK 10.0.22621.0，
-不需要完整 IDE 或 v142。安装脚本还会选择标准 MSVC x64/x86 工具组件：
+本地可使用该 Toolkit 支持的 MSVC 工具集。安装脚本准备 CI 基线：VS 2022 Build Tools、
+MSVC 14.38 和 Windows SDK 10.0.22621.0，不需要完整 IDE 或 v142。
+安装脚本还会选择标准 MSVC x64/x86 工具组件：
 即使通过 `VsDevCmd.bat` 加载环境，nvcc 仍要求其 `vcvarsall.bat` 安装目录结构。
-该依赖会带入 VS 2022 默认工具集，但 CUDA 编译仍显式选择 14.38。
+该依赖会带入 VS 2022 默认工具集；本地构建选择已安装且兼容的最新工具集。
 缺少组件时，在管理员 PowerShell 中运行安装选项：
 
 ```powershell
@@ -102,8 +103,12 @@ dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
 Setup 将固定版本 CMake 3.31.8 和 Ninja 1.12.1 准备到 `artifacts/cuda/tools`，
-不修改 NVIDIA 驱动或持久环境变量。构建脚本在子进程中选择 MSVC 14.38，使用 Ninja，
-不依赖 CUDA Visual Studio 插件。通过 `-CudaRoot` 指定已有 Toolkit。CI 另使用
+不修改 NVIDIA 驱动或持久环境变量。构建脚本在子进程中选择兼容的 MSVC，使用 Ninja，
+不依赖 CUDA Visual Studio 插件。在 `Build-Cuda.ps1` 或 `Test-Cuda.ps1` 上使用
+`-MsvcVersion 14.38` 可显式选择工具集，省略时自动选择。Toolkit 的编译器检查仍然启用：
+C ABI 稳定不代表 nvcc 可以使用不受支持的宿主编译器。例如 CUDA 11.8 接受 MSVC
+19.1x–19.3x，但拒绝 19.4x。构建记录保存实际编译器版本；CI 和正式发布固定为 14.38。
+通过 `-CudaRoot` 指定已有 Toolkit。CI 另使用
 `Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools`，只下载经过
 SHA-256 校验的 NVIDIA 编译组件。公共矩阵为 `eng/cuda-matrix.json`，发布要求精确匹配。
 
