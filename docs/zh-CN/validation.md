@@ -17,6 +17,14 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 
 `./scripts/Test-Release.ps1` 是库、工具、示例、文档和包的完整门禁，不发布。依赖和浏览器安装见[文档维护](documentation.md)。发布前检查包 README、XML 和固定版本 URL；只有干净且 tag 匹配的 release-mode 验证能创建可发布 bundle。
 
+## CUDA 变体
+
+本机通过 `scripts/Test-Cuda.ps1 -CudaMajor 11` 执行构建、托管测试和包验证；仅在明确请求
+GPU 验证时添加 `-RunHardwareTests`。CI 独立编译 11/12/13，不执行 GPU 测试。
+环境及范围见 [CUDA 配置](cuda.md#构建与部署)。修改打包或发布逻辑时运行
+`scripts/Test-CudaPackaging.ps1` 和 `pwsh -NoProfile -File scripts/Test-CudaReleaseRecovery.ps1`；
+夹具不发布真实包。
+
 ## 像素查询
 
 格式、来源或查询变更运行像素源、帧元数据、scheduler、HUD 和快照测试，覆盖独立租约、区域局部坐标、不可变结果、不支持能力、订阅/几何失效、有界接纳、公平、取消和操作/清理双重失败。TIFF 读取验证使用仅测试依赖 LibTIFF，不以写入器自证。

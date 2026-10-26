@@ -51,5 +51,13 @@ jobs:
             artifacts/cuda/${{ inputs.major }}/validation.json
             artifacts/cuda/${{ inputs.major }}/validation.log
             artifacts/cuda/${{ inputs.major }}/tests/
-            build/Release/tests/Cuda${{ inputs.major }}/
+
           if-no-files-found: warn
+      - name: Upload native hardware test executable (not executed)
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: cuda-native-tests-${{ inputs.major }}
+          path: build/Release/tests/Cuda${{ inputs.major }}/
+          retention-days: 30
+          if-no-files-found: error

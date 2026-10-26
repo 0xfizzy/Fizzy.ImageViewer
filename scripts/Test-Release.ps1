@@ -26,6 +26,8 @@ try {
         & "$PSScriptRoot/Build-Docs.ps1" -Channel $channel -Version $Version
         & "$PSScriptRoot/Test-DocumentationGate.ps1"
         & "$PSScriptRoot/Test-ReleaseGate.ps1"
+        & "$PSScriptRoot/Test-CudaPackaging.ps1"
+        Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-CudaReleaseRecovery.ps1")
         & "$PSScriptRoot/Test-DocumentationUpdate.ps1"
         Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-ReleaseRecovery.ps1")
         $config = Get-SiteConfig

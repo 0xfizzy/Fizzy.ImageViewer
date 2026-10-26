@@ -157,15 +157,89 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-  cuda:
+  cuda-inspect:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.component == 'cuda'
     runs-on: windows-2022
+    timeout-minutes: 15
+    outputs:
+      build: ${{ steps.prepare.outputs.build }}
+      matrix: ${{ steps.prepare.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: prepare
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/Prepare-CudaRelease.ps1 -Tag $env:RELEASE_TAG
+      - uses: actions/upload-artifact@v4
+        if: steps.prepare.outputs.build == 'false'
+        with:
+          name: cuda-existing-bundle
+          path: artifacts/cuda-release-existing/bundle/
+          retention-days: 30
+          if-no-files-found: error
+  cuda-variants:
+    needs: cuda-inspect
+    if: needs.cuda-inspect.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.cuda-inspect.outputs.matrix) }}
+    uses: ./.github/workflows/cuda-build.yml
+    with:
+      major: ${{ matrix.major }}
+      ref: ${{ inputs.tag }}
+      release: true
+  cuda-archive:
+    needs: [cuda-inspect, cuda-variants]
+    if: always() && needs.cuda-inspect.result == 'success' && (needs.cuda-variants.result == 'success' || needs.cuda-inspect.outputs.build == 'false')
+    runs-on: windows-2022
+    timeout-minutes: 20
+    environment: github-pages
+    concurrency:
+      group: cuda-archive
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        if: needs.cuda-inspect.outputs.build == 'true'
+        with:
+          pattern: cuda-*
+          path: artifacts/cuda-variants
+      - name: Seal three validated variants
+        if: needs.cuda-inspect.outputs.build == 'true'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/New-CudaReleaseBundle.ps1 -Tag $env:RELEASE_TAG
+      - uses: actions/download-artifact@v4
+        if: needs.cuda-inspect.outputs.build == 'false'
+        with:
+          name: cuda-existing-bundle
+          path: artifacts/cuda-release-bundle
+      - name: Archive or verify immutable CUDA bundle
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag $env:RELEASE_TAG
+  cuda:
+    needs: cuda-archive
+    if: always() && needs.cuda-archive.result == 'success'
+    runs-on: windows-2022
+    timeout-minutes: 40
     environment: github-pages
     concurrency:
       group: cuda-publication
       cancel-in-progress: false
     permissions:
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -176,7 +250,7 @@ jobs:
         id: nuget-login
         with:
           user: ${{ vars.NUGET_USER }}
-      - name: Publish or verify archived CUDA package
+      - name: Publish or verify original CUDA packages
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

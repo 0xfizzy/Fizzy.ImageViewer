@@ -88,15 +88,29 @@ Pages 以文档归档提交标识部署版本，而非包的源码提交。开�
 
 ## 可选 CUDA 包
 
-主包可用后，从同一源码 tag 独立发布 `Fizzy.ImageViewer.Cuda`。在满足 [CUDA 构建前提](cuda.md#构建与部署)的 Windows 主机上，从 tag 导出的源码准备产物，编译原生测试但不运行硬件，执行托管 CUDA 测试并封存原始包：
+在匹配的核心包发布后，从同一源码 tag 发布三个完整包 `Fizzy.ImageViewer.Cuda11`、
+`.Cuda12`、`.Cuda13`。为三个包 ID 配置 NuGet Trusted Publishing：owner 为 `0xfizzy`，
+repository 为 `Fizzy.ImageViewer`，workflow 为 `release.yml`，environment 为
+`github-pages`；保留 `NUGET_USER`。不再要求本机编译 native，也不保存长期 API key。
 
 ```powershell
-./scripts/New-CudaReleaseBundle.ps1 -Tag v1.3.0
-./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.3.0 -Bundle artifacts/cuda-release-preparation/bundle
 gh workflow run release.yml --ref main -f tag=v1.3.0 -f component=cuda
 ```
 
-Archive 前审查准备日志、测试结果和 bundle 验证报告。独立且不可变的 `cuda-release-bundle.zip` 附件包含包、原生文件哈希、源码身份及验证报告，不替换主包归档或固定文档。工作流下载核验附件，通过同一 NuGet Trusted Publishing 策略发布，再比对下载的 NuGet 有效载荷；策略必须允许 CUDA 包 ID。恢复时重复同一 dispatch，不重新构建已发布版本。硬件、驱动和物理显示验证独立于托管测试及原生编译。
+工作流先校验核心归档及已发布包。已有 `cuda-release-bundle.zip` 时，校验并复用原始归档；
+没有归档时，拒绝已有或状态不确定的 CUDA 包版本，再在隔离的 Windows job 中编译三套
+固定工具链，将三个经过验证的包封装为 schema-2 bundle。所有变体通过后才能归档。
+不可变 bundle 包含 native 哈希、源码身份以及分别记录的构建、托管测试、打包和硬件执行结果。
+普通 runner 只编译硬件测试而不执行，因此不证明 CUDA 12/13 的 GPU 运行通过。
+
+上传归档并下载核对后，工作流通过 OIDC 按 11、12、13 顺序发布，并核对下载的 NuGet 内容。
+发布不是原子的：部分成功后重新派发相同请求；已有且内容匹配的包只校验，缺失包从原始归档
+继续发布，冲突则停止。禁止重建已发布版本、移动 tag 或使用 `--skip-duplicate`。
+原有 schema-1 CUDA 归档保留原始包身份，仍可校验和恢复。CUDA 发布不覆盖核心资产或固定文档。
+
+PR 检查 `CUDA validation` 覆盖三版本编译、托管测试和打包，首次成功后加入分支保护。
+Actions artifacts 保留诊断 30 天，仅作临时传输；原始 Release 归档永久保留。
+修改发布工作流须通过离线恢复/失败门禁，并在隔离仓库和测试包 ID 上演练，禁止使用生产 ID。
 
 ## 不发包的文档更新
 

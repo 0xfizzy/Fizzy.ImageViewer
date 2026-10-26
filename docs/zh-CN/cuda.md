@@ -2,7 +2,7 @@
 
 [English](../en/cuda.md)
 
-可选 `Fizzy.ImageViewer.Cuda` 包支持 CUDA 驻留的 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32，
+可选 `Fizzy.ImageViewer.Cuda11`、`.Cuda12` 或 `.Cuda13` 包支持 CUDA 驻留的 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32，
 提供 WPF 显示转换及原始像素查询。消费者实现小型执行桥接；核心和扩展均不依赖特定应用或计算运行时。
 
 ## 创建帧
@@ -66,22 +66,57 @@ WPF 附加与恢复遵循[帧契约](frame-pipeline.md#gpu-表面与显式像素
 
 ## 构建与部署
 
-核心 WPF 项目无需 CUDA 工具链；可选托管项目也不初始化 CUDA。CUDA 包将匹配的
-Fizzy.ImageViewer.Cuda.Native.dll 放在 runtimes/win-x64/native，不兼容 ABI 明确失败。
-native ABI 1 定义于 native/Cuda/imageviewer_cuda.h，只接受标准 CUDA 句柄及调用方存储。
+按宿主 CUDA 大版本选择一个完整包：`Fizzy.ImageViewer.Cuda11`、
+`Fizzy.ImageViewer.Cuda12` 或 `Fizzy.ImageViewer.Cuda13`。三个包使用相同的
+`Fizzy.ImageViewer.Cuda` 命名空间和程序集。不得直接或通过传递依赖混用多个变体，
+也不得与旧 `Fizzy.ImageViewer.Cuda` 包混用；构建会明确拒绝这些组合。
+已经发布的包保持不可变，新版本使用明确的大版本包名。
 
-native 构建需要 Windows x64、CUDA Toolkit 11.8 和 MSVC v142，默认 SM 7.5 及 PTX，可按部署 GPU 调整架构。
-无需外部运行时 SDK 或同级检出：
+| 包 | 构建 Toolkit | Host 编译器 | 默认架构 |
+| --- | --- | --- | --- |
+| Fizzy.ImageViewer.Cuda11 | 11.8.0 | MSVC 14.38（v143） | SM 7.5 |
+| Fizzy.ImageViewer.Cuda12 | 12.6.3 | MSVC 14.38（v143） | SM 7.5 |
+| Fizzy.ImageViewer.Cuda13 | 13.0.2 | MSVC 14.38（v143） | SM 7.5 |
+
+这些是构建基线，不代表所有小版本、GPU 和执行特性都已认证。Native ABI 1 使用标准
+CUDA 句柄及调用方持有的存储；宿主必须保证上下文、流、内存和完成协议有效。
+运行仍要求兼容的 NVIDIA 驱动、GPU 及 CUDA/D3D9Ex 适配器。CUDA 与 MSVC Runtime
+静态链接，因此包使用者无需安装本库的 Toolkit 或 Visual Studio。应用启动时不下载或编译依赖。
 
 ```powershell
-./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-dotnet build src/Fizzy.ImageViewer.Cuda -c Release
-dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -o artifacts/packages
+dotnet add package Fizzy.ImageViewer.Cuda11
 ```
 
-输出在 build/Release/native；缺少 native DLL 时 CUDA 打包失败。核心包不包含 CUDA 二进制或源码。
-执行需要兼容 NVIDIA 驱动，应用启动时不自动下载或编译依赖。
+普通托管开发不需要 CUDA 工具链。本机 native 开发只保留一个 Toolkit，默认 11.8。
+仅需安装 VS 2022 Build Tools、MSVC 14.38 和 Windows SDK 10.0.22621.0；
+不需要完整 IDE 或 v142。缺少组件时，在管理员 PowerShell 中运行安装选项：
 
-构建脚本仅编译 native 测试。单独获得硬件授权后执行
-`ctest --test-dir build/obj/cuda -C Release --output-on-failure -L hardware`，验证表面像素、六种格式、alpha、
-padding、gather 和 ROI 边界，不证明物理延迟、远程桌面、多适配器迁移或驱动重置恢复。
+```powershell
+./scripts/Setup-Cuda.ps1 -InstallBuildTools
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
+# 显式执行硬件测试，要求合适的本机 GPU 和桌面环境。
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -RunHardwareTests
+```
+
+Setup 将固定版本 CMake 3.31.8 和 Ninja 1.12.1 准备到 `artifacts/cuda/tools`，
+不修改 NVIDIA 驱动或持久环境变量。构建脚本在子进程中选择 MSVC 14.38，使用 Ninja，
+不依赖 CUDA Visual Studio 插件。通过 `-CudaRoot` 指定已有 Toolkit。CI 另使用
+`Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools`，只下载经过
+SHA-256 校验的 NVIDIA 编译组件。公共矩阵为 `eng/cuda-matrix.json`，发布要求精确匹配。
+
+Native 输出位于 `build/<Configuration>/native/cuda<major>/`，中间文件位于
+`build/obj/cuda/<major>/<Configuration>/`，native 测试位于
+`build/<Configuration>/tests/Cuda<major>/`。报告及临时包位于 `artifacts/cuda/<major>/`。
+Native DLL 附有独立构建记录，标识源码、编译器和哈希；打包拒绝缺失、陈旧、不匹配或被修改的输入：
+
+```powershell
+./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
+```
+
+GitHub Actions 编译三个变体及 native 测试，在 .NET 8/10 运行托管 CUDA 测试，并验证
+包内容和消费者发布输出。普通 Windows runner 不执行 GPU 测试；矩阵通过只证明构建与
+打包兼容，不证明 CUDA 12/13 的硬件或真实显示。显式本机硬件模式运行有超时限制的
+native 测试，覆盖六种格式、alpha、带 padding 的 stride、gather、ROI、统计、D3D9Ex
+表面读回和清理。表面读回不等于真实屏幕呈现验收；环境不满足时不得静默跳过已请求的硬件测试。
+发布及恢复见[发布指南](releasing.md#可选-cuda-包)。

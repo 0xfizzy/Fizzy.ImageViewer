@@ -25,4 +25,3 @@ if(FIZZY_IMAGEVIEWER_CUDA_TESTS)
   add_test(NAME cuda_images COMMAND Fizzy.ImageViewer.Cuda.Tests)
   set_tests_properties(cuda_images PROPERTIES LABELS hardware TIMEOUT 120)
 endif()
-

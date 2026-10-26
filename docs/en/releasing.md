@@ -88,15 +88,38 @@ Pages deployment identifies each build by its documentation archive commit, not 
 
 ## Optional CUDA package
 
-Publish `Fizzy.ImageViewer.Cuda` separately from the same source tag after the core package is available. On a Windows machine with the [CUDA build prerequisites](cuda.md#build-and-deployment), prepare from the tag's exported source, compile native tests without running hardware, run managed CUDA tests, and seal the original package:
+Publish the three complete packages `Fizzy.ImageViewer.Cuda11`, `.Cuda12` and `.Cuda13`
+from the same source tag after the matching core package is published. Configure NuGet
+Trusted Publishing for all three IDs using owner `0xfizzy`, repository
+`Fizzy.ImageViewer`, workflow `release.yml` and environment `github-pages`; retain
+`NUGET_USER`. No local native build or long-lived API key is required.
 
 ```powershell
-./scripts/New-CudaReleaseBundle.ps1 -Tag v1.3.0
-./scripts/Publish-CudaRelease.ps1 -Stage Archive -Tag v1.3.0 -Bundle artifacts/cuda-release-preparation/bundle
 gh workflow run release.yml --ref main -f tag=v1.3.0 -f component=cuda
 ```
 
-Review the preparation transcript, test results and bundle validation before Archive. The separate immutable `cuda-release-bundle.zip` asset contains the package, native hash, source identity and validation report. It does not replace the core bundle or fixed documentation. The workflow downloads and validates this asset, publishes through the same NuGet Trusted Publishing policy, and compares the downloaded NuGet payload. The policy must authorize the CUDA package ID. Resume with the same dispatch; never rebuild an already published version. Hardware, driver and physical display validation are separate from managed tests and native compilation.
+The workflow first verifies the core archive and published package. If
+`cuda-release-bundle.zip` exists, it validates and reuses that original archive. Otherwise,
+it rejects already-published or uncertain CUDA package versions without an archive,
+compiles the three fixed toolchains in isolated Windows jobs, and seals the three
+validated packages into one schema-2 bundle. All variants must pass before archiving.
+The immutable bundle includes native hashes, source identities and separate build,
+managed-test, package and hardware-execution results. Standard runners compile but do
+not execute hardware tests. These results do not certify CUDA 12/13 GPU execution.
+
+After uploading and downloading the archive to verify its contents, the workflow publishes
+11, 12 and 13 in order using OIDC, checking downloaded NuGet payloads. Publication is not
+atomic: resume the same dispatch after partial success; matching packages are verified,
+missing packages are published from the archive, and conflicts stop recovery. Never
+rebuild published versions, move tags or use `--skip-duplicate`. Existing schema-1 CUDA
+archives retain their original package identity and can still be validated and recovered.
+Core assets and fixed documentation are not replaced by CUDA publication.
+
+The `CUDA validation` PR check covers the three compilation/managed/package jobs. Add
+it to branch protection after its first successful run. Actions artifacts retain diagnostics
+for 30 days and are temporary transport; the original Release archive is permanent.
+Release workflow changes require offline recovery/failure gates and a rehearsal against
+an isolated repository and test package IDs, never production IDs.
 
 ## Documentation updates without publishing a package
 

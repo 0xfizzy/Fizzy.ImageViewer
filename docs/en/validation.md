@@ -17,6 +17,14 @@ dotnet test tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj -c Rele
 
 Use `./scripts/Test-Release.ps1` for the complete library/tool/sample/documentation/package gate. It does not publish. [Documentation maintenance](documentation.md) lists prerequisites and browser installation. Inspect the generated package README, XML and immutable version URL before release. Only release-mode validation at a clean matching tag can create a publishable bundle.
 
+## CUDA variants
+
+Use `scripts/Test-Cuda.ps1 -CudaMajor 11` for the local build, managed tests and package
+checks. Add `-RunHardwareTests` only for explicitly requested GPU validation. CI compiles
+11/12/13 independently and does not execute GPU tests. See [CUDA setup and coverage](cuda.md#build-and-deployment).
+Run `scripts/Test-CudaPackaging.ps1` and `pwsh -NoProfile -File scripts/Test-CudaReleaseRecovery.ps1`
+for packaging or publication changes; fixtures never publish real packages.
+
 ## Pixel queries
 
 Run pixel-source, frame metadata, scheduler, HUD and snapshot tests for format, provenance or query changes. Verify independent leases, local region coordinates, immutable results, unsupported capabilities, subscription/geometry invalidation, bounded admission, fairness, cancellation and original-operation plus cleanup failures. TIFF readback tests use a test-only LibTIFF dependency, not the writer itself as the oracle.

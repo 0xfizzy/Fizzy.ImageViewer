@@ -37,7 +37,9 @@ $vs = if (Test-Path $vswhere) { & $vswhere -products '*' -requires Microsoft.Vis
 if (!$vs) { throw 'MSVC 14.38 missing. Run Setup-Cuda.ps1 -InstallBuildTools from an elevated PowerShell.' }
 $compiler = Get-ChildItem "$vs/VC/Tools/MSVC" -Directory | Where-Object Name -like "$($matrix.msvc).*" | Sort-Object Name -Descending | Select-Object -First 1
 if (!$compiler) { throw 'MSVC 14.38 compiler directory missing.' }
-$cl = Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe'
+$cl = (Join-Path $compiler.FullName 'bin/Hostx64/x64/cl.exe').Replace('\','/')
+$CudaRoot = $CudaRoot.Replace('\','/')
+$repo = $repo.Replace('\','/')
 $build = "$repo/build/obj/cuda/$CudaMajor/$Configuration"
 $output = "$repo/build/$Configuration/native/cuda$CudaMajor"
 [void][IO.Directory]::CreateDirectory($build)
@@ -50,7 +52,7 @@ $commands = @(
     '@echo off',
     ('call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64 {1} -vcvars_ver={2}' -f $vs,$matrix.sdk,$matrix.msvc),
     'if errorlevel 1 exit /b %errorlevel%',
-    ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER={5}" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
+    ('"{0}" -S "{1}/native/Cuda" -B "{2}" -G Ninja "-DCMAKE_MAKE_PROGRAM={3}" "-DCMAKE_BUILD_TYPE={4}" "-DCMAKE_CXX_COMPILER={5}" "-DCMAKE_CUDA_HOST_COMPILER={5}" "-DCMAKE_CUDA_FLAGS=--use-local-env" "-DCMAKE_CUDA_COMPILER={6}/bin/nvcc.exe" "-DCUDAToolkit_ROOT={6}" "-DCMAKE_CUDA_ARCHITECTURES={7}" "-DFV_CUDA_MAJOR={8}" -DFIZZY_IMAGEVIEWER_CUDA_TESTS=ON' -f $cmake,$repo,$build,$ninja,$Configuration,$cl,$CudaRoot,$Architectures,$CudaMajor),
     'if errorlevel 1 exit /b %errorlevel%',
     ('"{0}" --build "{1}" --parallel 2' -f $cmake,$build),
     'exit /b %errorlevel%'
@@ -62,3 +64,4 @@ if ($sourceHash -cne (Get-CudaSourceIdentity)) { throw 'CUDA sources changed dur
 $info = @{schema=1;major=$CudaMajor;configuration=$Configuration;commit=(Get-Commit);dirty=$dirty;sourceHash=$sourceHash;toolkit=$variant.toolkit;nvcc=$nvcc;msvc=$compiler.Name;sdk=$matrix.sdk;cmake=$matrix.cmake.version;ninja=$matrix.ninja.version;architectures=$Architectures;nativeHash=(Get-Hash "$output/Fizzy.ImageViewer.Cuda.Native.dll")}
 Write-Json $info "$output/build.json"
 Write-Host "CUDA $CudaMajor native build complete: $output"
+

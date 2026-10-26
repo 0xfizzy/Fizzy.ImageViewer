@@ -1,29 +1,26 @@
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$Tag)
+param([Parameter(Mandatory)][string]$Tag, [string]$InputDirectory='artifacts/cuda-variants', [string]$Output='artifacts/cuda-release-bundle')
 $ErrorActionPreference = 'Stop'
-Import-Module "$PSScriptRoot/Release.Common.psm1" -Force
+Import-Module "$PSScriptRoot/Cuda.Common.psm1" -Force
+Import-Module "$PSScriptRoot/Cuda.Release.psm1" -Force
 if ($Tag -cnotmatch '^v(.+)$') { throw 'Expected a version tag.' }
-$version = $Matches[1]
+$version=$Matches[1]
 [void](Get-Version $version)
-$commit = & git rev-parse "$Tag^{commit}"
-if ($LASTEXITCODE) { throw 'Missing source tag.' }
-$work = Reset-Output (Join-Path (Get-Repo) 'artifacts/cuda-release-preparation')
-Invoke-Checked git @('archive','--format=zip',"--output=$work/source.zip",$Tag)
-$source = Join-Path $work 'source'
-Expand-SafeZip "$work/source.zip" $source
-$bundle = Join-Path $work 'bundle'
-[void][IO.Directory]::CreateDirectory($bundle)
-Push-Location $source
-try {
-    [xml]$project = Get-Content src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj
-    if ($project.Project.PropertyGroup.Version -cne $version) { throw 'CUDA project version differs from tag.' }
-    & ./scripts/Build-Cuda.ps1 -Configuration Release -Architectures '75'
-    Invoke-Checked dotnet @('restore','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','--locked-mode')
-    Invoke-Checked dotnet @('test','tests/Fizzy.ImageViewer.Tests/Fizzy.ImageViewer.Tests.csproj','-c','Release','--no-restore','--filter','FullyQualifiedName~Cuda','--logger','trx;LogFileName=cuda.trx','--results-directory',"$work/tests")
-    Invoke-Checked dotnet @('pack','src/Fizzy.ImageViewer.Cuda/Fizzy.ImageViewer.Cuda.csproj','-c','Release','--no-restore','-o',$bundle,'-p:ContinuousIntegrationBuild=true',"-p:RepositoryCommit=$commit","-p:SourceRevisionId=$commit")
-    $nativeHash = Get-Hash build/Release/native/Fizzy.ImageViewer.Cuda.Native.dll
-} finally { Pop-Location }
-Write-Json @{ tag = $Tag; commit = $commit; nativeHash = $nativeHash; cuda = '11.8'; toolset = 'v142'; architectures = '75'; managedCudaTests = 'passed'; nativeTests = 'compiled, not executed'; unverified = @('real GPU','physical display','mixed DPI') } "$bundle/validation.json"
-Write-Json @{ schema = 1; packageId = 'Fizzy.ImageViewer.Cuda'; version = $version; tag = $Tag; commit = $commit; nativeHash = $nativeHash; files = (Get-Tree $bundle) } "$bundle/manifest.json"
-& "$PSScriptRoot/Publish-CudaRelease.ps1" -Stage Validate -Tag $Tag -Bundle $bundle
-Write-Host "CUDA bundle ready: $bundle"
+$commit=& git -C (Get-Repo) rev-parse "refs/tags/$Tag^{commit}"
+if($LASTEXITCODE){throw 'Missing source tag.'}
+$bundle=Reset-Output $Output
+$packages=@()
+foreach($major in @(11,12,13)) {
+    $source=Join-Path $InputDirectory "cuda-$major"
+    if(!(Test-Path "$source/validation.json")){throw "Missing validated CUDA $major artifact."}
+    Copy-Item $source "$bundle/cuda-$major" -Recurse
+    $report=Get-Content "$source/validation.json" -Raw | ConvertFrom-Json
+    $build=Get-Content "$source/build.json" -Raw | ConvertFrom-Json
+    $variant=Get-CudaVariant $major
+    $matrix=Get-CudaMatrix
+    if($build.nvcc -cne $variant.nvcc -or $build.architectures -cne $variant.architectures -or $build.msvc -notlike "$($matrix.msvc).*" -or $build.sdk -cne $matrix.sdk){throw 'CUDA release toolchain differs from matrix.'}
+    $packages+=@{major=$major;packageId="Fizzy.ImageViewer.Cuda$major";path="cuda-$major/packages/Fizzy.ImageViewer.Cuda$major.$version.nupkg";nativeHash=$report.nativeHash}
+}
+Write-Json @{schema=2;tag=$Tag;version=$version;commit=$commit;packages=$packages;files=(Get-Tree $bundle)} "$bundle/manifest.json"
+$null=Assert-CudaBundle $bundle $Tag
+Write-Host "CUDA release bundle ready: $bundle"
