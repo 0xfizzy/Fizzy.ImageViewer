@@ -4,6 +4,8 @@
       href: index.md
     - name: 入门
       href: getting-started.md
+    - name: 升级现有应用
+      href: upgrading.md
     - name: 嵌入 WPF
       href: embedding.md
     - name: 应用端点

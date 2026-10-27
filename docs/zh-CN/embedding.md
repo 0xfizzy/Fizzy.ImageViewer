@@ -132,7 +132,7 @@ End 不增加删除、清空、保存或释放操作。
 
 ## 线程与临时卸载
 
-库提供的查看方法按需调度到控件 Dispatcher；绑定源、依赖属性、命令及继承的布局属性和视觉树操作仍遵循 WPF 线程规则。通知在所属 UI 线程执行；嵌入时测量事件 sender 为控件，独立窗口模式为 `Viewer`。不要同步等待依赖该 Dispatcher 的工作。
+库提供的查看方法按需调度到控件 Dispatcher；绑定源、依赖属性、命令及继承的布局属性和视觉树操作仍遵循 WPF 线程规则。通知在所属 UI 线程执行；查看器级 `MeasurementCompleted`、`MeasurementChanged`、`MeasurementRemoved` 事件在嵌入时的 sender 为控件，独立窗口模式为 `Viewer`；`IMeasurement` 上的事件以测量对象自身为 sender。不要同步等待依赖该 Dispatcher 的工作。
 
 嵌入控件共享应用 UI 线程。应用 UI 繁忙会延迟呈现和交互，同线程多个控件也共享这部分开销。后台帧准备和查询仍独立执行。独立窗口 `Viewer` 在自己的 STA 上创建同一个控件；两种封装均不额外增加帧复制或提交队列。
 

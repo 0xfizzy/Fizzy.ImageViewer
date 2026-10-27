@@ -58,6 +58,7 @@ Submission immediately transfers frame ownership, even on rejection or cancellat
 
 | I want to… | Read |
 | --- | --- |
+| Upgrade an existing application | [Upgrade guide](docs/en/upgrading.md) |
 | Embed in a WPF window | [Embedding](docs/en/embedding.md) |
 | Integrate through application interfaces | [Application endpoints](docs/en/application-integration.md) |
 | Run my first application | [Getting started](docs/en/getting-started.md) |

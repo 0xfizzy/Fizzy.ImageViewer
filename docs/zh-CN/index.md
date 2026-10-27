@@ -8,6 +8,7 @@
 
 | 需求 | 从这里开始 |
 | --- | --- |
+| 升级现有应用 | [升级指南](upgrading.md) |
 | 已有窗口内的图像控件 | [嵌入 WPF](embedding.md) |
 | 显示第一张图像 | [入门](getting-started.md) |
 | 集成相机或连续结果 | [实时流集成](live-streaming.md) |

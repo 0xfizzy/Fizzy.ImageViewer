@@ -10,12 +10,22 @@ For maintainers publishing v1.2.0 or later. Older releases are not backfilled. A
 2. Configure NuGet Trusted Publishing for owner `0xfizzy`, repository `Fizzy.ImageViewer`, workflow `release.yml`, and environment `github-pages` where the policy asks for it. Set repository variable `NUGET_USER`. No persistent API key is stored.
 3. Allow the publishing job `contents: write`, `pages: write`, `id-token: write`. PR validation and audit use read permissions. Protect main, release tags and `docs-archive`; allow the publishing bot to append archive commits, prohibit force pushes and deletion. Keep the environment's tag policy consistent with the workflow.
 4. Create the initially empty archive branch using `./scripts/Initialize-DocumentationArchive.ps1`. This explicitly pushes a new branch and must be run by an authorized maintainer. It refuses to replace an existing branch.
-5. Review the centralized `docs/site.json`. For an isolated rehearsal repository, change this configuration and workflow/trust settings there; never send rehearsal packages to the production NuGet ID. Run offline failure gates first.
-6. Have another maintainer follow this SOP in the isolated environment, including a deployment failure after package publication. Record commit, workflow run URLs, observed outcomes and unresolved manual checks in a retained release-readiness issue. A local fault fixture is not a real OIDC/Pages exercise.
+5. Review the repository, package identity and documentation address in `docs/site.json`. Run offline failure gates before publication.
 
 ## Prepare a release
 
 Update the project version, release notes, affected English XML/guides, Chinese translations and examples in one reviewed PR. Versions are SemVer without build metadata; the project version is `1.3.0`, its tag and documentation directory are `v1.3.0`. A prerelease such as `1.3.0-rc.1` does not replace latest stable.
+
+Keep the changelog marked `unreleased` during preparation. In the final reviewed release
+commit, replace that marker with the intended release date; this records release intent,
+not successful publication. Version 1.3.0 includes breaking changes: retain the migration
+warning and keep the bilingual [upgrade guide](upgrading.md) aligned with the changelog.
+
+Before pushing each new tag, verify that the `github-pages` environment permits that
+exact tag or a matching tag pattern; permission for the previous tag is insufficient.
+Recheck main/tag/archive protection, including append access for the publishing bot and
+protection against archive force pushes and deletion. Local validation does not configure
+or verify these services; publication must verify the actual package and deployed content.
 
 ```powershell
 npm ci
@@ -47,6 +57,15 @@ Do not tag until HEAD is the reviewed commit and the checkout is clean. The work
 5. **Completion**: record the successful archive commit. Root/latest select the greatest completed stable SemVer in the same deployment. Publish the GitHub Release only after success.
 
 The final workflow step must print `PASS` and the fixed documentation URL. Inspect the GitHub Release (not draft), NuGet version, language navigation, API/search and version selector. Preserve original bundle assets permanently.
+
+The completion stage generates a short Release body from the verified manifest and site
+configuration: an upgrade warning, the fixed tag's `CHANGELOG.md`, and the versioned
+documentation URL. From the 1.3.0 release line (including prereleases), it also links the
+English and Chinese upgrade guides; older releases omit those unavailable pages. The
+changelog summarizes changes and the guides contain migration steps. The script passes
+a UTF-8 file under `artifacts/release-notes/` to `gh --notes-file`; manually edited draft
+notes are replaced at completion. Retrying an already public Release does not rewrite
+its body. Review the generated links as part of release validation.
 
 Archive and Pages writes share a concurrency group with development deployment. GitHub may replace pending jobs; a cancelled job is never proof of release completion. The daily/manual audit reports retained tags with missing, draft or inconsistent releases.
 
@@ -118,8 +137,8 @@ Core assets and fixed documentation are not replaced by CUDA publication.
 The `CUDA validation` PR check covers the three compilation/managed/package jobs. Add
 it to branch protection after its first successful run. Actions artifacts retain diagnostics
 for 30 days and are temporary transport; the original Release archive is permanent.
-Release workflow changes require offline recovery/failure gates and a rehearsal against
-an isolated repository and test package IDs, never production IDs.
+Release workflow changes require offline recovery/failure gates. Publication must verify
+the original archived packages against NuGet and report incomplete publication as a failure.
 
 ## Documentation updates without publishing a package
 

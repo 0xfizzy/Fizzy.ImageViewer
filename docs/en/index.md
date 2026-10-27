@@ -8,6 +8,7 @@ Choose a component guide to integrate image viewing, drawing, measurements, and 
 
 | Need | Start here |
 | --- | --- |
+| Upgrade an existing application | [Upgrade guide](upgrading.md) |
 | A control inside an existing window | [Embed in WPF](embedding.md) |
 | First image window | [Getting started](getting-started.md) |
 | Camera or continuous results | [Live streaming](live-streaming.md) |

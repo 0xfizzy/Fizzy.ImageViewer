@@ -1,29 +1,35 @@
 [CmdletBinding()]
-param()
+param([ValidateSet('1.2.0','1.3.0')][string]$Version = '1.2.0')
 # Run in a separate pwsh process: all network/CLI boundaries are replaced by in-process fakes.
 $ErrorActionPreference = 'Stop'
 Import-Module "$PSScriptRoot/Release.Common.psm1" -Force
-$work = Reset-Output (Join-Path (Get-Repo) 'artifacts/recovery-fixture')
+$work = Reset-Output (Join-Path (Get-Repo) "artifacts/recovery-fixture/$Version")
 $bundle = Join-Path $work 'original'
 $site = Join-Path $work 'site'
 [void][IO.Directory]::CreateDirectory($bundle)
 [void][IO.Directory]::CreateDirectory($site)
 $commit = 'a' * 40
-Write-Json @{ version = '1.2.0'; directory = 'v1.2.0'; channel = 'Release'; commit = $commit; basePath = (Get-SiteConfig).basePath } "$site/identity.json"
+Write-Json @{ version = $Version; directory = "v$Version"; channel = 'Release'; commit = $commit; basePath = (Get-SiteConfig).basePath } "$site/identity.json"
 Set-Content "$site/index.html" '<html>immutable test documentation</html>'
+if ($Version -eq '1.3.0') {
+    foreach ($language in @('en','zh-CN')) {
+        [void][IO.Directory]::CreateDirectory("$site/docs/$language")
+        Set-Content "$site/docs/$language/upgrading.html" '<html>migration fixture</html>'
+    }
+}
 $payload = Join-Path $work 'payload'
 [void][IO.Directory]::CreateDirectory($payload)
 Set-Content "$payload/library.dll" 'fixture package bytes'
-[IO.Compression.ZipFile]::CreateFromDirectory($payload, "$bundle/Fizzy.ImageViewer.1.2.0.nupkg")
+[IO.Compression.ZipFile]::CreateFromDirectory($payload, "$bundle/Fizzy.ImageViewer.$Version.nupkg")
 [IO.Compression.ZipFile]::CreateFromDirectory($site, "$bundle/documentation.zip")
-Write-Json @{ version = '1.2.0'; commit = $commit; passed = $true; release = $true; siteFiles = (Get-Tree $site) } "$bundle/validation.json"
-Write-Json @{ schema = 1; version = '1.2.0'; tag = 'v1.2.0'; commit = $commit; files = (Get-Tree $bundle) } "$bundle/manifest.json"
-$global:ReleaseFixture = @{ work = $work; commit = $commit; record = $null; deployed = $false; pushes = 0; site = $site }
+Write-Json @{ version = $Version; commit = $commit; passed = $true; release = $true; siteFiles = (Get-Tree $site) } "$bundle/validation.json"
+Write-Json @{ schema = 1; version = $Version; tag = "v$Version"; commit = $commit; files = (Get-Tree $bundle) } "$bundle/manifest.json"
+$global:ReleaseFixture = @{ work = $work; commit = $commit; record = $null; deployed = $false; pushes = 0; edits = 0; version = $Version; site = $site }
 function global:gh {
     $arguments = @($args); $global:LASTEXITCODE = 0
     if ($arguments[0] -eq 'api') {
         if (($arguments -join ' ') -match '/commits/') { $global:ReleaseFixture.commit; return }
-        if (($arguments -join ' ') -match '/tags\?') { '[[{"name":"v1.1.2"},{"name":"v1.2.0"}]]'; return }
+        if (($arguments -join ' ') -match '/tags\?') { '[[{"name":"v1.1.2"},{"name":"v' + $global:ReleaseFixture.version + '"}]]'; return }
         if (($arguments -join ' ') -match '/releases\?') {
             if ($null -eq $global:ReleaseFixture.record) { '[[]]' }
             else { '[[' + ($global:ReleaseFixture.record | ConvertTo-Json -Depth 10 -Compress) + ']]' }
@@ -41,7 +47,14 @@ function global:gh {
                 $dest = $arguments[[Array]::IndexOf($arguments, '--dir') + 1]
                 Copy-Item "$($global:ReleaseFixture.work)/remote-bundle.zip" (Join-Path $dest 'release-bundle.zip'); return
             }
-            'edit' { $global:ReleaseFixture.record.draft = $false; return }
+            'edit' {
+                $index = [Array]::IndexOf($arguments, '--notes-file')
+                if ($index -lt 0 -or $arguments -contains '--notes') { throw 'Completion must use --notes-file.' }
+                $notesPath = Assert-ChildPath (Join-Path (Get-Repo) 'artifacts') $arguments[$index + 1]
+                $global:ReleaseFixture.record.body = Get-Content -LiteralPath $notesPath -Raw
+                $global:ReleaseFixture.edits++
+                $global:ReleaseFixture.record.draft = $false; return
+            }
         }
     }
     throw "Unexpected gh operation in fixture: $($arguments -join ' ')"
@@ -105,7 +118,7 @@ try {
     }
     if (!$auditFailed) { throw 'Audit did not detect the incomplete release.' }
     Remove-Item -LiteralPath (Assert-ChildPath $work $bundle) -Recurse -Force
-    & "$PSScriptRoot/Resume-Release.ps1" -Tag v1.2.0 -Output "$work/restored"
+    & "$PSScriptRoot/Resume-Release.ps1" -Tag "v$Version" -Output "$work/restored"
     $restored = Join-Path $work 'restored'
     & "$PSScriptRoot/Publish-Release.ps1" -Stage NuGet -Bundle $restored
     if ($global:ReleaseFixture.pushes -ne 1) { throw 'Recovery republished the package.' }
@@ -113,9 +126,26 @@ try {
     & "$PSScriptRoot/Merge-DocumentationArchive.ps1" -Archive $archive -Site (Join-Path (Get-Repo) 'artifacts/restored-site')
     $global:ReleaseFixture.deployed = $true
     & "$PSScriptRoot/Test-PublishedRelease.ps1" -Bundle $restored
-    & "$PSScriptRoot/Merge-DocumentationArchive.ps1" -Archive $archive -Complete -Version 1.2.0
+    & "$PSScriptRoot/Merge-DocumentationArchive.ps1" -Archive $archive -Complete -Version $Version
     & "$PSScriptRoot/Publish-Release.ps1" -Stage Complete -Bundle $restored
+    $body = $global:ReleaseFixture.record.body
+    $config = Get-SiteConfig
+    $documentation = "$($config.origin)$($config.basePath)v$Version/"
+    foreach ($required in @('**Before upgrading:**', 'breaking changes', 'rebuild',
+        "https://github.com/$($config.repository)/blob/v$Version/CHANGELOG.md", $documentation)) {
+        if (!$body.Contains($required)) { throw "Release body missing: $required" }
+    }
+    if ($body -match '/blob/main/|/latest/|/dev/' -or ($body -split "`n").Count -lt 6) { throw 'Release body must contain fixed links and upgrade guidance.' }
+    if ($Version -eq '1.3.0') {
+        foreach ($language in @('en','zh-CN')) {
+            if (!$body.Contains("${documentation}docs/$language/upgrading.html")) { throw "Missing $language upgrade guide." }
+        }
+    } elseif ($body.Contains('upgrading.html')) { throw 'Historical release linked an unavailable upgrade guide.' }
+    # A later user edit to a public Release must also survive recovery.
+    $global:ReleaseFixture.record.body += "`nMaintainer annotation."
+    $publishedBody = $global:ReleaseFixture.record.body
     & "$PSScriptRoot/Publish-Release.ps1" -Stage Complete -Bundle $restored
+    if ($global:ReleaseFixture.edits -ne 1 -or $global:ReleaseFixture.record.body -cne $publishedBody) { throw 'Repeat completion rewrote a public Release.' }
     if ($global:ReleaseFixture.record.draft) { throw 'Recovery did not complete.' }
     & "$PSScriptRoot/Test-ReleaseStatus.ps1"
     $savedCommit = $global:ReleaseFixture.commit
@@ -127,7 +157,7 @@ try {
     }
     $global:ReleaseFixture.commit = $savedCommit
     if (!$conflict) { throw 'Changed tag was accepted.' }
-    Write-Json @{ passed = $true; simulation = $true; scenarios = @('NuGet accepted but response lost','Pages failed after package publication','original transient bundle deleted','restore without build','no duplicate package push','repeat completion') } "$work/result.json"
+    Write-Json @{ version = $Version; passed = $true; simulation = $true; scenarios = @('NuGet accepted but response lost','Pages failed after package publication','original transient bundle deleted','restore without build','no duplicate package push','versioned release notes','repeat completion preserves public body') } "$work/result.json"
     Write-Host 'PASS: offline end-to-end recovery; no real service or package was changed.'
 } finally {
     $env:NUGET_API_KEY = $previousKey

@@ -4,6 +4,8 @@
       href: index.md
     - name: Getting started
       href: getting-started.md
+    - name: Upgrade an existing application
+      href: upgrading.md
     - name: Embed in WPF
       href: embedding.md
     - name: Application endpoints

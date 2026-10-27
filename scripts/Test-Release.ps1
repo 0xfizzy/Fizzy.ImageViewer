@@ -29,7 +29,9 @@ try {
         & "$PSScriptRoot/Test-CudaPackaging.ps1"
         Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-CudaReleaseRecovery.ps1")
         & "$PSScriptRoot/Test-DocumentationUpdate.ps1"
-        Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-ReleaseRecovery.ps1")
+        foreach ($recoveryVersion in @('1.2.0','1.3.0')) {
+            Invoke-Checked pwsh @('-NoProfile','-File',"$PSScriptRoot/Test-ReleaseRecovery.ps1",'-Version',$recoveryVersion)
+        }
         $config = Get-SiteConfig
         $readme = (Get-Content docs/nuget-readme.md -Raw).Replace("$($config.origin)$($config.basePath)", "$($config.origin)$($config.basePath)v$Version/").Replace('/blob/main/LICENSE', "/blob/$(Get-Commit)/LICENSE")
         $readmePath = Join-Path $output 'README.md'

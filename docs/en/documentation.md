@@ -43,11 +43,12 @@ After reviewing the final source against its translation:
 ./scripts/Test-Samples.ps1
 ./scripts/Test-DocumentationGate.ps1
 ./scripts/Test-ReleaseGate.ps1
-pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.2.0
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.3.0
 ./scripts/Test-Workflows.ps1
 ```
 
-Sample builds do not open windows. Run the [examples](getting-started.md) manually for interaction checks. Documentation fixtures reject missing XML, stale/missing translations and broken links; release fixtures check same-version replacement, stale candidates, stable ordering, payload comparison and restore. Recovery runs the actual orchestration against fake GitHub/NuGet/Pages boundaries in a separate process, including a lost NuGet response and failed Pages deployment. Its report is `artifacts/recovery-fixture/result.json`; this is explicitly a simulation. Workflow checks use checksum-pinned actionlint 1.7.7. Tests use disposable `artifacts/` directories and do not publish real versions.
+Sample builds do not open windows. Run the [examples](getting-started.md) manually for interaction checks. Documentation fixtures reject missing XML, stale/missing translations and broken links; release fixtures check same-version replacement, stale candidates, stable ordering, payload comparison and restore. Recovery runs the actual orchestration against fake GitHub/NuGet/Pages boundaries in a separate process, including a lost NuGet response and failed Pages deployment. Its report is `artifacts/recovery-fixture/{version}/result.json`; this is explicitly a simulation. Workflow checks use checksum-pinned actionlint 1.7.7. Tests use disposable `artifacts/` directories and do not publish real versions.
 
 Dependency changes require an intentional unlocked restore/npm install, review of lockfile diffs, and a subsequent locked gate. Never regenerate locks during release. Generated HTML, API metadata and local reports are not source-controlled.
 
