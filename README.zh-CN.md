@@ -58,6 +58,7 @@ await closed.Task;
 
 | 需求 | 文档 |
 | --- | --- |
+| 升级现有应用 | [升级指南](docs/zh-CN/upgrading.md) |
 | 嵌入 WPF 窗口 | [嵌入指南](docs/zh-CN/embedding.md) |
 | 通过应用接口集成 | [应用端点](docs/zh-CN/application-integration.md) |
 | 运行第一个程序 | [入门](docs/zh-CN/getting-started.md) |

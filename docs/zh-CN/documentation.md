@@ -43,11 +43,12 @@ node scripts/Test-Browser.mjs
 ./scripts/Test-Samples.ps1
 ./scripts/Test-DocumentationGate.ps1
 ./scripts/Test-ReleaseGate.ps1
-pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.2.0
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.3.0
 ./scripts/Test-Workflows.ps1
 ```
 
-示例构建不打开窗口；交互检查手工运行[示例](getting-started.md)。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证同版本覆盖、过期候选、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 `artifacts/recovery-fixture/result.json` 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 `artifacts/`，不发布真实版本。
+示例构建不打开窗口；交互检查手工运行[示例](getting-started.md)。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证同版本覆盖、过期候选、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 `artifacts/recovery-fixture/{version}/result.json` 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 `artifacts/`，不发布真实版本。
 
 依赖变更应主动进行非锁定还原或 npm install，审查锁文件差异，再执行锁定验证；发版时禁止重新生成锁文件。生成 HTML、API 元数据和本地报告不提交源码仓库。
 

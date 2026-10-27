@@ -54,7 +54,26 @@ if ($Stage -eq 'Archive') {
     $record = Get-ReleaseRecord $manifest.tag
     if ($null -eq $record) { throw 'Archived GitHub Release disappeared.' }
     if ($record.draft) {
-        $arguments = @('release','edit',$manifest.tag,'--repo',$config.repository,'--draft=false','--notes',"Package and versioned documentation verified: $($config.origin)$($config.basePath)$($manifest.tag)/")
+        $documentation = "$($config.origin)$($config.basePath)$($manifest.tag)/"
+        $changelog = "https://github.com/$($config.repository)/blob/$($manifest.tag)/CHANGELOG.md"
+        $notes = @(
+            "# $($manifest.tag)",
+            '',
+            '**Before upgrading:** review the breaking changes and migration requirements in the release notes, then update and rebuild affected consumers.',
+            '',
+            "- [Release notes and changes]($changelog)",
+            "- [Versioned documentation]($documentation)"
+        )
+        $version = Get-Version $manifest.version
+        # The guide first ships with the 1.3.0 release line, including its prereleases.
+        if ([version]::new($version.Major, $version.Minor, $version.Patch) -ge [version]'1.3.0') {
+            $notes += "- Upgrade guide: [English](${documentation}docs/en/upgrading.html) | [简体中文](${documentation}docs/zh-CN/upgrading.html)"
+        }
+        $notesDirectory = Join-Path (Get-Repo) 'artifacts/release-notes'
+        [void][IO.Directory]::CreateDirectory($notesDirectory)
+        $notesPath = Join-Path $notesDirectory "$($manifest.tag).md"
+        $notes -join "`n" | Set-Content -LiteralPath $notesPath -Encoding utf8NoBOM
+        $arguments = @('release','edit',$manifest.tag,'--repo',$config.repository,'--draft=false','--notes-file',$notesPath)
         if ($manifest.version.Contains('-')) { $arguments += '--prerelease' }
         Invoke-Checked gh $arguments
     }

@@ -74,7 +74,7 @@ The person performing acceptance runs the relevant [examples](getting-started.md
 
 Before launching an example, choose its normal close action, a finite exit wait and cleanup on failure. Record each process started for the check, including its PID and start time, and clean up only those instances. Forced termination is cleanup evidence only; it does not establish successful normal closure or resource draining. Record product assertion failures, environment/tool failures and checks not performed separately. A tool timeout alone does not establish a product defect; leave the cause unresolved when the evidence is insufficient.
 
-For documentation changes, use the change-specific gates in [documentation maintenance](documentation.md). Publication and recovery additionally require the [release SOP](releasing.md), fault gates and an isolated service rehearsal. Local tests never authorize a production release.
+For documentation changes, use the change-specific gates in [documentation maintenance](documentation.md). Publication and recovery additionally require the [release SOP](releasing.md), fault gates and verification of published packages and documentation. Local tests never authorize a production release.
 
 ## Drawing benchmark scope
 

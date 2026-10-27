@@ -10,12 +10,18 @@
 2. NuGet Trusted Publishing 配置 owner `0xfizzy`、仓库 `Fizzy.ImageViewer`、工作流 `release.yml`；策略需要环境时设为 `github-pages`。仓库变量 `NUGET_USER` 保存用户名，不保存长期 API key。
 3. 发布任务需要 `contents: write`、`pages: write`、`id-token: write`；PR 和巡检只读。保护 main、发布 tag 和 `docs-archive`，允许发布机器人追加归档提交，禁止强推和删除。环境 tag 策略必须匹配工作流。
 4. 获得授权的维护者执行 `./scripts/Initialize-DocumentationArchive.ps1` 创建空归档分支。此命令会推送新分支；已有分支时拒绝覆盖。
-5. 核对 `docs/site.json`。隔离演练仓库需修改其配置、工作流和信任设置；不得把演练包发往正式 NuGet ID。先运行离线故障门禁。
-6. 另一位维护者仅按本 SOP 在隔离环境完成正常发布及包成功后部署失败的恢复。在长期保留的发布就绪 issue 中记录 commit、workflow 链接、结果和未完成的人工检查。本地故障夹具不等于真实 OIDC/Pages 演练。
+5. 核对 `docs/site.json` 中的仓库、包身份和文档地址。发布前运行离线故障门禁。
 
 ## 准备发布
 
 在同一审阅 PR 更新项目版本、发布说明、受影响 XML/英文指南、中文及示例。版本使用不含构建元数据的 SemVer：项目 `1.3.0` 对应 tag 和目录 `v1.3.0`；`1.3.0-rc.1` 不替换稳定版入口。
+
+准备期间保持 changelog 的 `unreleased` 标记。在最终审阅的发布提交中，将其替换为计划发布日期；这只记录发布意图，不代表发布已经成功。
+1.3.0 包含破坏性变化，保留迁移提示，并保持双语[升级指南](upgrading.md)与 changelog 一致。
+
+每次推送新 tag 前，确认 `github-pages` 环境允许该确切 tag 或匹配它的 tag 模式；仅允许旧 tag 并不足够。
+重新核对 main、tag 和归档保护，包括发布机器人追加权限，以及防止归档强推和删除的规则。
+本地验证不会配置或验证这些服务；发布时必须核验实际包与已部署内容。
 
 ```powershell
 npm ci
@@ -49,6 +55,11 @@ git push origin v1.3.0
 最后一步必须显示 `PASS` 和固定文档地址。核查 Release 已非草稿、NuGet 版本、双语导航、API/搜索和版本选择。原始 bundle 永久保留。
 
 归档写入及 Pages 部署与 dev 共用并发组。GitHub 可能替换等待任务；取消不代表完成。每日/手动巡检识别缺失、草稿或身份不一致的发布。
+
+完成阶段根据已验证 manifest 和站点配置生成简短 Release 正文：升级提示、固定 tag 的 `CHANGELOG.md` 和版本化文档地址。
+从 1.3.0 版本线（含预发布）开始，还提供中英文升级指南入口；旧版本不添加不存在的页面。
+changelog 概述变化，指南提供迁移步骤。脚本将 `artifacts/release-notes/` 下的 UTF-8 文件传给 `gh --notes-file`，完成时会替换手工编辑的草稿正文。
+重试已公开 Release 不重写正文。发布验证时须审阅生成的链接。
 
 ## 故障恢复
 
@@ -110,7 +121,7 @@ gh workflow run release.yml --ref main -f tag=v1.3.0 -f component=cuda
 
 PR 检查 `CUDA validation` 覆盖三版本编译、托管测试和打包，首次成功后加入分支保护。
 Actions artifacts 保留诊断 30 天，仅作临时传输；原始 Release 归档永久保留。
-修改发布工作流须通过离线恢复/失败门禁，并在隔离仓库和测试包 ID 上演练，禁止使用生产 ID。
+修改发布工作流须通过离线恢复/失败门禁。发布时必须将 NuGet 包与原始归档包核对，未完成的发布须报告为失败。
 
 ## 不发包的文档更新
 

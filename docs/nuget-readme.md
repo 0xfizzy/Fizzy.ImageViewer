@@ -46,8 +46,8 @@ Create on the host STA and call the same frame, drawing and measurement APIs.
 Unloading ends interaction but preserves content for reattachment on the same dispatcher.
 The owner must await `ImageViewer.DisposeAsync()` before stopping the host dispatcher;
 disposal never closes the host window. See the
-[embedding guide and complete shutdown example](https://0xfizzy.github.io/Fizzy.ImageViewer/en/embedding.html)
-([中文](https://0xfizzy.github.io/Fizzy.ImageViewer/zh-CN/embedding.html)).
+[embedding guide and complete shutdown example](https://0xfizzy.github.io/Fizzy.ImageViewer/docs/en/embedding.html)
+([中文](https://0xfizzy.github.io/Fizzy.ImageViewer/docs/zh-CN/embedding.html)).
 
 ## Features
 
@@ -57,6 +57,11 @@ disposal never closes the host window. See the
 - Original-pixel queries, snapshots, and extensible menus
 
 ## Documentation
+
+**Upgrading to 1.3.0 requires migration and recompilation.** Review the
+[upgrade guide](https://0xfizzy.github.io/Fizzy.ImageViewer/docs/en/upgrading.html)
+([中文](https://0xfizzy.github.io/Fizzy.ImageViewer/docs/zh-CN/upgrading.html))
+for breaking API, frame reception and optional CUDA package changes.
 
 [Guides and API reference](https://0xfizzy.github.io/Fizzy.ImageViewer/)
 

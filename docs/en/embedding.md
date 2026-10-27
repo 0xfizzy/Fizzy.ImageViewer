@@ -161,7 +161,7 @@ replacement session. End does not add deletion, clearing, saving or disposal ope
 
 ## Threads and temporary unloading
 
-Library viewing methods marshal to the control's dispatcher as needed. Binding sources, dependency properties, commands and inherited WPF members such as layout and visual-tree operations retain WPF thread affinity. Notifications run on the owning UI thread; measurement event senders are the control for embedded use and the `Viewer` for standalone use. Do not synchronously wait for work that needs that dispatcher.
+Library viewing methods marshal to the control's dispatcher as needed. Binding sources, dependency properties, commands and inherited WPF members such as layout and visual-tree operations retain WPF thread affinity. Notifications run on the owning UI thread; the sender of viewer-level `MeasurementCompleted`, `MeasurementChanged` and `MeasurementRemoved` events is the control for embedded use and the `Viewer` for standalone use. Events on `IMeasurement` use the measurement itself as sender. Do not synchronously wait for work that needs that dispatcher.
 
 An embedded control shares the application's UI thread. Busy application UI work can delay presentation and interaction, and multiple embedded controls share this cost. Background frame preparation and query work remain separate. Standalone `Viewer` creates the same control on its independent STA. Neither wrapper adds a frame copy or submission queue.
 
