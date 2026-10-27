@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Upgrade an existing application | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Upgrade an existing application | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="upgrade-an-existing-application">Upgrade an existing application</h1>
+
+<p><a href="../zh-CN/upgrading.html">简体中文</a></p>
+<h2 id="from-120-to-130">From 1.2.0 to 1.3.0</h2>
+<p><strong>1.3.0 contains breaking API and behavioral changes.</strong> Update and rebuild consumers;
+binaries compiled against 1.2.0 are not guaranteed to work with the new assemblies.
+Use the steps below for existing applications. New applications can start with
+<a href="getting-started.html">getting started</a> or <a href="embedding.html">embedding</a>.</p>
+<h3 id="1-update-package-references">1. Update package references</h3>
+<p>Once 1.3.0 is published, update the core package to <code>Fizzy.ImageViewer</code> 1.3.0 in your
+project or central package version file and restore dependencies. The package includes
+<code>net8.0-windows</code> and <code>net10.0-windows</code>; keep <code>UseWPF</code> enabled. Upgrading the library
+does not require migrating a .NET 8 application to .NET 10.</p>
+<p>If you use the optional CUDA extension, update its references as described in step 5
+before restoring. Core and CUDA packages are published separately; a core release
+does not mean the matching CUDA packages are already available.</p>
+<h3 id="2-update-interfaces-events-and-display-settings">2. Update interfaces, events and display settings</h3>
+<p><code>IViewer</code> no longer includes <code>IViewerWindow</code>. Keep <code>Show</code>, <code>Hide</code>, <code>Minimize</code>, window
+bounds, title and <code>Closed</code> on <code>Viewer</code> / <code>IViewerWindow</code>. Borrow <code>IViewerCapabilities</code>
+for shared functionality; retain <code>IViewer</code> where the owner needs <code>DisposeAsync</code>.
+Only standalone <code>Viewer</code> implements the window interface.</p>
+<p><code>FrameCommitted</code>, <code>IMeasurement.GeometryChanged</code> and <code>IMeasurement.QueryResultChanged</code>
+now use <code>EventHandler&lt;T&gt;</code>:</p>
+<pre><code class="lang-csharp">// 1.2.0
+viewer.FrameCommitted += frame =&gt; Console.WriteLine(frame.FrameId);
+// 1.3.0
+viewer.FrameCommitted += (sender, frame) =&gt; Console.WriteLine(frame.FrameId);
+</code></pre>
+<p>The sender is the public event owner: <code>Viewer</code>, <code>ImageViewerControl</code> or the measurement.
+Adding library event handlers after termination throws; removing handlers remains safe.
+Subscribe before submitting frames. See <a href="public-api.html#event-subscriptions">event contracts</a>.</p>
+<p>Display-range updates accept configuration without waiting for display:</p>
+<pre><code class="lang-csharp">// 1.2.0
+await viewer.SetDisplayRangeAsync(range);
+// 1.3.0
+viewer.SetDisplayRange(range);
+</code></pre>
+<p>Observe subsequent rendering errors through <code>DisplayFailed</code>. Snapshots use the last
+committed mapping, which can differ from the latest requested range.</p>
+<h3 id="3-separate-reception-from-display">3. Separate reception from display</h3>
+<p><code>SubmitFrameAsync</code> now completes reception only. Replace switches using <code>Committed</code>,
+<code>Superseded</code> or <code>Failed</code> with <code>Accepted</code>, <code>Cancelled</code>, <code>Frozen</code> and <code>Closed</code>.
+Check <code>result.Error</code> for reception-owned cleanup failures before handling its status:</p>
+<pre><code class="lang-csharp">// 1.2.0: completion could report a committed frame.
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Status == FrameSubmitStatus.Committed)
+    Console.WriteLine(&quot;Committed&quot;);
+</code></pre>
+<pre><code class="lang-csharp">// 1.3.0: completion reports reception, not display.
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
+if (result.Status == FrameSubmitStatus.Accepted)
+    Console.WriteLine(&quot;Accepted; display may follow&quot;);
+// Handle Cancelled, Frozen and Closed according to the application's policy.
+</code></pre>
+<p>Enum numeric values changed; do not interpret persisted numeric statuses using the
+new meanings. <strong>Accepted does not mean displayed and never makes transferred storage
+reusable.</strong> Accepted frames may be replaced without a display notification. Cancellation
+is checked only before acceptance. Hidden, unloaded or minimized hosts retain the newest
+waiting frame and resume display without requiring another submission.</p>
+<p>Observe UI commits with <code>FrameCommitted</code> or the submission's <code>OnCommitted</code> callback,
+and rendering failures with <code>DisplayFailed</code>. Do not wait unconditionally for every
+accepted frame to commit. A commit is not proof of physical monitor presentation.</p>
+<h3 id="4-preserve-ownership-and-await-shutdown">4. Preserve ownership and await shutdown</h3>
+<p>Submission transfers frame ownership immediately, including rejection and cancellation.
+Recycle owned buffers only from their final-release callback, or use <code>ImageFrame.Copy</code>
+for borrowed/reusable producer buffers. Later cleanup failures for accepted storage
+are reported by <code>DisposeAsync</code>, not a newer receipt.</p>
+<p><code>OnCommitted</code> borrows a lease until callback return. Acquire an independent lease for
+later work and dispose it when finished. Independent external leases can outlive the
+viewer; the viewer neither waits for them nor reclaims their storage early.</p>
+<p><code>WhenStopping</code> signals that admission has closed, not that work has drained. Owners
+still await <code>DisposeAsync</code> to observe completed cleanup or its shared failure result.
+Do not synchronously block the UI thread waiting for disposal.</p>
+<p>For embedded use, create <code>ImageViewerControl</code> on the host STA and await disposal before
+its Dispatcher stops. <code>Unloaded</code> ends interaction but preserves content for reattachment
+on the same Dispatcher; it is not disposal. Final disposal never closes the host window
+or Dispatcher. Create a new instance after final disposal. See the complete
+<a href="embedding.html">embedded shutdown example</a> and <a href="frame-pipeline.html">frame ownership</a>.</p>
+<h3 id="5-migrate-the-optional-cuda-package">5. Migrate the optional CUDA package</h3>
+<p>Remove the former <code>Fizzy.ImageViewer.Cuda</code> package reference. Choose exactly one of
+<code>Fizzy.ImageViewer.Cuda11</code>, <code>Fizzy.ImageViewer.Cuda12</code> or <code>Fizzy.ImageViewer.Cuda13</code>,
+matching the host's CUDA major version, and use version 1.3.0 with core 1.3.0 once
+that variant is published. Update central versions and direct/transitive consumers
+together; do not combine variants or keep the former package alongside one.</p>
+<p>All variants retain the <code>Fizzy.ImageViewer.Cuda</code> namespace and assembly name. Each is
+a complete package with its Windows x64 native component; no namespace rename is needed.
+See <a href="cuda.html#build-and-deployment">CUDA setup and coverage</a> for toolchain, driver and
+architecture requirements. Successful core publication alone does not establish CUDA
+package availability or GPU execution coverage.</p>
+<h3 id="6-rebuild-and-verify-the-affected-integration">6. Rebuild and verify the affected integration</h3>
+<p>Rebuild all consumers and adapters against the new references. Check status handling,
+event callbacks, buffer recycling and shutdown against the steps above. Run the existing
+integration tests covering the paths your application uses, including hidden/resumed
+display and embedded shutdown when applicable. Compilation alone cannot check the changed
+meaning of submission completion. For repository commands and validation boundaries,
+see <a href="validation.html">validation</a>.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

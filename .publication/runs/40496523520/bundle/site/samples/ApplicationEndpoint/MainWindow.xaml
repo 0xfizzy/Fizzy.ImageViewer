@@ -1,0 +1,15 @@
+<Window x:Class="ApplicationEndpoint.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewer="clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer"
+        Title="Application endpoint ImageViewer" Width="960" Height="680"
+        Loaded="OnLoaded" Closing="OnClosing">
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="Fit image" Command="{Binding FitCommand}" Padding="10,5" Margin="0,0,8,0" />
+            <Button Content="Measure length" Command="{Binding MeasureCommand}" Padding="10,5" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Margin="0,8,0,0" TextWrapping="Wrap" />
+        <viewer:ImageViewerControl x:Name="ImageViewer" />
+    </DockPanel>
+</Window>

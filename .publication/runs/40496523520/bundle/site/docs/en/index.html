@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Fizzy.ImageViewer documentation | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Fizzy.ImageViewer documentation | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="fizzyimageviewer-documentation">Fizzy.ImageViewer documentation</h1>
+
+<p><a href="../zh-CN/index.html">简体中文</a></p>
+<p>Choose a component guide to integrate image viewing, drawing, measurements, and pixel inspection.</p>
+<h2 id="choose-your-path">Choose your path</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Start here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upgrade an existing application</td>
+<td><a href="upgrading.html">Upgrade guide</a></td>
+</tr>
+<tr>
+<td>A control inside an existing window</td>
+<td><a href="embedding.html">Embed in WPF</a></td>
+</tr>
+<tr>
+<td>First image window</td>
+<td><a href="getting-started.html">Getting started</a></td>
+</tr>
+<tr>
+<td>Camera or continuous results</td>
+<td><a href="live-streaming.html">Live streaming</a></td>
+</tr>
+<tr>
+<td>A new interactive tool</td>
+<td><a href="measurement-tools.html">Custom measurement tools</a></td>
+</tr>
+<tr>
+<td>A type or member</td>
+<td><a href="../../api/index.html">API reference (English)</a></td>
+</tr>
+<tr>
+<td>Library development</td>
+<td><a href="architecture.html">Architecture</a> and <a href="validation.html">validation</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="getting-started-and-integration">Getting started and integration</h2>
+<ul>
+<li><a href="getting-started.html">Getting started</a>: Build your first viewer application.</li>
+<li><a href="live-streaming.html">Live streaming</a>: Bound producer and overlay work.</li>
+<li><a href="public-api.html">Viewer and lifetime</a>: Configure the viewer and manage its window lifetime.</li>
+<li><a href="application-integration.html">Application endpoints</a>: DI, frame sinks and application display interfaces.</li>
+</ul>
+<h2 id="frames-and-processing">Frames and processing</h2>
+<ul>
+<li><a href="frame-pipeline.html">Frames and pixels</a>: Submit frames and query original pixels.</li>
+<li><a href="cuda.html">CUDA integration</a>: Integrate CUDA-backed image storage.</li>
+<li><a href="snapshots.html">Snapshots</a>: Capture whole-image or region snapshots.</li>
+</ul>
+<h2 id="drawing-and-interaction">Drawing and interaction</h2>
+<ul>
+<li><a href="drawing-layers.html">Drawing and HUD</a>: Manage overlays, layers, and HUD content.</li>
+<li><a href="measurements.html">Measurements</a>: Use and extend interactive measurements.</li>
+<li><a href="measurement-tools.html">Custom measurement tools</a>: Create and own interactive sessions.</li>
+<li><a href="menus.html">Menus</a>: Customize context menus.</li>
+</ul>
+<h2 id="development-and-maintenance">Development and maintenance</h2>
+<ul>
+<li><a href="architecture.html">Architecture</a>: Understand module boundaries and ownership.</li>
+<li><a href="validation.html">Validation</a>: Choose build, test, and interaction checks.</li>
+<li><a href="documentation.html">Documentation maintenance</a>: Build the site and maintain translations.</li>
+<li><a href="releasing.html">Release SOP</a>: Publish and recover versioned releases.</li>
+</ul>
+<p>English XML and the generated <strong>API reference (English)</strong> define symbol contracts; component guides define cross-API protocols. Both languages share API identifiers and examples.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

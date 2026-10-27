@@ -1766,6 +1766,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docs/en/upgrading.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/en/upgrading.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docs/en/validation.md",
       "output": {
         ".html": {
@@ -1976,6 +1986,16 @@
         },
         ".json": {
           "relative_path": "docs/zh-CN/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/zh-CN/upgrading.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/zh-CN/upgrading.html"
         }
       },
       "version": ""

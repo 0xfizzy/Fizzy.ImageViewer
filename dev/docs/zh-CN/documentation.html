@@ -112,10 +112,11 @@ node scripts/Test-Browser.mjs
 <pre><code class="lang-powershell">./scripts/Test-Samples.ps1
 ./scripts/Test-DocumentationGate.ps1
 ./scripts/Test-ReleaseGate.ps1
-pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.2.0
+pwsh -NoProfile -File scripts/Test-ReleaseRecovery.ps1 -Version 1.3.0
 ./scripts/Test-Workflows.ps1
 </code></pre>
-<p>示例构建不打开窗口；交互检查手工运行<a href="getting-started.html">示例</a>。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证同版本覆盖、过期候选、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 <code>artifacts/recovery-fixture/result.json</code> 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 <code>artifacts/</code>，不发布真实版本。</p>
+<p>示例构建不打开窗口；交互检查手工运行<a href="getting-started.html">示例</a>。文档故障夹具验证缺失 XML、过期或缺失翻译和坏链接；发布夹具验证同版本覆盖、过期候选、稳定版排序、包有效载荷比较和恢复。恢复测试在独立进程中用假 GitHub/NuGet/Pages 边界执行实际编排，覆盖 NuGet 响应丢失和 Pages 失败，报告位于 <code>artifacts/recovery-fixture/{version}/result.json</code> 并明确标为模拟。工作流检查使用固定校验和的 actionlint 1.7.7。测试使用可清理的 <code>artifacts/</code>，不发布真实版本。</p>
 <p>依赖变更应主动进行非锁定还原或 npm install，审查锁文件差异，再执行锁定验证；发版时禁止重新生成锁文件。生成 HTML、API 元数据和本地报告不提交源码仓库。</p>
 <h2 id="版本发布">版本发布</h2>
 <p><code>docs/site.json</code> 集中配置仓库、域名、项目路径、最低留存版本和归档分支。固定文档使用 <code>/v{version}/</code>，更新整体覆盖该目录；主分支使用 <code>/dev/</code>。每个版本保留独立搜索、资源、示例及源码身份。Git 历史保留旧内容供回滚，不再公开修订路径或修订选择。</p>
