@@ -197,7 +197,7 @@ Previously published packages remain immutable; new releases use the explicit na
 <th>Package</th>
 <th>Build Toolkit</th>
 <th>Host compiler</th>
-<th>Default architecture</th>
+<th>Architecture coverage</th>
 </tr>
 </thead>
 <tbody>
@@ -205,26 +205,32 @@ Previously published packages remain immutable; new releases use the explicit na
 <td>Fizzy.ImageViewer.Cuda11</td>
 <td>11.8.0</td>
 <td>MSVC 14.38 (v143)</td>
-<td>SM 7.5</td>
+<td>Common Pascal and newer GPUs</td>
 </tr>
 <tr>
 <td>Fizzy.ImageViewer.Cuda12</td>
 <td>12.6.3</td>
 <td>MSVC 14.38 (v143)</td>
-<td>SM 7.5</td>
+<td>Common Pascal and newer GPUs</td>
 </tr>
 <tr>
 <td>Fizzy.ImageViewer.Cuda13</td>
 <td>13.0.2</td>
 <td>MSVC 14.38 (v143)</td>
-<td>SM 7.5</td>
+<td>Common Turing and newer GPUs</td>
 </tr>
 </tbody>
 </table>
-<p>These are build baselines, not certification of every minor version, GPU or execution
-feature. Native ABI 1 uses standard CUDA handles and caller-owned storage. The host
-must preserve its context, stream, memory and completion guarantees. A compatible
-NVIDIA driver, GPU and CUDA/D3D9Ex adapter remain required. Static CUDA and MSVC
+<p>Coverage is defined by architecture and required features, not a GPU model whitelist
+or a requirement to test each model. Newer GPUs can use compatible machine code or
+driver JIT compilation of the embedded PTX from an older Toolkit; their SM number need
+not appear individually in the package. Applications do not need to configure PTX.
+This forward compatibility does not promise every behavior of unknown future hardware.</p>
+<p>Compute capability coverage is separate from display support: display requires a usable
+Windows CUDA/D3D9Ex interoperation environment with a compatible GPU/adapter and NVIDIA
+driver. The driver must support the package's CUDA runtime and any required PTX JIT.
+Native ABI 1 uses standard CUDA handles and caller-owned storage. The host must preserve
+its context, stream, memory and completion guarantees. Static CUDA and MSVC
 runtimes mean package consumers do not need the build Toolkit or Visual Studio.
 No dependency is downloaded or compiled at application startup.</p>
 <pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer.Cuda11
@@ -240,8 +246,8 @@ dependency; local builds select the newest installed compatible toolset.
 Run the installer option from an elevated PowerShell when those components are missing:</p>
 <pre><code class="lang-powershell">./scripts/Setup-Cuda.ps1 -InstallBuildTools
 ./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
-# Explicit hardware execution; requires a suitable local GPU and desktop environment.
-./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -RunHardwareTests
+# Validate the official architecture coverage on a suitable local GPU/desktop.
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -FullMatrix -RunHardwareTests
 </code></pre>
 <p>Setup prepares pinned CMake 3.31.8 and Ninja 1.12.1 under <code>artifacts/cuda/tools</code>.
 It does not change the NVIDIA driver or persistent environment variables. Build scripts
@@ -255,15 +261,32 @@ Use <code>-CudaRoot</code> to select an existing Toolkit. CI additionally uses
 <code>Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools</code> to fetch only
 SHA-256-verified NVIDIA compiler components. The shared matrix is
 <code>eng/cuda-matrix.json</code>. Release builds require its exact versions.</p>
+<p>Local builds default to the architectures reported by <code>nvidia-smi</code> for local GPUs,
+with native machine code only (for example, T600 selects <code>75-real</code>). Use
+<code>-Architectures '75-real;86-real'</code> to select explicit CMake CUDA targets, or <code>-FullMatrix</code>
+to build the official list without a GPU. If no GPU can be identified, an explicit
+selection is required; no architecture is guessed. nvcc rejects unsupported targets.
+CI and <code>-Release</code> always use the full matrix and reject conflicting overrides.</p>
+<p>The matrix uses CMake <code>CUDA_ARCHITECTURES</code> notation: CUDA 11.8/12.6 include
+<code>60-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;90-virtual</code>;
+CUDA 13.0 includes <code>75-real;80-real;86-real;89-real;90-real;100-real;120-real;120-virtual</code>.
+Common targets carry native code and the highest target also carries PTX for forward
+compatibility. Architecture-specific <code>a</code>/<code>f</code> targets are not used.</p>
 <p>Native outputs live under <code>build/&lt;Configuration&gt;/native/cuda&lt;major&gt;/</code>; intermediates
 under <code>build/obj/cuda/&lt;major&gt;/&lt;Configuration&gt;/</code>; native tests under
 <code>build/&lt;Configuration&gt;/tests/Cuda&lt;major&gt;/</code>. Reports and temporary packages go to
 <code>artifacts/cuda/&lt;major&gt;/</code>. Native DLLs carry a separate build record identifying source,
-compiler and checksum. Packaging rejects missing, stale, mismatched or modified inputs:</p>
+compiler, requested architectures, binary inspection and checksum. Every build uses
+the selected Toolkit's <code>cuobjdump</code> to check native code and PTX for both kernel modules
+in the final DLL. <code>architectures.*</code> preserves the inspection evidence; <code>build.json</code>
+also records DLL bytes and configure/build duration (incremental and clean times must
+not be compared). Packaging rejects missing, stale, mismatched or modified inputs;
+release sealing additionally rejects local single-architecture artifacts:</p>
 <pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
 dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
 </code></pre>
-<p>GitHub Actions compiles all three variants, compiles native tests, runs managed CUDA
+<p>GitHub Actions compiles the complete architecture lists with all three pinned Toolkits,
+checks the DLL contents, compiles native tests, runs managed CUDA
 tests on .NET 8/10, and verifies package contents and consumer publishing. Standard
 Windows runners do not execute GPU tests. A successful matrix therefore establishes
 build and package compatibility, not CUDA 12/13 hardware or physical presentation.

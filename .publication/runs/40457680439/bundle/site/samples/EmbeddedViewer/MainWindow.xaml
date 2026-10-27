@@ -1,0 +1,53 @@
+<Window x:Class="EmbeddedViewer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewer="clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer"
+        xmlns:measurements="clr-namespace:Fizzy.ImageViewer.Measurements;assembly=Fizzy.ImageViewer"
+        Title="Embedded ImageViewer" Width="960" Height="680"
+        Loaded="OnLoaded" Closing="OnClosing">
+    <DockPanel Margin="12">
+        <TextBlock x:Name="Status" DockPanel.Dock="Bottom" Margin="0,8,0,0" TextWrapping="Wrap"
+                   Text="Wheel: zoom. Middle button: pan. Right click: measurements and export." />
+        <TabControl>
+            <TabItem Header="Bound static images">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Next image" Click="OnNextImage" Padding="10,5" />
+                        <Button Content="Fit" Command="{x:Static viewer:ImageViewerCommands.FitToViewport}" CommandTarget="{Binding ElementName=ImageViewer}" Padding="10,5" />
+                        <Button Content="Length" Command="{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}" CommandParameter="{x:Static measurements:MeasurementToolIds.Length}" CommandTarget="{Binding ElementName=ImageViewer}" Padding="10,5" />
+                        <Button Content="End interaction" Command="{x:Static viewer:ImageViewerCommands.EndInteraction}" CommandTarget="{Binding ElementName=ImageViewer}" Padding="10,5" />
+                    </StackPanel>
+                    <Menu DockPanel.Dock="Top">
+                        <MenuItem Header="View">
+                            <MenuItem Header="Fit (Ctrl+F)" Command="{x:Static viewer:ImageViewerCommands.FitToViewport}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                            <MenuItem Header="Length (Ctrl+L)" Command="{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}" CommandParameter="{x:Static measurements:MeasurementToolIds.Length}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                            <MenuItem Header="End interaction" Command="{x:Static viewer:ImageViewerCommands.EndInteraction}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                        </MenuItem>
+                    </Menu>
+                    <TextBlock DockPanel.Dock="Bottom" Margin="0,8,0,0" Text="{Binding ElementName=ImageViewer, Path=ImageSourceSubmitResult, StringFormat=Binding reception: {0}}" />
+                    <viewer:ImageViewerControl x:Name="ImageViewer" ImageSource="{Binding Image}">
+                        <viewer:ImageViewerControl.InputBindings>
+                            <KeyBinding Key="F" Modifiers="Control" Command="{x:Static viewer:ImageViewerCommands.FitToViewport}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                            <KeyBinding Key="L" Modifiers="Control" Command="{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}" CommandParameter="{x:Static measurements:MeasurementToolIds.Length}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                            <KeyBinding Key="E" Modifiers="Control" Command="{x:Static viewer:ImageViewerCommands.EndInteraction}" CommandTarget="{Binding ElementName=ImageViewer}" />
+                        </viewer:ImageViewerControl.InputBindings>
+                    </viewer:ImageViewerControl>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Explicit live submissions">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Fit live image" Command="{x:Static viewer:ImageViewerCommands.FitToViewport}" CommandTarget="{Binding ElementName=LiveViewer}" Padding="10,5" />
+                        <Button Content="Length" Command="{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}" CommandParameter="{x:Static measurements:MeasurementToolIds.Length}" CommandTarget="{Binding ElementName=LiveViewer}" Padding="10,5" />
+                        <Button Content="End interaction" Command="{x:Static viewer:ImageViewerCommands.EndInteraction}" CommandTarget="{Binding ElementName=LiveViewer}" Padding="10,5" />
+                    </StackPanel>
+                    <viewer:ImageViewerControl x:Name="LiveViewer" />
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Other content">
+                <TextBlock Margin="20" TextWrapping="Wrap"
+                           Text="Return to Image: the frame and completed measurements are retained. Unloading ends the current interaction." />
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

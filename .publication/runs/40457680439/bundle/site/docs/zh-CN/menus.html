@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>菜单 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="菜单 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="菜单">菜单</h1>
+
+<p><a href="../en/menus.html">English</a></p>
+<p>向右键菜单添加应用动作。功能存续期间保留注册句柄；Viewer 借用菜单对象，调用方拥有对象本身。</p>
+<h2 id="注册动作">注册动作</h2>
+<p>以下示例假定已有存活的 <code>viewer</code>：</p>
+<pre><code class="lang-csharp">using var registration = viewer.RegisterMenuItem(
+    new Fizzy.ImageViewer.Menus.MenuItem(&quot;Mark ready&quot;, () =&gt; viewer.HudLabelText = &quot;Ready&quot;));
+</code></pre>
+<p>可实现 <code>IMenuItem</code>，或使用接受 <code>Action</code> / <code>Func&lt;ValueTask&gt;</code> 的辅助类。异步动作应返回其工作，不启动无人观察的任务，这样框架才能等待完成并记录失败。</p>
+<h2 id="可见性与目标">可见性与目标</h2>
+<p>每次菜单打开都会在 Viewer STA 读取 <code>Header</code>、<code>IsVisible</code> 和选中状态。动作辅助类接受可选可见性谓词；<code>SeparatorMenuItem</code> 表示分隔符，渲染器删除开头、重复和末尾分隔符。</p>
+<p><code>MenuItem</code> 和 <code>CheckableMenuItem</code> 要求非空且非全空白的标题，以及非 null 动作；可选中项还要求状态 getter。构造时拒绝非法参数，有效标题按原文保留。内置交互动作固定打开菜单时的目标，因此旧“取消测量”动作不会取消替代会话，即使工具相同。</p>
+<h2 id="注册与执行生命周期">注册与执行生命周期</h2>
+<p><code>RegisterMenuItem(IMenuItem)</code> 返回独立的 <code>IDisposable</code> 句柄。任意线程均可幂等释放它，Viewer 关闭后也安全。同一菜单对象可注册多次，各注册独立；忽略句柄则注册持续到 Viewer 关闭。Viewer 不释放调用方拥有的菜单对象。</p>
+<p>撤销会禁用已打开菜单的对应项并阻止新回调，下次打开时不再显示。已开始的动作可继续完成，包括动作撤销自身或 Viewer 关闭的情况。<code>ExecuteAsync()</code> 返回 <code>ValueTask</code>，从 Viewer STA 启动，不传递 WPF 事件对象；绑定等待完成并隔离记录异常。同一个菜单对象的动作不能跨菜单打开并发执行，其他动作不受影响。</p>
+<p>可见性和选中状态回调可修改注册；菜单构建期间新增的注册下次打开才出现。不要在这些回调中等待正在调用 Viewer 的其他线程。超过 Viewer 生命周期的异步工作必须自己拥有依赖，不再依赖已关闭的 Dispatcher。</p>
+<p>WPF 的 Closed 可能先于 Click，普通关闭会保留绑定直到输入排空。重新打开、显式撤销和 Viewer 关闭会使旧绑定失效。如果构建菜单在冻结帧后失败，Viewer 恢复提交、删除部分绑定并结束本次打开。标题、可见性和选中状态读取失败在 WPF 事件边界记录，不逃逸到 Dispatcher；下次打开重新读取。Viewer 关闭会释放注册、回调和菜单绑定。</p>
+<h2 id="捕获图像目标">捕获图像目标</h2>
+<p>内置冻结与导出动作保留本次打开时的已提交帧、映射及适用 ROI。独立租约允许已接纳工作在窗口关闭后完成，导出不会换成较新的帧。自定义异步动作必须明确选择并拥有目标；借用 Viewer 不承诺关闭后仍可任意访问。详见<a href="snapshots.html">快照</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

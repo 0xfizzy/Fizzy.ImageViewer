@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Interface ICudaExecutionScope | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Interface ICudaExecutionScope | Fizzy.ImageViewer ">
+      
+      <meta name="description" content="A synchronous, thread-affine borrowed CUDA operation. Handles and scratch never escape it.">
+      <link rel="icon" href="../assets/icon.png">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope">
+
+
+
+  <h1 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope" class="text-break">
+Interface ICudaExecutionScope  
+  </h1>
+
+  <div class="facts text-secondary">
+    <dl><dt>Namespace</dt><dd><a class="xref" href="Fizzy.html">Fizzy</a>.<a class="xref" href="Fizzy.ImageViewer.html">ImageViewer</a>.<a class="xref" href="Fizzy.ImageViewer.Cuda.html">Cuda</a></dd></dl>
+  <dl><dt>Assembly</dt><dd>Fizzy.ImageViewer.Cuda.dll</dd></dl>
+  </div>
+
+  <div class="markdown summary"><p>A synchronous, thread-affine borrowed CUDA operation. Handles and scratch never escape it.</p>
+</div>
+  <div class="markdown conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public interface ICudaExecutionScope</code></pre>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <h2 class="section" id="properties">Properties
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_Context_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.Context*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_Context" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.Context">
+  Context
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Standard CUcontext handle; its lifetime includes registered resource cleanup.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">nint Context { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.intptr">nint</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_InputByteLength_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.InputByteLength*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_InputByteLength" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.InputByteLength">
+  InputByteLength
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Accessible bytes starting at InputPointer, including row padding where present.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">long InputByteLength { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int64">long</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_InputPointer_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.InputPointer*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_InputPointer" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.InputPointer">
+  InputPointer
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Registered read-only device address of the first input pixel.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">nint InputPointer { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.intptr">nint</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_RowStride_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.RowStride*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_RowStride" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.RowStride">
+  RowStride
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Positive distance between device row starts; may differ from the source descriptor's stride.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">long RowStride { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int64">long</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_Stream_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.Stream*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_Stream" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.Stream">
+  Stream
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Standard CUDA stream handle. Zero denotes the context's default stream.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">nint Stream { get; }</code></pre>
+  </div>
+
+
+
+
+
+  <h4 class="section">Property Value</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.intptr">nint</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+  <h2 class="section" id="methods">Methods
+</h2>
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_AllocateScratch_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.AllocateScratch*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_AllocateScratch_System_Int64_Fizzy_ImageViewer_Cuda_CudaMemoryKind_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.AllocateScratch(System.Int64,Fizzy.ImageViewer.Cuda.CudaMemoryKind)">
+  AllocateScratch(long, CudaMemoryKind)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Allocates operation-owned device or pinned host scratch. Retain it until safe completion,
+including on exceptions and cancellation. Returns a nonzero address for positive byte counts.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">nint AllocateScratch(long byteCount, CudaMemoryKind kind)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>byteCount</code> <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int64">long</a></dt>
+    <dd></dd>
+    <dt><code>kind</code> <a class="xref" href="Fizzy.ImageViewer.Cuda.CudaMemoryKind.html">CudaMemoryKind</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.intptr">nint</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_RegisterResource_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.RegisterResource*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_RegisterResource_Fizzy_ImageViewer_Cuda_ICudaResource_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.RegisterResource(Fizzy.ImageViewer.Cuda.ICudaResource)">
+  RegisterResource(ICudaResource)
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Registers a resource before GPU access and returns an independent ownership token.
+Success transfers cleanup to the bridge; failure leaves cleanup with the caller.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">IDisposable RegisterResource(ICudaResource resource)</code></pre>
+  </div>
+
+  <h4 class="section">Parameters</h4>
+  <dl class="parameters">
+    <dt><code>resource</code> <a class="xref" href="Fizzy.ImageViewer.Cuda.ICudaResource.html">ICudaResource</a></dt>
+    <dd></dd>
+  </dl>
+
+  <h4 class="section">Returns</h4>
+  <dl class="parameters">
+    <dt><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a></dt>
+    <dd></dd>
+  </dl>
+
+
+
+
+
+
+
+  <h4 class="section" id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_RegisterResource_Fizzy_ImageViewer_Cuda_ICudaResource__remarks">Remarks</h4>
+  <div class="markdown level1 remarks"><p>The operation and token each retain the resource. Release it only after both have ended
+safely. If Release fails, preserve the resource and context, report the failure through the runtime's
+failure channel and quarantine; never retry destructive cleanup. The token releases its own reference once.</p>
+</div>
+
+
+
+
+  <a id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_WaitForGpuCompletion_" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.WaitForGpuCompletion*"></a>
+
+  <h3 id="Fizzy_ImageViewer_Cuda_ICudaExecutionScope_WaitForGpuCompletion" data-uid="Fizzy.ImageViewer.Cuda.ICudaExecutionScope.WaitForGpuCompletion">
+  WaitForGpuCompletion()
+  
+  </h3>
+
+  <div class="markdown level1 summary"><p>Synchronously proves this operation's submitted CUDA accesses have ended.
+Does not finish or release the operation. Must not observe user cancellation instead of completion.
+A thrown error is not safety proof; the bridge still owns drain/quarantine.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">void WaitForGpuCompletion()</code></pre>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</article>
+
+
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

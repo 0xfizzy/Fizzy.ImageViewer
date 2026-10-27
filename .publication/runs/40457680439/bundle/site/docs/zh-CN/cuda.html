@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>CUDA 集成 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="CUDA 集成 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="cuda-集成">CUDA 集成</h1>
+
+<p><a href="../en/cuda.html">English</a></p>
+<p>可选 <code>Fizzy.ImageViewer.Cuda11</code>、<code>.Cuda12</code> 或 <code>.Cuda13</code> 包支持 CUDA 驻留的 Gray8、Bgr24、Rgb24、Bgra32、Pbgra32、Rgba32，
+提供 WPF 显示转换及原始像素查询。消费者实现小型执行桥接；核心和扩展均不依赖特定应用或计算运行时。</p>
+<h2 id="创建帧">创建帧</h2>
+<p>为独立保留的不可变源图实现 <code>ICudaFrameSource</code>，<code>Descriptor</code> 描述原始像素：</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Frames;
+using Fizzy.ImageViewer.Cuda;
+
+ImageFrame frame = await CudaImageFrame.TakeOwnershipAsync(source, cancellationToken);
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
+</code></pre>
+<p>工厂立即接管非空 source，包括验证失败和取消。返回帧自带 <code>IFramePixelSource</code>，消费者不再实现另一套查询适配。
+提交照常转移帧所有权。最终帧/租约引用释放源图及独立显示资源令牌。独立租约可越过 Viewer 生命周期，
+桥接执行服务必须在这些租约及读取结束前始终可用。</p>
+<h2 id="执行桥接">执行桥接</h2>
+<p><code>ExecuteAsync</code> 在源图就绪后、Viewer STA 之外恰好调用一次同步回调，支持并发或自行串行后端。
+不得保留或重入回调。回调借用 <code>ICudaExecutionScope</code>：</p>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>消费者责任</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Context / Stream</td>
+<td>标准 CUDA 句柄，不是运行时私有对象；context 保活至外部资源清理完成</td>
+</tr>
+<tr>
+<td>InputPointer / InputByteLength / RowStride</td>
+<td>导出设备地址前登记只读使用，存储覆盖访问的各行</td>
+</tr>
+<tr>
+<td>AllocateScratch</td>
+<td>提供设备或锁页主机临时内存，由操作保留到安全完成</td>
+</tr>
+<tr>
+<td>RegisterResource</td>
+<td>GPU 访问前登记 ICudaResource，返回独立所有权令牌</td>
+</tr>
+<tr>
+<td>WaitForGpuCompletion</td>
+<td>不受取消影响地证明设备访问完成，但不结束 operation</td>
+</tr>
+</tbody>
+</table>
+<p>描述符 stride 可以不同于设备 pitch，实际设备行距由 scope 提供，两者尺寸、格式、像素值一致。
+扩展验证尺寸、支持格式和存储范围，不验证任意指针安全性。不接受 CPU 输入、负 stride、多平面或外部不透明句柄。</p>
+<p>帧工厂在调用时立即接管源帧；<code>RegisterResource</code> 仅在成功时转移清理责任，登记失败仍由登记调用方清理。</p>
+<p>桥接拥有最终完成和退役流程。operation 与独立令牌共同保留资源，仅在最终安全释放时调用 <code>ICudaResource.Release</code>。
+清理失败须保留资源及 context、通过运行时失败渠道报告并隔离，不重试破坏性清理。native 调用或等待失败不证明
+设备访问已经结束，桥接必须排空或隔离已登记的输入、临时内存及外部资源，才能允许回收。</p>
+<p>执行前取消不启动 GPU；入队后取消只停止交付，不能绕过完成。查询必须等待成功后读取 host 字节，作用域退出前
+复制为独立结果。表面发布还要等待整个 ExecuteAsync 成功。消费者异常直接传播；扩展 native 错误使用包含类型化 <code>CudaErrorDomain</code> 和原始 native code 的 <code>CudaException</code>。操作与自有资源清理错误同时保留。</p>
+<h2 id="格式与传输成本">格式与传输成本</h2>
+<p>Gray8 扩为不透明 BGRA；Bgr24/Rgb24 保留源通道并补 alpha。Bgra32/Rgba32 原始读取保留直通 alpha，显示按
+<code>(color * alpha + 127) / 255</code> 预乘，RGBA 另换通道。Pbgra32 直接复制到映射纹理，跳过转换 kernel 和临时 BGRA
+缓冲。原始采样/统计不反预乘；Raw TIFF 保留原值，Display 快照与表面使用同一标准映射。</p>
+<p>显示无图像 CPU 回读，但仍有显存复制，其他格式另需转换缓冲。每个表面独立分配且不可变，没有纹理池；同一 CUDA
+context 的活动表面共享 D3D9Ex device。仍要求设备/适配器兼容并支持 CUDA/D3D9 互操作。</p>
+<p>查询只下载请求点、紧凑统计（每语义通道 count/min/max/sum 共 32 字节）或指定区域。gather 每 65,536 点分批，
+保留顺序；统计输出 Gray 或 R/G/B[/A] 顺序，小 ROI 只使用必要归约块，上限 256。完整快照显式请求全图。
+没有隐式整图缓存或下载回退。CudaDiagnostics.QueryMetrics 统计扩展传输及活动查询回调，不代表运行时实际分配
+或隔离字节。<code>EnqueuedQueries</code> 和 <code>EnqueuedResultBytes</code> 统计成功返回的 native 查询，每个 gather 分块单独计数，不承诺完整统计失败前的部分入队。<code>ActiveQueries</code> 和 <code>ActiveResultBytes</code> 覆盖查询执行及托管结果复制；归零不证明 GPU 已完成或隔离区为空。GetLiveSurfaceCount() 会加载 native DLL，包含保留的 native 表面 owner。</p>
+<p>不提供高位深 CUDA 映射、预乘 RGBA、Bayer、自定义 LUT/显示范围、D3D11/12 输入、软件回退或设备重建。
+WPF 附加与恢复遵循<a href="frame-pipeline.html#gpu-%E8%A1%A8%E9%9D%A2%E4%B8%8E%E6%98%BE%E5%BC%8F%E5%83%8F%E7%B4%A0%E6%9F%A5%E8%AF%A2">帧契约</a>。</p>
+<h2 id="构建与部署">构建与部署</h2>
+<p>按宿主 CUDA 大版本选择一个完整包：<code>Fizzy.ImageViewer.Cuda11</code>、
+<code>Fizzy.ImageViewer.Cuda12</code> 或 <code>Fizzy.ImageViewer.Cuda13</code>。三个包使用相同的
+<code>Fizzy.ImageViewer.Cuda</code> 命名空间和程序集。不得直接或通过传递依赖混用多个变体，
+也不得与旧 <code>Fizzy.ImageViewer.Cuda</code> 包混用；构建会明确拒绝这些组合。
+已经发布的包保持不可变，新版本使用明确的大版本包名。</p>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>构建 Toolkit</th>
+<th>Host 编译器</th>
+<th>架构覆盖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fizzy.ImageViewer.Cuda11</td>
+<td>11.8.0</td>
+<td>MSVC 14.38（v143）</td>
+<td>Pascal 及更新的常见 GPU</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda12</td>
+<td>12.6.3</td>
+<td>MSVC 14.38（v143）</td>
+<td>Pascal 及更新的常见 GPU</td>
+</tr>
+<tr>
+<td>Fizzy.ImageViewer.Cuda13</td>
+<td>13.0.2</td>
+<td>MSVC 14.38（v143）</td>
+<td>Turing 及更新的常见 GPU</td>
+</tr>
+</tbody>
+</table>
+<p>支持范围按架构和功能条件定义，不建立显卡型号白名单，也不要求每种型号都经过实测。
+较新 GPU 可以使用旧 Toolkit 构建的兼容机器码，或由驱动对包内 PTX 进行 JIT 编译；
+不要求其 SM 编号逐一出现在包中。应用用户无需配置 PTX。
+这种前向兼容不承诺未知未来硬件的所有行为。</p>
+<p>计算能力覆盖与显示支持是两个条件：显示要求可用的 Windows CUDA/D3D9Ex 互操作环境，
+包括兼容的 GPU/适配器和 NVIDIA 驱动。驱动须支持包使用的 CUDA Runtime 及所需的 PTX JIT。
+Native ABI 1 使用标准 CUDA 句柄及调用方持有的存储；宿主必须保证上下文、流、内存和完成协议有效。
+CUDA 与 MSVC Runtime
+静态链接，因此包使用者无需安装本库的 Toolkit 或 Visual Studio。应用启动时不下载或编译依赖。</p>
+<pre><code class="lang-powershell">dotnet add package Fizzy.ImageViewer.Cuda11
+</code></pre>
+<p>普通托管开发不需要 CUDA 工具链。本机 native 开发只保留一个 Toolkit，默认 11.8。
+本地可使用该 Toolkit 支持的 MSVC 工具集。安装脚本准备 CI 基线：VS 2022 Build Tools、
+MSVC 14.38 和 Windows SDK 10.0.22621.0，不需要完整 IDE 或 v142。
+安装脚本还会选择标准 MSVC x64/x86 工具组件：
+即使通过 <code>VsDevCmd.bat</code> 加载环境，nvcc 仍要求其 <code>vcvarsall.bat</code> 安装目录结构。
+该依赖会带入 VS 2022 默认工具集；本地构建选择已安装且兼容的最新工具集。
+缺少组件时，在管理员 PowerShell 中运行安装选项：</p>
+<pre><code class="lang-powershell">./scripts/Setup-Cuda.ps1 -InstallBuildTools
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release
+# 在合适的本机 GPU/桌面环境验证正式架构覆盖。
+./scripts/Test-Cuda.ps1 -CudaMajor 11 -Configuration Release -FullMatrix -RunHardwareTests
+</code></pre>
+<p>Setup 将固定版本 CMake 3.31.8 和 Ninja 1.12.1 准备到 <code>artifacts/cuda/tools</code>，
+不修改 NVIDIA 驱动或持久环境变量。构建脚本在子进程中选择兼容的 MSVC，使用 Ninja，
+不依赖 CUDA Visual Studio 插件。在 <code>Build-Cuda.ps1</code> 或 <code>Test-Cuda.ps1</code> 上使用
+<code>-MsvcVersion 14.38</code> 可显式选择工具集，省略时自动选择。Toolkit 的编译器检查仍然启用：
+C ABI 稳定不代表 nvcc 可以使用不受支持的宿主编译器。例如 CUDA 11.8 接受 MSVC
+19.1x–19.3x，但拒绝 19.4x。构建记录保存实际编译器版本；CI 和正式发布固定为 14.38。
+通过 <code>-CudaRoot</code> 指定已有 Toolkit。CI 另使用
+<code>Setup-Cuda.ps1 -CudaMajor 12 -DownloadToolkit -InstallBuildTools</code>，只下载经过
+SHA-256 校验的 NVIDIA 编译组件。公共矩阵为 <code>eng/cuda-matrix.json</code>，发布要求精确匹配。</p>
+<p>本地构建默认使用 <code>nvidia-smi</code> 识别的本机 GPU 架构，仅编译原生机器码，例如 T600 选择
+<code>75-real</code>。使用 <code>-Architectures '75-real;86-real'</code> 显式指定 CMake CUDA 目标，或使用
+<code>-FullMatrix</code> 在无需 GPU 的情况下编译正式列表。无法识别 GPU 时必须显式选择，不猜测架构。
+nvcc 会拒绝不支持的目标。CI 和 <code>-Release</code> 始终使用完整矩阵，拒绝冲突的架构覆盖参数。</p>
+<p>矩阵采用 CMake <code>CUDA_ARCHITECTURES</code> 表示法：CUDA 11.8/12.6 包含
+<code>60-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;90-virtual</code>；
+CUDA 13.0 包含 <code>75-real;80-real;86-real;89-real;90-real;100-real;120-real;120-virtual</code>。
+常见目标携带原生机器码，最高目标另携带 PTX 以支持前向兼容，不使用架构专属的 <code>a</code>/<code>f</code> 目标。</p>
+<p>Native 输出位于 <code>build/&lt;Configuration&gt;/native/cuda&lt;major&gt;/</code>，中间文件位于
+<code>build/obj/cuda/&lt;major&gt;/&lt;Configuration&gt;/</code>，native 测试位于
+<code>build/&lt;Configuration&gt;/tests/Cuda&lt;major&gt;/</code>。报告及临时包位于 <code>artifacts/cuda/&lt;major&gt;/</code>。
+Native DLL 附有独立构建记录，标识源码、编译器、请求架构、二进制检查和哈希。
+每次构建都使用所选 Toolkit 的 <code>cuobjdump</code>，检查最终 DLL 中两个 kernel 模块的机器码与 PTX。
+<code>architectures.*</code> 保留检查证据；<code>build.json</code> 另记录 DLL 字节数和配置/构建耗时，增量构建与
+干净构建的耗时不可直接比较。打包拒绝缺失、陈旧、不匹配或被修改的输入；正式归档还拒绝
+将本地单架构产物作为完整产物：</p>
+<pre><code class="lang-powershell">./scripts/Build-Cuda.ps1 -CudaMajor 11 -Configuration Release
+dotnet pack src/Fizzy.ImageViewer.Cuda -c Release -p:CudaMajor=11 -o artifacts/packages
+</code></pre>
+<p>GitHub Actions 使用三个固定 Toolkit 编译完整架构列表、检查 DLL 内容及编译 native 测试，
+在 .NET 8/10 运行托管 CUDA 测试，并验证
+包内容和消费者发布输出。普通 Windows runner 不执行 GPU 测试；矩阵通过只证明构建与
+打包兼容，不证明 CUDA 12/13 的硬件或真实显示。显式本机硬件模式运行有超时限制的
+native 测试，覆盖六种格式、alpha、带 padding 的 stride、gather、ROI、统计、D3D9Ex
+表面读回和清理。表面读回不等于真实屏幕呈现验收；环境不满足时不得静默跳过已请求的硬件测试。
+发布及恢复见<a href="releasing.html#%E5%8F%AF%E9%80%89-cuda-%E5%8C%85">发布指南</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
