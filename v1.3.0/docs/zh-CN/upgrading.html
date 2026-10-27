@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>升级现有应用 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="升级现有应用 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="升级现有应用">升级现有应用</h1>
+
+<p><a href="../en/upgrading.html">English</a></p>
+<h2 id="从-120-升级到-130">从 1.2.0 升级到 1.3.0</h2>
+<p><strong>1.3.0 包含破坏性 API 和行为变化。</strong> 请修改并重新编译消费者；针对 1.2.0 编译的二进制文件不保证能直接使用新程序集。
+已有应用按以下步骤迁移，新应用可从<a href="getting-started.html">入门</a>或<a href="embedding.html">嵌入指南</a>开始。</p>
+<h3 id="1-更新包引用">1. 更新包引用</h3>
+<p>1.3.0 发布后，在项目或中央包版本文件中将核心包 <code>Fizzy.ImageViewer</code> 更新为 1.3.0，并还原依赖。
+包包含 <code>net8.0-windows</code> 和 <code>net10.0-windows</code>，保持启用 <code>UseWPF</code>。升级库不要求将 .NET 8 应用迁移到 .NET 10。</p>
+<p>若使用可选 CUDA 扩展，先按第 5 步更新其引用，再还原依赖。核心包与 CUDA 包独立发布；核心版本发布成功不代表配套 CUDA 包已经可用。</p>
+<h3 id="2-修改接口事件与显示设置">2. 修改接口、事件与显示设置</h3>
+<p><code>IViewer</code> 不再包含 <code>IViewerWindow</code>。将 <code>Show</code>、<code>Hide</code>、<code>Minimize</code>、窗口边界、标题和 <code>Closed</code> 保留在 <code>Viewer</code> / <code>IViewerWindow</code> 上。
+借用共享功能时使用 <code>IViewerCapabilities</code>；所有者需要 <code>DisposeAsync</code> 时保留 <code>IViewer</code>。
+只有独立窗口 <code>Viewer</code> 实现窗口接口。</p>
+<p><code>FrameCommitted</code>、<code>IMeasurement.GeometryChanged</code> 和 <code>IMeasurement.QueryResultChanged</code> 改用 <code>EventHandler&lt;T&gt;</code>：</p>
+<pre><code class="lang-csharp">// 1.2.0
+viewer.FrameCommitted += frame =&gt; Console.WriteLine(frame.FrameId);
+// 1.3.0
+viewer.FrameCommitted += (sender, frame) =&gt; Console.WriteLine(frame.FrameId);
+</code></pre>
+<p>sender 为公共事件所有者：<code>Viewer</code>、<code>ImageViewerControl</code> 或测量对象。
+终止后添加库事件处理器会抛出异常，移除处理器仍然安全。请在提交帧前订阅事件，详见<a href="public-api.html">事件契约</a>。</p>
+<p>显示范围更新只接收配置，不等待显示：</p>
+<pre><code class="lang-csharp">// 1.2.0
+await viewer.SetDisplayRangeAsync(range);
+// 1.3.0
+viewer.SetDisplayRange(range);
+</code></pre>
+<p>通过 <code>DisplayFailed</code> 观察后续渲染错误。快照使用最后提交的映射，可能不同于最新请求的范围。</p>
+<h3 id="3-区分接收与显示">3. 区分接收与显示</h3>
+<p><code>SubmitFrameAsync</code> 现在只等待接收完成。将使用 <code>Committed</code>、<code>Superseded</code> 或 <code>Failed</code> 的分支改为处理 <code>Accepted</code>、<code>Cancelled</code>、<code>Frozen</code> 和 <code>Closed</code>。
+先检查 <code>result.Error</code> 中属于接收操作的清理失败，再处理状态：</p>
+<pre><code class="lang-csharp">// 1.2.0：完成结果可表示帧已提交显示。
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Status == FrameSubmitStatus.Committed)
+    Console.WriteLine(&quot;Committed&quot;);
+</code></pre>
+<pre><code class="lang-csharp">// 1.3.0：完成结果只表示接收，不表示显示。
+var result = await viewer.SubmitFrameAsync(frame);
+if (result.Error is { } error) throw error;
+if (result.Status == FrameSubmitStatus.Accepted)
+    Console.WriteLine(&quot;Accepted; display may follow&quot;);
+// 按应用策略处理 Cancelled、Frozen 和 Closed。
+</code></pre>
+<p>枚举数值已改变，不要按新含义解释持久化的旧数值状态。
+<strong>Accepted 不代表已经显示，也绝不代表已转移的存储可以复用。</strong> 已接收帧可能被替换而没有显示通知；取消仅在接收前检查。
+隐藏、卸载或最小化的宿主保留最新等待帧，恢复后无需再次提交即可显示。</p>
+<p>通过 <code>FrameCommitted</code> 或提交选项的 <code>OnCommitted</code> 回调观察 UI 提交，通过 <code>DisplayFailed</code> 观察渲染失败。
+不要无条件等待每个已接收帧都提交显示。UI 提交不证明图像已经呈现在物理显示器上。</p>
+<h3 id="4-保持所有权并等待关闭">4. 保持所有权并等待关闭</h3>
+<p>提交立即转移帧所有权，包括拒绝和取消。仅在最终释放回调中回收已转移的缓冲区；借用或需要复用生产者缓冲区时，使用 <code>ImageFrame.Copy</code>。
+已接收存储的后续清理失败通过 <code>DisposeAsync</code> 报告，不进入较新的接收结果。</p>
+<p><code>OnCommitted</code> 仅在回调返回前借用租约。后续工作须取得独立租约并在完成后释放。
+外部独立租约可以越过 Viewer 生命周期；Viewer 不等待它们，也不提前回收其存储。</p>
+<p><code>WhenStopping</code> 表示接纳已关闭，不表示在途工作已排空。所有者仍须等待 <code>DisposeAsync</code>，观察清理完成或共享的失败结果。
+不要在 UI 线程同步阻塞等待释放。</p>
+<p>嵌入时在宿主 STA 创建 <code>ImageViewerControl</code>，并在其 Dispatcher 停止前等待释放完成。
+<code>Unloaded</code> 只结束交互，保留内容以便在同一 Dispatcher 重新挂载，不等于释放。
+最终释放不会关闭宿主窗口或 Dispatcher；最终释放后须新建实例。完整示例见<a href="embedding.html">嵌入与关闭</a>和<a href="frame-pipeline.html">帧所有权</a>。</p>
+<h3 id="5-迁移可选-cuda-包">5. 迁移可选 CUDA 包</h3>
+<p>移除旧 <code>Fizzy.ImageViewer.Cuda</code> 包引用，根据宿主 CUDA 主版本，从 <code>Fizzy.ImageViewer.Cuda11</code>、<code>Fizzy.ImageViewer.Cuda12</code>、<code>Fizzy.ImageViewer.Cuda13</code> 中选择一个。
+对应变体发布后，使用其 1.3.0 版本配套核心 1.3.0。同步更新中央版本以及直接、传递依赖的消费者；不同变体不能混装，也不能与旧包共存。</p>
+<p>所有变体保持 <code>Fizzy.ImageViewer.Cuda</code> 命名空间和程序集名不变，无须修改命名空间。
+每个都是包含 Windows x64 原生组件的完整包。工具链、驱动和架构要求见 <a href="cuda.html">CUDA 构建与部署</a>。
+核心发布成功本身不证明 CUDA 包可用，也不证明 GPU 执行覆盖。</p>
+<h3 id="6-重新编译并验证受影响集成">6. 重新编译并验证受影响集成</h3>
+<p>使用新引用重新编译所有消费者与适配器，按上述步骤检查状态处理、事件回调、缓冲区回收和关闭逻辑。
+运行应用现有测试，覆盖实际使用的集成路径；适用时包含隐藏后恢复显示和嵌入宿主关闭。
+仅编译通过无法验证提交完成含义的变化。仓库命令与验证边界见<a href="validation.html">验证指南</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

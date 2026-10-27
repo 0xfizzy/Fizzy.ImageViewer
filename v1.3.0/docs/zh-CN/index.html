@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Fizzy.ImageViewer 文档 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Fizzy.ImageViewer 文档 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="fizzyimageviewer-文档">Fizzy.ImageViewer 文档</h1>
+
+<p><a href="../en/index.html">English</a></p>
+<p>按应用需要选择组件指南，集成图像显示、绘制、测量与像素查询。</p>
+<h2 id="按需求选择">按需求选择</h2>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>从这里开始</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>升级现有应用</td>
+<td><a href="upgrading.html">升级指南</a></td>
+</tr>
+<tr>
+<td>已有窗口内的图像控件</td>
+<td><a href="embedding.html">嵌入 WPF</a></td>
+</tr>
+<tr>
+<td>显示第一张图像</td>
+<td><a href="getting-started.html">入门</a></td>
+</tr>
+<tr>
+<td>集成相机或连续结果</td>
+<td><a href="live-streaming.html">实时流集成</a></td>
+</tr>
+<tr>
+<td>编写交互工具</td>
+<td><a href="measurement-tools.html">自定义测量工具</a></td>
+</tr>
+<tr>
+<td>查询类型或成员</td>
+<td><a href="../../api/index.html">英文 API 参考</a></td>
+</tr>
+<tr>
+<td>修改库的实现</td>
+<td><a href="architecture.html">架构</a>与<a href="validation.html">验证</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="入门与集成">入门与集成</h2>
+<ul>
+<li><a href="getting-started.html">入门</a>: 创建第一个图像显示应用。</li>
+<li><a href="live-streaming.html">实时流集成</a>：限制生产和叠加工作量。</li>
+<li><a href="public-api.html">Viewer 与生命周期</a>: 配置 Viewer 并管理窗口生命周期。</li>
+<li><a href="application-integration.html">应用端点</a>: DI、帧 sink 与应用显示接口。</li>
+</ul>
+<h2 id="帧与处理">帧与处理</h2>
+<ul>
+<li><a href="frame-pipeline.html">帧与像素</a>: 提交帧并查询原始像素。</li>
+<li><a href="cuda.html">CUDA 集成</a>: 集成 CUDA 图像存储。</li>
+<li><a href="snapshots.html">快照</a>: 捕获整幅图像或指定区域。</li>
+</ul>
+<h2 id="绘制与交互">绘制与交互</h2>
+<ul>
+<li><a href="drawing-layers.html">绘制与 HUD</a>: 管理叠加绘制、图层与 HUD 内容。</li>
+<li><a href="measurements.html">测量</a>: 使用和扩展交互测量。</li>
+<li><a href="measurement-tools.html">自定义测量工具</a>：创建并管理交互会话。</li>
+<li><a href="menus.html">菜单</a>: 自定义上下文菜单。</li>
+</ul>
+<h2 id="开发与维护">开发与维护</h2>
+<ul>
+<li><a href="architecture.html">架构</a>: 了解模块边界与所有权。</li>
+<li><a href="validation.html">验证</a>: 选择构建、测试与交互检查。</li>
+<li><a href="documentation.html">文档维护</a>: 构建站点并维护翻译。</li>
+<li><a href="releasing.html">发布 SOP</a>: 发布和恢复版本化产物。</li>
+</ul>
+<p>英文 XML 和生成的 <strong>API reference (English)</strong> 定义符号级契约；组件指南定义跨 API 协议。中英文共用 API 标识及示例。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>自定义测量工具 | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="自定义测量工具 | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="自定义测量工具">自定义测量工具</h1>
+
+<p><a href="../en/measurement-tools.html">English</a></p>
+<p>应用需要自己的交互创建流程时，实现测量工具。已有功能足够时优先使用<a href="measurements.html">内置测量</a>。非交互标记使用<a href="drawing-layers.html">绘制层</a>；没有独立创建测量或恢复已保存 ROI 的 API。</p>
+<h2 id="创建与注册工具">创建与注册工具</h2>
+<p>以下完整工具创建矩形 ROI，并复用框架的编辑、统计、标签和通知。每次激活都会创建一个新会话：</p>
+<pre><code class="lang-csharp">using Fizzy.ImageViewer.Measurements;
+using System.Windows;
+
+public sealed class CustomRoi : IMeasurementTool
+{
+    public string Id =&gt; &quot;custom-roi&quot;;
+    public string DisplayName =&gt; &quot;Custom ROI&quot;;
+    public IMeasurementToolSession CreateSession(IMeasurementToolContext context)
+        =&gt; new Session(context);
+
+    private sealed class Session(IMeasurementToolContext context) : IMeasurementToolSession
+    {
+        private IMeasurement? _preview;
+        private Point _start;
+
+        public MeasurementClickResult OnClick(Point point)
+        {
+            if (_preview is null or { IsDisposed: true })
+            {
+                _start = point;
+                _preview = context.CreateMeasurement(
+                    MeasurementGeometry.Rectangle(point, point),
+                    new() { Query = MeasurementQueryKind.RegionStatistics });
+                return MeasurementClickResult.Continue;
+            }
+            OnMouseMove(point);
+            _preview.Complete();
+            return MeasurementClickResult.Finish;
+        }
+
+        public void OnMouseMove(Point point)
+        {
+            if (_preview is { IsDisposed: false })
+                _preview.UpdateGeometry(MeasurementGeometry.Rectangle(_start, point));
+        }
+
+        // The framework releases unfinished measurements after cancellation.
+        public void Cancel() { }
+        public void Dispose() { }
+    }
+}
+</code></pre>
+<p>在功能安装期间保留注册句柄：</p>
+<pre><code class="lang-csharp">using var registration = viewer.RegisterMeasurementTool(new CustomRoi());
+viewer.ActivateMeasurementTool(&quot;custom-roi&quot;);
+</code></pre>
+<p>查询选项见<a href="measurements.html#%E6%9F%A5%E8%AF%A2%E4%B8%8E%E4%BF%9D%E7%95%99%E7%BB%93%E6%9E%9C">几何与查询对应表</a>。对需要保留的每一项调用 <code>Complete()</code>；仅返回 <code>Finish</code> 不会完成测量。</p>
+<h2 id="注册所有权">注册所有权</h2>
+<p><code>RegisterMeasurementTool</code> 返回只代表该次注册的 <code>IDisposable</code> 句柄。可从任意线程幂等释放，Viewer 关闭后也安全。撤销取消该注册的活动会话，保留已完成测量；调用方仍拥有工具对象，Viewer 不释放它。不保留句柄时，注册持续到全局撤销或 Viewer 关闭。</p>
+<p><code>Id</code> 和 <code>DisplayName</code> 在 Viewer STA 上读取一次。两者必须非空，ID 按序号比较且区分大小写；重复 ID 被拒绝。读取外部 getter 后会再次检查生命周期；若 getter 重入关闭 Viewer，则拒绝注册并抛出 <code>ObjectDisposedException</code>。</p>
+<p><code>UnregisterMeasurementTool(id)</code> 删除当前同 ID 注册并返回是否删除。组件清理应释放自己的句柄，避免误删同名替代注册。撤销先于取消回调生效；回调失败在清理后传播，不恢复注册。</p>
+<p>激活在打断旧会话前固定注册实例，无效初始请求保留当前交互。重入可替代请求，旧请求不会激活同 ID 的新注册。菜单打开时捕获注册；点击时若已撤销、隐藏、禁用命中或正在清空，则忽略该动作。注册变化在后续菜单打开时生效。</p>
+<h2 id="会话与完成">会话与完成</h2>
+<p>工具实现 <code>IMeasurementTool</code> 的 <code>Id</code>、<code>DisplayName</code> 和 <code>CreateSession(IMeasurementToolContext)</code>。每次激活在 Viewer STA 调用工厂，并要求返回新的 <code>IMeasurementToolSession</code>。预览句柄、首击位置等可变数据属于会话；工具只保存可复用配置。跨 Viewer 共享工具时，工厂及配置必须线程安全。</p>
+<p>会话接收 <code>OnClick(Point)</code>、<code>OnMouseMove(Point)</code> 和 <code>Cancel()</code>。点击返回 <code>Continue</code> 继续输入，返回 <code>Finish</code> 结束输入；未完成测量自动释放。正常完成不调用 <code>Cancel</code>；中断先结束上下文，再调用一次 <code>Cancel</code>，即使取消失败也清理预览。每个返回的会话都会在 STA 恰好释放一次，包括完成、回调失败和工厂被替代的情况。会话资源放在 <code>Dispose</code> 清理，<code>Cancel</code> 只处理取消特有行为。</p>
+<p>工厂可以创建预览和重入 Viewer API。工厂返回时若该激活已被替代，返回的会话会被取消，不影响新会话。工厂失败或返回 null 会释放它创建的未完成测量；尚未转交给测量的资源由工厂负责清理。</p>
+<p>异步工作可在完成需要保留的测量后调用 <code>context.Finish()</code>。它调度到 STA，只结束所属激活；已结束、被替代或 Viewer 已关闭时返回 false，不结束替代会话。<code>IMeasurement.Complete()</code> 只完成一个项并释放其上下文引用，不结束工具。上下文、测量和事件快照通过 <code>Origin</code> 保留 <code>ToolId</code> 与 <code>SessionId</code>；同次激活的多个项共享会话 ID，后续激活使用新 ID。</p>
+<h2 id="重入取消与失败">重入、取消与失败</h2>
+<p>普通操作中，工具回调或完成通知同步启动的新会话优先，即使工具相同。旧回调返回或抛出异常不会取消替代会话或恢复旧输入状态；取消打断外层启动时也遵循该规则。清理只在仍拥有该会话时恢复空闲状态。</p>
+<p>显式 API 调用传播工具回调异常；框架输入和曲线窗口回调记录错误。操作及清理同时失败时，聚合异常先保留原始失败，再保留清理失败；仍尝试全部安全清理。完成、删除和其他通知订阅者的异常逐个隔离，不中断后续订阅者。</p>
+<p>取消和正常完成都先结束上下文，再清理未完成项；已完成项由测量集合持有至删除。旧上下文不能再创建测量，否则抛出 <code>ObjectDisposedException</code>。旧清理不能删除新会话创建的测量，即使新会话由释放回调启动。取消中撤销注册也会使外层针对该注册的激活失效，同名重新注册不会恢复旧请求。</p>
+<p>显式调用在清理后传播会话和预览的组合失败；框架输入记录错误，关闭则将它们纳入 <code>DisposeAsync</code>。批量清理期间拒绝新测量和会话，重入清理保持幂等；关闭开始后激活抛出 <code>ObjectDisposedException</code>，清理全部完成项与预览并等待查询。</p>
+<h2 id="资源与线程">资源与线程</h2>
+<p>工具回调、上下文创建和通知运行在 Viewer STA。<code>IMeasurement</code> 句柄会调度读取、更新和订阅，因此后台工作可以更新或完成仍存活的预览。取消释放预览后，晚到的更新或完成抛出 <code>ObjectDisposedException</code>。关闭后可安全释放和退订，<code>Id</code>、<code>Origin</code>、<code>IsDisposed</code> 仍可读；其他访问需要 Viewer 存活。不要在 STA 回调中同步等待会调用这些句柄的工作线程。</p>
+<p>用 <code>AddResource</code> 和 <code>OnDispose</code> 将资源及订阅绑定到测量。<code>AddResource</code> 仅成功后转移所有权；失败时新资源仍归调用方，重复注册同一资源被拒绝且不改变原有所有权。不得在多个测量之间共享被拥有的资源。工具撤销保留完成项；隐藏测量层取消预览而保留完成项，<code>Viewer.Hide()</code> 保留会话和预览，清空或关闭删除所有项。</p>
+<p>释放依次撤销查询、执行清理回调、释放资源、关闭曲线和移除视觉；任一步失败后仍尝试后续安全步骤。显式释放和清空聚合清理错误，框架输入记录错误，Viewer 关闭将资源错误纳入共享 <code>DisposeAsync</code>。重复释放不会重试已执行的资源清理。<code>FrameCommitted</code> 是 Viewer 通知，不是查询执行回调。</p>
+<p>继续阅读<a href="measurements.html">测量结果</a>及 <a href="public-api.html">Viewer 生命周期</a>。</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

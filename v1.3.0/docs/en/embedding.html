@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Embed in a WPF window | Fizzy.ImageViewer </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Embed in a WPF window | Fizzy.ImageViewer ">
+      
+      
+      <link rel="icon" href="../../assets/icon.png">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../assets/icon.png" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+      <div class="toc-offcanvas">
+        <div class="offcanvas-md offcanvas-start" tabindex="-1" id="tocOffcanvas" aria-labelledby="tocOffcanvasLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="tocOffcanvasLabel">Table of Contents</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#tocOffcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <nav class="toc" id="toc"></nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="actionbar">
+          <button class="btn btn-lg border-0 d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#tocOffcanvas" aria-controls="tocOffcanvas" aria-expanded="false" aria-label="Show table of contents">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="embed-in-a-wpf-window">Embed in a WPF window</h1>
+
+<p><a href="../zh-CN/embedding.html">简体中文</a></p>
+<p>Use <code>ImageViewerControl</code> when the image belongs inside an existing window, Grid or TabControl. Use <code>Viewer</code> for an independent window with its own STA. Borrow <code>IViewerCapabilities</code> for the complete view or individual capability interfaces for narrower use. The owner retains <code>IViewer</code> for disposal; only the standalone <code>Viewer</code> implements <code>IViewerWindow</code>.</p>
+<h2 id="place-and-configure">Place and configure</h2>
+<p>Target <code>net8.0-windows</code> or <code>net10.0-windows</code> with <code>UseWPF</code> enabled, and reference Fizzy.ImageViewer. Place the control in your window:</p>
+<pre><code class="lang-xml">&lt;Window xmlns=&quot;http://schemas.microsoft.com/winfx/2006/xaml/presentation&quot;
+        xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;
+        xmlns:viewer=&quot;clr-namespace:Fizzy.ImageViewer;assembly=Fizzy.ImageViewer&quot;&gt;
+    &lt;Grid&gt;
+        &lt;viewer:ImageViewerControl x:Name=&quot;ImageViewer&quot; /&gt;
+    &lt;/Grid&gt;
+&lt;/Window&gt;
+</code></pre>
+<p>The parameterless constructor supports XAML. Code can use <code>new ImageViewerControl(logger)</code> with an <code>ILogger&lt;ImageViewerControl&gt;</code>; null disables logging. Create the control on its host's STA. It is ready to accept frames before <code>Loaded</code>, and must be disposed even if never loaded. The library owns <code>Content</code>; replacement is rejected. Use ordinary WPF layout properties, not a replacement content or template.</p>
+<p>The owned viewport clips image, drawing, measurement and HUD content to its layout bounds,
+including after zoom, pan and resize. You do not need to set <code>ClipToBounds</code> on the public control.
+Clicking a viewport takes keyboard focus back from host UI or another viewer; Escape and Delete
+apply to the focused viewer's interaction. Each control keeps its own tools, selection and layers.</p>
+<p>After <code>InitializeComponent</code>, use the same viewing methods as on <code>Viewer</code>:</p>
+<pre><code class="lang-csharp">ImageViewer.HudLabelText = &quot;Camera&quot;;
+var pixels = new byte[640 * 480];
+Array.Fill(pixels, (byte)128);
+var result = await ImageViewer.SubmitFrameAsync(
+    Fizzy.ImageViewer.Frames.ImageFrame.Copy(
+        new(640, 480, 640, Fizzy.ImageViewer.Frames.FramePixelFormat.Gray8), pixels));
+if (result.Error is { } error) throw error;
+if (result.Status != Fizzy.ImageViewer.Frames.FrameSubmitStatus.Accepted)
+    throw new InvalidOperationException($&quot;Initial frame: {result.Status}&quot;);
+</code></pre>
+<p>Submission transfers frame ownership immediately, including rejection and cancellation. Fit the image after layout with <code>FitToViewport()</code>. Drawing, measurements, HUD, pixel queries, snapshots and menus share the standalone viewer's contracts. Line-profile measurements may open their own plot window. For static images and infrequent changes, use the binding source below; live streams should continue using explicit <code>SubmitFrameAsync</code>.</p>
+<p><code>Accepted</code> reports reception only, not display completion or permission to recycle storage.
+Observe <code>FrameCommitted</code> / <code>OnCommitted</code> and <code>DisplayFailed</code> for later display outcomes;
+an accepted frame may be replaced without display. Use <code>Copy</code> for reusable producer buffers,
+or wait for the owned storage's final-release callback before recycling it. See <a href="frame-pipeline.html">frames</a>.</p>
+<p><code>Visible</code> controls this element's own WPF visibility (<code>false</code> uses <code>Hidden</code>). Use inherited <code>Visibility</code>
+for XAML bindings or <code>Collapsed</code>. <code>IsVisible</code> includes ancestor visibility; <code>IsMinimized</code> reads the current
+containing window, or false without a window. These properties retain WPF thread affinity.
+Display work runs only when loaded, effectively visible and not minimized. Input remains accepted while
+suspended, with only the newest waiting frame retained. The host controls inactive Tabs using visibility;
+there is no special Tab detection. Restoring visibility/loading actively displays the latest input.</p>
+<h2 id="bind-static-images">Bind static images</h2>
+<p>Expose a stable <code>Fizzy.ImageViewer.Frames.ImageBindingSource</code> from a ViewModel created on the host UI thread:</p>
+<pre><code class="lang-csharp">public ImageBindingSource Image { get; } = new();
+
+// Run on the host UI thread, after producing an immutable buffer.
+public void ShowImage(FrameDescriptor descriptor, byte[] pixels)
+{
+    using var frame = ImageFrame.TakeOwnership(descriptor, pixels, static () =&gt; { });
+    Image.SetFrame(frame);
+    // Do not write pixels again. SetFrame retained an independent reference.
+}
+</code></pre>
+<pre><code class="lang-xml">&lt;viewer:ImageViewerControl x:Name=&quot;ImageViewer&quot; ImageSource=&quot;{Binding Image}&quot; /&gt;
+</code></pre>
+<p>The ViewModel owns and disposes <code>Image</code>; the host owns and awaits the control's disposal.
+<code>SetFrame</code> acquires a reference without consuming the supplied frame or copying its pixels.
+Each attached control independently retains the same immutable storage through the existing
+frame pipeline. Only the last reference releases storage. Use a real release callback for
+pooled/native storage; the empty callback above is for a managed array.</p>
+<p>Create, update and dispose the source on its creating UI thread. A source may serve multiple
+controls on that same Dispatcher, but cannot cross Dispatchers. Background code may prepare
+an <code>ImageFrame</code>; retain it until an awaited Dispatcher invocation of <code>SetFrame</code> finishes, then
+dispose that caller-owned frame. Do not use background setters or <code>Binding.IsAsync</code> for this
+source. Direct frame submission retains its existing cross-thread support.</p>
+<p>Bind the source object, not a disposable <code>ImageFrame</code> or <code>FrameLease</code>. WPF can defer reading
+a ViewModel property: a delayed read observes the source's current image, or empty if the source
+was disposed. It never depends on an old frame token remaining valid until a binding callback.
+Replacing the ViewModel's source property and disposing the old source on the UI thread is safe;
+<code>PropertyChanged</code> returning is not an ownership acknowledgement. A stable source with <code>SetFrame</code>
+usually avoids that extra property notification entirely.</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Assign the same source again</td>
+<td>No resubmission merely because the dependency property was assigned again</td>
+</tr>
+<tr>
+<td>Call <code>SetFrame</code> again, even with the same frame</td>
+<td>New reception for each attached control</td>
+</tr>
+<tr>
+<td><code>SetFrame(null)</code></td>
+<td>Release the source's image reference; controls keep their displayed image</td>
+</tr>
+<tr>
+<td>Set <code>ImageSource</code> to null or clear its binding</td>
+<td>Unsubscribe that control; do not dispose the source or clear the display</td>
+</tr>
+<tr>
+<td>Dispose the source</td>
+<td>Empty it and notify controls; reject subsequent updates; delayed bindings see empty</td>
+</tr>
+<tr>
+<td>Unload/reload a control</td>
+<td>Keep its source association and latest waiting frame; resume display on reload</td>
+</tr>
+<tr>
+<td>Dispose a control</td>
+<td>Detach its binding/source and drain its pipeline; other controls and source remain independent</td>
+</tr>
+</tbody>
+</table>
+<p>Emptying or detaching does not retract already accepted input: a waiting or in-flight frame
+may still display. No operation above clears measurements. A disposed source retained in a
+dependency property is an empty source object, not an invalid ownership token. Reusing a disposed
+control is unsupported; assigning a non-null source after stopping throws <code>ObjectDisposedException</code>.</p>
+<p><code>ImageSourceSubmitResult</code> is a read-only dependency property containing the latest binding
+reception result, or null when the source is empty/detached. Bind to its <code>Status</code> and <code>Error</code> for
+UI feedback. It is per control, not per source; <code>Accepted</code> does not imply display. Frozen updates
+are rejected without automatic retry; call <code>SetFrame</code> again when a new reception is wanted.
+Observe <code>FrameCommitted</code> and <code>DisplayFailed</code> for subsequent outcomes and await <code>DisposeAsync</code>
+for pipeline cleanup failures. Source-owned cleanup failures propagate from <code>SetFrame</code> or
+<code>Dispose</code> after all controls have been notified; the new source value remains installed and
+cleanup is not retried. As with other frames, external lease cleanup belongs to its holder.</p>
+<p>Binding and explicit submission share the same latest-frame reception order. An explicit
+submission can replace a bound image; an unchanged binding does not reassert it. A later
+<code>SetFrame</code> or binding to another nonempty source submits again. <code>SubmitFrameAsync</code> still
+consumes its input immediately, including rejection and cancellation.</p>
+<h2 id="wpf-commands">WPF commands</h2>
+<p>Use <code>ImageViewerCommands.FitToViewport</code>, <code>ActivateMeasurementTool</code> and <code>EndInteraction</code> with
+buttons, menus or <code>KeyBinding</code>. No MVVM framework is required. For a toolbar outside the
+control, name the target explicitly; without <code>CommandTarget</code>, normal WPF keyboard-focus routing
+determines the control. Separate controls never share tool sessions.</p>
+<pre><code class="lang-xml">&lt;Button Content=&quot;Fit&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.FitToViewport}&quot;
+        CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+&lt;Button Content=&quot;Measure&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.ActivateMeasurementTool}&quot;
+        CommandParameter=&quot;{Binding ToolId}&quot; CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+&lt;Button Content=&quot;End&quot; Command=&quot;{x:Static viewer:ImageViewerCommands.EndInteraction}&quot;
+        CommandTarget=&quot;{Binding ElementName=ImageViewer}&quot; /&gt;
+</code></pre>
+<p><code>ToolId</code> is a built-in <code>MeasurementToolIds</code> value or the ID of a custom tool registered on
+that target. <code>CanExecute</code> checks stored registration metadata and layer admission, never
+creates a session or calls custom tool code. Availability refreshes when registration,
+interaction, layer input policy, display/layout or control availability changes.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Additional availability requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FitToViewport</code></td>
+<td>A displayed image and nonempty viewport layout</td>
+</tr>
+<tr>
+<td><code>ActivateMeasurementTool</code></td>
+<td>Nonblank string naming a registered tool; measurement layer visible, hit-test enabled and not clearing</td>
+</tr>
+<tr>
+<td><code>EndInteraction</code></td>
+<td>Active creation or editing session; completed measurements and applied edits are preserved</td>
+</tr>
+</tbody>
+</table>
+<p>All three are unavailable while unloaded, hidden, disabled, minimized or stopping. Invalid
+parameters for activation are unavailable; Fit/End ignore their parameters. Execution checks
+again and does nothing if unavailable. Exceptions from actual tool execution propagate to the
+WPF command caller; direct methods keep their existing exception contracts. Calls and command
+state queries retain WPF UI-thread affinity.</p>
+<p>No global shortcuts are installed. The example assigns Ctrl+F, Ctrl+L and Ctrl+E on the static
+viewer. Existing Escape input and built-in menu actions use the same interaction coordinator;
+menus retain their captured registration/session identity so delayed clicks cannot affect a
+replacement session. End does not add deletion, clearing, saving or disposal operations.</p>
+<h2 id="threads-and-temporary-unloading">Threads and temporary unloading</h2>
+<p>Library viewing methods marshal to the control's dispatcher as needed. Binding sources, dependency properties, commands and inherited WPF members such as layout and visual-tree operations retain WPF thread affinity. Notifications run on the owning UI thread; the sender of viewer-level <code>MeasurementCompleted</code>, <code>MeasurementChanged</code> and <code>MeasurementRemoved</code> events is the control for embedded use and the <code>Viewer</code> for standalone use. Events on <code>IMeasurement</code> use the measurement itself as sender. Do not synchronously wait for work that needs that dispatcher.</p>
+<p>An embedded control shares the application's UI thread. Busy application UI work can delay presentation and interaction, and multiple embedded controls share this cost. Background frame preparation and query work remain separate. Standalone <code>Viewer</code> creates the same control on its independent STA. Neither wrapper adds a frame copy or submission queue.</p>
+<p><code>Unloaded</code>, including a Tab switch, ends the current interaction and releases mouse capture. Frames and completed measurements remain available; submissions may continue while unloaded. Reattach the same control on the same dispatcher to continue. Unloading is not final disposal, and moving an instance to another dispatcher is unsupported.</p>
+<h2 id="close-asynchronously">Close asynchronously</h2>
+<p>The embedding owner stops and awaits its producer, then awaits <code>ImageViewer.DisposeAsync()</code> while the host dispatcher is still running. For a normal window, cancel the first <code>Closing</code> event, perform asynchronous cleanup, and request final closure after the handler returns. The <a href="../../samples/EmbeddedViewer/MainWindow.xaml.cs">complete example</a> implements this pattern, prevents duplicate closure, and reports producer and cleanup failures.</p>
+<p>Repeated disposal calls share one completion and its success or failure. Disposal stops admission, drains accepted frame/query work and releases owned resources; it never closes the host window or dispatcher. Independent frame leases remain valid. A disposed control is terminal; create a new instance rather than reload it.</p>
+<p>If the dispatcher shuts down prematurely, the control attempts to stop and safely clean up on <code>ShutdownStarted</code>, and its disposal result reports the lifecycle failure. This fallback does not replace awaited disposal. Unsafe native resources remain isolated rather than freed or reused. Cleanup failures while ending an unloaded interaction are logged and retained for final disposal.</p>
+<h2 id="application-endpoints">Application endpoints</h2>
+<p>Separate pipeline and ViewModel dependencies through application-owned interfaces; see <a href="application-integration.html">application integration</a> and the <a href="../../samples/ApplicationEndpoint/App.xaml.cs">ApplicationEndpoint example</a>. Direct calls remain suitable for simple windows.</p>
+<h2 id="run-the-example">Run the example</h2>
+<pre><code class="lang-powershell">dotnet run --project samples/EmbeddedViewer
+</code></pre>
+<p>The example has separate bound-static and explicit-live tabs. Next image prepares pixels in
+the background and updates its ViewModel's source on the UI thread; the live tab uses explicit
+submission. Buttons, menus and shortcuts demonstrate the three commands with explicit targets.
+Switch tabs to unload/reload, then close while streaming: the host awaits both producers,
+disposes the ViewModel's source and awaits both controls before closing. It needs no camera or GPU.</p>
+
+</article>
+
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
